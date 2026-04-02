@@ -59,10 +59,11 @@ export default async function ServersPage({
     }, { count: 'exact', head: true })
     totalCount = count || 0
   } else {
-    // Direct query
+    // Direct query — hide archived by default
     let query = supabase
       .from('servers')
       .select('*', { count: 'exact' })
+      .eq('is_archived', false)
 
     if (category) query = query.contains('categories', [category])
     if (status) query = query.eq('health_status', status)

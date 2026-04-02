@@ -118,6 +118,18 @@ export default async function ServerDetailPage({
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 py-6">
+      {/* Archived banner */}
+      {s.is_archived && (
+        <div className="mb-6 p-4 rounded-md border border-red bg-red/5">
+          <p className="text-sm text-red font-medium">
+            This server has been archived and is no longer actively maintained.
+          </p>
+          <p className="text-xs text-text-muted mt-1">
+            The page is preserved for reference. Consider alternatives in the same category.
+          </p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-text-primary mb-1">{s.name}</h1>

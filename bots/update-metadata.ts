@@ -70,18 +70,28 @@ async function main() {
       continue
     }
 
+    // Fetch npm downloads if applicable
+    let downloads = 0
+    if (server.npm_package) {
+      downloads = await fetchNpmDownloads(server.npm_package)
+    }
+
+    // Auto-archive: no commit in 2+ years AND 0 stars AND 0 downloads
+    const daysSinceCommit = repo.pushed_at
+      ? (Date.now() - new Date(repo.pushed_at).getTime()) / (1000 * 60 * 60 * 24)
+      : Infinity
+    const shouldAutoArchive = repo.archived || (
+      daysSinceCommit > 730 && repo.stargazers_count === 0 && downloads === 0
+    )
+
     const updates: Record<string, unknown> = {
       github_stars: repo.stargazers_count,
       github_last_commit: repo.pushed_at,
       github_open_issues: repo.open_issues_count,
-      is_archived: repo.archived,
-      health_status: computeHealth(repo.pushed_at, repo.archived),
+      is_archived: shouldAutoArchive,
+      health_status: computeHealth(repo.pushed_at, shouldAutoArchive),
       health_checked_at: new Date().toISOString(),
-    }
-
-    // Fetch npm downloads if applicable
-    if (server.npm_package) {
-      updates.npm_weekly_downloads = await fetchNpmDownloads(server.npm_package)
+      npm_weekly_downloads: downloads,
     }
 
     const { error: updateError } = await supabase
