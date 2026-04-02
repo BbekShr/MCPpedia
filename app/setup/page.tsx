@@ -286,49 +286,187 @@ export default function SetupPage() {
       <div className="mt-10 border-t border-border pt-8">
         <h2 className="text-lg font-semibold text-text-primary mb-4">Troubleshooting</h2>
         <div className="space-y-3 text-sm">
-          <details className="border border-border rounded-md">
-            <summary className="px-4 py-3 cursor-pointer text-text-primary hover:bg-bg-tertiary">
-              Server not showing up after restart
+
+          <details className="border border-border rounded-md" open>
+            <summary className="px-4 py-3 cursor-pointer text-text-primary hover:bg-bg-tertiary font-medium">
+              Nothing happened after restart (most common)
             </summary>
-            <div className="px-4 py-3 border-t border-border text-text-muted space-y-1">
-              <p>Check your config file for JSON syntax errors. Common issues:</p>
-              <ul className="list-disc list-inside">
-                <li>Trailing comma after the last entry</li>
-                <li>Missing quotes around strings</li>
-                <li>Wrong file — make sure you&apos;re editing the right config</li>
+            <div className="px-4 py-3 border-t border-border text-text-muted space-y-3">
+              <p className="font-medium text-text-primary">Check these in order:</p>
+
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <span className="font-bold text-accent shrink-0">1.</span>
+                  <div>
+                    <p className="font-medium text-text-primary">Did you fully quit and reopen?</p>
+                    <p>Closing the window is NOT enough. You must <strong>quit the app completely</strong> (Cmd+Q on Mac, or right-click tray icon → Quit) then reopen it.</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <span className="font-bold text-accent shrink-0">2.</span>
+                  <div>
+                    <p className="font-medium text-text-primary">Is your JSON valid?</p>
+                    <p>Paste your config into <a href="https://jsonlint.com" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover">jsonlint.com</a> to check. The most common errors:</p>
+                    <pre className="bg-code-bg p-2 rounded mt-1 text-xs font-mono">{`// ❌ WRONG — trailing comma
+{
+  "mcpServers": {
+    "server-one": { ... },  ← this comma breaks it
+  }
+}
+
+// ✅ CORRECT — no trailing comma
+{
+  "mcpServers": {
+    "server-one": { ... }
+  }
+}`}</pre>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <span className="font-bold text-accent shrink-0">3.</span>
+                  <div>
+                    <p className="font-medium text-text-primary">Is the config file in the right place?</p>
+                    <p>Open a terminal and run this to check if your file exists:</p>
+                    <pre className="bg-code-bg p-2 rounded mt-1 text-xs font-mono">{`# macOS — Claude Desktop
+cat ~/Library/Application\\ Support/Claude/claude_desktop_config.json
+
+# Windows — Claude Desktop
+type %APPDATA%\\Claude\\claude_desktop_config.json`}</pre>
+                    <p className="mt-1">If it says &quot;No such file&quot;, you saved it in the wrong location.</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <span className="font-bold text-accent shrink-0">4.</span>
+                  <div>
+                    <p className="font-medium text-text-primary">Did you merge correctly with existing config?</p>
+                    <p>If you already had servers, you need to add inside the existing <code className="bg-code-bg px-1 rounded">mcpServers</code> object, not create a new one:</p>
+                    <pre className="bg-code-bg p-2 rounded mt-1 text-xs font-mono">{`// ❌ WRONG — two mcpServers objects
+{
+  "mcpServers": { "old-server": { ... } },
+  "mcpServers": { "new-server": { ... } }
+}
+
+// ✅ CORRECT — both in one mcpServers
+{
+  "mcpServers": {
+    "old-server": { ... },
+    "new-server": { ... }
+  }
+}`}</pre>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <span className="font-bold text-accent shrink-0">5.</span>
+                  <div>
+                    <p className="font-medium text-text-primary">Is Node.js installed?</p>
+                    <p>Run <code className="bg-code-bg px-1 rounded">node --version</code> in your terminal. If it says &quot;command not found&quot;, install Node.js from <a href="https://nodejs.org" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover">nodejs.org</a> (LTS version).</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </details>
+
+          <details className="border border-border rounded-md">
+            <summary className="px-4 py-3 cursor-pointer text-text-primary hover:bg-bg-tertiary font-medium">
+              Remote MCP server won&apos;t connect (like ThoughtSpot, Cloudflare)
+            </summary>
+            <div className="px-4 py-3 border-t border-border text-text-muted space-y-2">
+              <p>Remote servers connect over the internet instead of running locally. Two ways to set them up:</p>
+              <p className="font-medium text-text-primary">Option A: Native remote (if your client supports it)</p>
+              <pre className="bg-code-bg p-2 rounded mt-1 text-xs font-mono">{`{
+  "mcpServers": {
+    "server-name": {
+      "url": "https://the-server-url.com/mcp",
+      "transport": "streamable-http"
+    }
+  }
+}`}</pre>
+              <p className="font-medium text-text-primary mt-2">Option B: Via mcp-remote proxy (works everywhere)</p>
+              <pre className="bg-code-bg p-2 rounded mt-1 text-xs font-mono">{`{
+  "mcpServers": {
+    "server-name": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://the-server-url.com/mcp"]
+    }
+  }
+}`}</pre>
+              <p>If Option A doesn&apos;t work, try Option B. If neither works, the server might be down — use the &quot;Test This Server&quot; button on its MCPpedia page.</p>
+            </div>
+          </details>
+
+          <details className="border border-border rounded-md">
+            <summary className="px-4 py-3 cursor-pointer text-text-primary hover:bg-bg-tertiary font-medium">
+              OAuth popup appeared but authentication failed
+            </summary>
+            <div className="px-4 py-3 border-t border-border text-text-muted space-y-2">
+              <p>Some remote servers (like ThoughtSpot) use OAuth. If the auth popup fails:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Make sure you have an account with the service (ThoughtSpot, etc.)</li>
+                <li>Clear stale auth: <code className="bg-code-bg px-1 rounded">rm -rf ~/.mcp-auth</code> then restart</li>
+                <li>Check if your company has CORS/SAML restrictions that block the auth flow</li>
               </ul>
-              <p className="mt-2">Try running the server manually to see errors:</p>
-              <pre className="bg-code-bg p-2 rounded mt-1 text-xs font-mono">npx -y @modelcontextprotocol/server-filesystem /tmp</pre>
             </div>
           </details>
+
           <details className="border border-border rounded-md">
-            <summary className="px-4 py-3 cursor-pointer text-text-primary hover:bg-bg-tertiary">
-              &quot;Command not found: npx&quot;
+            <summary className="px-4 py-3 cursor-pointer text-text-primary hover:bg-bg-tertiary font-medium">
+              &quot;Command not found: npx&quot; or &quot;npm ERR&quot;
             </summary>
-            <div className="px-4 py-3 border-t border-border text-text-muted">
-              <p>Install Node.js from <a href="https://nodejs.org" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover">nodejs.org</a> (LTS version). Then restart your terminal.</p>
+            <div className="px-4 py-3 border-t border-border text-text-muted space-y-2">
+              <p>Install Node.js from <a href="https://nodejs.org" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover">nodejs.org</a> (LTS version, v18 or higher). After installing:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li><strong>Restart your terminal</strong> (close and reopen)</li>
+                <li>Verify: <code className="bg-code-bg px-1 rounded">node --version</code> should show v18+</li>
+                <li>Verify: <code className="bg-code-bg px-1 rounded">npx --version</code> should work</li>
+                <li>Then restart Claude Desktop / Cursor</li>
+              </ul>
             </div>
           </details>
+
           <details className="border border-border rounded-md">
-            <summary className="px-4 py-3 cursor-pointer text-text-primary hover:bg-bg-tertiary">
-              API key / authentication errors
-            </summary>
-            <div className="px-4 py-3 border-t border-border text-text-muted">
-              <p>Some servers need API keys. Check the server page on MCPpedia — it shows which env vars you need and where to get the keys.</p>
-            </div>
-          </details>
-          <details className="border border-border rounded-md">
-            <summary className="px-4 py-3 cursor-pointer text-text-primary hover:bg-bg-tertiary">
+            <summary className="px-4 py-3 cursor-pointer text-text-primary hover:bg-bg-tertiary font-medium">
               How to add multiple servers
             </summary>
             <div className="px-4 py-3 border-t border-border text-text-muted">
-              <p>Add more entries inside <code className="bg-code-bg px-1 rounded">mcpServers</code>:</p>
+              <p>Add more entries inside <code className="bg-code-bg px-1 rounded">mcpServers</code> — each server gets its own key:</p>
               <pre className="bg-code-bg p-2 rounded mt-1 text-xs font-mono">{`{
   "mcpServers": {
-    "server-one": { "command": "npx", "args": [...] },
-    "server-two": { "command": "npx", "args": [...] }
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."]
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "ghp_..."
+      }
+    },
+    "thoughtspot": {
+      "url": "https://agent.thoughtspot.app/mcp",
+      "transport": "streamable-http"
+    }
   }
 }`}</pre>
+            </div>
+          </details>
+
+          <details className="border border-border rounded-md">
+            <summary className="px-4 py-3 cursor-pointer text-text-primary hover:bg-bg-tertiary font-medium">
+              Still not working?
+            </summary>
+            <div className="px-4 py-3 border-t border-border text-text-muted space-y-2">
+              <p>Try running the server manually in your terminal to see the actual error:</p>
+              <pre className="bg-code-bg p-2 rounded mt-1 text-xs font-mono">{`# For npm servers:
+npx -y @modelcontextprotocol/server-filesystem /tmp
+
+# For remote servers:
+npx mcp-remote https://agent.thoughtspot.app/mcp`}</pre>
+              <p>If you see an error message, search for it on the server&apos;s GitHub issues page, or ask in the MCPpedia discussion on the server&apos;s page.</p>
             </div>
           </details>
         </div>
