@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { HowMCPWorksDiagram, BeforeAfterDiagram, WhatYouCanDoDiagram, SecurityDiagram } from '@/components/MCPDiagrams'
 
 type Step = 'what' | 'client' | 'usecase' | 'result'
 
@@ -127,55 +128,68 @@ export default function GetStartedPage() {
         <div>
           <h1 className="text-2xl font-semibold text-text-primary mb-4">What is MCP?</h1>
 
-          <div className="space-y-6 text-sm text-text-primary leading-relaxed">
-            <div className="border border-border rounded-md p-4 bg-bg-secondary">
-              <p className="font-medium mb-2">The short version:</p>
+          <div className="space-y-8 text-sm text-text-primary leading-relaxed">
+            {/* The short version */}
+            <div className="border border-accent/20 rounded-lg p-5 bg-accent/5">
+              <p className="font-semibold text-base mb-1">The short version</p>
               <p className="text-text-muted">
-                MCP lets your AI assistant (like Claude) <strong className="text-text-primary">use tools</strong> — search the web, read files, manage GitHub repos, post to Slack, query databases, and hundreds more.
+                MCP lets your AI assistant <strong className="text-text-primary">use real tools</strong> — search Slack, manage GitHub repos, read files, query databases, and hundreds more. Without MCP, your AI can only talk. With MCP, it can <em>do things</em>.
               </p>
             </div>
 
+            {/* Before/After */}
             <div>
-              <p className="font-medium mb-2">How it works (in plain English):</p>
-              <div className="space-y-3 pl-4 border-l-2 border-accent">
-                <div>
-                  <p className="font-medium">1. You install an MCP server</p>
-                  <p className="text-text-muted">It&apos;s just a small program that runs on your computer. Takes 30 seconds.</p>
-                </div>
-                <div>
-                  <p className="font-medium">2. Your AI app connects to it</p>
-                  <p className="text-text-muted">Claude Desktop, Cursor, or whatever you use — it detects the server automatically.</p>
-                </div>
-                <div>
-                  <p className="font-medium">3. Your AI can now use those tools</p>
-                  <p className="text-text-muted">Ask Claude &quot;search my Slack for messages about the launch&quot; and it actually does it.</p>
-                </div>
+              <p className="font-semibold mb-3">What changes?</p>
+              <BeforeAfterDiagram />
+            </div>
+
+            {/* How it works — visual diagram */}
+            <div>
+              <p className="font-semibold mb-3">How it works</p>
+              <HowMCPWorksDiagram />
+              <div className="grid grid-cols-4 gap-2 mt-3 text-center">
+                <div className="text-[10px] text-text-muted">You ask a question</div>
+                <div className="text-[10px] text-text-muted">Your AI app receives it</div>
+                <div className="text-[10px] text-text-muted">MCP server does the work</div>
+                <div className="text-[10px] text-text-muted">Gets data from the service</div>
               </div>
             </div>
 
-            <div className="border border-border rounded-md p-4">
-              <p className="font-medium mb-2">Think of it like this:</p>
-              <p className="text-text-muted">
-                Your AI is smart but can&apos;t do anything in the real world. MCP servers are like <strong className="text-text-primary">hands</strong> — they let your AI reach out and interact with your tools, files, and services.
-              </p>
+            {/* What you can do — real examples */}
+            <div>
+              <p className="font-semibold mb-3">What you can do with MCP</p>
+              <WhatYouCanDoDiagram />
             </div>
 
+            {/* Security */}
+            <SecurityDiagram />
+
+            {/* FAQ */}
             <div>
-              <p className="font-medium mb-2">Common questions:</p>
-              <dl className="space-y-2">
-                <div>
-                  <dt className="text-text-primary">Is it safe?</dt>
-                  <dd className="text-text-muted">Yes. Servers run on your computer. Your AI asks permission before doing anything. You control what it can access.</dd>
+              <p className="font-semibold mb-3">Quick answers</p>
+              <div className="space-y-2">
+                <div className="flex gap-3 p-3 rounded-lg border border-border">
+                  <span className="text-green text-sm mt-0.5 shrink-0">&#10003;</span>
+                  <div>
+                    <dt className="font-medium text-text-primary text-xs">Is it free?</dt>
+                    <dd className="text-text-muted text-xs">Most servers are free and open source. MCPpedia is also free.</dd>
+                  </div>
                 </div>
-                <div>
-                  <dt className="text-text-primary">Is it free?</dt>
-                  <dd className="text-text-muted">Most MCP servers are free and open source. Some connect to paid APIs (like Slack or AWS) that have their own pricing.</dd>
+                <div className="flex gap-3 p-3 rounded-lg border border-border">
+                  <span className="text-green text-sm mt-0.5 shrink-0">&#10003;</span>
+                  <div>
+                    <dt className="font-medium text-text-primary text-xs">Do I need to code?</dt>
+                    <dd className="text-text-muted text-xs">No. You just copy-paste a config. MCPpedia gives you the exact config.</dd>
+                  </div>
                 </div>
-                <div>
-                  <dt className="text-text-primary">Do I need to code?</dt>
-                  <dd className="text-text-muted">No. You just copy-paste a config. MCPpedia gives you the exact config for your app.</dd>
+                <div className="flex gap-3 p-3 rounded-lg border border-border">
+                  <span className="text-green text-sm mt-0.5 shrink-0">&#10003;</span>
+                  <div>
+                    <dt className="font-medium text-text-primary text-xs">How long does it take?</dt>
+                    <dd className="text-text-muted text-xs">About 30 seconds per server. Seriously.</dd>
+                  </div>
                 </div>
-              </dl>
+              </div>
             </div>
           </div>
 
