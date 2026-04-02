@@ -9,6 +9,7 @@ config({ path: '.env.local' })
 
 import { createAdminClient } from './lib/supabase'
 import { getReadme } from './lib/github'
+import { categorize } from './lib/categorize'
 
 const supabase = createAdminClient()
 
@@ -112,10 +113,10 @@ async function main() {
   console.log('=== MCPpedia Install Info Extractor ===')
   console.log(new Date().toISOString())
 
-  // Get servers missing npm_package and install_configs
+  // Get all servers with a GitHub URL
   const { data: servers } = await supabase
     .from('servers')
-    .select('id, slug, github_url, npm_package, pip_package, install_configs, transport')
+    .select('id, slug, name, tagline, github_url, npm_package, pip_package, install_configs, transport, categories')
     .not('github_url', 'is', null)
 
   if (!servers) {
@@ -123,12 +124,17 @@ async function main() {
     return
   }
 
+  // Process servers that need install info OR have no categories
   const needsUpdate = servers.filter(s =>
-    !s.npm_package && !s.pip_package &&
-    (!s.install_configs || JSON.stringify(s.install_configs) === '{}')
+    // Missing all install info
+    (!s.npm_package && !s.pip_package && (!s.install_configs || JSON.stringify(s.install_configs) === '{}'))
+    // OR have package names but no README-sourced configs (auto-gen in UI is less accurate)
+    || ((s.npm_package || s.pip_package) && (!s.install_configs || JSON.stringify(s.install_configs) === '{}'))
+    // OR missing categories
+    || !s.categories || s.categories.length === 0
   )
 
-  console.log(`${needsUpdate.length} servers need install info (out of ${servers.length} total)\n`)
+  console.log(`${needsUpdate.length} servers need install info or categories (out of ${servers.length} total)\n`)
 
   let updated = 0
   let skipped = 0
@@ -137,64 +143,116 @@ async function main() {
     const parsed = parseGitHubUrl(server.github_url)
     if (!parsed) { skipped++; continue }
 
-    const readme = await getReadme(parsed.owner, parsed.repo)
-    if (!readme) { skipped++; continue }
+    const needsInstallInfo = !server.install_configs || JSON.stringify(server.install_configs) === '{}'
+    const needsCategories = !server.categories || server.categories.length === 0
 
-    const npmPkg = extractNpmPackage(readme)
-    const pipPkg = extractPipPackage(readme)
-    const remoteUrl = extractRemoteUrl(readme)
-    const installConfig = extractInstallConfig(readme)
-    const transport = extractTransport(readme)
+    // Only fetch README if we actually need it
+    const readme = (needsInstallInfo || needsCategories)
+      ? await getReadme(parsed.owner, parsed.repo)
+      : null
 
     const updates: Record<string, unknown> = {}
 
-    if (npmPkg) updates.npm_package = npmPkg
-    if (pipPkg) updates.pip_package = pipPkg
-    if (transport.length > 0) updates.transport = transport
+    // --- Install info extraction ---
+    if (needsInstallInfo) {
+      if (readme) {
+        const npmPkg = extractNpmPackage(readme)
+        const pipPkg = extractPipPackage(readme)
+        const remoteUrl = extractRemoteUrl(readme)
+        const installConfig = extractInstallConfig(readme)
+        const transport = extractTransport(readme)
 
-    // Build install config if we found enough info
-    if (installConfig) {
-      updates.install_configs = { 'claude-desktop': installConfig }
-    } else if (remoteUrl) {
-      updates.install_configs = {
-        'claude-desktop': {
-          mcpServers: {
-            [server.slug]: {
-              command: 'npx',
-              args: ['mcp-remote', remoteUrl]
+        // Only set npm/pip if not already set from registry
+        if (npmPkg && !server.npm_package) updates.npm_package = npmPkg
+        if (pipPkg && !server.pip_package) updates.pip_package = pipPkg
+        if (transport.length > 0) updates.transport = transport
+
+        // Use the best available package name for config generation
+        const effectiveNpm = server.npm_package || npmPkg
+        const effectivePip = server.pip_package || pipPkg
+
+        // Build install config — prefer README-sourced config over auto-generated
+        if (installConfig) {
+          updates.install_configs = { 'claude-desktop': installConfig }
+        } else if (remoteUrl) {
+          updates.install_configs = {
+            'claude-desktop': {
+              mcpServers: {
+                [server.slug]: {
+                  command: 'npx',
+                  args: ['mcp-remote', remoteUrl]
+                }
+              }
+            }
+          }
+        } else if (effectiveNpm) {
+          updates.install_configs = {
+            'claude-desktop': {
+              mcpServers: {
+                [server.slug]: {
+                  command: 'npx',
+                  args: ['-y', effectiveNpm]
+                }
+              }
+            }
+          }
+        } else if (effectivePip) {
+          updates.install_configs = {
+            'claude-desktop': {
+              mcpServers: {
+                [server.slug]: {
+                  command: 'uvx',
+                  args: [effectivePip]
+                }
+              }
             }
           }
         }
-      }
-    } else if (npmPkg) {
-      updates.install_configs = {
-        'claude-desktop': {
-          mcpServers: {
-            [server.slug]: {
-              command: 'npx',
-              args: ['-y', npmPkg]
+      } else {
+        // No README but we have package names from registry — generate configs
+        const effectiveNpm = server.npm_package
+        const effectivePip = server.pip_package
+        if (effectiveNpm) {
+          updates.install_configs = {
+            'claude-desktop': {
+              mcpServers: {
+                [server.slug]: {
+                  command: 'npx',
+                  args: ['-y', effectiveNpm]
+                }
+              }
             }
           }
-        }
-      }
-    } else if (pipPkg) {
-      updates.install_configs = {
-        'claude-desktop': {
-          mcpServers: {
-            [server.slug]: {
-              command: 'uvx',
-              args: [pipPkg]
+        } else if (effectivePip) {
+          updates.install_configs = {
+            'claude-desktop': {
+              mcpServers: {
+                [server.slug]: {
+                  command: 'uvx',
+                  args: [effectivePip]
+                }
+              }
             }
           }
         }
       }
     }
 
+    // --- Auto-categorization ---
+    if (needsCategories) {
+      const cats = categorize(server.name, server.tagline, readme)
+      updates.categories = cats
+    }
+
     if (Object.keys(updates).length > 0) {
       const { error } = await supabase.from('servers').update(updates).eq('id', server.id)
       if (!error) {
-        const found = [npmPkg && 'npm', pipPkg && 'pip', remoteUrl && 'remote', installConfig && 'config'].filter(Boolean).join('+')
-        console.log(`  ✓ ${server.slug}: ${found}`)
+        const parts: string[] = []
+        if (updates.install_configs) parts.push('install')
+        if (updates.npm_package) parts.push('npm')
+        if (updates.pip_package) parts.push('pip')
+        if (updates.categories) parts.push(`cats:${(updates.categories as string[]).join(',')}`)
+        console.log(`  ✓ ${server.slug}: ${parts.join('+')}`)
         updated++
       }
     } else {

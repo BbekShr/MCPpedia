@@ -54,9 +54,9 @@ function getSteps(client: Client): Step[] {
       },
       {
         title: 'Restart and verify',
-        description: 'Close and reopen Claude Desktop. Look for the hammer icon (🔨) in the chat input — that means MCP tools are connected!',
+        description: 'Close and reopen Claude Desktop. Go to Settings → Connectors to verify your MCP server is listed and connected.',
         visual: <ClaudeDesktopToolsMock />,
-        tip: 'If the 🔨 icon doesn\'t appear, there\'s likely a JSON syntax error in your config. Try pasting your config into jsonlint.com to check.',
+        tip: 'If your server doesn\'t appear in Connectors, there\'s likely a JSON syntax error in your config. Try pasting your config into jsonlint.com to check.',
       },
     ]
   }

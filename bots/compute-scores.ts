@@ -31,12 +31,29 @@ async function main() {
   console.log('=== MCPpedia Score Computation ===')
   console.log(new Date().toISOString())
 
-  const { data: servers, error } = await supabase
-    .from('servers')
-    .select('*')
+  // Supabase returns max 1000 rows by default — paginate to get all
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const servers: any[] = []
+  let page = 0
+  const PAGE_SIZE = 1000
+  while (true) {
+    const { data: batch, error: batchError } = await supabase
+      .from('servers')
+      .select('*')
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
-  if (error || !servers) {
-    console.error('Failed to fetch servers:', error?.message)
+    if (batchError) {
+      console.error('Failed to fetch servers:', batchError.message)
+      return
+    }
+    if (!batch || batch.length === 0) break
+    servers.push(...batch)
+    if (batch.length < PAGE_SIZE) break
+    page++
+  }
+
+  if (servers.length === 0) {
+    console.error('No servers found')
     return
   }
 

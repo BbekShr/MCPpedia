@@ -390,6 +390,22 @@ export default async function ServerDetailPage({
           )}
 
           {/* Discussion */}
+          {/* Help improve — shown when page is thin */}
+          {!s.description && tools.length === 0 && (!s.install_configs || JSON.stringify(s.install_configs) === '{}') && (
+            <section className="border border-accent/20 rounded-md p-5 bg-accent/5">
+              <h3 className="font-semibold text-text-primary mb-1">Help improve this page</h3>
+              <p className="text-sm text-text-muted mb-3">
+                This server is missing description, tools, and install config. If you&apos;ve used it, help the community by adding this info.
+              </p>
+              <Link
+                href={`/s/${slug}/edit`}
+                className="inline-block px-4 py-2 text-sm rounded-md bg-accent text-white hover:bg-accent-hover transition-colors"
+              >
+                Add information
+              </Link>
+            </section>
+          )}
+
           {/* Reviews */}
           <section id="reviews">
             <h2 className="text-lg font-semibold text-text-primary mb-4">

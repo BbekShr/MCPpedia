@@ -107,62 +107,83 @@ begin
   select * into s from servers where id = p_server_id;
   if not found then return '{}'::jsonb; end if;
 
-  -- SECURITY (0-25)
-  if s.cve_count = 0 then sec_score := sec_score + 10; end if;
-  if s.has_authentication then sec_score := sec_score + 5; end if;
-  if s.license is not null and s.license != '' then sec_score := sec_score + 3; end if;
-  if s.security_verified then sec_score := sec_score + 5; end if;
-  if not s.is_archived then sec_score := sec_score + 2; end if;
-  sec_score := least(sec_score, 25);
+  -- SECURITY (0-30) — matches lib/scoring.ts SCORE_WEIGHTS.security
+  sec_score := 30;
+  if s.cve_count > 0 then sec_score := sec_score - (s.cve_count * 10); end if;
+  if not coalesce(s.has_authentication, false) then sec_score := sec_score - 4; end if;
+  if s.license is null or s.license = '' or s.license = 'NOASSERTION' then sec_score := sec_score - 3; end if;
+  if coalesce(s.is_archived, false) then sec_score := sec_score - 8; end if;
+  if coalesce(s.security_verified, false) then sec_score := sec_score + 5; end if;
+  sec_score := greatest(0, least(sec_score, 30));
 
-  -- MAINTENANCE (0-25)
+  -- MAINTENANCE (0-25) — matches lib/scoring.ts SCORE_WEIGHTS.maintenance
   if s.github_last_commit is not null then
     if s.github_last_commit > now() - interval '7 days' then maint_score := maint_score + 12;
     elsif s.github_last_commit > now() - interval '30 days' then maint_score := maint_score + 10;
-    elsif s.github_last_commit > now() - interval '90 days' then maint_score := maint_score + 6;
-    elsif s.github_last_commit > now() - interval '180 days' then maint_score := maint_score + 3;
+    elsif s.github_last_commit > now() - interval '90 days' then maint_score := maint_score + 7;
+    elsif s.github_last_commit > now() - interval '180 days' then maint_score := maint_score + 4;
+    elsif s.github_last_commit > now() - interval '365 days' then maint_score := maint_score + 2;
     end if;
   end if;
-  if s.github_stars > 1000 then maint_score := maint_score + 5;
-  elsif s.github_stars > 100 then maint_score := maint_score + 3;
-  elsif s.github_stars > 10 then maint_score := maint_score + 1;
+  if s.github_stars >= 5000 then maint_score := maint_score + 5;
+  elsif s.github_stars >= 1000 then maint_score := maint_score + 4;
+  elsif s.github_stars >= 100 then maint_score := maint_score + 3;
+  elsif s.github_stars >= 10 then maint_score := maint_score + 1;
   end if;
-  if s.npm_weekly_downloads > 1000 then maint_score := maint_score + 5;
-  elsif s.npm_weekly_downloads > 100 then maint_score := maint_score + 3;
+  if s.npm_weekly_downloads >= 10000 then maint_score := maint_score + 5;
+  elsif s.npm_weekly_downloads >= 1000 then maint_score := maint_score + 4;
+  elsif s.npm_weekly_downloads >= 100 then maint_score := maint_score + 2;
   end if;
-  if s.verified then maint_score := maint_score + 3; end if;
-  maint_score := least(maint_score, 25);
-
-  -- DOCUMENTATION (0-25)
-  if s.description is not null and length(s.description) > 50 then doc_score := doc_score + 5; end if;
-  if s.tagline is not null and s.tagline != '' then doc_score := doc_score + 3; end if;
-  if jsonb_array_length(s.tools) > 0 then doc_score := doc_score + 5; end if;
-  if s.install_configs != '{}'::jsonb then doc_score := doc_score + 5; end if;
-  if s.api_name is not null then doc_score := doc_score + 3; end if;
-  if s.github_url is not null then doc_score := doc_score + 2; end if;
-  if s.homepage_url is not null then doc_score := doc_score + 2; end if;
-  doc_score := least(doc_score, 25);
-
-  -- COMPATIBILITY (0-25)
-  compat_score := least(array_length(s.compatible_clients, 1) * 5, 25);
-  if compat_score = 0 then
-    -- If no clients listed but has stdio transport, assume basic compat
-    if 'stdio' = any(s.transport) then compat_score := 10; end if;
+  if coalesce(s.is_archived, false) then maint_score := maint_score - 10; end if;
+  if s.github_open_issues > 100 then maint_score := maint_score - 2;
+  elsif s.github_open_issues > 50 then maint_score := maint_score - 1;
   end if;
-  if array_length(s.transport, 1) > 1 then compat_score := least(compat_score + 5, 25); end if;
+  if coalesce(s.verified, false) then maint_score := maint_score + 3; end if;
+  maint_score := greatest(0, least(maint_score, 25));
 
-  -- EFFICIENCY (0-25)
-  declare
-    tool_count integer := jsonb_array_length(s.tools);
-  begin
-    if tool_count <= 5 then eff_score := 25;
-    elsif tool_count <= 10 then eff_score := 20;
-    elsif tool_count <= 20 then eff_score := 15;
-    elsif tool_count <= 30 then eff_score := 10;
-    elsif tool_count <= 50 then eff_score := 5;
+  -- DOCUMENTATION (0-15) — matches lib/scoring.ts SCORE_WEIGHTS.documentation
+  if s.description is not null and length(s.description) > 50 then doc_score := doc_score + 2; end if;
+  if s.tagline is not null and s.tagline != '' then doc_score := doc_score + 1; end if;
+  if s.github_url is not null then doc_score := doc_score + 1; end if;
+  if s.homepage_url is not null then doc_score := doc_score + 1; end if;
+  if s.api_name is not null then doc_score := doc_score + 1; end if;
+  if jsonb_array_length(s.tools) > 0 then doc_score := doc_score + 3; end if;
+  if s.install_configs != '{}'::jsonb then doc_score := doc_score + 3; end if;
+  doc_score := least(doc_score, 15);
+
+  -- COMPATIBILITY (0-10) — matches lib/scoring.ts SCORE_WEIGHTS.compatibility
+  if 'stdio' = any(s.transport) then compat_score := compat_score + 4; end if;
+  if 'http' = any(s.transport) or 'sse' = any(s.transport) then compat_score := compat_score + 4; end if;
+  if array_length(s.transport, 1) > 1 then compat_score := compat_score + 2; end if;
+  compat_score := compat_score + least(coalesce(array_length(s.compatible_clients, 1), 0) * 2, 6);
+  if coalesce(array_length(s.compatible_clients, 1), 0) = 0
+     and jsonb_array_length(s.tools) > 0
+     and 'stdio' = any(s.transport) then
+    compat_score := compat_score + 3;
+  end if;
+  compat_score := least(compat_score, 10);
+
+  -- EFFICIENCY (0-20) — matches lib/scoring.ts SCORE_WEIGHTS.efficiency
+  -- Uses pre-computed total_tool_tokens when available, falls back to tool count heuristic
+  if s.total_tool_tokens is not null and s.total_tool_tokens > 0 then
+    if s.total_tool_tokens <= 500 then eff_score := 20;
+    elsif s.total_tool_tokens <= 1500 then eff_score := 16;
+    elsif s.total_tool_tokens <= 4000 then eff_score := 12;
+    elsif s.total_tool_tokens <= 8000 then eff_score := 6;
     else eff_score := 2;
     end if;
-  end;
+  else
+    declare
+      tool_count integer := jsonb_array_length(s.tools);
+    begin
+      if tool_count <= 3 then eff_score := 20;
+      elsif tool_count <= 8 then eff_score := 16;
+      elsif tool_count <= 15 then eff_score := 12;
+      elsif tool_count <= 30 then eff_score := 6;
+      else eff_score := 2;
+      end if;
+    end;
+  end if;
 
   total := least(sec_score + maint_score + doc_score + compat_score + eff_score, 100);
 

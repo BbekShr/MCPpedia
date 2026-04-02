@@ -8,6 +8,7 @@ import { config } from 'dotenv'
 config({ path: '.env.local' })
 
 import { createAdminClient } from './lib/supabase'
+import { categorize } from './lib/categorize'
 
 const supabase = createAdminClient()
 
@@ -171,6 +172,9 @@ async function main() {
       continue
     }
 
+    // Auto-categorize from name + description
+    const categories = categorize(rs.name || slug, rs.description)
+
     // Insert new server
     const { error } = await supabase.from('servers').insert({
       slug,
@@ -180,6 +184,7 @@ async function main() {
       npm_package: npmPackage,
       pip_package: pipPackage,
       transport,
+      categories,
       source: 'import',
       registry_id: rs.id,
       registry_synced_at: new Date().toISOString(),

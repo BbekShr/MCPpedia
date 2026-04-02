@@ -35,12 +35,9 @@ export default function Nav() {
   }
 
   const navLinks = [
+    { href: '/servers', label: 'Servers' },
     { href: '/get-started', label: 'Get Started' },
-    { href: '/setup', label: 'Setup Guide' },
-    { href: '/servers', label: 'Browse' },
     { href: '/security', label: 'Security' },
-    { href: '/guides', label: 'Guides' },
-    { href: '/analytics', label: 'Analytics' },
     { href: '/about', label: 'About' },
   ]
 

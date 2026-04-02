@@ -153,16 +153,21 @@ export function ClaudeDesktopSettingsMock({ step }: { step: 'profile' | 'develop
 
 export function ClaudeDesktopToolsMock() {
   return (
-    <MockWindow title="Claude">
-      <div className="space-y-2">
-        <div className="h-3 bg-[#f0f2f5] rounded w-2/3" />
-        <div className="h-3 bg-[#f0f2f5] rounded w-full" />
-      </div>
-      <div className="mt-3 flex items-center gap-2 border border-[#d0d7de] rounded-lg px-3 py-2">
-        <span className="text-[11px] text-[#656d76]">Message Claude...</span>
-        <div className="ml-auto flex items-center gap-1">
-          <span className="text-[14px]" title="MCP tools available">🔨</span>
-          <span className="text-[10px] text-[#0969da] ring-2 ring-[#0969da] ring-offset-1 px-1 rounded">← This means it worked!</span>
+    <MockWindow title="Settings">
+      <div className="flex gap-3">
+        <MockSidebar items={['General', 'Appearance', 'Connectors']} active="Connectors" />
+        <div className="flex-1 space-y-3">
+          <div className="text-[12px] font-medium text-[#24292f]">Connectors</div>
+          <div className="border border-[#d0d7de] rounded p-2 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-[#28c840]" />
+                <span className="text-[11px] font-medium text-[#24292f]">your-server</span>
+              </div>
+              <span className="text-[10px] text-[#28c840]">Connected</span>
+            </div>
+          </div>
+          <span className="text-[10px] text-[#0969da] ring-2 ring-[#0969da] ring-offset-1 px-1 rounded">↑ Green dot = connected!</span>
         </div>
       </div>
     </MockWindow>
