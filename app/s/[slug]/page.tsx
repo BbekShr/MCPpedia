@@ -266,6 +266,9 @@ export default async function ServerDetailPage({
               configs={s.install_configs as Record<string, unknown>}
               compatibleClients={s.compatible_clients}
               serverName={s.name}
+              npmPackage={s.npm_package}
+              pipPackage={s.pip_package}
+              requiresApiKey={s.requires_api_key}
             />
           </section>
 
