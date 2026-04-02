@@ -15,6 +15,7 @@ import VerifiedBadge from '@/components/VerifiedBadge'
 import ReviewSection from '@/components/ReviewSection'
 import ServerTester from '@/components/ServerTester'
 import ServerIcon from '@/components/ServerIcon'
+import EnvInstructions from '@/components/EnvInstructions'
 import { SITE_NAME } from '@/lib/constants'
 import type { Server, Changelog, SecurityAdvisory } from '@/lib/types'
 import type { HealthStatus } from '@/lib/constants'
@@ -271,6 +272,14 @@ export default async function ServerDetailPage({
               requiresApiKey={s.requires_api_key}
             />
           </section>
+
+          {/* Test it */}
+          {/* Env Instructions — how to get API keys */}
+          {s.env_instructions && Object.keys(s.env_instructions).length > 0 && (
+            <section id="api-keys">
+              <EnvInstructions server={s} />
+            </section>
+          )}
 
           {/* Test it */}
           <section id="test">

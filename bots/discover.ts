@@ -3,6 +3,9 @@
  * Runs daily via GitHub Actions.
  */
 
+import { config } from 'dotenv'
+config({ path: '.env.local' })
+
 import { createAdminClient } from './lib/supabase'
 import { searchRepos, type GitHubRepo } from './lib/github'
 
