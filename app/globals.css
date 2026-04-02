@@ -1,26 +1,87 @@
 @import "tailwindcss";
 
+/* ============================================
+   MCPpedia Design System
+   ============================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #ffffff;
+  --bg-secondary: #f6f8fa;
+  --bg-tertiary: #f0f2f5;
+  --text: #1f2328;
+  --text-muted: #656d76;
+  --border: #d0d7de;
+  --accent: #0969da;
+  --accent-hover: #0550ae;
+  --green: #1a7f37;
+  --yellow: #9a6700;
+  --red: #cf222e;
+  --tag-bg: #ddf4ff;
+  --tag-text: #0969da;
+  --code-bg: #f6f8fa;
+}
+
+[data-theme="dark"] {
+  --bg: #0d1117;
+  --bg-secondary: #161b22;
+  --bg-tertiary: #21262d;
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --accent-hover: #79c0ff;
+  --green: #3fb950;
+  --yellow: #d29922;
+  --red: #f85149;
+  --tag-bg: #132338;
+  --tag-text: #58a6ff;
+  --code-bg: #161b22;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-bg: var(--bg);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-tertiary: var(--bg-tertiary);
+  --color-text-primary: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-green: var(--green);
+  --color-yellow: var(--yellow);
+  --color-red: var(--red);
+  --color-tag-bg: var(--tag-bg);
+  --color-tag-text: var(--tag-text);
+  --color-code-bg: var(--code-bg);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: "SF Mono", "Fira Code", "Consolas", monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* Focus styles */
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Scrollbar styling for dark mode */
+[data-theme="dark"] ::-webkit-scrollbar {
+  width: 8px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
 }

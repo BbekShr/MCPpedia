@@ -1,0 +1,21 @@
+name: Discovery Bot
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2am UTC
+  workflow_dispatch:
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npx tsx bots/discover.ts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GITHUB_TOKEN: ${{ secrets.BOT_GITHUB_TOKEN }}

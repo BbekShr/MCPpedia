@@ -1,0 +1,87 @@
+---
+title: "How to Install Your First MCP Server"
+description: "A step-by-step tutorial for setting up an MCP server with Claude Desktop, Cursor, or Claude Code."
+author: "MCPpedia"
+date: "2026-03-10"
+tags: ["tutorial", "setup"]
+---
+
+## Prerequisites
+
+- **Node.js 18+** installed (check with `node --version`)
+- One of: Claude Desktop, Cursor, or Claude Code
+
+## Step 1: Choose a server
+
+For your first server, we recommend the **Filesystem MCP Server**. It lets the AI read and write files on your computer — useful and low-risk since you control which directories it can access.
+
+Find it on MCPpedia: [Filesystem MCP Server](/s/filesystem)
+
+## Step 2: Configure your client
+
+### Claude Desktop
+
+1. Open Claude Desktop
+2. Go to **Settings** > **Developer** > **Edit Config**
+3. Add this to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/you/Desktop"]
+    }
+  }
+}
+```
+
+4. Replace `/Users/you/Desktop` with the directory you want the AI to access
+5. Restart Claude Desktop
+
+### Cursor
+
+1. Open Cursor Settings
+2. Navigate to the MCP section
+3. Add a new server with the same configuration
+
+### Claude Code
+
+Claude Code automatically discovers MCP servers from your project's `.mcp.json` file:
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."]
+    }
+  }
+}
+```
+
+## Step 3: Test it
+
+Ask Claude something like:
+
+> "List the files on my Desktop"
+
+or
+
+> "Create a file called hello.txt with the text 'Hello from MCP!'"
+
+If everything is working, Claude will use the filesystem tools to complete your request.
+
+## Troubleshooting
+
+- **"Server not found"** — Make sure you restarted your client after editing the config
+- **"Permission denied"** — Check that the directory path is correct and accessible
+- **"npx not found"** — Ensure Node.js is installed and in your PATH
+
+## Next steps
+
+Now that you have your first server running, explore more servers on [MCPpedia](/servers). Popular next choices:
+
+- [GitHub MCP Server](/s/github) — manage repos and issues
+- [Brave Search](/s/brave-search) — web search from your AI
+- [PostgreSQL](/s/postgres) — query databases directly
