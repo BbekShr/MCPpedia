@@ -11,7 +11,7 @@ import { createAdminClient } from './lib/supabase'
 
 const supabase = createAdminClient()
 
-const REGISTRY_API = 'https://registry.modelcontextprotocol.io'
+const REGISTRY_API = 'https://registry.modelcontextprotocol.io/v0.1'
 
 interface RegistryServer {
   id: string
@@ -39,28 +39,44 @@ function slugify(name: string): string {
 }
 
 async function fetchRegistryServers(): Promise<RegistryServer[]> {
+  const all: RegistryServer[] = []
+  let cursor: string | null = null
+
   try {
-    // The official registry exposes a list endpoint
-    const res = await fetch(`${REGISTRY_API}/api/servers`, {
-      headers: { Accept: 'application/json' },
-    })
+    while (true) {
+      const url = cursor
+        ? `${REGISTRY_API}/servers?version=latest&cursor=${encodeURIComponent(cursor)}`
+        : `${REGISTRY_API}/servers?version=latest`
 
-    if (!res.ok) {
-      // Try alternative endpoint
-      const altRes = await fetch(`${REGISTRY_API}/servers.json`)
-      if (!altRes.ok) {
+      const res = await fetch(url, {
+        headers: { Accept: 'application/json' },
+      })
+
+      if (!res.ok) {
         console.error(`Registry API returned ${res.status}`)
-        return []
+        break
       }
-      return altRes.json()
-    }
 
-    const data = await res.json()
-    return Array.isArray(data) ? data : data.servers || data.items || []
+      const data = await res.json()
+      const raw = data.servers || data.items || (Array.isArray(data) ? data : [])
+      // Registry wraps each entry in { server, _meta } — unwrap
+      const servers = raw.map((entry: { server?: RegistryServer }) => entry.server || entry).filter(Boolean)
+      if (servers.length === 0) break
+
+      all.push(...servers)
+      console.log(`  Fetched ${all.length} servers so far...`)
+
+      // Check for pagination cursor
+      cursor = data.metadata?.nextCursor || data.cursor || null
+      if (!cursor) break
+
+      await new Promise(r => setTimeout(r, 200))
+    }
   } catch (err) {
     console.error('Failed to fetch from registry:', err)
-    return []
   }
+
+  return all
 }
 
 async function getExistingRegistryIds(): Promise<Set<string>> {
@@ -131,7 +147,8 @@ async function main() {
     }
 
     // New server from registry
-    const slug = slugify(rs.name || rs.id)
+    if (!rs.name && !rs.id) continue
+    const slug = slugify(rs.name || rs.id || 'unknown')
 
     const { data: existingSlug } = await supabase
       .from('servers')

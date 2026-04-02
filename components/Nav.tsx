@@ -40,6 +40,7 @@ export default function Nav() {
     { href: '/servers', label: 'Browse' },
     { href: '/security', label: 'Security' },
     { href: '/guides', label: 'Guides' },
+    { href: '/analytics', label: 'Analytics' },
     { href: '/about', label: 'About' },
   ]
 

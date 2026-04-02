@@ -164,7 +164,7 @@ begin
     end if;
   end;
 
-  total := sec_score + maint_score + doc_score + compat_score + eff_score;
+  total := least(sec_score + maint_score + doc_score + compat_score + eff_score, 100);
 
   -- Update the server record
   update servers set
