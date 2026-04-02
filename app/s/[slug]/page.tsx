@@ -13,6 +13,7 @@ import TokenMetrics from '@/components/TokenMetrics'
 import HealthCheckBadge from '@/components/HealthCheckBadge'
 import VerifiedBadge from '@/components/VerifiedBadge'
 import ReviewSection from '@/components/ReviewSection'
+import ServerTester from '@/components/ServerTester'
 import { SITE_NAME } from '@/lib/constants'
 import type { Server, Changelog, SecurityAdvisory } from '@/lib/types'
 import type { HealthStatus } from '@/lib/constants'
@@ -109,6 +110,7 @@ export default async function ServerDetailPage({
   const sections = [
     { id: 'score', label: 'MCPpedia Score' },
     { id: 'install', label: 'Quick Install' },
+    { id: 'test', label: 'Test It' },
     { id: 'security', label: 'Security' },
     tools.length > 0 ? { id: 'tools', label: `Tools (${tools.length})` } : null,
     resources.length > 0 ? { id: 'resources', label: 'Resources' } : null,
@@ -256,6 +258,11 @@ export default async function ServerDetailPage({
               compatibleClients={s.compatible_clients}
               serverName={s.name}
             />
+          </section>
+
+          {/* Test it */}
+          <section id="test">
+            <ServerTester server={s} />
           </section>
 
           {/* Tools */}
