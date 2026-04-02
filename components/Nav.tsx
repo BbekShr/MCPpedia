@@ -27,9 +27,9 @@ export default function Nav() {
   }
 
   const navLinks = [
+    { href: '/get-started', label: 'Get Started' },
     { href: '/servers', label: 'Browse' },
     { href: '/security', label: 'Security' },
-    { href: '/submit', label: 'Submit' },
     { href: '/guides', label: 'Guides' },
     { href: '/about', label: 'About' },
   ]

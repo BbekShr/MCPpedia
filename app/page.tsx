@@ -78,6 +78,22 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Beginner CTA */}
+      <section className="bg-accent/5 border-b border-border">
+        <div className="max-w-[1200px] mx-auto px-4 py-4 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-text-primary">New to MCP?</p>
+            <p className="text-xs text-text-muted">Learn what MCP servers are and set up your first one in 2 minutes.</p>
+          </div>
+          <Link
+            href="/get-started"
+            className="shrink-0 px-4 py-2 text-sm rounded-md bg-accent text-white hover:bg-accent-hover transition-colors"
+          >
+            Get started
+          </Link>
+        </div>
+      </section>
+
       {/* Recently updated */}
       <section className="max-w-[1200px] mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-4">
