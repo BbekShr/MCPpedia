@@ -3,103 +3,90 @@
  * No images — pure HTML/CSS rendered as visual explanations.
  */
 
+function ArrowRight({ dashed = false, label, color = 'var(--accent)' }: { dashed?: boolean; label?: string; color?: string }) {
+  return (
+    <>
+      <div className="hidden md:flex flex-1 items-center justify-center min-w-[30px]">
+        <div className="relative w-full flex items-center">
+          <div className={`flex-1 h-[2px] ${dashed ? 'border-t-2 border-dashed border-border' : 'bg-border'}`} />
+          <svg width="10" height="10" viewBox="0 0 10 10" className="shrink-0 -ml-px">
+            <polygon points="0,0 10,5 0,10" fill={color} />
+          </svg>
+          {label && (
+            <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[9px] text-text-muted whitespace-nowrap">{label}</span>
+          )}
+        </div>
+      </div>
+      <div className="md:hidden flex flex-col items-center">
+        <div className={`w-[2px] h-5 ${dashed ? 'border-l-2 border-dashed border-border' : 'bg-border'}`} />
+        <svg width="10" height="10" viewBox="0 0 10 10">
+          <polygon points="0,0 10,0 5,10" fill={color} />
+        </svg>
+        {label && <span className="text-[9px] text-text-muted -mt-0.5">{label}</span>}
+      </div>
+    </>
+  )
+}
+
+function DiagramNode({ icon, label, sublabel, borderColor, bgColor }: {
+  icon: React.ReactNode
+  label: string
+  sublabel: string
+  borderColor: string
+  bgColor: string
+}) {
+  return (
+    <div className="text-center shrink-0 w-20">
+      <div className={`w-14 h-14 rounded-xl ${bgColor} border-2 ${borderColor} flex items-center justify-center mx-auto mb-2`}>
+        {icon}
+      </div>
+      <div className="text-xs font-medium text-text-primary leading-tight">{label}</div>
+      <div className="text-[10px] text-text-muted leading-tight">{sublabel}</div>
+    </div>
+  )
+}
+
 export function HowMCPWorksDiagram() {
   return (
-    <div className="border border-border rounded-lg p-5 bg-bg-secondary">
-      <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
-        {/* You */}
-        <div className="text-center shrink-0">
-          <div className="w-14 h-14 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-2">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-          </div>
-          <div className="text-xs font-medium text-text-primary">You</div>
-          <div className="text-[10px] text-text-muted">&quot;Search my Slack&quot;</div>
-        </div>
+    <div className="border border-border rounded-lg p-6 bg-bg-secondary">
+      <div className="flex flex-col md:flex-row items-center">
+        <DiagramNode
+          icon={<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>}
+          label="You"
+          sublabel='"Search my Slack"'
+          borderColor="border-accent"
+          bgColor="bg-accent/10"
+        />
 
-        {/* Arrow */}
-        <div className="hidden md:block text-text-muted">
-          <svg width="40" height="20" viewBox="0 0 40 20">
-            <line x1="0" y1="10" x2="32" y2="10" stroke="var(--border)" strokeWidth="2"/>
-            <polygon points="32,5 40,10 32,15" fill="var(--accent)"/>
-          </svg>
-        </div>
-        <div className="md:hidden text-text-muted">
-          <svg width="20" height="30" viewBox="0 0 20 30">
-            <line x1="10" y1="0" x2="10" y2="22" stroke="var(--border)" strokeWidth="2"/>
-            <polygon points="5,22 10,30 15,22" fill="var(--accent)"/>
-          </svg>
-        </div>
+        <ArrowRight color="var(--accent)" />
 
-        {/* AI App */}
-        <div className="text-center shrink-0">
-          <div className="w-14 h-14 rounded-xl bg-bg border-2 border-accent flex items-center justify-center mx-auto mb-2 shadow-[var(--shadow-md)]">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5">
-              <rect x="2" y="3" width="20" height="14" rx="2"/>
-              <line x1="8" y1="21" x2="16" y2="21"/>
-              <line x1="12" y1="17" x2="12" y2="21"/>
-            </svg>
-          </div>
-          <div className="text-xs font-medium text-text-primary">AI App</div>
-          <div className="text-[10px] text-text-muted">Claude, Cursor, etc.</div>
-        </div>
+        <DiagramNode
+          icon={<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>}
+          label="AI App"
+          sublabel="Claude, Cursor, etc."
+          borderColor="border-accent"
+          bgColor="bg-bg"
+        />
 
-        {/* Arrow */}
-        <div className="hidden md:block text-text-muted">
-          <svg width="40" height="20" viewBox="0 0 40 20">
-            <line x1="0" y1="10" x2="32" y2="10" stroke="var(--border)" strokeWidth="2" strokeDasharray="4"/>
-            <polygon points="32,5 40,10 32,15" fill="var(--green)"/>
-          </svg>
-          <div className="text-[9px] text-text-muted text-center -mt-0.5">MCP</div>
-        </div>
-        <div className="md:hidden text-text-muted text-center">
-          <svg width="20" height="30" viewBox="0 0 20 30">
-            <line x1="10" y1="0" x2="10" y2="22" stroke="var(--border)" strokeWidth="2" strokeDasharray="4"/>
-            <polygon points="5,22 10,30 15,22" fill="var(--green)"/>
-          </svg>
-          <div className="text-[9px] text-text-muted -mt-1">MCP</div>
-        </div>
+        <ArrowRight dashed label="MCP protocol" color="var(--green)" />
 
-        {/* MCP Server */}
-        <div className="text-center shrink-0">
-          <div className="w-14 h-14 rounded-xl bg-green/10 border-2 border-green flex items-center justify-center mx-auto mb-2">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="1.5">
-              <rect x="2" y="2" width="20" height="8" rx="2"/>
-              <rect x="2" y="14" width="20" height="8" rx="2"/>
-              <line x1="6" y1="6" x2="6.01" y2="6"/>
-              <line x1="6" y1="18" x2="6.01" y2="18"/>
-            </svg>
-          </div>
-          <div className="text-xs font-medium text-text-primary">MCP Server</div>
-          <div className="text-[10px] text-text-muted">Runs on your machine</div>
-        </div>
+        <DiagramNode
+          icon={<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="1.5"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>}
+          label="MCP Server"
+          sublabel="Runs locally"
+          borderColor="border-green"
+          bgColor="bg-green/10"
+        />
 
-        {/* Arrow */}
-        <div className="hidden md:block text-text-muted">
-          <svg width="40" height="20" viewBox="0 0 40 20">
-            <line x1="0" y1="10" x2="32" y2="10" stroke="var(--border)" strokeWidth="2"/>
-            <polygon points="32,5 40,10 32,15" fill="var(--yellow)"/>
-          </svg>
-        </div>
-        <div className="md:hidden text-text-muted">
-          <svg width="20" height="30" viewBox="0 0 20 30">
-            <line x1="10" y1="0" x2="10" y2="22" stroke="var(--border)" strokeWidth="2"/>
-            <polygon points="5,22 10,30 15,22" fill="var(--yellow)"/>
-          </svg>
-        </div>
+        <ArrowRight color="var(--yellow)" />
 
-        {/* External Service */}
-        <div className="text-center shrink-0">
-          <div className="w-14 h-14 rounded-xl bg-yellow/10 border-2 border-yellow flex items-center justify-center mx-auto mb-2">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="1.5">
-              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-            </svg>
-          </div>
-          <div className="text-xs font-medium text-text-primary">Slack, GitHub, etc.</div>
-          <div className="text-[10px] text-text-muted">External service</div>
-        </div>
+        <DiagramNode
+          icon={<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="1.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>}
+          label="Slack, GitHub"
+          sublabel="External service"
+          borderColor="border-yellow"
+          bgColor="bg-yellow/10"
+        />
       </div>
     </div>
   )
