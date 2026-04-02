@@ -26,42 +26,21 @@ function hashColor(str: string): string {
   return colors[Math.abs(hash) % colors.length]
 }
 
-export default function ServerIcon({ name, homepageUrl, authorGithub, size = 32, className = '' }: Props) {
+export default function ServerIcon({ name, authorGithub, size = 32, className = '' }: Props) {
+  // GitHub avatars are always crisp at any size. Use as primary.
   const [imgSrc, setImgSrc] = useState<string | null>(() => {
-    // Priority 1: Favicon from homepage
-    if (homepageUrl) {
-      try {
-        const domain = new URL(homepageUrl).origin
-        return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=${size * 2}`
-      } catch {
-        // invalid URL
-      }
-    }
-    // Priority 2: GitHub avatar
     if (authorGithub) {
-      return `https://github.com/${authorGithub}.png?size=${size * 2}`
+      return `https://github.com/${authorGithub}.png?size=128`
     }
     return null
   })
 
-  const [fallbackLevel, setFallbackLevel] = useState(0)
-
-  function handleError() {
-    if (fallbackLevel === 0 && authorGithub) {
-      // Favicon failed → try GitHub avatar
-      setImgSrc(`https://github.com/${authorGithub}.png?size=${size * 2}`)
-      setFallbackLevel(1)
-    } else {
-      // Everything failed → use letter avatar
-      setImgSrc(null)
-      setFallbackLevel(2)
-    }
-  }
+  const [failed, setFailed] = useState(false)
 
   const initial = getInitial(name)
   const bgColor = hashColor(name)
 
-  if (!imgSrc || fallbackLevel >= 2) {
+  if (!imgSrc || failed) {
     return (
       <div
         className={`rounded-md flex items-center justify-center text-white font-bold shrink-0 ${className}`}
@@ -78,8 +57,8 @@ export default function ServerIcon({ name, homepageUrl, authorGithub, size = 32,
       alt={`${name} icon`}
       width={size}
       height={size}
-      className={`rounded-md shrink-0 bg-bg-tertiary ${className}`}
-      onError={handleError}
+      className={`rounded-md shrink-0 bg-bg-tertiary object-cover ${className}`}
+      onError={() => setFailed(true)}
     />
   )
 }

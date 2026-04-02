@@ -10,11 +10,19 @@ import type { User } from '@supabase/supabase-js'
 export default function Nav() {
   const pathname = usePathname()
   const [user, setUser] = useState<User | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user))
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user)
+      if (data.user) {
+        supabase.from('profiles').select('role').eq('id', data.user.id).single().then(({ data: p }) => {
+          setIsAdmin(p?.role === 'admin' || p?.role === 'maintainer')
+        })
+      }
+    })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
     })
@@ -77,6 +85,14 @@ export default function Nav() {
           <ThemeToggle />
           {user ? (
             <div className="flex items-center gap-2">
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  className="text-sm px-2 py-1 rounded-md bg-red/10 text-red hover:bg-red/20"
+                >
+                  Admin
+                </Link>
+              )}
               <Link
                 href={`/profile/${user.user_metadata?.user_name || 'me'}`}
                 className="text-sm text-text-muted hover:text-text-primary"

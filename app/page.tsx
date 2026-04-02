@@ -14,6 +14,7 @@ export default async function HomePage() {
   const [
     { data: recentlyUpdated },
     { data: newlyDiscovered },
+    { data: officialServers },
     { count: serverCount },
     { count: contributorCount },
   ] = await Promise.all([
@@ -28,6 +29,12 @@ export default async function HomePage() {
       .neq('source', 'manual')
       .order('created_at', { ascending: false })
       .limit(4),
+    supabase
+      .from('servers')
+      .select('*')
+      .eq('author_type', 'official')
+      .order('score_total', { ascending: false })
+      .limit(8),
     supabase
       .from('servers')
       .select('*', { count: 'exact', head: true }),
@@ -163,6 +170,28 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Official MCP Servers */}
+      {officialServers && officialServers.length > 0 && (
+        <section className="border-t border-border">
+          <div className="max-w-[1200px] mx-auto px-4 py-8">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-text-primary">Official MCP Servers</h2>
+                <p className="text-xs text-text-muted">Built and maintained by the service providers themselves</p>
+              </div>
+              <Link href="/servers?author=official" className="text-sm text-accent hover:text-accent-hover">
+                View all &rarr;
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {(officialServers as Server[]).map(server => (
+                <ServerCard key={server.id} server={server} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Guides */}
       <section className="border-t border-border">
