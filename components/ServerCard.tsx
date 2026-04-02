@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { Server } from '@/lib/types'
 import HealthBadge from './HealthBadge'
 import CategoryTag from './CategoryTag'
+import ServerIcon from './ServerIcon'
 import type { HealthStatus } from '@/lib/constants'
 
 function formatNumber(n: number): string {
@@ -43,7 +44,15 @@ export default function ServerCard({ server }: { server: Server }) {
       className={`block border border-border border-l-[3px] ${healthBorder} rounded-md p-4 bg-bg hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-[1px] transition-all duration-150`}
     >
       <div className="flex items-start justify-between gap-2 mb-1">
-        <h3 className="font-semibold text-text-primary leading-tight text-[15px]">{server.name}</h3>
+        <div className="flex items-center gap-2.5">
+          <ServerIcon
+            name={server.name}
+            homepageUrl={server.homepage_url}
+            authorGithub={server.author_github}
+            size={28}
+          />
+          <h3 className="font-semibold text-text-primary leading-tight text-[15px]">{server.name}</h3>
+        </div>
         <div className="flex items-center gap-2 shrink-0">
           {server.author_type === 'official' && (
             <span className="text-xs px-1.5 py-0.5 rounded bg-accent/10 text-accent font-medium">Official</span>

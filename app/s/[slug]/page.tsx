@@ -14,6 +14,7 @@ import HealthCheckBadge from '@/components/HealthCheckBadge'
 import VerifiedBadge from '@/components/VerifiedBadge'
 import ReviewSection from '@/components/ReviewSection'
 import ServerTester from '@/components/ServerTester'
+import ServerIcon from '@/components/ServerIcon'
 import { SITE_NAME } from '@/lib/constants'
 import type { Server, Changelog, SecurityAdvisory } from '@/lib/types'
 import type { HealthStatus } from '@/lib/constants'
@@ -138,7 +139,15 @@ export default async function ServerDetailPage({
 
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-text-primary mb-1">{s.name}</h1>
+        <div className="flex items-center gap-3 mb-1">
+          <ServerIcon
+            name={s.name}
+            homepageUrl={s.homepage_url}
+            authorGithub={s.author_github}
+            size={40}
+          />
+          <h1 className="text-2xl font-semibold text-text-primary">{s.name}</h1>
+        </div>
         {s.tagline && (
           <p className="text-text-muted mb-3">{s.tagline}</p>
         )}
