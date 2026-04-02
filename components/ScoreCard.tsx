@@ -1,4 +1,5 @@
 import type { Server } from '@/lib/types'
+import { SCORE_WEIGHTS } from '@/lib/scoring'
 
 function ScoreBar({ label, score, max }: { label: string; score: number; max: number }) {
   const pct = Math.round((score / max) * 100)
@@ -45,11 +46,11 @@ export default function ScoreCard({ server }: { server: Server }) {
       </div>
 
       <div className="space-y-2">
-        <ScoreBar label="Security" score={server.score_security || 0} max={25} />
-        <ScoreBar label="Maintenance" score={server.score_maintenance || 0} max={25} />
-        <ScoreBar label="Documentation" score={server.score_documentation || 0} max={25} />
-        <ScoreBar label="Compatibility" score={server.score_compatibility || 0} max={25} />
-        <ScoreBar label="Efficiency" score={server.score_efficiency || 0} max={25} />
+        <ScoreBar label="Security" score={server.score_security || 0} max={SCORE_WEIGHTS.security} />
+        <ScoreBar label="Maintenance" score={server.score_maintenance || 0} max={SCORE_WEIGHTS.maintenance} />
+        <ScoreBar label="Efficiency" score={server.score_efficiency || 0} max={SCORE_WEIGHTS.efficiency} />
+        <ScoreBar label="Documentation" score={server.score_documentation || 0} max={SCORE_WEIGHTS.documentation} />
+        <ScoreBar label="Compatibility" score={server.score_compatibility || 0} max={SCORE_WEIGHTS.compatibility} />
       </div>
 
       {server.score_computed_at && (

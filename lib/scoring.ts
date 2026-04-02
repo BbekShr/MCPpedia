@@ -1,13 +1,21 @@
 /**
  * MCPpedia Scoring Engine
  *
- * Computes real scores based on actual data:
- * - Security: OSV.dev CVE database queries
- * - Efficiency: Actual JSON schema token measurement
- * - Documentation: Claude-powered README quality analysis
- * - Compatibility: MCP spec version + transport checks
- * - Maintenance: GitHub + npm real metrics
+ * Weighted scoring (100 total):
+ * - Security:      30 pts (highest — "will this break my system?")
+ * - Maintenance:   25 pts (is it actively developed?)
+ * - Efficiency:    20 pts (context window cost)
+ * - Documentation: 15 pts (can I actually set it up?)
+ * - Compatibility: 10 pts (does it work with my client?)
  */
+
+export const SCORE_WEIGHTS = {
+  security: 30,
+  maintenance: 25,
+  efficiency: 20,
+  documentation: 15,
+  compatibility: 10,
+} as const
 
 import type { Tool } from './types'
 
@@ -76,7 +84,7 @@ export function cvssToSeverity(score: number | null): 'critical' | 'high' | 'med
 }
 
 export interface SecurityScanResult {
-  score: number // 0-25
+  score: number // 0-30
   cve_count: number
   advisories: Array<{
     cve_id: string | null
@@ -150,21 +158,23 @@ export async function scanSecurity(
   const openVulns = advisories.filter(a => a.status === 'open')
   const criticalOrHigh = openVulns.filter(a => a.severity === 'critical' || a.severity === 'high')
 
-  // Compute security score (0-25)
-  let score = 25
+  // Compute security score (0-30)
+  let score = 30
 
   // Deduct for open vulnerabilities
-  score -= criticalOrHigh.length * 8     // critical/high: -8 each
-  score -= openVulns.filter(a => a.severity === 'medium').length * 4  // medium: -4 each
+  score -= criticalOrHigh.length * 10    // critical/high: -10 each
+  score -= openVulns.filter(a => a.severity === 'medium').length * 5  // medium: -5 each
   score -= openVulns.filter(a => a.severity === 'low').length * 2     // low: -2 each
 
-  // Bonus for good practices
-  if (!hasAuth) score -= 3               // no auth: -3
-  if (!license) score -= 2               // no license: -2
-  if (isArchived) score -= 5             // archived: -5
-  if (securityVerified) score += 3       // verified: +3
+  // Deduct for bad practices
+  if (!hasAuth) score -= 4               // no auth: -4
+  if (!license) score -= 3               // no license: -3
+  if (isArchived) score -= 8             // archived: -8
 
-  score = Math.max(0, Math.min(25, score))
+  // Bonus for verified
+  if (securityVerified) score += 5       // verified: +5
+
+  score = Math.max(0, Math.min(30, score))
 
   return {
     score,
@@ -189,7 +199,7 @@ function estimateTokens(text: string): number {
 }
 
 export interface EfficiencyScanResult {
-  score: number // 0-25
+  score: number // 0-20
   total_tool_tokens: number
   estimated_tokens_per_call: number
   grade: 'A' | 'B' | 'C' | 'D' | 'F'
@@ -220,15 +230,15 @@ export function measureTokenEfficiency(tools: Tool[]): EfficiencyScanResult {
   let score: number
 
   if (totalTokens <= 500) {
-    grade = 'A'; score = 25
+    grade = 'A'; score = 20
   } else if (totalTokens <= 1500) {
-    grade = 'B'; score = 20
+    grade = 'B'; score = 16
   } else if (totalTokens <= 4000) {
-    grade = 'C'; score = 15
+    grade = 'C'; score = 12
   } else if (totalTokens <= 8000) {
-    grade = 'D'; score = 8
+    grade = 'D'; score = 6
   } else {
-    grade = 'F'; score = 3
+    grade = 'F'; score = 2
   }
 
   return {
@@ -246,7 +256,7 @@ export function measureTokenEfficiency(tools: Tool[]): EfficiencyScanResult {
 // ============================================
 
 export interface DocScanResult {
-  score: number // 0-25
+  score: number // 0-15
   has_description: boolean
   has_setup_instructions: boolean
   has_tool_documentation: boolean
@@ -341,7 +351,7 @@ export async function scoreDocumentation(
     }
   }
 
-  result.score = Math.min(25, score)
+  result.score = Math.min(15, score)
   return result
 }
 
@@ -351,7 +361,7 @@ export async function scoreDocumentation(
 // ============================================
 
 export interface CompatScanResult {
-  score: number // 0-25
+  score: number // 0-10
   transports: string[]
   tested_clients: string[]
   supports_stdio: boolean
@@ -371,20 +381,20 @@ export function scoreCompatibility(
   const hasMultiple = transport.length > 1
 
   // Transport scoring
-  if (supportsStdio) score += 8    // stdio = works with most clients
-  if (supportsHttp) score += 8     // http/sse = works remotely
-  if (hasMultiple) score += 4      // multiple transports = flexible
+  if (supportsStdio) score += 4    // stdio = works with most clients
+  if (supportsHttp) score += 4     // http/sse = works remotely
+  if (hasMultiple) score += 2      // multiple transports = flexible
 
   // Client compatibility (if explicitly listed)
-  score += Math.min(compatibleClients.length * 3, 12)
+  score += Math.min(compatibleClients.length * 2, 6)
 
   // If no clients listed but has tools, assume basic compatibility
   if (compatibleClients.length === 0 && tools.length > 0 && supportsStdio) {
-    score += 5 // Reasonable assumption: stdio works with most clients
+    score += 3 // Reasonable assumption: stdio works with most clients
   }
 
   return {
-    score: Math.min(25, score),
+    score: Math.min(10, score),
     transports: transport,
     tested_clients: compatibleClients,
     supports_stdio: supportsStdio,
@@ -399,7 +409,7 @@ export function scoreCompatibility(
 // ============================================
 
 export interface MaintenanceScanResult {
-  score: number // 0-25
+  score: number // 0-25 (unchanged)
   days_since_commit: number | null
   stars: number
   weekly_downloads: number

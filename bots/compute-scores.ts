@@ -15,6 +15,7 @@ import {
   scoreDocumentation,
   scoreCompatibility,
   scoreMaintenance,
+  SCORE_WEIGHTS,
 } from '../lib/scoring'
 import type { Tool } from '../lib/types'
 
@@ -55,12 +56,12 @@ async function main() {
       server.is_archived || false,
       server.security_verified || false
     )
-    console.log(`  Security: ${security.score}/25 (${security.cve_count} CVEs found)`)
+    console.log(`  Security: ${security.score}/${SCORE_WEIGHTS.security} (${security.cve_count} CVEs found)`)
 
     // 2. EFFICIENCY — measure actual tool schema tokens
     const tools = (server.tools || []) as Tool[]
     const efficiency = measureTokenEfficiency(tools)
-    console.log(`  Efficiency: ${efficiency.score}/25 (${efficiency.total_tool_tokens} tokens, grade ${efficiency.grade})`)
+    console.log(`  Efficiency: ${efficiency.score}/${SCORE_WEIGHTS.efficiency} (${efficiency.total_tool_tokens} tokens, grade ${efficiency.grade})`)
 
     // 3. DOCUMENTATION — analyze README + metadata
     let readme: string | null = null
@@ -81,7 +82,7 @@ async function main() {
       server.github_url,
       server.homepage_url
     )
-    console.log(`  Documentation: ${docs.score}/25 (README: ${docs.readme_quality})`)
+    console.log(`  Documentation: ${docs.score}/${SCORE_WEIGHTS.documentation} (README: ${docs.readme_quality})`)
 
     // 4. COMPATIBILITY — transport + client checks
     const compat = scoreCompatibility(
@@ -89,7 +90,7 @@ async function main() {
       server.compatible_clients || [],
       tools
     )
-    console.log(`  Compatibility: ${compat.score}/25`)
+    console.log(`  Compatibility: ${compat.score}/${SCORE_WEIGHTS.compatibility}`)
 
     // 5. MAINTENANCE — GitHub + npm metrics
     const maint = scoreMaintenance(
@@ -100,7 +101,7 @@ async function main() {
       server.is_archived || false,
       server.verified || false
     )
-    console.log(`  Maintenance: ${maint.score}/25`)
+    console.log(`  Maintenance: ${maint.score}/${SCORE_WEIGHTS.maintenance}`)
 
     const total = security.score + efficiency.score + docs.score + compat.score + maint.score
     console.log(`  TOTAL: ${total}/100\n`)
