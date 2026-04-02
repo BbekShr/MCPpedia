@@ -147,7 +147,7 @@ export default async function HomePage() {
 
       {/* Official MCP Servers */}
       {officialServers && officialServers.length > 0 && (
-        <section className="border-t border-border">
+        <section>
           <div className="max-w-[1200px] mx-auto px-4 py-8">
             <div className="flex items-center justify-between mb-4">
               <div>

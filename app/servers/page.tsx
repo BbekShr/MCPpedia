@@ -24,6 +24,7 @@ export default async function ServersPage({
   const category = params.category || ''
   const status = params.status || ''
   const pricing = params.pricing || ''
+  const author = params.author || ''
   const sort = params.sort || ''
   const page = parseInt(params.page || '1', 10)
   const offset = (page - 1) * ITEMS_PER_PAGE
@@ -68,6 +69,7 @@ export default async function ServersPage({
     if (category) query = query.contains('categories', [category])
     if (status) query = query.eq('health_status', status)
     if (pricing) query = query.eq('api_pricing', pricing)
+    if (author) query = query.eq('author_type', author)
 
     switch (sort) {
       case 'stars':

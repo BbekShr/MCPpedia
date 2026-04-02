@@ -78,6 +78,16 @@ function FilterBarInner() {
         onChange={handleFilter}
       />
       <FilterSelect
+        label="Author"
+        paramName="author"
+        options={[
+          { value: 'official', label: 'Official' },
+          { value: 'community', label: 'Community' },
+        ]}
+        value={searchParams.get('author') || ''}
+        onChange={handleFilter}
+      />
+      <FilterSelect
         label="API Pricing"
         paramName="pricing"
         options={API_PRICING_OPTIONS.filter(p => p !== 'unknown').map(p => ({
