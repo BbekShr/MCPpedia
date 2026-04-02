@@ -2,6 +2,15 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import {
+  ClaudeDesktopSettingsMock,
+  ClaudeDesktopToolsMock,
+  CursorSettingsMock,
+  TerminalMock,
+  VSCodeSettingsMock,
+  MockWindow,
+  MockCode,
+} from '@/components/MockWindow'
 
 type Client = 'claude-desktop' | 'cursor' | 'claude-code' | 'vscode'
 
@@ -9,172 +18,192 @@ const CLIENTS: { id: Client; name: string; icon: string }[] = [
   { id: 'claude-desktop', name: 'Claude Desktop', icon: '🖥️' },
   { id: 'cursor', name: 'Cursor', icon: '⌨️' },
   { id: 'claude-code', name: 'Claude Code', icon: '💻' },
-  { id: 'vscode', name: 'VS Code + Copilot', icon: '🔧' },
+  { id: 'vscode', name: 'VS Code', icon: '🔧' },
 ]
 
 interface Step {
   title: string
   description: string
-  gifPlaceholder: string // description of what the GIF should show
+  visual: React.ReactNode
   code?: string
   tip?: string
 }
 
-const STEPS: Record<Client, Step[]> = {
-  'claude-desktop': [
-    {
-      title: 'Open Claude Desktop settings',
-      description: 'Click your profile icon in the bottom-left corner, then click "Settings".',
-      gifPlaceholder: 'GIF: Clicking profile icon → Settings in Claude Desktop',
-      tip: 'If you don\'t see Settings, make sure you\'re on the latest version of Claude Desktop.',
-    },
-    {
-      title: 'Go to the Developer tab',
-      description: 'In the Settings window, click "Developer" in the left sidebar.',
-      gifPlaceholder: 'GIF: Navigating to Developer tab in Claude Desktop Settings',
-    },
-    {
-      title: 'Click "Edit Config"',
-      description: 'This opens your config file in your default text editor. The file is a JSON file that tells Claude Desktop which MCP servers to load.',
-      gifPlaceholder: 'GIF: Clicking Edit Config button → config file opening in editor',
-      code: `// Your config file is located at:
-
-// macOS:
-~/Library/Application Support/Claude/claude_desktop_config.json
-
-// Windows:
-%APPDATA%\\Claude\\claude_desktop_config.json`,
-    },
-    {
-      title: 'Paste the server config',
-      description: 'Go to any server page on MCPpedia, copy the install config, and paste it into your config file. If you already have other servers, merge the "mcpServers" section.',
-      gifPlaceholder: 'GIF: Copying config from MCPpedia → pasting into config file',
-      code: `{
-  "mcpServers": {
-    "filesystem": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/folder"]
-    },
-    "brave-search": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
-      "env": {
-        "BRAVE_API_KEY": "your-api-key"
-      }
-    }
+function getSteps(client: Client): Step[] {
+  if (client === 'claude-desktop') {
+    return [
+      {
+        title: 'Open Settings',
+        description: 'Click your profile icon in the bottom-left corner of Claude Desktop, then click Settings.',
+        visual: <ClaudeDesktopSettingsMock step="profile" />,
+      },
+      {
+        title: 'Go to Developer tab',
+        description: 'In the Settings window, click "Developer" in the left sidebar, then click "Edit Config".',
+        visual: <ClaudeDesktopSettingsMock step="developer" />,
+        tip: 'If you don\'t see the Developer tab, update Claude Desktop to the latest version.',
+      },
+      {
+        title: 'Paste the server config',
+        description: 'Your config file opens in a text editor. Paste the config from any MCPpedia server page.',
+        visual: <ClaudeDesktopSettingsMock step="config" />,
+        code: `// Config file location:
+// macOS:   ~/Library/Application Support/Claude/claude_desktop_config.json
+// Windows: %APPDATA%\\Claude\\claude_desktop_config.json`,
+        tip: 'You can add multiple servers — just add more entries inside "mcpServers". Make sure the JSON has no trailing commas.',
+      },
+      {
+        title: 'Restart and verify',
+        description: 'Close and reopen Claude Desktop. Look for the hammer icon (🔨) in the chat input — that means MCP tools are connected!',
+        visual: <ClaudeDesktopToolsMock />,
+        tip: 'If the 🔨 icon doesn\'t appear, there\'s likely a JSON syntax error in your config. Try pasting your config into jsonlint.com to check.',
+      },
+    ]
   }
-}`,
-      tip: 'You can add multiple servers — just add more entries inside "mcpServers". Make sure the JSON is valid (no trailing commas).',
-    },
-    {
-      title: 'Restart Claude Desktop',
-      description: 'Close and reopen Claude Desktop. You should see a small hammer icon (🔨) in the chat input area — this means MCP servers are connected.',
-      gifPlaceholder: 'GIF: Restarting Claude Desktop → seeing the hammer/tools icon appear',
-      tip: 'If the hammer icon doesn\'t appear, check your config file for JSON syntax errors.',
-    },
-    {
-      title: 'Test it!',
-      description: 'Try asking Claude something that uses your server. For example, if you installed the Filesystem server, ask "List the files in my Documents folder."',
-      gifPlaceholder: 'GIF: Asking Claude to use an MCP tool → seeing the result',
-    },
-  ],
-  'cursor': [
-    {
-      title: 'Open Cursor settings',
-      description: 'Press ⌘+, (Mac) or Ctrl+, (Windows/Linux) to open Settings.',
-      gifPlaceholder: 'GIF: Opening Cursor settings with keyboard shortcut',
-    },
-    {
-      title: 'Navigate to MCP settings',
-      description: 'In the Settings search bar, type "MCP". Click on "Model Context Protocol" in the results.',
-      gifPlaceholder: 'GIF: Searching for MCP in Cursor settings',
-    },
-    {
-      title: 'Add a new MCP server',
-      description: 'Click "Add new MCP server". Enter the server name and paste the config from MCPpedia.',
-      gifPlaceholder: 'GIF: Adding new MCP server in Cursor → pasting config',
-      code: `{
-  "mcpServers": {
-    "your-server": {
-      "command": "npx",
-      "args": ["-y", "package-name"]
-    }
+
+  if (client === 'cursor') {
+    return [
+      {
+        title: 'Open Cursor Settings',
+        description: 'Press ⌘+, (Mac) or Ctrl+, (Windows). Navigate to the MCP section in the sidebar.',
+        visual: <CursorSettingsMock step="settings" />,
+      },
+      {
+        title: 'Add MCP Server',
+        description: 'Click "Add MCP Server". Enter the server name and paste the config from MCPpedia.',
+        visual: <CursorSettingsMock step="mcp" />,
+        tip: 'The server name can be anything — it\'s just a label. Use something short like "github" or "slack".',
+      },
+      {
+        title: 'Restart Cursor',
+        description: 'Restart Cursor to load the new server. The MCP tools will be available in the AI chat panel.',
+        visual: (
+          <TerminalMock lines={[
+            { text: 'MCP server "github" connected', color: '#28c840' },
+            { text: '6 tools available', color: '#28c840' },
+            { text: '' },
+            { text: 'Ready to use!', color: '#58a6ff' },
+          ]} />
+        ),
+      },
+    ]
   }
-}`,
-    },
-    {
-      title: 'Restart Cursor',
-      description: 'Restart Cursor to load the new server. The MCP tools should now be available in the AI chat.',
-      gifPlaceholder: 'GIF: Restarting Cursor → using MCP tools',
-    },
-  ],
-  'claude-code': [
-    {
-      title: 'Create a .mcp.json file',
-      description: 'In the root of your project, create a file called .mcp.json. Claude Code automatically detects this file.',
-      gifPlaceholder: 'GIF: Creating .mcp.json in terminal or editor',
-      code: `# In your terminal:
-touch .mcp.json`,
-    },
-    {
-      title: 'Paste the server config',
-      description: 'Copy the config from any MCPpedia server page and paste it into your .mcp.json file.',
-      gifPlaceholder: 'GIF: Pasting config into .mcp.json',
-      code: `{
+
+  if (client === 'claude-code') {
+    return [
+      {
+        title: 'Create .mcp.json in your project',
+        description: 'In the root of your project directory, create a file called .mcp.json. Claude Code detects this automatically.',
+        visual: (
+          <TerminalMock lines={[
+            { prompt: true, text: 'cd ~/my-project' },
+            { prompt: true, text: 'touch .mcp.json' },
+            { prompt: true, text: 'code .mcp.json  # or your editor' },
+          ]} />
+        ),
+      },
+      {
+        title: 'Paste the server config',
+        description: 'Copy the install config from any MCPpedia server page and paste it into .mcp.json.',
+        visual: (
+          <MockWindow title=".mcp.json" dark>
+            <MockCode dark>{`{
   "mcpServers": {
     "filesystem": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-filesystem", "."]
     }
   }
-}`,
-    },
-    {
-      title: 'Start Claude Code',
-      description: 'Run claude in your terminal. It will automatically detect the .mcp.json and connect to the servers.',
-      gifPlaceholder: 'GIF: Running claude in terminal → servers connecting',
-      code: `# In your terminal:
-claude`,
-      tip: 'You can also add servers globally by editing ~/.claude/settings.json',
-    },
-  ],
-  'vscode': [
+}`}</MockCode>
+          </MockWindow>
+        ),
+        tip: 'The "." at the end means the current directory. Change it to the folder path you want to give access to.',
+      },
+      {
+        title: 'Start Claude Code',
+        description: 'Run `claude` in your terminal. It will automatically detect .mcp.json and connect to the servers.',
+        visual: (
+          <TerminalMock lines={[
+            { prompt: true, text: 'claude' },
+            { text: '' },
+            { text: '  Claude Code v4.2.0', color: '#58a6ff' },
+            { text: '  MCP: filesystem connected (7 tools)', color: '#28c840' },
+            { text: '' },
+            { text: '  How can I help?', color: '#d4d4d4' },
+            { prompt: true, text: 'List the files in this project' },
+          ]} />
+        ),
+        tip: 'For global servers (not project-specific), add them to ~/.claude/settings.json instead.',
+      },
+    ]
+  }
+
+  // vscode
+  return [
     {
       title: 'Install GitHub Copilot',
-      description: 'Open VS Code Extensions (⌘+Shift+X), search "GitHub Copilot", and install it. Sign in with your GitHub account.',
-      gifPlaceholder: 'GIF: Installing GitHub Copilot extension in VS Code',
+      description: 'Open Extensions (⌘+Shift+X), search "GitHub Copilot", install it, and sign in with your GitHub account.',
+      visual: (
+        <MockWindow title="VS Code — Extensions" dark>
+          <div className="flex items-center gap-2 px-2 py-1 bg-[#2d2d2d] border border-[#444] rounded mb-2">
+            <span className="text-[10px] text-[#999]">🔍</span>
+            <span className="text-[11px] text-[#d4d4d4]">GitHub Copilot</span>
+          </div>
+          <div className="flex items-center gap-3 p-2 bg-[#2d2d2d] rounded">
+            <div className="w-10 h-10 rounded bg-[#0969da] flex items-center justify-center text-white text-lg">✦</div>
+            <div>
+              <div className="text-[11px] text-[#d4d4d4] font-medium">GitHub Copilot</div>
+              <div className="text-[10px] text-[#999]">GitHub</div>
+            </div>
+            <span className="ml-auto px-2 py-0.5 bg-[#0969da] text-white text-[10px] rounded">Install</span>
+          </div>
+        </MockWindow>
+      ),
     },
     {
       title: 'Open MCP settings',
-      description: 'Open Settings (⌘+,), search "MCP". Under GitHub Copilot, find the MCP configuration section.',
-      gifPlaceholder: 'GIF: Finding MCP settings in VS Code',
+      description: 'Open Settings (⌘+,), search "MCP". Click "Edit in settings.json" under GitHub Copilot > Chat: MCP Servers.',
+      visual: <VSCodeSettingsMock />,
     },
     {
       title: 'Add server configuration',
-      description: 'Add the MCP server config. You may need to edit settings.json directly.',
-      gifPlaceholder: 'GIF: Adding MCP server in VS Code settings.json',
-      code: `// In settings.json:
-{
+      description: 'Add the MCP server config to your settings.json file.',
+      visual: (
+        <MockWindow title="settings.json" dark>
+          <MockCode dark>{`{
   "github.copilot.chat.mcpServers": {
     "filesystem": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."]
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "."
+      ]
     }
   }
-}`,
+}`}</MockCode>
+          <div className="mt-1 text-[10px] text-[#58a6ff]">↑ Paste config from MCPpedia server page</div>
+        </MockWindow>
+      ),
     },
     {
-      title: 'Reload VS Code',
-      description: 'Press ⌘+Shift+P → "Reload Window". The MCP server should now be available in Copilot Chat.',
-      gifPlaceholder: 'GIF: Reloading VS Code → using MCP in Copilot Chat',
+      title: 'Reload and use',
+      description: 'Press ⌘+Shift+P → "Reload Window". The MCP tools are now available in Copilot Chat.',
+      visual: (
+        <TerminalMock lines={[
+          { text: '> Developer: Reload Window', color: '#58a6ff' },
+          { text: '' },
+          { text: 'MCP server "filesystem" connected', color: '#28c840' },
+          { text: '7 tools available in Copilot Chat', color: '#28c840' },
+        ]} />
+      ),
     },
-  ],
+  ]
 }
 
 function StepCard({ step, index, total }: { step: Step; index: number; total: number }) {
   return (
     <div className="border border-border rounded-md overflow-hidden">
-      {/* Step header */}
       <div className="bg-bg-secondary px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-accent text-white text-xs font-bold flex items-center justify-center">
@@ -186,35 +215,19 @@ function StepCard({ step, index, total }: { step: Step; index: number; total: nu
       </div>
 
       <div className="p-4 space-y-3">
-        {/* GIF placeholder */}
-        <div className="bg-bg-tertiary border border-border border-dashed rounded-md aspect-video flex items-center justify-center">
-          <div className="text-center p-4">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-text-muted mx-auto mb-2">
-              <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
-              <line x1="7" y1="2" x2="7" y2="22"/>
-              <line x1="17" y1="2" x2="17" y2="22"/>
-              <line x1="2" y1="12" x2="22" y2="12"/>
-              <line x1="2" y1="7" x2="7" y2="7"/>
-              <line x1="2" y1="17" x2="7" y2="17"/>
-              <line x1="17" y1="7" x2="22" y2="7"/>
-              <line x1="17" y1="17" x2="22" y2="17"/>
-            </svg>
-            <p className="text-xs text-text-muted">{step.gifPlaceholder}</p>
-            <p className="text-[10px] text-text-muted mt-1 italic">Coming soon — visual walkthrough</p>
-          </div>
+        {/* Visual mockup */}
+        <div className="max-w-md">
+          {step.visual}
         </div>
 
-        {/* Description */}
         <p className="text-sm text-text-primary">{step.description}</p>
 
-        {/* Code block */}
         {step.code && (
           <pre className="bg-code-bg border border-border rounded-md p-3 overflow-x-auto text-xs font-mono text-text-primary">
             {step.code}
           </pre>
         )}
 
-        {/* Tip */}
         {step.tip && (
           <div className="flex gap-2 p-3 rounded-md bg-accent-subtle text-sm">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" className="shrink-0 mt-0.5">
@@ -232,13 +245,13 @@ function StepCard({ step, index, total }: { step: Step; index: number; total: nu
 
 export default function SetupPage() {
   const [client, setClient] = useState<Client>('claude-desktop')
-  const steps = STEPS[client]
+  const steps = getSteps(client)
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-text-primary mb-2">How to Set Up MCP Servers</h1>
       <p className="text-text-muted mb-8">
-        A step-by-step visual guide. Works for any MCP server on MCPpedia.
+        Visual step-by-step guide. Works for any MCP server on MCPpedia.
       </p>
 
       {/* Client picker */}
@@ -265,7 +278,7 @@ export default function SetupPage() {
       {/* Steps */}
       <div className="space-y-4">
         {steps.map((step, i) => (
-          <StepCard key={i} step={step} index={i} total={steps.length} />
+          <StepCard key={`${client}-${i}`} step={step} index={i} total={steps.length} />
         ))}
       </div>
 
@@ -277,13 +290,15 @@ export default function SetupPage() {
             <summary className="px-4 py-3 cursor-pointer text-text-primary hover:bg-bg-tertiary">
               Server not showing up after restart
             </summary>
-            <div className="px-4 py-3 border-t border-border text-text-muted">
-              <ul className="list-disc list-inside space-y-1">
-                <li>Check your config file for JSON syntax errors (missing commas, extra commas)</li>
-                <li>Make sure Node.js is installed: run <code className="bg-code-bg px-1 rounded">node --version</code></li>
-                <li>Try running the server command manually in your terminal to see error messages</li>
-                <li>Check that the package name is correct on the MCPpedia server page</li>
+            <div className="px-4 py-3 border-t border-border text-text-muted space-y-1">
+              <p>Check your config file for JSON syntax errors. Common issues:</p>
+              <ul className="list-disc list-inside">
+                <li>Trailing comma after the last entry</li>
+                <li>Missing quotes around strings</li>
+                <li>Wrong file — make sure you&apos;re editing the right config</li>
               </ul>
+              <p className="mt-2">Try running the server manually to see errors:</p>
+              <pre className="bg-code-bg p-2 rounded mt-1 text-xs font-mono">npx -y @modelcontextprotocol/server-filesystem /tmp</pre>
             </div>
           </details>
           <details className="border border-border rounded-md">
@@ -291,24 +306,24 @@ export default function SetupPage() {
               &quot;Command not found: npx&quot;
             </summary>
             <div className="px-4 py-3 border-t border-border text-text-muted">
-              <p>You need Node.js installed. Download it from <a href="https://nodejs.org" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover">nodejs.org</a> (LTS version recommended). After installing, restart your terminal and try again.</p>
+              <p>Install Node.js from <a href="https://nodejs.org" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover">nodejs.org</a> (LTS version). Then restart your terminal.</p>
             </div>
           </details>
           <details className="border border-border rounded-md">
             <summary className="px-4 py-3 cursor-pointer text-text-primary hover:bg-bg-tertiary">
-              &quot;API key required&quot; or authentication errors
+              API key / authentication errors
             </summary>
             <div className="px-4 py-3 border-t border-border text-text-muted">
-              <p>Some servers connect to external services (Slack, GitHub, Brave, etc.) that require API keys. Check the server page on MCPpedia for details on which keys you need and where to get them.</p>
+              <p>Some servers need API keys. Check the server page on MCPpedia — it shows which env vars you need and where to get the keys.</p>
             </div>
           </details>
           <details className="border border-border rounded-md">
             <summary className="px-4 py-3 cursor-pointer text-text-primary hover:bg-bg-tertiary">
-              How do I add multiple servers?
+              How to add multiple servers
             </summary>
             <div className="px-4 py-3 border-t border-border text-text-muted">
-              <p>Add more entries inside the <code className="bg-code-bg px-1 rounded">&quot;mcpServers&quot;</code> object. Each server gets its own key:</p>
-              <pre className="bg-code-bg border border-border rounded-md p-2 mt-2 text-xs font-mono overflow-x-auto">{`{
+              <p>Add more entries inside <code className="bg-code-bg px-1 rounded">mcpServers</code>:</p>
+              <pre className="bg-code-bg p-2 rounded mt-1 text-xs font-mono">{`{
   "mcpServers": {
     "server-one": { "command": "npx", "args": [...] },
     "server-two": { "command": "npx", "args": [...] }
@@ -319,16 +334,11 @@ export default function SetupPage() {
         </div>
       </div>
 
-      {/* Next steps */}
       <div className="mt-8 p-4 rounded-md bg-accent-subtle">
         <p className="text-sm font-medium text-text-primary mb-2">Ready to install a server?</p>
         <div className="flex gap-3">
-          <Link href="/servers" className="text-sm text-accent hover:text-accent-hover">
-            Browse all servers &rarr;
-          </Link>
-          <Link href="/best-for/developers" className="text-sm text-accent hover:text-accent-hover">
-            Best for developers &rarr;
-          </Link>
+          <Link href="/servers" className="text-sm text-accent hover:text-accent-hover">Browse all servers &rarr;</Link>
+          <Link href="/best-for/developers" className="text-sm text-accent hover:text-accent-hover">Best for developers &rarr;</Link>
         </div>
       </div>
     </div>
