@@ -39,10 +39,14 @@ export default async function HomePage() {
   return (
     <div>
       {/* Hero */}
-      <section className="bg-bg-secondary border-b border-border">
-        <div className="max-w-[1200px] mx-auto px-4 py-16 text-center">
-          <h1 className="text-3xl font-semibold text-text-primary mb-2">MCPpedia</h1>
-          <p className="text-text-muted mb-8">The encyclopedia of MCP servers</p>
+      <section className="border-b border-border" style={{ background: 'var(--hero-gradient)' }}>
+        <div className="max-w-[1200px] mx-auto px-4 py-20 text-center">
+          <h1 className="text-4xl font-bold text-text-primary mb-3 tracking-tight">
+            The trusted source for<br />MCP servers
+          </h1>
+          <p className="text-lg text-text-muted mb-8 max-w-lg mx-auto">
+            Scored on security, maintenance, and efficiency. Verified by real data, not opinions.
+          </p>
           <div className="max-w-xl mx-auto mb-6">
             <SearchBar
               placeholder={`Search ${serverCount || 0}+ MCP servers...`}
@@ -71,10 +75,15 @@ export default async function HomePage() {
 
       {/* Stats bar */}
       <section className="border-b border-border">
-        <div className="max-w-[1200px] mx-auto px-4 py-3 flex items-center gap-4 text-sm text-text-muted">
-          <span>{serverCount || 0} servers</span>
-          <span>&middot;</span>
-          <span>{contributorCount || 0} contributors</span>
+        <div className="max-w-[1200px] mx-auto px-4 py-3 flex items-center gap-5 text-sm text-text-muted">
+          <span className="flex items-center gap-1.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            {serverCount || 0} servers
+          </span>
+          <span className="flex items-center gap-1.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            {contributorCount || 0} contributors
+          </span>
         </div>
       </section>
 
@@ -135,19 +144,21 @@ export default async function HomePage() {
           <h2 className="text-lg font-semibold text-text-primary mb-4">Best MCP servers for...</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {[
-              { href: '/best-for/developers', label: 'Developers', emoji: '&lt;/&gt;' },
-              { href: '/best-for/data-engineering', label: 'Data Engineering', emoji: '&#128202;' },
-              { href: '/best-for/productivity', label: 'Productivity', emoji: '&#9889;' },
-              { href: '/best-for/ai-agents', label: 'AI Agents', emoji: '&#129302;' },
-              { href: '/best-for/cloud-infrastructure', label: 'Cloud & Infra', emoji: '&#9729;' },
-              { href: '/best-for/security', label: 'Security', emoji: '&#128274;' },
+              { href: '/best-for/developers', label: 'Developers', color: 'border-l-accent', icon: '</>' },
+              { href: '/best-for/data-engineering', label: 'Data Engineering', color: 'border-l-green', icon: 'DB' },
+              { href: '/best-for/productivity', label: 'Productivity', color: 'border-l-yellow', icon: 'ZZ' },
+              { href: '/best-for/ai-agents', label: 'AI Agents', color: 'border-l-accent', icon: 'AI' },
+              { href: '/best-for/cloud-infrastructure', label: 'Cloud & Infra', color: 'border-l-green', icon: 'CL' },
+              { href: '/best-for/security', label: 'Security', color: 'border-l-red', icon: 'SC' },
             ].map(item => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="border border-border rounded-md p-3 text-sm text-text-primary hover:bg-bg-tertiary transition-colors"
-                dangerouslySetInnerHTML={{ __html: `${item.emoji} ${item.label}` }}
-              />
+                className={`border border-border border-l-[3px] ${item.color} rounded-md p-4 text-sm hover:shadow-[var(--shadow-md)] hover:-translate-y-[1px] transition-all`}
+              >
+                <span className="text-xs font-mono font-bold text-text-muted block mb-1">{item.icon}</span>
+                <span className="font-medium text-text-primary">{item.label}</span>
+              </Link>
             ))}
           </div>
         </div>
@@ -157,23 +168,24 @@ export default async function HomePage() {
       <section className="border-t border-border">
         <div className="max-w-[1200px] mx-auto px-4 py-8">
           <h2 className="text-lg font-semibold text-text-primary mb-4">Guides</h2>
-          <ul className="space-y-2 text-sm">
-            <li>
-              <Link href="/guides/what-is-mcp" className="text-accent hover:text-accent-hover">
-                What is MCP? A beginner&apos;s guide
+          <div className="space-y-3">
+            {[
+              { href: '/guides/what-is-mcp', title: 'What is MCP? A beginner\'s guide', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
+              { href: '/guides/install-first-server', title: 'How to install your first MCP server', icon: 'M4 16v1a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1m-4-4-4 4m0 0-4-4m4 4V4' },
+              { href: '/guides/best-servers-2026', title: 'Best MCP servers for developers in 2026', icon: 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 0 0 .95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 0 0-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 0 0-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 0 0-.363-1.118L2.98 10.1c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 0 0 .951-.69l1.519-4.674z' },
+            ].map(guide => (
+              <Link
+                key={guide.href}
+                href={guide.href}
+                className="flex items-center gap-3 p-3 rounded-md hover:bg-bg-tertiary transition-colors group"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted group-hover:text-accent shrink-0 transition-colors">
+                  <path d={guide.icon} />
+                </svg>
+                <span className="text-sm text-accent group-hover:text-accent-hover">{guide.title}</span>
               </Link>
-            </li>
-            <li>
-              <Link href="/guides/install-first-server" className="text-accent hover:text-accent-hover">
-                How to install your first MCP server
-              </Link>
-            </li>
-            <li>
-              <Link href="/guides/best-servers-2026" className="text-accent hover:text-accent-hover">
-                Best MCP servers for developers in 2026
-              </Link>
-            </li>
-          </ul>
+            ))}
+          </div>
         </div>
       </section>
     </div>

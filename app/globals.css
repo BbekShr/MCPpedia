@@ -13,12 +13,22 @@
   --border: #d0d7de;
   --accent: #0969da;
   --accent-hover: #0550ae;
+  --accent-subtle: rgba(9, 105, 218, 0.08);
   --green: #1a7f37;
   --yellow: #9a6700;
   --red: #cf222e;
   --tag-bg: #ddf4ff;
   --tag-text: #0969da;
   --code-bg: #f6f8fa;
+
+  /* Gradients */
+  --hero-gradient: linear-gradient(135deg, #f0f7ff 0%, #f6f8fa 50%, #faf5ff 100%);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 [data-theme="dark"] {
@@ -30,12 +40,20 @@
   --border: #30363d;
   --accent: #58a6ff;
   --accent-hover: #79c0ff;
+  --accent-subtle: rgba(88, 166, 255, 0.08);
   --green: #3fb950;
   --yellow: #d29922;
   --red: #f85149;
   --tag-bg: #132338;
   --tag-text: #58a6ff;
   --code-bg: #161b22;
+
+  --hero-gradient: linear-gradient(135deg, #0d1525 0%, #0d1117 50%, #150d1f 100%);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 @theme inline {
@@ -47,6 +65,7 @@
   --color-border: var(--border);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
+  --color-accent-subtle: var(--accent-subtle);
   --color-green: var(--green);
   --color-yellow: var(--yellow);
   --color-red: var(--red);
@@ -71,6 +90,29 @@ body {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* Smooth transitions on interactive elements */
+a, button, input, select, textarea {
+  transition: color 0.15s ease, background-color 0.15s ease,
+              border-color 0.15s ease, box-shadow 0.15s ease,
+              transform 0.15s ease;
+}
+
+/* Fade-in animation for sections */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.4s ease-out both;
+}
+
+/* Staggered delays for grids */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
 
 /* Scrollbar styling for dark mode */
 [data-theme="dark"] ::-webkit-scrollbar {

@@ -226,7 +226,7 @@ export default async function ServerDetailPage({
         </aside>
 
         {/* Main content */}
-        <div className="flex-1 min-w-0 space-y-10">
+        <div className="flex-1 min-w-0 space-y-12 [&>section:not(:first-child)]:pt-8 [&>section:not(:first-child)]:border-t [&>section:not(:first-child)]:border-border">
           {/* MCPpedia Score + Security + Token Metrics */}
           <section id="score">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

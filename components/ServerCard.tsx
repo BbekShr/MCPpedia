@@ -22,20 +22,41 @@ function timeAgo(date: string): string {
   return `${months}mo ago`
 }
 
+const healthBorderColors: Record<string, string> = {
+  active: 'border-l-green',
+  maintained: 'border-l-green',
+  stale: 'border-l-yellow',
+  abandoned: 'border-l-red',
+  archived: 'border-l-red',
+  unknown: 'border-l-border',
+}
+
 export default function ServerCard({ server }: { server: Server }) {
   const toolCount = server.tools?.length || 0
   const transportLabel = server.transport?.join('/') || 'stdio'
+  const score = server.score_total || 0
+  const healthBorder = healthBorderColors[server.health_status] || 'border-l-border'
 
   return (
     <Link
       href={`/s/${server.slug}`}
-      className="block border border-border rounded-md p-4 hover:shadow-[0_1px_3px_rgba(0,0,0,0.08)] transition-shadow duration-150 bg-bg"
+      className={`block border border-border border-l-[3px] ${healthBorder} rounded-md p-4 bg-bg hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-[1px] transition-all duration-150`}
     >
       <div className="flex items-start justify-between gap-2 mb-1">
-        <h3 className="font-semibold text-text-primary leading-tight">{server.name}</h3>
+        <h3 className="font-semibold text-text-primary leading-tight text-[15px]">{server.name}</h3>
         <div className="flex items-center gap-2 shrink-0">
           {server.author_type === 'official' && (
             <span className="text-xs px-1.5 py-0.5 rounded bg-accent/10 text-accent font-medium">Official</span>
+          )}
+          {score > 0 && (
+            <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
+              score >= 80 ? 'bg-green/10 text-green' :
+              score >= 60 ? 'bg-accent/10 text-accent' :
+              score >= 40 ? 'bg-yellow/10 text-yellow' :
+              'bg-red/10 text-red'
+            }`}>
+              {score}
+            </span>
           )}
           <HealthBadge status={server.health_status as HealthStatus} />
         </div>
@@ -54,11 +75,30 @@ export default function ServerCard({ server }: { server: Server }) {
       )}
 
       <div className="flex items-center gap-3 text-xs text-text-muted">
-        {toolCount > 0 && <span>{toolCount} tools</span>}
+        {toolCount > 0 && (
+          <span className="flex items-center gap-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+            </svg>
+            {toolCount} tools
+          </span>
+        )}
         <span>{transportLabel}</span>
-        {server.github_stars > 0 && <span>&#9733; {formatNumber(server.github_stars)}</span>}
+        {server.github_stars > 0 && (
+          <span className="flex items-center gap-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            {formatNumber(server.github_stars)}
+          </span>
+        )}
         {server.npm_weekly_downloads > 0 && (
-          <span>&#8595; {formatNumber(server.npm_weekly_downloads)}/wk</span>
+          <span className="flex items-center gap-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+            </svg>
+            {formatNumber(server.npm_weekly_downloads)}/wk
+          </span>
         )}
         {server.api_pricing && server.api_pricing !== 'unknown' && (
           <span className="capitalize">{server.api_pricing}</span>

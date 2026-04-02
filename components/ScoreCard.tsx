@@ -90,14 +90,38 @@ function timeAgo(date: string): string {
   return `${Math.floor(days / 30)}mo ago`
 }
 
+function ScoreRing({ score, size = 72 }: { score: number; size?: number }) {
+  const radius = (size - 8) / 2
+  const circumference = 2 * Math.PI * radius
+  const filled = (score / 100) * circumference
+  const grade = score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 40 ? 'C' : score >= 20 ? 'D' : 'F'
+
+  const strokeColor = score >= 80 ? 'var(--green)' : score >= 60 ? 'var(--accent)' : score >= 40 ? 'var(--yellow)' : 'var(--red)'
+  const gradeColor = score >= 80 ? 'text-green' : score >= 60 ? 'text-accent' : score >= 40 ? 'text-yellow' : 'text-red'
+
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="var(--border)" strokeWidth="4" />
+        <circle
+          cx={size/2} cy={size/2} r={radius} fill="none"
+          stroke={strokeColor} strokeWidth="4"
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference - filled}
+          strokeLinecap="round"
+          className="transition-all duration-500"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className={`text-xl font-bold ${gradeColor}`}>{score}</span>
+        <span className={`text-[10px] font-semibold ${gradeColor} -mt-0.5`}>{grade}</span>
+      </div>
+    </div>
+  )
+}
+
 export default function ScoreCard({ server }: { server: Server }) {
   const total = server.score_total || 0
-  const grade = total >= 80 ? 'A' : total >= 60 ? 'B' : total >= 40 ? 'C' : total >= 20 ? 'D' : 'F'
-
-  let gradeColor = 'text-green'
-  if (grade === 'D' || grade === 'F') gradeColor = 'text-red'
-  else if (grade === 'C') gradeColor = 'text-yellow'
-
   const toolCount = server.tools?.length || 0
   const tokenCost = server.total_tool_tokens || toolCount * 150
   const daysSinceCommit = server.github_last_commit
@@ -117,10 +141,7 @@ export default function ScoreCard({ server }: { server: Server }) {
           <h3 className="font-semibold text-text-primary">MCPpedia Score</h3>
           <p className="text-xs text-text-muted">Click each category to see evidence</p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className={`text-3xl font-bold ${gradeColor}`}>{total}</span>
-          <span className="text-sm text-text-muted">/100</span>
-        </div>
+        <ScoreRing score={total} />
       </div>
 
       <div className="space-y-1">
