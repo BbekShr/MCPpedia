@@ -148,28 +148,34 @@ export function BeforeAfterDiagram() {
 
 export function WhatYouCanDoDiagram() {
   const examples = [
-    { icon: '💬', tool: 'Slack MCP', ask: '"Search Slack for launch updates"', result: 'Finds and summarizes relevant messages' },
-    { icon: '📁', tool: 'Filesystem MCP', ask: '"Organize my Downloads folder"', result: 'Reads, moves, and renames your files' },
-    { icon: '🐙', tool: 'GitHub MCP', ask: '"Create a PR for my changes"', result: 'Creates the pull request on GitHub' },
-    { icon: '🔍', tool: 'Brave Search MCP', ask: '"Find the latest React docs"', result: 'Searches the web and returns results' },
-    { icon: '🗄️', tool: 'Postgres MCP', ask: '"Show me users who signed up today"', result: 'Queries your database directly' },
+    { icon: '💬', tool: 'Slack', ask: 'Search Slack for launch updates', result: 'Finds and summarizes relevant messages' },
+    { icon: '📁', tool: 'Filesystem', ask: 'Organize my Downloads folder', result: 'Reads, moves, and renames your files' },
+    { icon: '🐙', tool: 'GitHub', ask: 'Create a PR for my changes', result: 'Creates the pull request on GitHub' },
+    { icon: '🔍', tool: 'Brave Search', ask: 'Find the latest React docs', result: 'Searches the web and returns results' },
+    { icon: '🗄️', tool: 'Postgres', ask: 'Show users who signed up today', result: 'Queries your database directly' },
   ]
 
   return (
     <div className="space-y-2">
       {examples.map((ex, i) => (
-        <div key={i} className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-bg-secondary transition-colors">
-          <span className="text-xl shrink-0">{ex.icon}</span>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-0.5">
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 text-accent font-medium">{ex.tool}</span>
-            </div>
-            <div className="text-xs text-text-primary italic truncate">{ex.ask}</div>
+        <div key={i} className="p-3 border border-border rounded-lg hover:bg-bg-secondary transition-colors">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-base">{ex.icon}</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 text-accent font-medium">{ex.tool}</span>
           </div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" className="shrink-0">
-            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
-          </svg>
-          <div className="text-xs text-green font-medium shrink-0 hidden sm:block max-w-[180px] truncate">{ex.result}</div>
+          <div className="flex items-start gap-3">
+            <div className="flex-1">
+              <div className="text-xs text-text-muted mb-0.5">You say:</div>
+              <div className="text-sm text-text-primary">&ldquo;{ex.ask}&rdquo;</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" className="shrink-0 mt-3">
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+            </svg>
+            <div className="flex-1">
+              <div className="text-xs text-text-muted mb-0.5">AI does:</div>
+              <div className="text-sm text-green font-medium">{ex.result}</div>
+            </div>
+          </div>
         </div>
       ))}
     </div>
