@@ -102,29 +102,28 @@ export default function InstallConfig({ configs, compatibleClients, serverName, 
         ))}
       </div>
 
-      {/* Warning */}
-      <div className="flex gap-2 p-3 rounded-md bg-yellow/5 border border-yellow/20 mb-3">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="2" className="shrink-0 mt-0.5">
-          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-        </svg>
-        <p className="text-xs text-text-muted">
-          <strong className="text-text-primary">If your config file already has content</strong>, don&apos;t replace it.
-          Add the <code className="bg-code-bg px-1 rounded">&quot;mcpServers&quot;</code> key inside your existing JSON object, separated by a comma.
-          {' '}<a href="/setup#troubleshooting" className="text-accent hover:text-accent-hover">See example &rarr;</a>
-        </p>
-      </div>
-
       {/* Config block */}
       <div className="relative">
         <pre className="bg-code-bg border border-border rounded-md p-4 overflow-x-auto text-sm font-mono">
           <code>{configStr}</code>
         </pre>
-        <button
-          onClick={handleCopy}
-          className="absolute top-2 right-2 px-2 py-1 text-xs rounded border border-border bg-bg hover:bg-bg-tertiary text-text-muted transition-colors duration-150"
-        >
-          {copied ? 'Copied!' : 'Copy'}
-        </button>
+        <div className="absolute top-2 right-2 flex gap-1.5">
+          <a
+            href="/setup"
+            className="px-2 py-1 text-xs rounded border border-accent/30 bg-accent/5 text-accent hover:bg-accent/10 transition-colors flex items-center gap-1"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            Setup guide
+          </a>
+          <button
+            onClick={handleCopy}
+            className="px-2 py-1 text-xs rounded border border-border bg-bg hover:bg-bg-tertiary text-text-muted transition-colors"
+          >
+            {copied ? 'Copied!' : 'Copy'}
+          </button>
+        </div>
       </div>
 
       {/* Help text */}
