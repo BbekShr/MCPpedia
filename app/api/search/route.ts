@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { rateLimitIp } from '@/lib/rate-limit'
 
 export async function GET(request: Request) {
+  // Rate limit search by IP
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  const rl = rateLimitIp(ip, 'search', 30, 60_000) // 30 per minute
+  if (!rl.allowed) return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
+
   const { searchParams } = new URL(request.url)
   const q = searchParams.get('q') || ''
   const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50)

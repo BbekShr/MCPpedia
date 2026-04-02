@@ -2,7 +2,13 @@ import { z } from 'zod'
 import { CATEGORIES, TRANSPORTS, API_PRICING_OPTIONS } from './constants'
 
 export const submitServerSchema = z.object({
-  github_url: z.string().url().regex(/github\.com\/[\w.-]+\/[\w.-]+/, 'Must be a valid GitHub URL'),
+  github_url: z.string().url().refine(
+    (url) => {
+      try { return new URL(url).hostname === 'github.com' }
+      catch { return false }
+    },
+    'Must be a github.com URL'
+  ),
   name: z.string().min(1).max(200),
   tagline: z.string().max(500).optional(),
   license: z.string().max(100).optional(),
@@ -16,11 +22,16 @@ export const submitServerSchema = z.object({
   requires_api_key: z.boolean().default(false),
 })
 
+const EDITABLE_FIELDS = [
+  'name', 'tagline', 'description', 'api_name', 'api_pricing',
+  'api_rate_limits', 'homepage_url', 'npm_package', 'pip_package',
+] as const
+
 export const editProposalSchema = z.object({
   server_id: z.string().uuid(),
-  field_name: z.string().min(1),
-  old_value: z.unknown(),
-  new_value: z.unknown(),
+  field_name: z.enum(EDITABLE_FIELDS),
+  old_value: z.string().max(10000).nullable(),
+  new_value: z.string().min(1).max(10000),
   edit_reason: z.string().min(1, 'A reason is required').max(1000),
 })
 

@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { voteSchema } from '@/lib/validators'
+import { rateLimitUser } from '@/lib/rate-limit'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const rl = rateLimitUser(user.id, 'vote', 60, 60_000) // 60 per minute
+  if (!rl.allowed) return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
 
   const body = await request.json()
   const parsed = voteSchema.safeParse(body)

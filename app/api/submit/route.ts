@@ -2,11 +2,15 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { submitServerSchema } from '@/lib/validators'
 import { fetchRepoMetadata } from '@/lib/github'
+import { rateLimitUser } from '@/lib/rate-limit'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const rl = rateLimitUser(user.id, 'submit', 5, 3600_000) // 5 per hour
+  if (!rl.allowed) return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
 
   const body = await request.json()
   const parsed = submitServerSchema.safeParse(body)

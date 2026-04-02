@@ -13,6 +13,12 @@ function slugify(name: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
+    .slice(0, 100) // prevent excessively long slugs
+}
+
+function sanitize(str: string | null, maxLen = 500): string | null {
+  if (!str) return null
+  return str.slice(0, maxLen).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '') // strip control chars
 }
 
 function computeHealth(pushedAt: string | null, archived: boolean): string {
@@ -76,8 +82,8 @@ async function insertServer(repo: GitHubRepo, source: string) {
 
   const { error } = await supabase.from('servers').insert({
     slug,
-    name: repo.full_name.split('/')[1].replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-    tagline: repo.description,
+    name: sanitize(repo.full_name.split('/')[1].replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), 200) || slug,
+    tagline: sanitize(repo.description),
     github_url: repo.html_url,
     author_name: repo.owner.login,
     author_github: repo.owner.login,

@@ -37,7 +37,13 @@ export function getAllGuides(): GuideMeta[] {
 }
 
 export function getGuide(slug: string): { meta: GuideMeta; content: string } | null {
+  // Prevent path traversal — only allow alphanumeric, hyphens, underscores
+  if (!/^[a-zA-Z0-9_-]+$/.test(slug)) return null
+
   const filePath = path.join(guidesDir, `${slug}.mdx`)
+
+  // Verify the resolved path is still within the guides directory
+  if (!filePath.startsWith(guidesDir)) return null
 
   if (!fs.existsSync(filePath)) return null
 
