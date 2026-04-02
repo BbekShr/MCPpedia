@@ -103,7 +103,7 @@ async function main() {
     )
     console.log(`  Maintenance: ${maint.score}/${SCORE_WEIGHTS.maintenance}`)
 
-    const total = security.score + efficiency.score + docs.score + compat.score + maint.score
+    const total = Math.min(100, security.score + efficiency.score + docs.score + compat.score + maint.score)
     console.log(`  TOTAL: ${total}/100\n`)
 
     // Update server record

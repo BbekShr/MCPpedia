@@ -3,11 +3,13 @@
  * Triggered via workflow_dispatch.
  */
 
+import { config } from 'dotenv'
+config({ path: '.env.local' })
+
 import { createAdminClient } from './lib/supabase'
 import { getReadme } from './lib/github'
 
 const supabase = createAdminClient()
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
 
 function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
   const match = url.match(/github\.com\/([\w.-]+)\/([\w.-]+)/)
@@ -20,6 +22,7 @@ async function extractToolsWithHaiku(readme: string): Promise<{
   resources: Array<{ name: string; description: string; uri_template?: string }>
   prompts: Array<{ name: string; description: string }>
 }> {
+  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
   if (!ANTHROPIC_API_KEY) {
     console.warn('No ANTHROPIC_API_KEY — falling back to regex extraction')
     return extractToolsWithRegex(readme)
@@ -118,13 +121,13 @@ async function main() {
   console.log('=== MCPpedia Schema Extractor ===')
   console.log(new Date().toISOString())
 
-  // Get servers that haven't had their tools extracted yet
+  // Get servers that need tool extraction (empty tools array)
   const { data: servers } = await supabase
     .from('servers')
     .select('id, slug, github_url, tools')
     .not('github_url', 'is', null)
-    .or('tools.eq.[]')
-    .limit(50)
+    .filter('tools', 'eq', '[]')
+    .limit(200)
 
   if (!servers || servers.length === 0) {
     console.log('No servers need schema extraction.')

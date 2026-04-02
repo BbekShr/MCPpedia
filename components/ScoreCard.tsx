@@ -121,7 +121,7 @@ function ScoreRing({ score, size = 72 }: { score: number; size?: number }) {
 }
 
 export default function ScoreCard({ server }: { server: Server }) {
-  const total = server.score_total || 0
+  const total = Math.min(server.score_total || 0, 100)
   const toolCount = server.tools?.length || 0
   const tokenCost = server.total_tool_tokens || toolCount * 150
   const daysSinceCommit = server.github_last_commit
@@ -146,7 +146,7 @@ export default function ScoreCard({ server }: { server: Server }) {
 
       <div className="space-y-1">
         {/* Security */}
-        <ScoreBar label="Security" score={server.score_security || 0} max={SCORE_WEIGHTS.security}>
+        <ScoreBar label="Security" score={Math.min(server.score_security || 0, SCORE_WEIGHTS.security)} max={SCORE_WEIGHTS.security}>
           <Evidence
             pass={server.cve_count === 0}
             text={server.cve_count === 0 ? 'No known CVEs' : `${server.cve_count} CVE(s) found`}
@@ -173,7 +173,7 @@ export default function ScoreCard({ server }: { server: Server }) {
         </ScoreBar>
 
         {/* Maintenance */}
-        <ScoreBar label="Maintenance" score={server.score_maintenance || 0} max={SCORE_WEIGHTS.maintenance}>
+        <ScoreBar label="Maintenance" score={Math.min(server.score_maintenance || 0, SCORE_WEIGHTS.maintenance)} max={SCORE_WEIGHTS.maintenance}>
           <Evidence
             pass={daysSinceCommit !== null && daysSinceCommit <= 30}
             text={daysSinceCommit !== null ? `Last commit: ${daysSinceCommit} days ago` : 'No commit data'}
@@ -199,7 +199,7 @@ export default function ScoreCard({ server }: { server: Server }) {
         </ScoreBar>
 
         {/* Efficiency */}
-        <ScoreBar label="Efficiency" score={server.score_efficiency || 0} max={SCORE_WEIGHTS.efficiency}>
+        <ScoreBar label="Efficiency" score={Math.min(server.score_efficiency || 0, SCORE_WEIGHTS.efficiency)} max={SCORE_WEIGHTS.efficiency}>
           <Evidence
             pass={tokenCost <= 1500}
             text={`${toolCount} tools = ~${tokenCost.toLocaleString()} tokens of context`}
@@ -215,7 +215,7 @@ export default function ScoreCard({ server }: { server: Server }) {
         </ScoreBar>
 
         {/* Documentation */}
-        <ScoreBar label="Documentation" score={server.score_documentation || 0} max={SCORE_WEIGHTS.documentation}>
+        <ScoreBar label="Documentation" score={Math.min(server.score_documentation || 0, SCORE_WEIGHTS.documentation)} max={SCORE_WEIGHTS.documentation}>
           <Evidence
             pass={!!server.description && server.description.length > 50}
             text={server.description ? 'Has description' : 'No description'}
@@ -237,7 +237,7 @@ export default function ScoreCard({ server }: { server: Server }) {
         </ScoreBar>
 
         {/* Compatibility */}
-        <ScoreBar label="Compatibility" score={server.score_compatibility || 0} max={SCORE_WEIGHTS.compatibility}>
+        <ScoreBar label="Compatibility" score={Math.min(server.score_compatibility || 0, SCORE_WEIGHTS.compatibility)} max={SCORE_WEIGHTS.compatibility}>
           <Evidence
             pass={server.transport?.includes('stdio')}
             text={server.transport?.includes('stdio') ? 'Supports stdio (local)' : 'No stdio support'}
