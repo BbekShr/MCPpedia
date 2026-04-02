@@ -5,15 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Server } from '@/lib/types'
 import type { User } from '@supabase/supabase-js'
-
-const EDITABLE_FIELDS = [
-  { key: 'name', label: 'Name', type: 'text' },
-  { key: 'tagline', label: 'Tagline', type: 'text' },
-  { key: 'description', label: 'Description', type: 'textarea' },
-  { key: 'api_name', label: 'API Name', type: 'text' },
-  { key: 'api_pricing', label: 'API Pricing', type: 'select', options: ['free', 'freemium', 'paid', 'unknown'] },
-  { key: 'api_rate_limits', label: 'API Rate Limits', type: 'text' },
-] as const
+import Link from 'next/link'
 
 export default function EditServerPage() {
   const params = useParams()
@@ -22,174 +14,203 @@ export default function EditServerPage() {
   const supabase = createClient()
 
   const [user, setUser] = useState<User | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [server, setServer] = useState<Server | null>(null)
-  const [selectedField, setSelectedField] = useState('')
-  const [newValue, setNewValue] = useState('')
-  const [reason, setReason] = useState('')
-  const [submitting, setSubmitting] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState<string[]>([])
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
+
+  // Form state — all editable fields
+  const [form, setForm] = useState({
+    name: '',
+    tagline: '',
+    description: '',
+    install_configs: '',
+    tools: '',
+    resources: '',
+    api_name: '',
+    api_pricing: '',
+    api_rate_limits: '',
+    homepage_url: '',
+    npm_package: '',
+    pip_package: '',
+  })
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user))
-    supabase
-      .from('servers')
-      .select('*')
-      .eq('slug', slug)
-      .single()
-      .then(({ data }) => {
-        if (data) setServer(data as Server)
-      })
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user)
+      if (data.user) {
+        supabase.from('profiles').select('role').eq('id', data.user.id).single().then(({ data: p }) => {
+          setIsAdmin(p?.role === 'admin' || p?.role === 'maintainer')
+        })
+      }
+    })
+    supabase.from('servers').select('*').eq('slug', slug).single().then(({ data }) => {
+      if (data) {
+        const s = data as Server
+        setServer(s)
+        setForm({
+          name: s.name || '',
+          tagline: s.tagline || '',
+          description: s.description || '',
+          install_configs: JSON.stringify(s.install_configs, null, 2) || '{}',
+          tools: JSON.stringify(s.tools, null, 2) || '[]',
+          resources: JSON.stringify(s.resources, null, 2) || '[]',
+          api_name: s.api_name || '',
+          api_pricing: s.api_pricing || 'unknown',
+          api_rate_limits: s.api_rate_limits || '',
+          homepage_url: s.homepage_url || '',
+          npm_package: s.npm_package || '',
+          pip_package: s.pip_package || '',
+        })
+      }
+    })
   }, [slug, supabase])
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!server || !selectedField || !reason) return
-    setSubmitting(true)
+  async function handleSaveField(fieldName: string) {
+    if (!server || !user) return
+    setSaving(true)
     setError('')
 
-    const oldValue = server[selectedField as keyof Server]
+    const value = form[fieldName as keyof typeof form]
+    const isJson = ['install_configs', 'tools', 'resources'].includes(fieldName)
 
-    const res = await fetch('/api/edit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        server_id: server.id,
-        field_name: selectedField,
-        old_value: oldValue,
-        new_value: newValue,
-        edit_reason: reason,
-      }),
-    })
+    if (isAdmin) {
+      // Admin: save directly
+      const update: Record<string, unknown> = {}
+      if (isJson) {
+        try { update[fieldName] = JSON.parse(value) }
+        catch { setError(`Invalid JSON in ${fieldName}`); setSaving(false); return }
+      } else {
+        update[fieldName] = value || null
+      }
 
-    if (res.ok) {
-      setSuccess(true)
-      setTimeout(() => router.push(`/s/${slug}`), 2000)
+      const { error: err } = await supabase.from('servers').update(update).eq('id', server.id)
+      if (err) { setError(err.message) }
+      else { setSaved(prev => [...prev, fieldName]) }
     } else {
-      const data = await res.json()
-      setError(typeof data.error === 'string' ? data.error : 'Failed to submit edit')
+      // Regular user: propose edit
+      const oldValue = server[fieldName as keyof Server]
+      const res = await fetch('/api/edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          server_id: server.id,
+          field_name: fieldName,
+          old_value: String(oldValue ?? ''),
+          new_value: value,
+          edit_reason: `Updated ${fieldName}`,
+        }),
+      })
+      if (res.ok) { setSaved(prev => [...prev, fieldName]) }
+      else { setError('Failed to submit edit') }
     }
-    setSubmitting(false)
+    setSaving(false)
   }
 
   if (!user) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-20 text-center">
         <h1 className="text-2xl font-semibold text-text-primary mb-4">Edit Server</h1>
-        <p className="text-text-muted mb-6">Sign in to propose edits.</p>
-        <a href={`/login?redirect=/s/${slug}/edit`} className="text-accent hover:text-accent-hover">
-          Sign in with GitHub
-        </a>
+        <p className="text-text-muted mb-6">Sign in to edit this page.</p>
+        <a href={`/login?redirect=/s/${slug}/edit`} className="text-accent hover:text-accent-hover">Sign in with GitHub</a>
       </div>
     )
   }
 
-  if (!server) {
-    return <div className="max-w-2xl mx-auto px-4 py-12 text-text-muted">Loading...</div>
-  }
+  if (!server) return <div className="max-w-3xl mx-auto px-4 py-12 text-text-muted">Loading...</div>
 
-  if (success) {
+  function Field({ name, label, type = 'text', rows = 1 }: { name: string; label: string; type?: 'text' | 'textarea' | 'json' | 'select'; rows?: number }) {
+    const fieldSaved = saved.includes(name)
+    const value = form[name as keyof typeof form]
+
     return (
-      <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-        <h1 className="text-2xl font-semibold text-text-primary mb-4">Edit proposed!</h1>
-        <p className="text-text-muted">Your edit will be reviewed. Redirecting...</p>
+      <div className="border border-border rounded-md p-4">
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-sm font-medium text-text-primary">{label}</label>
+          <div className="flex items-center gap-2">
+            {fieldSaved && <span className="text-xs text-green">{isAdmin ? 'Saved!' : 'Proposed!'}</span>}
+            <button
+              onClick={() => handleSaveField(name)}
+              disabled={saving}
+              className="px-3 py-1 text-xs rounded bg-accent text-white hover:bg-accent-hover disabled:opacity-50"
+            >
+              {isAdmin ? 'Save' : 'Propose'}
+            </button>
+          </div>
+        </div>
+
+        {type === 'select' ? (
+          <select
+            value={value}
+            onChange={e => setForm(f => ({ ...f, [name]: e.target.value }))}
+            className="w-full px-3 py-2 text-sm border border-border rounded-md bg-bg text-text-primary focus:outline-none focus:border-accent"
+          >
+            <option value="free">Free</option>
+            <option value="freemium">Freemium</option>
+            <option value="paid">Paid</option>
+            <option value="unknown">Unknown</option>
+          </select>
+        ) : type === 'textarea' || type === 'json' ? (
+          <textarea
+            value={value}
+            onChange={e => setForm(f => ({ ...f, [name]: e.target.value }))}
+            rows={rows}
+            className={`w-full px-3 py-2 text-sm border border-border rounded-md bg-bg text-text-primary focus:outline-none focus:border-accent resize-y ${type === 'json' ? 'font-mono text-xs' : ''}`}
+          />
+        ) : (
+          <input
+            type="text"
+            value={value}
+            onChange={e => setForm(f => ({ ...f, [name]: e.target.value }))}
+            className="w-full px-3 py-2 text-sm border border-border rounded-md bg-bg text-text-primary focus:outline-none focus:border-accent"
+          />
+        )}
       </div>
     )
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-semibold text-text-primary mb-2">
-        Edit: {server.name}
-      </h1>
-      <p className="text-sm text-text-muted mb-8">
-        Propose a change. Editors will review your submission.
-      </p>
+    <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-text-primary">Edit: {server.name}</h1>
+          <p className="text-sm text-text-muted">
+            {isAdmin ? 'Admin mode — changes save directly.' : 'Your changes will be reviewed before going live.'}
+          </p>
+        </div>
+        <Link href={`/s/${slug}`} className="text-sm text-text-muted hover:text-text-primary border border-border rounded-md px-3 py-1.5">
+          Back to page
+        </Link>
+      </div>
 
       {error && (
         <div className="mb-4 p-3 rounded-md border border-red bg-red/5 text-sm text-red">{error}</div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-text-primary mb-1">Field to edit</label>
-          <select
-            value={selectedField}
-            onChange={e => {
-              setSelectedField(e.target.value)
-              const current = server[e.target.value as keyof Server]
-              setNewValue(current != null ? String(current) : '')
-            }}
-            className="w-full px-3 py-2 text-sm border border-border rounded-md bg-bg text-text-primary focus:outline-none focus:border-accent"
-            required
-          >
-            <option value="">Select a field...</option>
-            {EDITABLE_FIELDS.map(f => (
-              <option key={f.key} value={f.key}>{f.label}</option>
-            ))}
-          </select>
-        </div>
+      <div className="space-y-4">
+        <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wide">Basic Info</h2>
+        <Field name="name" label="Name" />
+        <Field name="tagline" label="Tagline" />
+        <Field name="homepage_url" label="Homepage URL" />
+        <Field name="npm_package" label="npm Package" />
+        <Field name="pip_package" label="pip Package" />
 
-        {selectedField && (
-          <>
-            <div>
-              <label className="block text-sm font-medium text-text-muted mb-1">Current value</label>
-              <div className="px-3 py-2 text-sm border border-border rounded-md bg-bg-secondary text-text-muted">
-                {String(server[selectedField as keyof Server] ?? '(empty)')}
-              </div>
-            </div>
+        <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wide pt-4">Quick Install Config</h2>
+        <Field name="install_configs" label="Install Config (JSON)" type="json" rows={12} />
 
-            <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">New value</label>
-              {EDITABLE_FIELDS.find(f => f.key === selectedField)?.type === 'textarea' ? (
-                <textarea
-                  value={newValue}
-                  onChange={e => setNewValue(e.target.value)}
-                  rows={5}
-                  className="w-full px-3 py-2 text-sm border border-border rounded-md bg-bg text-text-primary focus:outline-none focus:border-accent resize-none"
-                />
-              ) : EDITABLE_FIELDS.find(f => f.key === selectedField)?.type === 'select' ? (
-                <select
-                  value={newValue}
-                  onChange={e => setNewValue(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-border rounded-md bg-bg text-text-primary focus:outline-none focus:border-accent"
-                >
-                  {(EDITABLE_FIELDS.find(f => f.key === selectedField) as unknown as { options: string[] })?.options?.map((o: string) => (
-                    <option key={o} value={o}>{o}</option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type="text"
-                  value={newValue}
-                  onChange={e => setNewValue(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-border rounded-md bg-bg text-text-primary focus:outline-none focus:border-accent"
-                />
-              )}
-            </div>
-          </>
-        )}
+        <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wide pt-4">About</h2>
+        <Field name="description" label="Description" type="textarea" rows={6} />
 
-        <div>
-          <label className="block text-sm font-medium text-text-primary mb-1">Reason for edit *</label>
-          <input
-            type="text"
-            value={reason}
-            onChange={e => setReason(e.target.value)}
-            placeholder="Why is this change needed?"
-            required
-            className="w-full px-3 py-2 text-sm border border-border rounded-md bg-bg text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent"
-          />
-        </div>
+        <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wide pt-4">Tools & Resources</h2>
+        <Field name="tools" label="Tools (JSON array)" type="json" rows={10} />
+        <Field name="resources" label="Resources (JSON array)" type="json" rows={6} />
 
-        <button
-          type="submit"
-          disabled={submitting || !selectedField || !reason}
-          className="w-full px-4 py-2.5 rounded-md bg-accent text-white font-medium hover:bg-accent-hover disabled:opacity-50 transition-colors"
-        >
-          {submitting ? 'Submitting...' : 'Propose edit'}
-        </button>
-      </form>
+        <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wide pt-4">API Info</h2>
+        <Field name="api_name" label="API Name" />
+        <Field name="api_pricing" label="API Pricing" type="select" />
+        <Field name="api_rate_limits" label="Rate Limits" />
+      </div>
     </div>
   )
 }

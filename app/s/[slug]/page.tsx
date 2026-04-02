@@ -16,7 +16,6 @@ import ReviewSection from '@/components/ReviewSection'
 import ServerTester from '@/components/ServerTester'
 import ServerIcon from '@/components/ServerIcon'
 import EnvInstructions from '@/components/EnvInstructions'
-import InlineEdit from '@/components/InlineEdit'
 import { SITE_NAME } from '@/lib/constants'
 import type { Server, Changelog, SecurityAdvisory } from '@/lib/types'
 import type { HealthStatus } from '@/lib/constants'
@@ -256,10 +255,7 @@ export default async function ServerDetailPage({
 
           {/* Quick Install */}
           <section id="install">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-text-primary">Quick Install</h2>
-              <InlineEdit serverId={s.id} fieldName="install_configs" currentValue={JSON.stringify(s.install_configs, null, 2)} inputType="json" label="Install Config" />
-            </div>
+            <h2 className="text-lg font-semibold text-text-primary mb-4">Quick Install</h2>
             <InstallConfig
               configs={s.install_configs as Record<string, unknown>}
               compatibleClients={s.compatible_clients}
@@ -286,10 +282,7 @@ export default async function ServerDetailPage({
           {/* Tools */}
           {tools.length > 0 && (
             <section id="tools">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-text-primary">Tools ({tools.length})</h2>
-                <InlineEdit serverId={s.id} fieldName="tools" currentValue={JSON.stringify(s.tools, null, 2)} inputType="json" label="Tools" />
-              </div>
+              <h2 className="text-lg font-semibold text-text-primary mb-4">Tools ({tools.length})</h2>
               <div className="space-y-2">
                 {tools.slice(0, 10).map(tool => (
                   <ToolCard key={tool.name} tool={tool} />
@@ -304,10 +297,7 @@ export default async function ServerDetailPage({
           {/* Resources */}
           {resources.length > 0 && (
             <section id="resources">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-text-primary">Resources ({resources.length})</h2>
-                <InlineEdit serverId={s.id} fieldName="resources" currentValue={JSON.stringify(s.resources, null, 2)} inputType="json" label="Resources" />
-              </div>
+              <h2 className="text-lg font-semibold text-text-primary mb-4">Resources ({resources.length})</h2>
               <div className="space-y-2">
                 {resources.map(r => (
                   <div key={r.name} className="border border-border rounded-md p-3">
@@ -338,10 +328,7 @@ export default async function ServerDetailPage({
           {/* About */}
           {s.description && (
             <section id="about">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-text-primary">About</h2>
-                <InlineEdit serverId={s.id} fieldName="description" currentValue={s.description || ''} inputType="textarea" label="Description" />
-              </div>
+              <h2 className="text-lg font-semibold text-text-primary mb-4">About</h2>
               <div className="prose prose-sm max-w-none text-text-primary">
                 <p className="whitespace-pre-wrap">{s.description}</p>
               </div>
@@ -351,10 +338,7 @@ export default async function ServerDetailPage({
           {/* API Info */}
           {s.api_name && (
             <section id="api-info">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-text-primary">API Info</h2>
-                <InlineEdit serverId={s.id} fieldName="api_name" currentValue={s.api_name || ''} inputType="text" label="API Name" />
-              </div>
+              <h2 className="text-lg font-semibold text-text-primary mb-4">API Info</h2>
               <dl className="space-y-2 text-sm">
                 <div className="flex gap-4">
                   <dt className="text-text-muted w-28 shrink-0">API</dt>
