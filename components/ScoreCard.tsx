@@ -121,7 +121,8 @@ function ScoreRing({ score, size = 72 }: { score: number; size?: number }) {
 }
 
 export default function ScoreCard({ server }: { server: Server }) {
-  const total = Math.min(server.score_total || 0, 100)
+  const subcategorySum = (server.score_security || 0) + (server.score_maintenance || 0) + (server.score_efficiency || 0) + (server.score_documentation || 0) + (server.score_compatibility || 0)
+  const total = Math.min(subcategorySum || server.score_total || 0, 100)
   const toolCount = server.tools?.length || 0
   const tokenCost = server.total_tool_tokens || toolCount * 150
   const daysSinceCommit = server.github_last_commit

@@ -16,6 +16,7 @@ import ReviewSection from '@/components/ReviewSection'
 import ServerTester from '@/components/ServerTester'
 import ServerIcon from '@/components/ServerIcon'
 import EnvInstructions from '@/components/EnvInstructions'
+import InlineEdit from '@/components/InlineEdit'
 import { SITE_NAME } from '@/lib/constants'
 import type { Server, Changelog, SecurityAdvisory } from '@/lib/types'
 import type { HealthStatus } from '@/lib/constants'
@@ -189,26 +190,22 @@ export default async function ServerDetailPage({
           </div>
         )}
 
-        {/* Stats */}
-        <div className="flex flex-wrap items-center gap-4 text-sm text-text-muted mb-4">
+        {/* Stats + links */}
+        <div className="flex flex-wrap items-center gap-4 text-sm text-text-muted">
           {s.github_stars > 0 && <span>&#9733; {formatNumber(s.github_stars)}</span>}
           {s.npm_weekly_downloads > 0 && <span>&#8595; {formatNumber(s.npm_weekly_downloads)}/wk</span>}
-        </div>
-
-        {/* External links */}
-        <div className="flex flex-wrap items-center gap-3">
           {s.npm_package && (
-            <a href={`https://www.npmjs.com/package/${s.npm_package}`} target="_blank" rel="noopener noreferrer" className="text-sm text-accent hover:text-accent-hover">
+            <a href={`https://www.npmjs.com/package/${s.npm_package}`} target="_blank" rel="noopener noreferrer" className="hover:text-text-primary transition-colors duration-150">
               npm
             </a>
           )}
           {s.pip_package && (
-            <a href={`https://pypi.org/project/${s.pip_package}`} target="_blank" rel="noopener noreferrer" className="text-sm text-accent hover:text-accent-hover">
+            <a href={`https://pypi.org/project/${s.pip_package}`} target="_blank" rel="noopener noreferrer" className="hover:text-text-primary transition-colors duration-150">
               PyPI
             </a>
           )}
           <div className="flex-1" />
-          <Link href={`/s/${slug}/edit`} className="text-sm text-text-muted hover:text-text-primary border border-border rounded-md px-3 py-1 transition-colors duration-150">
+          <Link href={`/s/${slug}/edit`} className="text-text-muted hover:text-text-primary border border-border rounded-md px-3 py-1 transition-colors duration-150">
             Edit this page
           </Link>
         </div>
@@ -259,7 +256,10 @@ export default async function ServerDetailPage({
 
           {/* Quick Install */}
           <section id="install">
-            <h2 className="text-lg font-semibold text-text-primary mb-4">Quick Install</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-text-primary">Quick Install</h2>
+              <InlineEdit serverId={s.id} fieldName="install_configs" currentValue={JSON.stringify(s.install_configs, null, 2)} inputType="json" label="Install Config" />
+            </div>
             <InstallConfig
               configs={s.install_configs as Record<string, unknown>}
               compatibleClients={s.compatible_clients}
@@ -286,7 +286,10 @@ export default async function ServerDetailPage({
           {/* Tools */}
           {tools.length > 0 && (
             <section id="tools">
-              <h2 className="text-lg font-semibold text-text-primary mb-4">Tools ({tools.length})</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-text-primary">Tools ({tools.length})</h2>
+                <InlineEdit serverId={s.id} fieldName="tools" currentValue={JSON.stringify(s.tools, null, 2)} inputType="json" label="Tools" />
+              </div>
               <div className="space-y-2">
                 {tools.slice(0, 10).map(tool => (
                   <ToolCard key={tool.name} tool={tool} />
@@ -301,7 +304,10 @@ export default async function ServerDetailPage({
           {/* Resources */}
           {resources.length > 0 && (
             <section id="resources">
-              <h2 className="text-lg font-semibold text-text-primary mb-4">Resources ({resources.length})</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-text-primary">Resources ({resources.length})</h2>
+                <InlineEdit serverId={s.id} fieldName="resources" currentValue={JSON.stringify(s.resources, null, 2)} inputType="json" label="Resources" />
+              </div>
               <div className="space-y-2">
                 {resources.map(r => (
                   <div key={r.name} className="border border-border rounded-md p-3">
@@ -332,7 +338,10 @@ export default async function ServerDetailPage({
           {/* About */}
           {s.description && (
             <section id="about">
-              <h2 className="text-lg font-semibold text-text-primary mb-4">About</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-text-primary">About</h2>
+                <InlineEdit serverId={s.id} fieldName="description" currentValue={s.description || ''} inputType="textarea" label="Description" />
+              </div>
               <div className="prose prose-sm max-w-none text-text-primary">
                 <p className="whitespace-pre-wrap">{s.description}</p>
               </div>
@@ -342,7 +351,10 @@ export default async function ServerDetailPage({
           {/* API Info */}
           {s.api_name && (
             <section id="api-info">
-              <h2 className="text-lg font-semibold text-text-primary mb-4">API Info</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-text-primary">API Info</h2>
+                <InlineEdit serverId={s.id} fieldName="api_name" currentValue={s.api_name || ''} inputType="text" label="API Name" />
+              </div>
               <dl className="space-y-2 text-sm">
                 <div className="flex gap-4">
                   <dt className="text-text-muted w-28 shrink-0">API</dt>

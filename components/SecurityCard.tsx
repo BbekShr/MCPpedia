@@ -31,7 +31,7 @@ export default function SecurityCard({
         {server.security_verified && (
           <span className="text-xs px-2 py-1 rounded bg-accent/10 text-accent font-medium">Verified</span>
         )}
-        {server.license && (
+        {server.license && server.license !== 'NOASSERTION' && (
           <span className="text-xs px-2 py-1 rounded bg-bg-tertiary text-text-muted">{server.license}</span>
         )}
       </div>
@@ -56,7 +56,7 @@ export default function SecurityCard({
         )}
         <div className="flex justify-between">
           <dt className="text-text-muted">License</dt>
-          <dd className="text-text-primary">{server.license || 'Unknown'}</dd>
+          <dd className="text-text-primary">{server.license && server.license !== 'NOASSERTION' ? server.license : 'Not specified'}</dd>
         </div>
       </dl>
 

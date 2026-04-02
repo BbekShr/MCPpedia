@@ -44,11 +44,11 @@ async function fetchRegistryServers(): Promise<RegistryServer[]> {
 
   try {
     while (true) {
-      const url = cursor
+      const fetchUrl: string = cursor
         ? `${REGISTRY_API}/servers?version=latest&cursor=${encodeURIComponent(cursor)}`
         : `${REGISTRY_API}/servers?version=latest`
 
-      const res = await fetch(url, {
+      const res: Response = await fetch(fetchUrl, {
         headers: { Accept: 'application/json' },
       })
 
@@ -57,7 +57,8 @@ async function fetchRegistryServers(): Promise<RegistryServer[]> {
         break
       }
 
-      const data = await res.json()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data: any = await res.json()
       const raw = data.servers || data.items || (Array.isArray(data) ? data : [])
       // Registry wraps each entry in { server, _meta } — unwrap
       const servers = raw.map((entry: { server?: RegistryServer }) => entry.server || entry).filter(Boolean)
@@ -196,9 +197,10 @@ async function main() {
     await new Promise(r => setTimeout(r, 50))
   }
 
-  // Compute scores for newly synced servers
-  console.log('Computing scores...')
-  await supabase.rpc('compute_all_scores')
+  // Note: scores are computed by the dedicated compute-scores bot (runs at 5am UTC)
+  // which uses real CVE scanning, token measurement, and README analysis.
+  // The SQL compute_all_scores() function uses simpler heuristics and different weights,
+  // so we don't call it here to avoid overwriting accurate scores.
 
   console.log(`\nDone. New: ${synced}, Updated: ${updated}`)
 }
