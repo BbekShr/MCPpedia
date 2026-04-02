@@ -1,8 +1,7 @@
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN
-
 function headers() {
   const h: Record<string, string> = { Accept: 'application/vnd.github.v3+json' }
-  if (GITHUB_TOKEN) h.Authorization = `Bearer ${GITHUB_TOKEN}`
+  const token = process.env.GITHUB_TOKEN
+  if (token) h.Authorization = `Bearer ${token}`
   return h
 }
 
