@@ -372,7 +372,7 @@ type %APPDATA%\\Claude\\claude_desktop_config.json`}</pre>
 
           <details className="border border-border rounded-md">
             <summary className="px-4 py-3 cursor-pointer text-text-primary hover:bg-bg-tertiary font-medium">
-              Remote MCP server won&apos;t connect (like ThoughtSpot, Cloudflare)
+              Remote MCP server won&apos;t connect
             </summary>
             <div className="px-4 py-3 border-t border-border text-text-muted space-y-2">
               <p>Remote servers connect over the internet instead of running locally. Two ways to set them up:</p>
@@ -403,9 +403,9 @@ type %APPDATA%\\Claude\\claude_desktop_config.json`}</pre>
               OAuth popup appeared but authentication failed
             </summary>
             <div className="px-4 py-3 border-t border-border text-text-muted space-y-2">
-              <p>Some remote servers (like ThoughtSpot) use OAuth. If the auth popup fails:</p>
+              <p>Some remote servers use OAuth for authentication. If the auth popup fails:</p>
               <ul className="list-disc list-inside space-y-1">
-                <li>Make sure you have an account with the service (ThoughtSpot, etc.)</li>
+                <li>Make sure you have an account with the service</li>
                 <li>Clear stale auth: <code className="bg-code-bg px-1 rounded">rm -rf ~/.mcp-auth</code> then restart</li>
                 <li>Check if your company has CORS/SAML restrictions that block the auth flow</li>
               </ul>
@@ -439,16 +439,16 @@ type %APPDATA%\\Claude\\claude_desktop_config.json`}</pre>
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-filesystem", "."]
     },
-    "github": {
+    "search": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
       "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "ghp_..."
+        "BRAVE_API_KEY": "your-api-key"
       }
     },
-    "thoughtspot": {
-      "url": "https://agent.thoughtspot.app/mcp",
-      "transport": "streamable-http"
+    "remote-server": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://example.com/mcp"]
     }
   }
 }`}</pre>
@@ -465,7 +465,7 @@ type %APPDATA%\\Claude\\claude_desktop_config.json`}</pre>
 npx -y @modelcontextprotocol/server-filesystem /tmp
 
 # For remote servers:
-npx mcp-remote https://agent.thoughtspot.app/mcp`}</pre>
+npx mcp-remote https://example.com/mcp`}</pre>
               <p>If you see an error message, search for it on the server&apos;s GitHub issues page, or ask in the MCPpedia discussion on the server&apos;s page.</p>
             </div>
           </details>
