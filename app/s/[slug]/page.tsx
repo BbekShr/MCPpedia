@@ -10,6 +10,9 @@ import DiscussionSection from '@/components/DiscussionSection'
 import ScoreCard from '@/components/ScoreCard'
 import SecurityCard from '@/components/SecurityCard'
 import TokenMetrics from '@/components/TokenMetrics'
+import HealthCheckBadge from '@/components/HealthCheckBadge'
+import VerifiedBadge from '@/components/VerifiedBadge'
+import ReviewSection from '@/components/ReviewSection'
 import { SITE_NAME } from '@/lib/constants'
 import type { Server, Changelog, SecurityAdvisory } from '@/lib/types'
 import type { HealthStatus } from '@/lib/constants'
@@ -113,6 +116,7 @@ export default async function ServerDetailPage({
     s.description ? { id: 'about', label: 'About' } : null,
     s.api_name ? { id: 'api-info', label: 'API Info' } : null,
     changelogs && changelogs.length > 0 ? { id: 'versions', label: 'Version History' } : null,
+    { id: 'reviews', label: 'Reviews' },
     { id: 'discussion', label: 'Discussion' },
   ].filter(Boolean) as { id: string; label: string }[]
 
@@ -144,6 +148,14 @@ export default async function ServerDetailPage({
             <span className="text-xs px-2 py-0.5 rounded bg-bg-tertiary text-text-muted font-medium">Community</span>
           )}
           <HealthBadge status={s.health_status as HealthStatus} />
+          <HealthCheckBadge
+            status={s.last_health_check_status}
+            checkedAt={s.last_health_check_at}
+            uptime={s.health_check_uptime || 0}
+          />
+          {s.publisher_verified && <VerifiedBadge type="publisher" />}
+          {s.registry_verified && <VerifiedBadge type="registry" />}
+          {s.verified && <VerifiedBadge type="mcppedia" />}
           {s.updated_at && (
             <span className="text-xs text-text-muted">
               Updated {new Date(s.updated_at).toLocaleDateString()}
@@ -355,6 +367,16 @@ export default async function ServerDetailPage({
               </div>
             </section>
           )}
+
+          {/* Discussion */}
+          {/* Reviews */}
+          <section id="reviews">
+            <h2 className="text-lg font-semibold text-text-primary mb-4">
+              Reviews
+              {s.review_count > 0 && <span className="text-sm font-normal text-text-muted ml-2">({s.review_count})</span>}
+            </h2>
+            <ReviewSection serverId={s.id} />
+          </section>
 
           {/* Discussion */}
           <section id="discussion">

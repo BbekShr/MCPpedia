@@ -58,6 +58,16 @@ export interface Server {
   registry_id: string | null
   registry_synced_at: string | null
   registry_verified: boolean
+  // Health checks
+  last_health_check_status: string | null
+  last_health_check_at: string | null
+  health_check_uptime: number
+  // Publisher
+  claimed_by: string | null
+  publisher_verified: boolean
+  // Reviews
+  review_count: number
+  review_avg: number
 }
 
 export interface SecurityIssue {
