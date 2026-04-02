@@ -102,6 +102,18 @@ export default function InstallConfig({ configs, compatibleClients, serverName, 
         ))}
       </div>
 
+      {/* Warning */}
+      <div className="flex gap-2 p-3 rounded-md bg-yellow/5 border border-yellow/20 mb-3">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="2" className="shrink-0 mt-0.5">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <p className="text-xs text-text-muted">
+          <strong className="text-text-primary">If your config file already has content</strong>, don&apos;t replace it.
+          Add the <code className="bg-code-bg px-1 rounded">&quot;mcpServers&quot;</code> key inside your existing JSON object, separated by a comma.
+          {' '}<a href="/setup#troubleshooting" className="text-accent hover:text-accent-hover">See example &rarr;</a>
+        </p>
+      </div>
+
       {/* Config block */}
       <div className="relative">
         <pre className="bg-code-bg border border-border rounded-md p-4 overflow-x-auto text-sm font-mono">
