@@ -342,18 +342,25 @@ type %APPDATA%\\Claude\\claude_desktop_config.json`}</pre>
                   <span className="font-bold text-accent shrink-0">4.</span>
                   <div>
                     <p className="font-medium text-text-primary">Did you merge correctly with existing config?</p>
-                    <p>If you already had servers, you need to add inside the existing <code className="bg-code-bg px-1 rounded">mcpServers</code> object, not create a new one:</p>
-                    <pre className="bg-code-bg p-2 rounded mt-1 text-xs font-mono">{`// ❌ WRONG — two mcpServers objects
-{
-  "mcpServers": { "old-server": { ... } },
-  "mcpServers": { "new-server": { ... } }
-}
-
-// ✅ CORRECT — both in one mcpServers
+                    <p>If your config file already has data (like preferences), don&apos;t replace it. Add <code className="bg-code-bg px-1 rounded">mcpServers</code> as a new key alongside the existing content:</p>
+                    <pre className="bg-code-bg p-2 rounded mt-1 text-xs font-mono">{`// ❌ WRONG — replaced everything
 {
   "mcpServers": {
-    "old-server": { ... },
-    "new-server": { ... }
+    "my-server": { ... }
+  }
+}
+
+// ✅ CORRECT — added alongside existing data
+{
+  "preferences": {
+    "coworkWebSearchEnabled": true,
+    "sidebarMode": "task"
+  },
+  "mcpServers": {
+    "my-server": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://example.com/mcp"]
+    }
   }
 }`}</pre>
                   </div>
