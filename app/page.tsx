@@ -113,6 +113,30 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* Best for use cases */}
+      <section className="border-t border-border">
+        <div className="max-w-[1200px] mx-auto px-4 py-8">
+          <h2 className="text-lg font-semibold text-text-primary mb-4">Best MCP servers for...</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {[
+              { href: '/best-for/developers', label: 'Developers', emoji: '&lt;/&gt;' },
+              { href: '/best-for/data-engineering', label: 'Data Engineering', emoji: '&#128202;' },
+              { href: '/best-for/productivity', label: 'Productivity', emoji: '&#9889;' },
+              { href: '/best-for/ai-agents', label: 'AI Agents', emoji: '&#129302;' },
+              { href: '/best-for/cloud-infrastructure', label: 'Cloud & Infra', emoji: '&#9729;' },
+              { href: '/best-for/security', label: 'Security', emoji: '&#128274;' },
+            ].map(item => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="border border-border rounded-md p-3 text-sm text-text-primary hover:bg-bg-tertiary transition-colors"
+                dangerouslySetInnerHTML={{ __html: `${item.emoji} ${item.label}` }}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Guides */}
       <section className="border-t border-border">
         <div className="max-w-[1200px] mx-auto px-4 py-8">

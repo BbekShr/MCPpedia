@@ -36,6 +36,64 @@ export interface Server {
   verified: boolean
   created_at: string
   updated_at: string
+  // MCPpedia Score
+  score_total: number
+  score_security: number
+  score_maintenance: number
+  score_documentation: number
+  score_compatibility: number
+  score_efficiency: number
+  score_computed_at: string | null
+  // Security
+  has_authentication: boolean
+  security_issues: SecurityIssue[]
+  cve_count: number
+  last_security_scan: string | null
+  security_verified: boolean
+  // Token efficiency
+  estimated_tokens_per_call: number
+  total_tool_tokens: number
+  token_efficiency_grade: 'A' | 'B' | 'C' | 'D' | 'F' | 'unknown'
+  // Registry
+  registry_id: string | null
+  registry_synced_at: string | null
+  registry_verified: boolean
+}
+
+export interface SecurityIssue {
+  type: string
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'info'
+  description: string
+}
+
+export interface SecurityAdvisory {
+  id: string
+  server_id: string
+  cve_id: string | null
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'info'
+  cvss_score: number | null
+  title: string
+  description: string | null
+  affected_versions: string | null
+  fixed_version: string | null
+  source_url: string | null
+  status: 'open' | 'fixed' | 'wont_fix' | 'disputed'
+  published_at: string | null
+  created_at: string
+}
+
+export interface Comparison {
+  id: string
+  server_a_id: string
+  server_b_id: string
+  slug: string
+  summary: string | null
+  winner_id: string | null
+  view_count: number
+  created_at: string
+  updated_at: string
+  server_a?: Server
+  server_b?: Server
 }
 
 export interface Tool {

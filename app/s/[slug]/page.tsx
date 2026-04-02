@@ -7,8 +7,11 @@ import CategoryTag from '@/components/CategoryTag'
 import ToolCard from '@/components/ToolCard'
 import InstallConfig from '@/components/InstallConfig'
 import DiscussionSection from '@/components/DiscussionSection'
+import ScoreCard from '@/components/ScoreCard'
+import SecurityCard from '@/components/SecurityCard'
+import TokenMetrics from '@/components/TokenMetrics'
 import { SITE_NAME } from '@/lib/constants'
-import type { Server, Changelog } from '@/lib/types'
+import type { Server, Changelog, SecurityAdvisory } from '@/lib/types'
 import type { HealthStatus } from '@/lib/constants'
 import type { Metadata } from 'next'
 
@@ -82,19 +85,28 @@ export default async function ServerDetailPage({
 
   const s = server as Server
 
-  const { data: changelogs } = await supabase
-    .from('changelogs')
-    .select('*')
-    .eq('server_id', s.id)
-    .order('detected_at', { ascending: false })
-    .limit(10)
+  const [{ data: changelogs }, { data: advisories }] = await Promise.all([
+    supabase
+      .from('changelogs')
+      .select('*')
+      .eq('server_id', s.id)
+      .order('detected_at', { ascending: false })
+      .limit(10),
+    supabase
+      .from('security_advisories')
+      .select('*')
+      .eq('server_id', s.id)
+      .order('published_at', { ascending: false }),
+  ])
 
   const tools = s.tools || []
   const resources = s.resources || []
   const prompts = s.prompts || []
 
   const sections = [
+    { id: 'score', label: 'MCPpedia Score' },
     { id: 'install', label: 'Quick Install' },
+    { id: 'security', label: 'Security' },
     tools.length > 0 ? { id: 'tools', label: `Tools (${tools.length})` } : null,
     resources.length > 0 ? { id: 'resources', label: 'Resources' } : null,
     prompts.length > 0 ? { id: 'prompts', label: 'Prompts' } : null,
@@ -189,6 +201,29 @@ export default async function ServerDetailPage({
 
         {/* Main content */}
         <div className="flex-1 min-w-0 space-y-10">
+          {/* MCPpedia Score + Security + Token Metrics */}
+          <section id="score">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <ScoreCard server={s} />
+              <div className="space-y-4">
+                <SecurityCard server={s} advisories={(advisories as SecurityAdvisory[]) || []} />
+                <TokenMetrics server={s} />
+              </div>
+            </div>
+            <div className="mt-3 text-xs text-text-muted">
+              <a
+                href={`https://mcppedia.org/badge/${s.slug}`}
+                className="text-accent hover:text-accent-hover"
+              >
+                Embed this score
+              </a>
+              {' · '}
+              <code className="bg-code-bg px-1 rounded">
+                {'[![MCPpedia Score](https://mcppedia.org/badge/' + s.slug + ')](https://mcppedia.org/s/' + s.slug + ')'}
+              </code>
+            </div>
+          </section>
+
           {/* Quick Install */}
           <section id="install">
             <h2 className="text-lg font-semibold text-text-primary mb-4">Quick Install</h2>
