@@ -346,7 +346,15 @@ export default async function ServerDetailPage({
                     <p className="text-text-muted">
                       {s.cve_count === 0
                         ? 'No known vulnerabilities found. '
-                        : `${s.cve_count} known CVE(s) found — check the security section below. `
+                        : <>
+                            {s.cve_count} known CVE(s) found.{' '}
+                            {s.npm_package ? (
+                              <a href={`https://osv.dev/list?ecosystem=npm&q=${encodeURIComponent(s.npm_package)}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover">View on OSV.dev &rarr;</a>
+                            ) : s.pip_package ? (
+                              <a href={`https://osv.dev/list?ecosystem=PyPI&q=${encodeURIComponent(s.pip_package)}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover">View on OSV.dev &rarr;</a>
+                            ) : null}
+                            {' '}
+                          </>
                       }
                       {s.license && s.license !== 'NOASSERTION'
                         ? `Licensed under ${s.license}. `
