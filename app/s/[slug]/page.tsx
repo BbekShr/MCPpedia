@@ -9,7 +9,7 @@ import InstallConfig from '@/components/InstallConfig'
 import DiscussionSection from '@/components/DiscussionSection'
 import ScoreCard from '@/components/ScoreCard'
 import SecurityCard from '@/components/SecurityCard'
-import TokenMetrics from '@/components/TokenMetrics'
+// Token info is covered in "Should you use this server?" section
 import HealthCheckBadge from '@/components/HealthCheckBadge'
 import VerifiedBadge from '@/components/VerifiedBadge'
 import ReviewSection from '@/components/ReviewSection'
@@ -248,14 +248,11 @@ export default async function ServerDetailPage({
 
         {/* Main content */}
         <div className="flex-1 min-w-0 space-y-12 [&>section:not(:first-child)]:pt-8 [&>section:not(:first-child)]:border-t [&>section:not(:first-child)]:border-border">
-          {/* MCPpedia Score + Security + Token Metrics */}
+          {/* MCPpedia Score + Security */}
           <section id="score">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <ScoreCard server={s} advisories={(advisories as SecurityAdvisory[]) || []} />
-              <div className="space-y-4">
-                <SecurityCard server={s} advisories={(advisories as SecurityAdvisory[]) || []} />
-                <TokenMetrics server={s} />
-              </div>
+              <SecurityCard server={s} advisories={(advisories as SecurityAdvisory[]) || []} />
             </div>
             <div className="mt-3 text-xs text-text-muted">
               <a
