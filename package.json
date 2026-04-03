@@ -12,6 +12,7 @@
     "@supabase/ssr": "^0.10.0",
     "@supabase/supabase-js": "^2.101.1",
     "@tailwindcss/typography": "^0.5.19",
+    "@vercel/analytics": "^2.0.1",
     "dotenv": "^17.4.0",
     "gray-matter": "^4.0.3",
     "next": "16.2.2",

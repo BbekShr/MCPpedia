@@ -3,6 +3,7 @@ import './globals.css'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import { SITE_NAME, SITE_DESCRIPTION } from '@/lib/constants'
+import { Analytics } from '@vercel/analytics/next'
 export const metadata: Metadata = {
   title: {
     default: SITE_NAME,
@@ -29,6 +30,7 @@ export default function RootLayout({
         <Nav />
         <main className="flex-1">{children}</main>
         <Footer />
+        <Analytics />
       </body>
     </html>
   )
