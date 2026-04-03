@@ -16,6 +16,7 @@ import ReviewSection from '@/components/ReviewSection'
 import ServerTester from '@/components/ServerTester'
 import ServerIcon from '@/components/ServerIcon'
 import EnvInstructions from '@/components/EnvInstructions'
+import CommunityVerify from '@/components/CommunityVerify'
 import { SITE_NAME } from '@/lib/constants'
 import type { Server, Changelog, SecurityAdvisory } from '@/lib/types'
 import type { HealthStatus } from '@/lib/constants'
@@ -191,6 +192,7 @@ export default async function ServerDetailPage({
           {s.publisher_verified && <VerifiedBadge type="publisher" />}
           {s.registry_verified && <VerifiedBadge type="registry" />}
           {s.verified && <VerifiedBadge type="mcppedia" />}
+          {s.community_verified && <VerifiedBadge type="community" />}
           {s.updated_at && (
             <span className="text-xs text-text-muted">
               Updated {new Date(s.updated_at).toLocaleDateString()}
@@ -249,7 +251,7 @@ export default async function ServerDetailPage({
           {/* MCPpedia Score + Security + Token Metrics */}
           <section id="score">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <ScoreCard server={s} />
+              <ScoreCard server={s} advisories={(advisories as SecurityAdvisory[]) || []} />
               <div className="space-y-4">
                 <SecurityCard server={s} advisories={(advisories as SecurityAdvisory[]) || []} />
                 <TokenMetrics server={s} />
@@ -378,6 +380,9 @@ export default async function ServerDetailPage({
                 </div>
                 )
               })()}
+              <div className="pt-3 border-t border-border">
+                <CommunityVerify serverId={s.id} initialCount={s.community_verification_count || 0} />
+              </div>
               <div className="flex flex-wrap items-center gap-4 pt-2">
                 {s.github_url && (
                   <a href={s.github_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm text-accent hover:text-accent-hover">

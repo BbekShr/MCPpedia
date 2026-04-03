@@ -77,6 +77,9 @@ export interface Server {
   // Reviews
   review_count: number
   review_avg: number
+  // Community verification
+  community_verification_count: number
+  community_verified: boolean
 }
 
 export interface SecurityIssue {

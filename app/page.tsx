@@ -21,18 +21,21 @@ export default async function HomePage() {
     supabase
       .from('servers')
       .select('*')
+      .neq('is_archived', true)
       .order('updated_at', { ascending: false })
       .limit(4),
     supabase
       .from('servers')
       .select('*')
       .neq('source', 'manual')
+      .neq('is_archived', true)
       .order('created_at', { ascending: false })
       .limit(4),
     supabase
       .from('servers')
       .select('*')
       .eq('author_type', 'official')
+      .neq('is_archived', true)
       .order('score_total', { ascending: false })
       .limit(8),
     supabase

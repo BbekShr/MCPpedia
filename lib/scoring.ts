@@ -177,7 +177,6 @@ export async function scanSecurity(
   score -= openVulns.filter(a => a.severity === 'low').length * 2     // low: -2 each
 
   // Deduct for bad practices
-  if (!hasAuth) score -= 4               // no auth: -4
   if (!license) score -= 3               // no license: -3
   if (isArchived) score -= 8             // archived: -8
 

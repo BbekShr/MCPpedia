@@ -8,6 +8,7 @@ import { config } from 'dotenv'
 config({ path: '.env.local' })
 
 import { createAdminClient } from './lib/supabase'
+import { BotRun } from './lib/bot-run'
 import { getReadme } from './lib/github'
 import { categorize } from './lib/categorize'
 
@@ -110,6 +111,8 @@ function extractTransport(readme: string): string[] {
 }
 
 async function main() {
+  const run = await BotRun.start('extract-install-info')
+  try {
   console.log('=== MCPpedia Install Info Extractor ===')
   console.log(new Date().toISOString())
 
@@ -263,7 +266,15 @@ async function main() {
     await new Promise(r => setTimeout(r, 200))
   }
 
+  run.addProcessed(needsUpdate.length)
+  run.addUpdated(updated)
+  run.setSummary({ updated, skipped })
   console.log(`\nDone. Updated: ${updated}, Skipped: ${skipped}`)
+  await run.finish()
+  } catch (err) {
+    await run.fail(String(err))
+    throw err
+  }
 }
 
 main().catch(console.error)

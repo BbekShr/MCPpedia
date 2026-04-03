@@ -145,6 +145,29 @@ export default function MethodologyPage() {
             </a>.
           </p>
         </section>
+
+        {/* Disclaimer */}
+        <section className="border-t border-border pt-8">
+          <h2 className="text-lg font-semibold mb-3">Disclaimer</h2>
+          <p className="text-text-muted">
+            MCPpedia scores are generated automatically from publicly available data and may not reflect
+            the full quality, security posture, or suitability of any server for your use case. Scores
+            are provided for informational purposes only and should not be the sole basis for security
+            or purchasing decisions.
+          </p>
+          <p className="text-text-muted mt-2">
+            MCPpedia is an independent community project and is not affiliated with, endorsed by, or
+            sponsored by Anthropic, the Model Context Protocol project, or any server listed on this site.
+            &quot;MCP&quot; and &quot;Model Context Protocol&quot; are trademarks of their respective owners.
+          </p>
+          <p className="text-text-muted mt-2">
+            Server metadata is sourced from the official MCP Registry, GitHub, npm, PyPI, and OSV.dev.
+            If you believe any information is inaccurate, please{' '}
+            <a href="https://github.com/BbekShr/MCPpedia/issues" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover">
+              open an issue
+            </a>.
+          </p>
+        </section>
       </div>
     </div>
   )

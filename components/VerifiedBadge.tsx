@@ -1,4 +1,4 @@
-export default function VerifiedBadge({ type }: { type: 'publisher' | 'mcppedia' | 'registry' }) {
+export default function VerifiedBadge({ type }: { type: 'publisher' | 'mcppedia' | 'registry' | 'community' }) {
   const config = {
     publisher: {
       label: 'Verified Publisher',
@@ -14,6 +14,11 @@ export default function VerifiedBadge({ type }: { type: 'publisher' | 'mcppedia'
       label: 'Official Registry',
       color: 'bg-accent/10 text-accent',
       icon: '◆',
+    },
+    community: {
+      label: 'Community Verified',
+      color: 'bg-green/10 text-green',
+      icon: '✓',
     },
   }
 

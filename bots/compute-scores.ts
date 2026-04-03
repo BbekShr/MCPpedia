@@ -8,6 +8,7 @@ import { config } from 'dotenv'
 config({ path: '.env.local' })
 
 import { createAdminClient } from './lib/supabase'
+import { BotRun } from './lib/bot-run'
 import { getReadme } from './lib/github'
 import {
   scanSecurity,
@@ -28,6 +29,8 @@ function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
 }
 
 async function main() {
+  const run = await BotRun.start('compute-scores')
+  try {
   console.log('=== MCPpedia Score Computation ===')
   console.log(new Date().toISOString())
 
@@ -176,18 +179,26 @@ async function main() {
               status: adv.status,
               published_at: adv.published_at,
             },
-            { onConflict: 'server_id,cve_id', ignoreDuplicates: true }
+            { onConflict: 'server_id,cve_id', ignoreDuplicates: false }
           )
       }
     }
 
     processed++
+    run.addProcessed()
+    run.addUpdated()
 
     // Rate limit — be nice to OSV.dev
     await new Promise(r => setTimeout(r, 300))
   }
 
+  run.setSummary({ scored: processed })
   console.log(`\nDone. Scored ${processed} servers.`)
+  await run.finish()
+  } catch (err) {
+    await run.fail(String(err))
+    throw err
+  }
 }
 
 main().catch(console.error)

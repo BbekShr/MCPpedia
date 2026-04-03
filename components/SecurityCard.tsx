@@ -117,16 +117,18 @@ export default function SecurityCard({
           label="CVEs"
           detail={totalCVEs === 0
             ? 'No known CVEs for this package'
-            : `${totalCVEs} found \u2014 ${openCount} open, ${fixedCount} fixed`}
+            : fixedCount > 0 && openCount === 0
+              ? `${fixedCount} fixed CVE${fixedCount !== 1 ? 's' : ''} \u2014 update to ${fixedAdvisories[0].fixed_version || 'latest'}${fixedCount > 1 ? '+' : ''}`
+              : `${totalCVEs} found \u2014 ${openCount} open, ${fixedCount} fixed`}
           href={osv}
           linkText="check OSV.dev \u2192"
         />
         <Row
-          pass={server.has_authentication}
+          pass={server.has_authentication ? true : null}
           label="Authentication"
           detail={server.has_authentication
             ? 'Requires authentication to connect'
-            : 'None \u2014 any process on your machine can connect'}
+            : 'None required \u2014 easy to connect'}
         />
         <Row
           pass={!!server.license && server.license !== 'NOASSERTION'}

@@ -4,15 +4,17 @@ export default function TokenMetrics({ server }: { server: Server }) {
   const toolCount = server.tools?.length || 0
   // Rough estimate: ~150 tokens per tool definition (name + description + schema)
   const estimatedTokens = toolCount * 150
-  const grade = server.token_efficiency_grade !== 'unknown'
+  const grade = server.token_efficiency_grade && server.token_efficiency_grade !== 'unknown'
     ? server.token_efficiency_grade
+    : toolCount === 0 ? null
     : estimatedTokens <= 750 ? 'A'
     : estimatedTokens <= 1500 ? 'B'
     : estimatedTokens <= 3000 ? 'C'
     : estimatedTokens <= 6000 ? 'D'
     : 'F'
 
-  const gradeColor = grade === 'A' || grade === 'B' ? 'text-green'
+  const gradeColor = grade === null ? 'text-text-muted'
+    : grade === 'A' || grade === 'B' ? 'text-green'
     : grade === 'C' ? 'text-yellow'
     : 'text-red'
 
@@ -22,7 +24,7 @@ export default function TokenMetrics({ server }: { server: Server }) {
     <div className="border border-border rounded-md p-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-semibold text-text-primary">Token Efficiency</h3>
-        <span className={`text-2xl font-bold ${gradeColor}`}>{grade}</span>
+        <span className={`text-2xl font-bold ${gradeColor}`}>{grade ?? '?'}</span>
       </div>
 
       <dl className="space-y-1.5 text-sm">

@@ -7,6 +7,7 @@ import { config } from 'dotenv'
 config({ path: '.env.local' })
 
 import { createAdminClient } from './lib/supabase'
+import { BotRun } from './lib/bot-run'
 import { searchRepos, type GitHubRepo } from './lib/github'
 
 const supabase = createAdminClient()
@@ -114,26 +115,35 @@ async function insertServer(repo: GitHubRepo, source: string) {
 }
 
 async function main() {
-  console.log('=== MCPpedia Discovery Bot ===')
-  console.log(new Date().toISOString())
+  const run = await BotRun.start('discover')
+  try {
+    console.log('=== MCPpedia Discovery Bot ===')
+    console.log(new Date().toISOString())
 
-  const existingUrls = await getExistingGithubUrls()
-  console.log(`${existingUrls.size} servers already in database`)
+    const existingUrls = await getExistingGithubUrls()
+    console.log(`${existingUrls.size} servers already in database`)
 
-  // GitHub discovery
-  const repos = await discoverFromGitHub()
-  const newRepos = repos.filter(r => !existingUrls.has(r.html_url.toLowerCase()))
-  console.log(`${newRepos.length} new repos to add`)
+    // GitHub discovery
+    const repos = await discoverFromGitHub()
+    const newRepos = repos.filter(r => !existingUrls.has(r.html_url.toLowerCase()))
+    console.log(`${newRepos.length} new repos to add`)
+    run.addProcessed(repos.length)
 
-  let inserted = 0
-  for (const repo of newRepos) {
-    const success = await insertServer(repo, 'bot-github')
-    if (success) inserted++
-    // Rate limit Supabase inserts
-    await new Promise(r => setTimeout(r, 100))
+    let inserted = 0
+    for (const repo of newRepos) {
+      const success = await insertServer(repo, 'bot-github')
+      if (success) { inserted++; run.addUpdated() }
+      // Rate limit Supabase inserts
+      await new Promise(r => setTimeout(r, 100))
+    }
+
+    run.setSummary({ repos_found: repos.length, new_repos: newRepos.length, inserted })
+    console.log(`\nDone. Inserted ${inserted} new servers.`)
+    await run.finish()
+  } catch (err) {
+    await run.fail(String(err))
+    throw err
   }
-
-  console.log(`\nDone. Inserted ${inserted} new servers.`)
 }
 
 main().catch(console.error)

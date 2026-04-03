@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import type { Server } from '@/lib/types'
+import type { Server, SecurityAdvisory } from '@/lib/types'
 import { SCORE_WEIGHTS } from '@/lib/scoring'
 
 function ScoreBar({ label, score, max, children }: {
@@ -147,7 +147,28 @@ function efficiencyGrade(tokens: number): 'A' | 'B' | 'C' | 'D' | 'F' {
   return 'F'
 }
 
-export default function ScoreCard({ server }: { server: Server }) {
+export default function ScoreCard({ server, advisories = [] }: { server: Server; advisories?: SecurityAdvisory[] }) {
+  const [refreshing, setRefreshing] = useState(false)
+  const [refreshResult, setRefreshResult] = useState<string | null>(null)
+
+  async function handleRefresh() {
+    setRefreshing(true)
+    setRefreshResult(null)
+    try {
+      const res = await fetch(`/api/server/${server.slug}/refresh-score`, { method: 'POST' })
+      if (!res.ok) throw new Error('Failed to refresh')
+      const data = await res.json()
+      setRefreshResult(`Score updated: ${data.score_total}/100`)
+      // Reload page after short delay to show fresh data
+      setTimeout(() => window.location.reload(), 1500)
+    } catch {
+      setRefreshResult('Refresh failed — try again later')
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
+  const openCVEs = advisories.filter(a => a.status === 'open').length
   const subcategorySum = (server.score_security || 0) + (server.score_maintenance || 0) + (server.score_efficiency || 0) + (server.score_documentation || 0) + (server.score_compatibility || 0)
   const total = Math.min(subcategorySum || server.score_total || 0, 100)
   const toolCount = server.tools?.length || 0
@@ -193,16 +214,15 @@ export default function ScoreCard({ server }: { server: Server }) {
         {/* Security (0-30) */}
         <ScoreBar label="Security" score={Math.min(server.score_security || 0, SCORE_WEIGHTS.security)} max={SCORE_WEIGHTS.security}>
           <Evidence
-            pass={server.cve_count === 0}
-            text={server.cve_count === 0 ? 'No known CVEs' : `${server.cve_count} CVE(s) found`}
-            pts={server.cve_count === 0 ? '' : `-${server.cve_count * 10}`}
+            pass={openCVEs === 0}
+            text={openCVEs === 0 ? 'No known CVEs' : `${openCVEs} CVE(s) found`}
+            pts={openCVEs === 0 ? '' : `-${openCVEs * 10}`}
             link={osvLink || undefined}
             linkText="check OSV.dev →"
           />
           <Evidence
-            pass={server.has_authentication}
-            text={server.has_authentication ? 'Has authentication' : 'No authentication'}
-            pts={server.has_authentication ? '' : '-4'}
+            pass={null}
+            text={server.has_authentication ? 'Has authentication' : 'No authentication required'}
           />
           <Evidence
             pass={!!server.license && server.license !== 'NOASSERTION'}
@@ -382,11 +402,25 @@ export default function ScoreCard({ server }: { server: Server }) {
 
       {/* Footer */}
       <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
-        {server.score_computed_at && (
-          <p className="text-xs text-text-muted">
-            Scored {timeAgo(server.score_computed_at)}
-          </p>
-        )}
+        <div className="flex items-center gap-3">
+          {server.score_computed_at && (
+            <p className="text-xs text-text-muted">
+              Scored {timeAgo(server.score_computed_at)}
+            </p>
+          )}
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="text-xs text-accent hover:text-accent-hover disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {refreshing ? 'Refreshing...' : 'Refresh score'}
+          </button>
+          {refreshResult && (
+            <span className={`text-xs ${refreshResult.includes('failed') ? 'text-red' : 'text-green'}`}>
+              {refreshResult}
+            </span>
+          )}
+        </div>
         <Link href="/methodology" className="text-xs text-accent hover:text-accent-hover">
           How we score →
         </Link>

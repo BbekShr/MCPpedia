@@ -7,6 +7,7 @@ import { config } from 'dotenv'
 config({ path: '.env.local' })
 
 import { createAdminClient } from './lib/supabase'
+import { BotRun } from './lib/bot-run'
 import { getRepo } from './lib/github'
 
 const supabase = createAdminClient()
@@ -41,16 +42,35 @@ async function fetchNpmDownloads(packageName: string): Promise<number> {
 }
 
 async function main() {
+  const run = await BotRun.start('update-metadata')
+  try {
   console.log('=== MCPpedia Metadata Updater ===')
   console.log(new Date().toISOString())
 
-  const { data: servers, error } = await supabase
-    .from('servers')
-    .select('id, slug, github_url, npm_package')
-    .not('github_url', 'is', null)
+  // Supabase returns max 1000 rows by default — paginate to get all
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const servers: any[] = []
+  let page = 0
+  const PAGE_SIZE = 1000
+  while (true) {
+    const { data: batch, error: batchError } = await supabase
+      .from('servers')
+      .select('id, slug, github_url, npm_package')
+      .not('github_url', 'is', null)
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
-  if (error || !servers) {
-    console.error('Failed to fetch servers:', error?.message)
+    if (batchError) {
+      console.error('Failed to fetch servers:', batchError.message)
+      return
+    }
+    if (!batch || batch.length === 0) break
+    servers.push(...batch)
+    if (batch.length < PAGE_SIZE) break
+    page++
+  }
+
+  if (servers.length === 0) {
+    console.error('No servers found')
     return
   }
 
@@ -110,7 +130,15 @@ async function main() {
     await new Promise(r => setTimeout(r, 200))
   }
 
+  run.addProcessed(servers.length)
+  run.addUpdated(updated)
+  run.setSummary({ updated, errors })
   console.log(`\nDone. Updated: ${updated}, Errors: ${errors}`)
+  await run.finish()
+  } catch (err) {
+    await run.fail(String(err))
+    throw err
+  }
 }
 
 main().catch(console.error)

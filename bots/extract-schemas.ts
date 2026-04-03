@@ -7,6 +7,7 @@ import { config } from 'dotenv'
 config({ path: '.env.local' })
 
 import { createAdminClient } from './lib/supabase'
+import { BotRun } from './lib/bot-run'
 import { getReadme } from './lib/github'
 
 const supabase = createAdminClient()
@@ -118,6 +119,8 @@ function extractToolsWithRegex(readme: string): {
 }
 
 async function main() {
+  const run = await BotRun.start('extract-schemas')
+  try {
   console.log('=== MCPpedia Schema Extractor ===')
   console.log(new Date().toISOString())
 
@@ -170,7 +173,15 @@ async function main() {
     await new Promise(r => setTimeout(r, 500))
   }
 
+  run.addProcessed(servers.length)
+  run.addUpdated(extracted)
+  run.setSummary({ extracted })
   console.log(`\nDone. Extracted schemas for ${extracted} servers.`)
+  await run.finish()
+  } catch (err) {
+    await run.fail(String(err))
+    throw err
+  }
 }
 
 main().catch(console.error)

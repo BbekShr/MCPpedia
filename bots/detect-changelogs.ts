@@ -4,6 +4,7 @@
  */
 
 import { createAdminClient } from './lib/supabase'
+import { BotRun } from './lib/bot-run'
 import { getReleases } from './lib/github'
 
 const supabase = createAdminClient()
@@ -15,6 +16,8 @@ function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
 }
 
 async function main() {
+  const run = await BotRun.start('detect-changelogs')
+  try {
   console.log('=== MCPpedia Changelog Detector ===')
   console.log(new Date().toISOString())
 
@@ -25,6 +28,7 @@ async function main() {
 
   if (!servers || servers.length === 0) {
     console.log('No servers to check.')
+    await run.finish()
     return
   }
 
@@ -72,7 +76,15 @@ async function main() {
     await new Promise(r => setTimeout(r, 200))
   }
 
+  run.addProcessed(servers.length)
+  run.addUpdated(newVersions)
+  run.setSummary({ new_versions: newVersions })
   console.log(`\nDone. Detected ${newVersions} new versions.`)
+  await run.finish()
+  } catch (err) {
+    await run.fail(String(err))
+    throw err
+  }
 }
 
 main().catch(console.error)

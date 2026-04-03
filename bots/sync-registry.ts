@@ -8,6 +8,7 @@ import { config } from 'dotenv'
 config({ path: '.env.local' })
 
 import { createAdminClient } from './lib/supabase'
+import { BotRun } from './lib/bot-run'
 import { categorize } from './lib/categorize'
 
 const supabase = createAdminClient()
@@ -100,11 +101,14 @@ async function getExistingGithubUrls(): Promise<Set<string>> {
 }
 
 async function main() {
+  const run = await BotRun.start('sync-registry')
+  try {
   console.log('=== MCPpedia Registry Sync ===')
   console.log(new Date().toISOString())
 
   const registryServers = await fetchRegistryServers()
   console.log(`Fetched ${registryServers.length} servers from official registry`)
+  run.addProcessed(registryServers.length)
 
   if (registryServers.length === 0) {
     console.log('No servers returned from registry. Exiting.')
@@ -207,7 +211,14 @@ async function main() {
   // The SQL compute_all_scores() function uses simpler heuristics and different weights,
   // so we don't call it here to avoid overwriting accurate scores.
 
+  run.setSummary({ new: synced, updated })
+  run.addUpdated(synced + updated)
   console.log(`\nDone. New: ${synced}, Updated: ${updated}`)
+  await run.finish()
+  } catch (err) {
+    await run.fail(String(err))
+    throw err
+  }
 }
 
 main().catch(console.error)
