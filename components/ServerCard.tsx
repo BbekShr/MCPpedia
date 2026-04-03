@@ -42,6 +42,7 @@ export default function ServerCard({ server }: { server: Server }) {
     <Link
       href={`/s/${server.slug}`}
       className={`block border border-border border-l-[3px] ${healthBorder} rounded-md p-4 bg-bg hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-[1px] transition-all duration-150`}
+      aria-label={`${server.name} — score ${score}, ${server.health_status}`}
     >
       <div className="flex items-start justify-between gap-2 mb-1">
         <div className="flex items-center gap-2.5">

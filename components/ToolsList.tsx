@@ -27,13 +27,14 @@ export default function ToolsList({ tools }: { tools: Tool[] }) {
             value={filter}
             onChange={e => { setFilter(e.target.value); setShowAll(true) }}
             placeholder={`Filter ${tools.length} tools...`}
+            aria-label={`Filter ${tools.length} tools`}
             className="w-full px-3 py-1.5 text-sm border border-border rounded-md bg-bg text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent"
           />
         </div>
       )}
 
       {/* Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-0.5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-0.5" role="list" aria-label="MCP tools">
         {visible.map(tool => (
           <div
             key={tool.name}
