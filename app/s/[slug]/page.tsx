@@ -16,6 +16,7 @@ import ReviewSection from '@/components/ReviewSection'
 import ServerTester from '@/components/ServerTester'
 import ServerIcon from '@/components/ServerIcon'
 import EnvInstructions from '@/components/EnvInstructions'
+import ReadmeContent from '@/components/ReadmeContent'
 import { SITE_NAME } from '@/lib/constants'
 import type { Server, Changelog, SecurityAdvisory } from '@/lib/types'
 import type { HealthStatus } from '@/lib/constants'
@@ -117,7 +118,7 @@ export default async function ServerDetailPage({
     tools.length > 0 ? { id: 'tools', label: `Tools (${tools.length})` } : null,
     resources.length > 0 ? { id: 'resources', label: 'Resources' } : null,
     prompts.length > 0 ? { id: 'prompts', label: 'Prompts' } : null,
-    s.description ? { id: 'about', label: 'About' } : null,
+    { id: 'about', label: 'About' },
     s.api_name ? { id: 'api-info', label: 'API Info' } : null,
     changelogs && changelogs.length > 0 ? { id: 'versions', label: 'Version History' } : null,
     { id: 'reviews', label: 'Reviews' },
@@ -325,15 +326,21 @@ export default async function ServerDetailPage({
             </section>
           )}
 
-          {/* About */}
-          {s.description && (
-            <section id="about">
-              <h2 className="text-lg font-semibold text-text-primary mb-4">About</h2>
-              <div className="prose prose-sm max-w-none text-text-primary">
+          {/* About / README */}
+          <section id="about">
+            <h2 className="text-lg font-semibold text-text-primary mb-4">About</h2>
+            {s.description && (
+              <div className="prose prose-sm max-w-none text-text-primary mb-6">
                 <p className="whitespace-pre-wrap">{s.description}</p>
               </div>
-            </section>
-          )}
+            )}
+            {s.github_url && (
+              <ReadmeContent githubUrl={s.github_url} />
+            )}
+            {!s.description && !s.github_url && (
+              <p className="text-sm text-text-muted">No description available.</p>
+            )}
+          </section>
 
           {/* API Info */}
           {s.api_name && (
