@@ -2,7 +2,7 @@ name: Trending Tracker
 
 on:
   schedule:
-    - cron: '0 4 * * *'  # Daily at 4am UTC
+    - cron: '30 6 * * *'  # Daily at 6:30am UTC (after compute-scores)
   workflow_dispatch:
 
 jobs:

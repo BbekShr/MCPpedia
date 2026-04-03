@@ -2,7 +2,7 @@ name: Schema Extractor
 
 on:
   schedule:
-    - cron: '0 4 * * *'  # Daily at 4am UTC
+    - cron: '0 5 * * *'  # Daily at 5am UTC (after descriptions enricher)
   workflow_dispatch:
 
 jobs:

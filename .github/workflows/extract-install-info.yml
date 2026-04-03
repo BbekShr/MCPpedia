@@ -1,12 +1,12 @@
-name: Description Enricher
+name: Install Info Extractor
 
 on:
   schedule:
-    - cron: '30 4 * * *'  # Daily at 4:30am UTC (after install-info extractor)
+    - cron: '0 4 * * *'  # Daily at 4am UTC (after metadata updater)
   workflow_dispatch:
 
 jobs:
-  enrich:
+  extract:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,7 +14,7 @@ jobs:
         with:
           node-version: '20'
       - run: npm ci
-      - run: npx tsx bots/enrich-descriptions.ts
+      - run: npx tsx bots/extract-install-info.ts
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

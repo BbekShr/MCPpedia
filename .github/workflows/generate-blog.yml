@@ -1,0 +1,37 @@
+name: Blog Generator
+
+on:
+  schedule:
+    - cron: '0 10 * * 1'  # Every Monday at 10am UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - run: npm ci
+
+      - name: Generate blog posts
+        run: npx tsx bots/generate-blog.ts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Commit and push new posts
+        run: |
+          git config user.name "mcppedia-bot"
+          git config user.email "bot@mcppedia.org"
+          git add content/blog/
+          git diff --cached --quiet && echo "No new posts generated" && exit 0
+          git commit -m "blog: auto-generate weekly articles [bot]"
+          git push
