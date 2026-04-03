@@ -80,6 +80,7 @@ async function main() {
   let errors = 0
 
   for (const server of servers) {
+    try {
     const parsed = parseGitHubUrl(server.github_url)
     if (!parsed) continue
 
@@ -128,6 +129,10 @@ async function main() {
 
     // Rate limit
     await new Promise(r => setTimeout(r, 200))
+    } catch (err) {
+      console.error(`  Exception for ${server.slug}: ${String(err).slice(0, 100)}`)
+      errors++
+    }
   }
 
   run.addProcessed(servers.length)

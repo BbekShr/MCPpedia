@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Browse MCP Servers',
-  description: 'Search and browse the complete directory of MCP servers. Filter by category, status, and more.',
+  description: 'Search and browse MCP servers scored on security, maintenance, and efficiency. Filter by category, transport, status, and more.',
 }
 
 export default async function ServersPage({
@@ -25,6 +25,7 @@ export default async function ServersPage({
   const status = params.status || ''
   const pricing = params.pricing || ''
   const author = params.author || ''
+  const transport = params.transport || ''
   const sort = params.sort || ''
   const page = parseInt(params.page || '1', 10)
   const offset = (page - 1) * ITEMS_PER_PAGE
@@ -70,10 +71,17 @@ export default async function ServersPage({
     if (status) query = query.eq('health_status', status)
     if (pricing) query = query.eq('api_pricing', pricing)
     if (author) query = query.eq('author_type', author)
+    if (transport) query = query.contains('transport', [transport])
 
     switch (sort) {
       case 'stars':
         query = query.order('github_stars', { ascending: false })
+        break
+      case 'downloads':
+        query = query.order('npm_weekly_downloads', { ascending: false })
+        break
+      case 'commit':
+        query = query.order('github_last_commit', { ascending: false, nullsFirst: false })
         break
       case 'newest':
         query = query.order('created_at', { ascending: false })
@@ -81,11 +89,9 @@ export default async function ServersPage({
       case 'name':
         query = query.order('name', { ascending: true })
         break
-      case 'downloads':
-        query = query.order('npm_weekly_downloads', { ascending: false })
-        break
       default:
-        query = query.order('github_stars', { ascending: false })
+        // Default: score descending
+        query = query.order('score_total', { ascending: false })
     }
 
     query = query.range(offset, offset + ITEMS_PER_PAGE - 1)
@@ -100,7 +106,10 @@ export default async function ServersPage({
   return (
     <div className="max-w-[1200px] mx-auto px-4 py-6">
       <div className="mb-6">
-        <SearchBar placeholder="Search MCP servers..." />
+        <SearchBar
+          placeholder={`Search ${totalCount.toLocaleString()}+ MCP servers...`}
+          large
+        />
       </div>
 
       <div className="mb-6">
@@ -109,7 +118,10 @@ export default async function ServersPage({
 
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-text-muted">
-          Showing {servers.length} of {totalCount} servers
+          {q
+            ? `${totalCount.toLocaleString()} server${totalCount !== 1 ? 's' : ''} matching "${q}"`
+            : `${totalCount.toLocaleString()} servers`
+          }
         </p>
       </div>
 

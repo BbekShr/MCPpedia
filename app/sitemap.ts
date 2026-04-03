@@ -1,4 +1,5 @@
 import { CATEGORIES, SITE_URL } from '@/lib/constants'
+import { getAllBlogPosts } from '@/lib/blog'
 import type { MetadataRoute } from 'next'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -42,8 +43,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/servers`, changeFrequency: 'daily' as const, priority: 0.9 },
     { url: `${SITE_URL}/submit`, changeFrequency: 'monthly' as const, priority: 0.5 },
     { url: `${SITE_URL}/guides`, changeFrequency: 'weekly' as const, priority: 0.7 },
+    { url: `${SITE_URL}/blog`, changeFrequency: 'weekly' as const, priority: 0.7 },
     { url: `${SITE_URL}/about`, changeFrequency: 'monthly' as const, priority: 0.4 },
   ]
 
-  return [...staticPages, ...serverEntries, ...categoryEntries, ...guideEntries]
+  const blogEntries = getAllBlogPosts().map(post => ({
+    url: `${SITE_URL}/blog/${post.slug}`,
+    lastModified: new Date(post.date),
+    changeFrequency: 'weekly' as const,
+    priority: 0.7,
+  }))
+
+  return [...staticPages, ...serverEntries, ...categoryEntries, ...guideEntries, ...blogEntries]
 }

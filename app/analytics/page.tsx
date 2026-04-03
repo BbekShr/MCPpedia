@@ -164,7 +164,7 @@ export default async function AnalyticsPage() {
   // Security stats
   const withCVEs = all.filter(s => (s.cve_count || 0) > 0).length
   const withAuth = all.filter(s => s.has_authentication).length
-  const totalCVEs = all.reduce((s, x) => s + (x.cve_count || 0), 0)
+  const openCVEs = all.reduce((s, x) => s + (x.cve_count || 0), 0)
 
   // Stars & downloads
   const totalStars = all.reduce((s, x) => s + (x.github_stars || 0), 0)
@@ -203,7 +203,7 @@ export default async function AnalyticsPage() {
         <StatBox label="Total GitHub Stars" value={totalStars.toLocaleString()} />
         <StatBox label="Weekly npm Downloads" value={totalDownloads.toLocaleString()} />
         <StatBox label="Total Tools Exposed" value={totalTools.toLocaleString()} />
-        <StatBox label="Servers with CVEs" value={withCVEs} sub={`${totalCVEs} total CVEs`} />
+        <StatBox label="Servers with CVEs" value={withCVEs} sub={`${openCVEs} open CVEs`} />
         <StatBox label="With Authentication" value={`${pct(withAuth, total)}%`} sub={`${withAuth} of ${total}`} />
         <StatBox label="Official Servers" value={authorCounts.official} sub={`${pct(authorCounts.official, total)}% of total`} />
       </div>

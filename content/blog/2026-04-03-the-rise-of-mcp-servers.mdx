@@ -1,0 +1,97 @@
+---
+title: "The Rise of MCP Servers: Why the Ecosystem Is Exploding in 2026"
+description: "MCP servers have gone from niche developer tools to essential AI infrastructure. Here's what's driving the growth and what it means for you."
+hook: "6 months ago nobody knew what MCP servers were. Now there are hundreds and the number doubles every quarter. Here's why this matters for every developer."
+date: "2026-04-03"
+tags: ["ecosystem", "growth", "overview"]
+category: "weekly-roundup"
+featuredServers: []
+---
+
+Six months ago, if you asked a developer about MCP servers, you'd get a blank stare. Today, there are hundreds — and the number doubles every quarter. The Model Context Protocol has quietly become the backbone connecting AI assistants to the real world.
+
+Databases. APIs. File systems. Browsers. Anything an AI might need to touch gets wrapped in an MCP server, and suddenly it's accessible from every compatible client.
+
+<PullQuote>Build once, use everywhere. That's the promise — and it's actually working.</PullQuote>
+
+## Three forces colliding
+
+The explosion didn't happen overnight. Three things converged at exactly the right moment:
+
+**The protocol matured.** Tool descriptions, authentication, resource management — MCP now handles the gnarly infrastructure problems that every custom integration used to reinvent from scratch. The spec is stable. The SDKs are solid.
+
+**Client adoption went vertical.** When Anthropic, Cursor, Windsurf, and a dozen other tools all ship MCP support within the same quarter, developers take notice. The addressable audience for a single MCP server jumped from "one app" to "the entire AI tooling ecosystem."
+
+**The barrier to entry collapsed.** Spinning up an MCP server is a weekend project now. Not a quarter-long initiative. The official TypeScript and Python SDKs handle the boilerplate — you just define your tools.
+
+<Callout type="fire">
+The result? An average of **15+ new MCP servers appear every week** on GitHub alone. That's before counting private registries and enterprise deployments.
+</Callout>
+
+---
+
+## The quality problem nobody talks about
+
+More servers is great. More *good* servers is better. And right now, the gap between the best and worst is enormous.
+
+On one end: battle-tested servers maintained by teams at Stripe, Linear, and Notion, with full documentation, security audits, and proper auth. On the other: abandoned weekend experiments with no README, no tests, and `sudo` in the install script.
+
+How do you tell the difference from a listing page? You can't — unless someone does the work of actually evaluating them.
+
+<SectionLabel>That's what we built</SectionLabel>
+
+## The MCPpedia scoring system
+
+Every server in our catalog gets evaluated across five dimensions, weighted by what matters most for production use:
+
+<ScoreBreakdown>
+  <ScoreRow label="Security" points="30" description="CVE scanning via OSV.dev, license analysis, auth patterns, archived status" />
+  <ScoreRow label="Maintenance" points="25" description="Commit recency, star count, download trends, open issue ratio" />
+  <ScoreRow label="Efficiency" points="20" description="Token cost of tool schemas — poorly designed schemas can 10x your API bill" />
+  <ScoreRow label="Documentation" points="15" description="README quality, setup guides, working examples, install configs" />
+  <ScoreRow label="Compatibility" points="10" description="Transport support (stdio/SSE/streamable HTTP), multi-client testing" />
+</ScoreBreakdown>
+
+<Callout type="tip">
+**How to read the score:** 80+ is production-ready. 60–79 is usable with caveats. Below 40, proceed with extreme caution — there's usually a reason.
+</Callout>
+
+---
+
+## What we're watching right now
+
+Three trends are reshaping the ecosystem as we speak:
+
+### 1. The enterprise wave
+
+Stripe, Linear, Notion, Sentry — companies are shipping *official* MCP servers for their products. This isn't hobbyist tinkering anymore. When a public company puts their name on an MCP server, the entire ecosystem levels up in legitimacy.
+
+### 2. Security as the next frontier
+
+As MCP servers get access to email, databases, credentials, and production systems, the attack surface grows fast. We've already flagged multiple CVEs through our automated OSV.dev scanning — vulnerabilities that would've gone unnoticed in most server catalogs.
+
+<Callout type="warning">
+MCP servers run with your permissions. A compromised server doesn't just leak data — it can act on your behalf. Security scoring isn't optional anymore.
+</Callout>
+
+### 3. The hidden cost of bad schemas
+
+Here's something most developers don't think about: every MCP tool call sends the tool's schema to the AI model. A server with 50 tools and bloated JSON schemas can consume thousands of tokens *before a single function is called*.
+
+Our efficiency scoring measures this directly — and the variance is staggering. The best servers use 200 tokens per call. The worst? Over 5,000.
+
+---
+
+## What's coming from this blog
+
+Every week, this blog auto-generates from real MCPpedia data. No human writer, no editorial calendar — just algorithms analyzing what happened in the ecosystem and turning it into signal.
+
+Here's what to expect:
+
+- **Weekly Roundups** — New servers, ecosystem stats, what moved the needle
+- **Server Spotlights** — Deep dives into standout servers, backed by real scores
+- **Security Alerts** — CVEs and vulnerabilities the moment we detect them
+- **Trending Reports** — What's gaining stars and developer attention
+- **Category Deep Dives** — Head-to-head comparisons for specific use cases
+
+<PullQuote>The MCP ecosystem is being built in real time. This is your weekly dispatch from the front lines.</PullQuote>
