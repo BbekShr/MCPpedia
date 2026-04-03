@@ -39,7 +39,8 @@ export default async function HomePage() {
       .limit(8),
     supabase
       .from('servers')
-      .select('*', { count: 'exact', head: true }),
+      .select('*', { count: 'exact', head: true })
+      .eq('is_archived', false),
   ])
 
   return (

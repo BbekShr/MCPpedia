@@ -64,6 +64,8 @@ export interface Server {
   registry_id: string | null
   registry_synced_at: string | null
   registry_verified: boolean
+  // Data quality
+  data_quality: number
   // Env instructions
   env_instructions: Record<string, { label: string; url: string; steps: string }>
   prerequisites: string[]
