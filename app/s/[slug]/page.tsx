@@ -325,67 +325,129 @@ export default async function ServerDetailPage({
             </section>
           )}
 
-          {/* Why use this server — MCPpedia exclusive info */}
+          {/* Should I use this server? — answers real developer questions */}
           <section id="about">
-            <h2 className="text-lg font-semibold text-text-primary mb-4">At a Glance</h2>
-            <div className="space-y-3 text-sm">
-              {s.description && (
-                <p className="text-text-primary">{s.description}</p>
-              )}
-              {!s.description && s.tagline && (
-                <p className="text-text-primary">{s.tagline}</p>
+            <h2 className="text-lg font-semibold text-text-primary mb-4">Should you use this server?</h2>
+            <div className="space-y-4 text-sm">
+              {(s.description || s.tagline) && (
+                <p className="text-text-primary text-base">{s.description || s.tagline}</p>
               )}
 
-              <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm border border-border rounded-md p-4">
-                <div>
-                  <dt className="text-text-muted">Security</dt>
-                  <dd className="text-text-primary font-medium">{s.cve_count === 0 ? 'No known CVEs' : `${s.cve_count} known CVE(s)`}</dd>
-                </div>
-                <div>
-                  <dt className="text-text-muted">Context cost</dt>
-                  <dd className="text-text-primary font-medium">{s.total_tool_tokens ? `~${s.total_tool_tokens.toLocaleString()} tokens` : 'Not measured'} {s.token_efficiency_grade && s.token_efficiency_grade !== 'unknown' ? `(Grade ${s.token_efficiency_grade})` : ''}</dd>
-                </div>
-                <div>
-                  <dt className="text-text-muted">Health</dt>
-                  <dd className="text-text-primary font-medium capitalize">{s.health_status}</dd>
-                </div>
-                <div>
-                  <dt className="text-text-muted">Transport</dt>
-                  <dd className="text-text-primary font-medium">{s.transport?.join(', ') || 'stdio'}</dd>
-                </div>
-                <div>
-                  <dt className="text-text-muted">License</dt>
-                  <dd className="text-text-primary font-medium">{s.license && s.license !== 'NOASSERTION' ? s.license : 'Not specified'}</dd>
-                </div>
-                <div>
-                  <dt className="text-text-muted">Author</dt>
-                  <dd className="text-text-primary font-medium">{s.author_name || 'Unknown'} {s.author_type === 'official' ? '(Official)' : ''}</dd>
-                </div>
-                {s.requires_api_key && (
-                  <div>
-                    <dt className="text-text-muted">Requires</dt>
-                    <dd className="text-text-primary font-medium">API key</dd>
-                  </div>
-                )}
-                {s.compatible_clients && s.compatible_clients.length > 0 && (
-                  <div>
-                    <dt className="text-text-muted">Works with</dt>
-                    <dd className="text-text-primary font-medium">{s.compatible_clients.join(', ')}</dd>
-                  </div>
-                )}
-              </dl>
+              {/* The 5 questions developers actually ask */}
+              <div className="space-y-3">
 
-              {s.github_url && (
-                <a
-                  href={s.github_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-sm text-accent hover:text-accent-hover"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-                  Read full documentation on GitHub &rarr;
-                </a>
-              )}
+                {/* 1. Is it safe? */}
+                <div className="flex items-start gap-3 p-3 rounded-md border border-border">
+                  <span className={`text-lg mt-0.5 ${s.cve_count === 0 ? 'text-green' : 'text-red'}`}>
+                    {s.cve_count === 0 ? '✓' : '✗'}
+                  </span>
+                  <div>
+                    <p className="font-medium text-text-primary">Is it safe?</p>
+                    <p className="text-text-muted">
+                      {s.cve_count === 0
+                        ? 'No known vulnerabilities found. '
+                        : `${s.cve_count} known CVE(s) found — check the security section below. `
+                      }
+                      {s.license && s.license !== 'NOASSERTION'
+                        ? `Licensed under ${s.license}. `
+                        : 'License not specified. '
+                      }
+                      {s.has_authentication ? 'Has authentication.' : 'No authentication — the server trusts whoever connects.'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 2. Is it maintained? */}
+                <div className="flex items-start gap-3 p-3 rounded-md border border-border">
+                  <span className={`text-lg mt-0.5 ${s.health_status === 'active' ? 'text-green' : s.health_status === 'maintained' ? 'text-green' : 'text-yellow'}`}>
+                    {s.health_status === 'active' || s.health_status === 'maintained' ? '✓' : '~'}
+                  </span>
+                  <div>
+                    <p className="font-medium text-text-primary">Is it maintained?</p>
+                    <p className="text-text-muted">
+                      {s.github_last_commit
+                        ? `Last commit ${Math.floor((Date.now() - new Date(s.github_last_commit).getTime()) / 86400000)} days ago. `
+                        : 'Commit history unknown. '
+                      }
+                      {s.github_stars > 0 ? `${s.github_stars.toLocaleString()} GitHub stars. ` : ''}
+                      {s.npm_weekly_downloads > 0 ? `${s.npm_weekly_downloads.toLocaleString()} weekly downloads.` : ''}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 3. Will it work with my client? */}
+                <div className="flex items-start gap-3 p-3 rounded-md border border-border">
+                  <span className="text-lg mt-0.5 text-accent">i</span>
+                  <div>
+                    <p className="font-medium text-text-primary">Will it work with my client?</p>
+                    <p className="text-text-muted">
+                      Transport: {s.transport?.join(', ') || 'stdio'}.
+                      {s.transport?.includes('stdio')
+                        ? ' Works with Claude Desktop, Cursor, Claude Code, and most MCP clients.'
+                        : s.transport?.includes('http') || s.transport?.includes('sse')
+                          ? ' Remote server — may need mcp-remote proxy for some clients.'
+                          : ''
+                      }
+                      {s.requires_api_key ? ' Requires an API key.' : ''}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 4. How much context will it use? */}
+                <div className="flex items-start gap-3 p-3 rounded-md border border-border">
+                  <span className={`text-lg mt-0.5 ${s.token_efficiency_grade === 'A' || s.token_efficiency_grade === 'B' ? 'text-green' : s.token_efficiency_grade === 'C' ? 'text-yellow' : 'text-text-muted'}`}>
+                    {s.token_efficiency_grade && s.token_efficiency_grade !== 'unknown' ? s.token_efficiency_grade : '?'}
+                  </span>
+                  <div>
+                    <p className="font-medium text-text-primary">How much context will it use?</p>
+                    <p className="text-text-muted">
+                      {tools.length} tool{tools.length !== 1 ? 's' : ''}.
+                      {s.total_tool_tokens
+                        ? ` Uses ~${s.total_tool_tokens.toLocaleString()} tokens of your context window (${((s.total_tool_tokens / 200000) * 100).toFixed(1)}% of 200K).`
+                        : tools.length > 0
+                          ? ` Estimated ~${(tools.length * 150).toLocaleString()} tokens.`
+                          : ' Token cost not measured.'
+                      }
+                      {tools.length > 20 ? ' Consider loading selectively — this is a heavy server.' : ''}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 5. What if it doesn't work? */}
+                <div className="flex items-start gap-3 p-3 rounded-md border border-border">
+                  <span className="text-lg mt-0.5 text-accent">?</span>
+                  <div>
+                    <p className="font-medium text-text-primary">What if it doesn&apos;t work?</p>
+                    <p className="text-text-muted">
+                      Common issues: JSON syntax errors in config, wrong Node.js version, missing API keys.
+                      {' '}<Link href="/setup" className="text-accent hover:text-accent-hover">Setup guide</Link> covers troubleshooting.
+                      {s.github_url && (
+                        <>{' '}Or check <a href={`${s.github_url}/issues`} target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover">GitHub issues</a> for known problems.</>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Links */}
+              <div className="flex flex-wrap items-center gap-4 pt-2">
+                {s.github_url && (
+                  <a href={s.github_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm text-accent hover:text-accent-hover">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                    Full docs on GitHub
+                  </a>
+                )}
+                {s.homepage_url && (
+                  <a href={s.homepage_url} target="_blank" rel="noopener noreferrer" className="text-sm text-accent hover:text-accent-hover">
+                    Homepage
+                  </a>
+                )}
+                {s.npm_package && (
+                  <a href={`https://www.npmjs.com/package/${s.npm_package}`} target="_blank" rel="noopener noreferrer" className="text-sm text-accent hover:text-accent-hover">
+                    npm
+                  </a>
+                )}
+              </div>
             </div>
           </section>
 
