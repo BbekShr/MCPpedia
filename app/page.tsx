@@ -188,30 +188,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Guides */}
-      <section className="border-t border-border">
-        <div className="max-w-[1200px] mx-auto px-4 py-8">
-          <h2 className="text-lg font-semibold text-text-primary mb-4">Guides</h2>
-          <div className="space-y-3">
-            {[
-              { href: '/guides/what-is-mcp', title: 'What is MCP? A beginner\'s guide', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
-              { href: '/guides/install-first-server', title: 'How to install your first MCP server', icon: 'M4 16v1a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1m-4-4-4 4m0 0-4-4m4 4V4' },
-              { href: '/guides/best-servers-2026', title: 'Best MCP servers for developers in 2026', icon: 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 0 0 .95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 0 0-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 0 0-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 0 0-.363-1.118L2.98 10.1c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 0 0 .951-.69l1.519-4.674z' },
-            ].map(guide => (
-              <Link
-                key={guide.href}
-                href={guide.href}
-                className="flex items-center gap-3 p-3 rounded-md hover:bg-bg-tertiary transition-colors group"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted group-hover:text-accent shrink-0 transition-colors">
-                  <path d={guide.icon} />
-                </svg>
-                <span className="text-sm text-accent group-hover:text-accent-hover">{guide.title}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
     </div>
   )
 }
