@@ -1,0 +1,21 @@
+name: Description Enricher
+
+on:
+  schedule:
+    - cron: '30 3 * * *'  # Daily at 3:30am UTC (after metadata updater)
+  workflow_dispatch:
+
+jobs:
+  enrich:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npx tsx bots/enrich-descriptions.ts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GITHUB_TOKEN: ${{ secrets.BOT_GITHUB_TOKEN }}
