@@ -12,149 +12,163 @@ export default async function HomePage() {
   const supabase = await createClient()
 
   const [
-    { data: recentlyUpdated },
-    { data: newlyDiscovered },
+    { data: topScored },
     { data: officialServers },
+    { data: recentlyAdded },
     { count: serverCount },
+    { count: withCVEs },
+    { count: officialCount },
   ] = await Promise.all([
     supabase
       .from('servers')
       .select('*')
-      .neq('is_archived', true)
-      .order('updated_at', { ascending: false })
-      .limit(4),
-    supabase
-      .from('servers')
-      .select('*')
-      .neq('source', 'manual')
-      .neq('is_archived', true)
-      .order('created_at', { ascending: false })
-      .limit(4),
+      .eq('is_archived', false)
+      .gt('score_total', 0)
+      .order('score_total', { ascending: false })
+      .limit(6),
     supabase
       .from('servers')
       .select('*')
       .eq('author_type', 'official')
-      .neq('is_archived', true)
+      .eq('is_archived', false)
       .order('score_total', { ascending: false })
-      .limit(8),
+      .limit(6),
+    supabase
+      .from('servers')
+      .select('*')
+      .eq('is_archived', false)
+      .order('created_at', { ascending: false })
+      .limit(4),
     supabase
       .from('servers')
       .select('*', { count: 'exact', head: true })
+      .eq('is_archived', false),
+    supabase
+      .from('servers')
+      .select('*', { count: 'exact', head: true })
+      .gt('cve_count', 0)
+      .eq('is_archived', false),
+    supabase
+      .from('servers')
+      .select('*', { count: 'exact', head: true })
+      .eq('author_type', 'official')
       .eq('is_archived', false),
   ])
 
   return (
     <div>
-      {/* Hero */}
+      {/* Hero — clear value prop */}
       <section className="border-b border-border" style={{ background: 'var(--hero-gradient)' }}>
-        <div className="max-w-[1200px] mx-auto px-4 py-20 text-center">
-          <h1 className="text-4xl font-bold text-text-primary mb-3 tracking-tight">
-            The trusted source for<br />MCP servers
-          </h1>
-          <p className="text-lg text-text-muted mb-8 max-w-lg mx-auto">
-            Scored on security, maintenance, and efficiency. Verified by real data, not opinions.
-          </p>
-          <div className="max-w-xl mx-auto mb-6">
-            <SearchBar
-              placeholder={`Search ${serverCount || 0}+ MCP servers...`}
-              large
-            />
-          </div>
-          <div className="flex flex-wrap justify-center gap-2">
-            {CATEGORIES.slice(0, 10).map(cat => (
-              <Link
-                key={cat}
-                href={`/category/${cat}`}
-                className="px-3 py-1 text-sm rounded-full border border-border text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-colors duration-150"
-              >
-                {CATEGORY_LABELS[cat as Category]}
-              </Link>
-            ))}
-            <Link
-              href="/servers"
-              className="px-3 py-1 text-sm rounded-full text-accent hover:text-accent-hover transition-colors duration-150"
-            >
-              All &rarr;
-            </Link>
+        <div className="max-w-[1200px] mx-auto px-4 py-16 md:py-20">
+          <div className="max-w-2xl">
+            <h1 className="text-3xl md:text-4xl font-bold text-text-primary mb-3 tracking-tight">
+              Find the right MCP server.<br />
+              <span className="text-accent">Know if it&apos;s safe before you install.</span>
+            </h1>
+            <p className="text-base text-text-muted mb-6 max-w-lg">
+              Every server scored on security, maintenance, and efficiency — backed by real CVE data, not opinions.
+            </p>
+            <div className="max-w-xl mb-4">
+              <SearchBar
+                placeholder={`Search ${serverCount || 0}+ MCP servers...`}
+                large
+              />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Stats bar */}
-      <section className="border-b border-border">
-        <div className="max-w-[1200px] mx-auto px-4 py-3 flex items-center gap-5 text-sm text-text-muted">
-          <span className="flex items-center gap-1.5">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-            {serverCount || 0} servers
-          </span>
-        </div>
-      </section>
-
-      {/* Beginner CTA */}
-      <section className="bg-accent/5 border-b border-border">
-        <div className="max-w-[1200px] mx-auto px-4 py-4 flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-text-primary">New to MCP?</p>
-            <p className="text-xs text-text-muted">Learn what MCP servers are and set up your first one in 2 minutes.</p>
+      {/* Live stats — shows the site is alive and data-driven */}
+      <section className="border-b border-border bg-bg-secondary">
+        <div className="max-w-[1200px] mx-auto px-4 py-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-text-primary">{(serverCount || 0).toLocaleString()}</div>
+              <div className="text-xs text-text-muted">Servers tracked</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-text-primary">{officialCount || 0}</div>
+              <div className="text-xs text-text-muted">Official servers</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-red">{withCVEs || 0}</div>
+              <div className="text-xs text-text-muted">With known CVEs</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green">Daily</div>
+              <div className="text-xs text-text-muted">Security scans</div>
+            </div>
           </div>
-          <Link
-            href="/get-started"
-            className="shrink-0 px-4 py-2 text-sm rounded-md bg-accent text-white hover:bg-accent-hover transition-colors"
-          >
-            Get started
-          </Link>
         </div>
       </section>
 
-      {/* Recently updated */}
-      <section className="max-w-[1200px] mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-text-primary">Recently updated</h2>
-          <Link href="/servers?sort=newest" className="text-sm text-accent hover:text-accent-hover">
-            View all &rarr;
-          </Link>
+      {/* What makes MCPpedia different — quick visual proof */}
+      <section className="max-w-[1200px] mx-auto px-4 py-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="flex gap-3">
+            <div className="w-10 h-10 rounded-lg bg-red/10 flex items-center justify-center shrink-0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-text-primary mb-0.5">Security scanned</h3>
+              <p className="text-xs text-text-muted">Every server checked against OSV.dev for CVEs. Daily.</p>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-text-primary mb-0.5">Scored, not listed</h3>
+              <p className="text-xs text-text-muted">Every server rated 0-100 on security, maintenance, docs, and context cost.</p>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <div className="w-10 h-10 rounded-lg bg-green/10 flex items-center justify-center shrink-0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2" strokeLinecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-text-primary mb-0.5">Copy-paste install</h3>
+              <p className="text-xs text-text-muted">Config ready for Claude Desktop, Cursor, and Claude Code. No guessing.</p>
+            </div>
+          </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {(recentlyUpdated as Server[] || []).map(server => (
-            <ServerCard key={server.id} server={server} />
-          ))}
-        </div>
-        {(!recentlyUpdated || recentlyUpdated.length === 0) && (
-          <p className="text-text-muted text-sm">No servers yet. <Link href="/submit" className="text-accent">Submit the first one!</Link></p>
-        )}
       </section>
 
-      {/* Newly discovered */}
-      {newlyDiscovered && newlyDiscovered.length > 0 && (
-        <section className="max-w-[1200px] mx-auto px-4 pb-8">
+      {/* Top scored servers — the best of the best */}
+      <section className="border-t border-border">
+        <div className="max-w-[1200px] mx-auto px-4 py-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-text-primary">Newly discovered</h2>
-            <Link href="/servers?sort=newest" className="text-sm text-accent hover:text-accent-hover">
+            <div>
+              <h2 className="text-lg font-semibold text-text-primary">Highest rated</h2>
+              <p className="text-xs text-text-muted">Servers with the best MCPpedia scores</p>
+            </div>
+            <Link href="/servers?sort=score" className="text-sm text-accent hover:text-accent-hover">
               View all &rarr;
             </Link>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {(newlyDiscovered as Server[]).map(server => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {(topScored as Server[] || []).map(server => (
               <ServerCard key={server.id} server={server} />
             ))}
           </div>
-        </section>
-      )}
+        </div>
+      </section>
 
-      {/* Official MCP Servers */}
+      {/* Official servers */}
       {officialServers && officialServers.length > 0 && (
-        <section>
+        <section className="border-t border-border">
           <div className="max-w-[1200px] mx-auto px-4 py-8">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-lg font-semibold text-text-primary">Official MCP Servers</h2>
-                <p className="text-xs text-text-muted">Built and maintained by the service providers themselves</p>
+                <h2 className="text-lg font-semibold text-text-primary">Official servers</h2>
+                <p className="text-xs text-text-muted">Built by the companies behind the services</p>
               </div>
               <Link href="/servers?author=official" className="text-sm text-accent hover:text-accent-hover">
                 View all &rarr;
               </Link>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {(officialServers as Server[]).map(server => (
                 <ServerCard key={server.id} server={server} />
               ))}
@@ -163,32 +177,94 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Best for use cases */}
+      {/* Browse by use case */}
       <section className="border-t border-border">
         <div className="max-w-[1200px] mx-auto px-4 py-8">
-          <h2 className="text-lg font-semibold text-text-primary mb-4">Best MCP servers for...</h2>
+          <h2 className="text-lg font-semibold text-text-primary mb-4">Find servers for...</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {[
-              { href: '/best-for/developers', label: 'Developers', color: 'border-l-accent', icon: '</>' },
-              { href: '/best-for/data-engineering', label: 'Data Engineering', color: 'border-l-green', icon: 'DB' },
-              { href: '/best-for/productivity', label: 'Productivity', color: 'border-l-yellow', icon: 'ZZ' },
-              { href: '/best-for/ai-agents', label: 'AI Agents', color: 'border-l-accent', icon: 'AI' },
-              { href: '/best-for/cloud-infrastructure', label: 'Cloud & Infra', color: 'border-l-green', icon: 'CL' },
-              { href: '/best-for/security', label: 'Security', color: 'border-l-red', icon: 'SC' },
+              { href: '/best-for/developers', label: 'Code & Dev Tools', desc: 'GitHub, databases, filesystems', color: 'border-l-accent' },
+              { href: '/best-for/data-engineering', label: 'Data & Analytics', desc: 'SQL, pipelines, dashboards', color: 'border-l-green' },
+              { href: '/best-for/productivity', label: 'Productivity', desc: 'Slack, email, calendar', color: 'border-l-yellow' },
+              { href: '/best-for/ai-agents', label: 'AI & Agents', desc: 'Memory, reasoning, search', color: 'border-l-accent' },
+              { href: '/best-for/cloud-infrastructure', label: 'Cloud & DevOps', desc: 'AWS, Docker, Kubernetes', color: 'border-l-green' },
+              { href: '/best-for/security', label: 'Security', desc: 'Scanning, compliance, secrets', color: 'border-l-red' },
             ].map(item => (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`border border-border border-l-[3px] ${item.color} rounded-md p-4 text-sm hover:shadow-[var(--shadow-md)] hover:-translate-y-[1px] transition-all`}
+                className={`border border-border border-l-[3px] ${item.color} rounded-md p-4 hover:shadow-[var(--shadow-md)] hover:-translate-y-[1px] transition-all`}
               >
-                <span className="text-xs font-mono font-bold text-text-muted block mb-1">{item.icon}</span>
-                <span className="font-medium text-text-primary">{item.label}</span>
+                <span className="font-medium text-sm text-text-primary block">{item.label}</span>
+                <span className="text-xs text-text-muted">{item.desc}</span>
               </Link>
             ))}
           </div>
         </div>
       </section>
 
+      {/* Browse by category pills */}
+      <section className="border-t border-border">
+        <div className="max-w-[1200px] mx-auto px-4 py-8">
+          <h2 className="text-lg font-semibold text-text-primary mb-4">All categories</h2>
+          <div className="flex flex-wrap gap-2">
+            {CATEGORIES.map(cat => (
+              <Link
+                key={cat}
+                href={`/category/${cat}`}
+                className="px-3 py-1.5 text-sm rounded-full border border-border text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-colors"
+              >
+                {CATEGORY_LABELS[cat as Category]}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Recently added — shows the site is alive */}
+      {recentlyAdded && recentlyAdded.length > 0 && (
+        <section className="border-t border-border">
+          <div className="max-w-[1200px] mx-auto px-4 py-8">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-text-primary">Just added</h2>
+                <p className="text-xs text-text-muted">New servers discovered by our bots</p>
+              </div>
+              <Link href="/servers?sort=newest" className="text-sm text-accent hover:text-accent-hover">
+                View all &rarr;
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {(recentlyAdded as Server[]).map(server => (
+                <ServerCard key={server.id} server={server} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* New to MCP? */}
+      <section className="border-t border-border">
+        <div className="max-w-[1200px] mx-auto px-4 py-10">
+          <div className="border border-accent/20 rounded-lg p-6 bg-accent/5 flex flex-col md:flex-row items-center gap-6">
+            <div className="flex-1">
+              <h2 className="text-lg font-semibold text-text-primary mb-1">New to MCP?</h2>
+              <p className="text-sm text-text-muted">
+                MCP lets your AI assistant use real tools — search Slack, manage GitHub, query databases.
+                Set up your first server in 2 minutes.
+              </p>
+            </div>
+            <div className="flex gap-3 shrink-0">
+              <Link href="/get-started" className="px-4 py-2 text-sm rounded-md bg-accent text-white hover:bg-accent-hover transition-colors">
+                What is MCP?
+              </Link>
+              <Link href="/setup" className="px-4 py-2 text-sm rounded-md border border-border text-text-primary hover:bg-bg-tertiary transition-colors">
+                Setup guide
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   )
 }
