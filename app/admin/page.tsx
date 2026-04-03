@@ -275,6 +275,12 @@ export default function AdminPage() {
           <h1 className="text-2xl font-bold text-text-primary">Admin Panel</h1>
           <p className="text-xs text-text-muted">Signed in as @{user.user_metadata?.user_name} ({role})</p>
         </div>
+        <Link
+          href="/analytics"
+          className="text-sm text-accent hover:text-accent-hover border border-border rounded-md px-3 py-1.5 transition-colors duration-150"
+        >
+          Analytics
+        </Link>
       </div>
 
       {/* Tabs */}
