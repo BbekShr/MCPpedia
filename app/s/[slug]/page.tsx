@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import HealthBadge from '@/components/HealthBadge'
 import CategoryTag from '@/components/CategoryTag'
-import ToolCard from '@/components/ToolCard'
+import ToolsList from '@/components/ToolsList'
 import InstallConfig from '@/components/InstallConfig'
 import DiscussionSection from '@/components/DiscussionSection'
 import ScoreCard from '@/components/ScoreCard'
@@ -32,19 +32,35 @@ export async function generateMetadata({
   const supabase = await createClient()
   const { data: server } = await supabase
     .from('servers')
-    .select('name, tagline, tools, categories')
+    .select('name, tagline, tools, categories, score_total')
     .eq('slug', slug)
     .single()
 
   if (!server) return { title: 'Server Not Found' }
 
   const toolCount = (server.tools as unknown[])?.length || 0
+  const score = server.score_total || 0
+  const grade = score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 40 ? 'C' : score >= 20 ? 'D' : 'F'
+
+  const title = `${server.name} — MCPpedia Score: ${score}/100 (${grade})`
+  const description = server.tagline
+    ? `${server.tagline}. ${toolCount} tools. Scored on security, maintenance, and efficiency.`
+    : `${server.name} MCP Server. ${toolCount} tools. Score: ${score}/100.`
 
   return {
-    title: `${server.name} - ${SITE_NAME}`,
-    description: server.tagline
-      ? `${server.tagline}. ${toolCount} tools. Compatible with Claude Desktop, Cursor, and Claude Code.`
-      : `${server.name} MCP Server. ${toolCount} tools.`,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'article',
+      siteName: SITE_NAME,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+    },
   }
 }
 
@@ -260,24 +276,61 @@ export default async function ServerDetailPage({
               {(s.description || s.tagline) && (
                 <p className="text-text-primary text-base">{s.description || s.tagline}</p>
               )}
-              <div className="space-y-3">
+              {(() => {
+                const openCVEs = advisories?.filter((a: { status: string }) => a.status === 'open').length || 0
+                const fixedCVEs = advisories?.filter((a: { status: string }) => a.status === 'fixed').length || 0
+                const packageName = s.npm_package || s.pip_package
+                const hasTransport = s.transport && s.transport.length > 0
+                const daysSinceCommit = s.github_last_commit ? Math.floor((Date.now() - new Date(s.github_last_commit).getTime()) / 86400000) : null
+                const healthStatus = s.is_archived ? 'archived' : daysSinceCommit === null ? 'unknown' : daysSinceCommit < 30 ? 'active' : daysSinceCommit < 90 ? 'maintained' : daysSinceCommit < 365 ? 'stale' : 'abandoned'
+                const roundedTokens = s.total_tool_tokens ? Math.round(s.total_tool_tokens / 100) * 100 : null
+                const scanFailed = s.security_scan_status === 'failed'
+
+                return (
+                <div className="space-y-3">
                 <div className="flex items-start gap-3 p-3 rounded-md border border-border">
-                  <span className={`text-lg mt-0.5 ${s.cve_count === 0 ? 'text-green' : 'text-red'}`}>{s.cve_count === 0 ? '✓' : '✗'}</span>
+                  <span className={`text-lg mt-0.5 ${scanFailed ? 'text-yellow' : openCVEs === 0 ? 'text-green' : 'text-red'}`}>{scanFailed ? '~' : openCVEs === 0 ? '✓' : '✗'}</span>
                   <div>
                     <p className="font-medium text-text-primary">Is it safe?</p>
-                    <p className="text-text-muted">
-                      {s.cve_count === 0 ? 'No known vulnerabilities found. ' : <>{s.cve_count} known CVE(s) found.{' '}{s.npm_package ? <a href={`https://osv.dev/list?ecosystem=npm&q=${encodeURIComponent(s.npm_package)}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover">View on OSV.dev &rarr;</a> : s.pip_package ? <a href={`https://osv.dev/list?ecosystem=PyPI&q=${encodeURIComponent(s.pip_package)}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover">View on OSV.dev &rarr;</a> : null}{' '}</>}
-                      {s.license && s.license !== 'NOASSERTION' ? `Licensed under ${s.license}. ` : 'License not specified. '}
-                      {s.has_authentication ? 'Has authentication.' : 'No authentication — the server trusts whoever connects.'}
-                    </p>
+                    <div className="text-text-muted space-y-1 mt-1">
+                      <p>
+                        {scanFailed
+                          ? 'CVE scan unavailable — could not reach OSV.dev. Safety data may be incomplete.'
+                          : openCVEs === 0
+                          ? <>
+                              {packageName ? `No known CVEs for ${packageName}.` : 'No package registry to scan for CVEs.'}
+                              {fixedCVEs > 0 && ` ${fixedCVEs} previously resolved.`}
+                            </>
+                          : <>{openCVEs} open CVE{openCVEs !== 1 ? 's' : ''}{fixedCVEs > 0 ? ` (${fixedCVEs} fixed)` : ''}.{' '}
+                              {s.npm_package ? <a href={`https://osv.dev/list?ecosystem=npm&q=${encodeURIComponent(s.npm_package)}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover">Verify on OSV.dev &rarr;</a> : s.pip_package ? <a href={`https://osv.dev/list?ecosystem=PyPI&q=${encodeURIComponent(s.pip_package)}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover">Verify on OSV.dev &rarr;</a> : null}
+                            </>
+                        }
+                      </p>
+                      <p>
+                        {s.has_authentication
+                          ? 'Requires authentication to connect.'
+                          : 'No authentication \u2014 any process on your machine can connect to this server.'}
+                      </p>
+                      <p>
+                        {s.license && s.license !== 'NOASSERTION'
+                          ? <>{s.license}.{s.github_url && <>{' '}<a href={`${s.github_url}/blob/main/LICENSE`} target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover">View license &rarr;</a></>}</>
+                          : 'License not specified.'}
+                      </p>
+                      {s.last_security_scan && (
+                        <p className="text-xs">
+                          Last scanned {Math.floor((Date.now() - new Date(s.last_security_scan).getTime()) / 86400000)} days ago.
+                          {Math.floor((Date.now() - new Date(s.last_security_scan).getTime()) / 86400000) > 7 && ' CVE data may be stale.'}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 p-3 rounded-md border border-border">
-                  <span className={`text-lg mt-0.5 ${s.health_status === 'active' || s.health_status === 'maintained' ? 'text-green' : 'text-yellow'}`}>{s.health_status === 'active' || s.health_status === 'maintained' ? '✓' : '~'}</span>
+                  <span className={`text-lg mt-0.5 ${healthStatus === 'active' || healthStatus === 'maintained' ? 'text-green' : 'text-yellow'}`}>{healthStatus === 'active' || healthStatus === 'maintained' ? '✓' : '~'}</span>
                   <div>
                     <p className="font-medium text-text-primary">Is it maintained?</p>
                     <p className="text-text-muted">
-                      {s.github_last_commit ? `Last commit ${Math.floor((Date.now() - new Date(s.github_last_commit).getTime()) / 86400000)} days ago. ` : 'Commit history unknown. '}
+                      {daysSinceCommit !== null ? `Last commit ${daysSinceCommit} days ago. ` : 'Commit history unknown. '}
                       {s.github_stars > 0 ? `${s.github_stars.toLocaleString()} GitHub stars. ` : ''}
                       {s.npm_weekly_downloads > 0 ? `${s.npm_weekly_downloads.toLocaleString()} weekly downloads.` : ''}
                     </p>
@@ -288,8 +341,14 @@ export default async function ServerDetailPage({
                   <div>
                     <p className="font-medium text-text-primary">Will it work with my client?</p>
                     <p className="text-text-muted">
-                      Transport: {s.transport?.join(', ') || 'stdio'}.
-                      {s.transport?.includes('stdio') ? ' Works with Claude Desktop, Cursor, Claude Code, and most MCP clients.' : s.transport?.includes('http') || s.transport?.includes('sse') ? ' Remote server — may need mcp-remote proxy for some clients.' : ''}
+                      Transport: {hasTransport ? s.transport!.join(', ') : 'unknown (likely stdio)'}.
+                      {s.compatible_clients && s.compatible_clients.length > 0
+                        ? ` Works with ${s.compatible_clients.join(', ')}.`
+                        : hasTransport && s.transport!.includes('stdio')
+                          ? ' Works with Claude Desktop, Cursor, Claude Code, and most MCP clients.'
+                          : hasTransport && (s.transport!.includes('http') || s.transport!.includes('sse'))
+                            ? ' Remote server — may need mcp-remote proxy for some clients.'
+                            : ' Compatibility not confirmed.'}
                       {s.requires_api_key ? ' Requires an API key.' : ''}
                     </p>
                   </div>
@@ -300,7 +359,7 @@ export default async function ServerDetailPage({
                     <p className="font-medium text-text-primary">How much context will it use?</p>
                     <p className="text-text-muted">
                       {tools.length} tool{tools.length !== 1 ? 's' : ''}.
-                      {s.total_tool_tokens ? ` Uses ~${s.total_tool_tokens.toLocaleString()} tokens of your context window (${((s.total_tool_tokens / 200000) * 100).toFixed(1)}% of 200K).` : tools.length > 0 ? ` Estimated ~${(tools.length * 150).toLocaleString()} tokens.` : ' Token cost not measured.'}
+                      {roundedTokens ? ` Estimated ~${roundedTokens.toLocaleString()} tokens of your context window (${((s.total_tool_tokens / 200000) * 100).toFixed(1)}% of 200K).` : tools.length > 0 ? ` Estimated ~${(Math.round(tools.length * 150 / 100) * 100).toLocaleString()} tokens.` : ' Token cost not measured.'}
                       {tools.length > 20 ? ' Consider loading selectively — this is a heavy server.' : ''}
                     </p>
                   </div>
@@ -310,13 +369,15 @@ export default async function ServerDetailPage({
                   <div>
                     <p className="font-medium text-text-primary">What if it doesn&apos;t work?</p>
                     <p className="text-text-muted">
-                      Common issues: JSON syntax errors in config, wrong Node.js version, missing API keys.
+                      Common issues: JSON syntax errors in config{s.npm_package ? ', wrong Node.js version, npx cache' : s.pip_package ? ', Python version mismatch' : ''}{s.requires_api_key ? ', missing or expired API key' : ''}{hasTransport && (s.transport!.includes('http') || s.transport!.includes('sse')) ? ', network or firewall blocking' : ''}.
                       {' '}<Link href="/setup" className="text-accent hover:text-accent-hover">Setup guide</Link> covers troubleshooting.
                       {s.github_url && <>{' '}Or check <a href={`${s.github_url}/issues`} target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover">GitHub issues</a> for known problems.</>}
                     </p>
                   </div>
                 </div>
-              </div>
+                </div>
+                )
+              })()}
               <div className="flex flex-wrap items-center gap-4 pt-2">
                 {s.github_url && (
                   <a href={s.github_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm text-accent hover:text-accent-hover">
@@ -360,14 +421,7 @@ export default async function ServerDetailPage({
           {tools.length > 0 && (
             <section id="tools">
               <h2 className="text-lg font-semibold text-text-primary mb-4">Tools ({tools.length})</h2>
-              <div className="space-y-2">
-                {tools.slice(0, 10).map(tool => (
-                  <ToolCard key={tool.name} tool={tool} />
-                ))}
-              </div>
-              {tools.length > 10 && (
-                <ToolsExpander tools={tools} />
-              )}
+              <ToolsList tools={tools} />
             </section>
           )}
 

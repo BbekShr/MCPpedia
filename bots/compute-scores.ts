@@ -137,11 +137,19 @@ async function main() {
         // Security fields
         has_authentication: security.has_authentication,
         cve_count: security.cve_count,
+        security_scan_status: security.scan_status,
         last_security_scan: new Date().toISOString(),
         // Efficiency fields
         total_tool_tokens: efficiency.total_tool_tokens,
         estimated_tokens_per_call: efficiency.estimated_tokens_per_call,
         token_efficiency_grade: efficiency.grade,
+        // Documentation evidence
+        doc_readme_quality: docs.readme_quality,
+        doc_has_setup: docs.has_setup_instructions,
+        doc_has_examples: docs.has_examples,
+        doc_tool_schema_ratio: tools.length > 0
+          ? tools.filter(t => t.input_schema && Object.keys(t.input_schema).length > 0).length / tools.length
+          : null,
       })
       .eq('id', server.id)
 

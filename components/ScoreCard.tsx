@@ -55,9 +55,10 @@ function ScoreBar({ label, score, max, children }: {
   )
 }
 
-function Evidence({ pass, text, link, linkText }: {
+function Evidence({ pass, text, pts, link, linkText }: {
   pass: boolean | null
   text: string
+  pts?: string
   link?: string
   linkText?: string
 }) {
@@ -66,7 +67,7 @@ function Evidence({ pass, text, link, linkText }: {
       <span className={pass === true ? 'text-green' : pass === false ? 'text-red' : 'text-text-muted'}>
         {pass === true ? '✓' : pass === false ? '✗' : '○'}
       </span>
-      <span className="text-text-muted">
+      <span className="text-text-muted flex-1">
         {text}
         {link && (
           <>
@@ -77,6 +78,7 @@ function Evidence({ pass, text, link, linkText }: {
           </>
         )}
       </span>
+      {pts && <span className="text-text-muted shrink-0 tabular-nums">{pts}</span>}
     </div>
   )
 }
@@ -120,20 +122,62 @@ function ScoreRing({ score, size = 72 }: { score: number; size?: number }) {
   )
 }
 
+function commitPassState(days: number | null): boolean | null {
+  if (days === null) return false
+  if (days <= 30) return true
+  if (days <= 180) return null // neutral — still gets points
+  return false
+}
+
+function commitPts(days: number | null): string {
+  if (days === null) return '+0'
+  if (days <= 7) return '+12'
+  if (days <= 30) return '+10'
+  if (days <= 90) return '+7'
+  if (days <= 180) return '+4'
+  if (days <= 365) return '+2'
+  return '+0'
+}
+
+function efficiencyGrade(tokens: number): 'A' | 'B' | 'C' | 'D' | 'F' {
+  if (tokens <= 500) return 'A'
+  if (tokens <= 1500) return 'B'
+  if (tokens <= 4000) return 'C'
+  if (tokens <= 8000) return 'D'
+  return 'F'
+}
+
 export default function ScoreCard({ server }: { server: Server }) {
   const subcategorySum = (server.score_security || 0) + (server.score_maintenance || 0) + (server.score_efficiency || 0) + (server.score_documentation || 0) + (server.score_compatibility || 0)
   const total = Math.min(subcategorySum || server.score_total || 0, 100)
   const toolCount = server.tools?.length || 0
-  const tokenCost = server.total_tool_tokens || toolCount * 150
+  const tokenCost = server.total_tool_tokens || 0
+  const hasTokenData = (server.total_tool_tokens || 0) > 0
   const daysSinceCommit = server.github_last_commit
     ? Math.floor((Date.now() - new Date(server.github_last_commit).getTime()) / 86400000)
     : null
+  const grade = server.token_efficiency_grade || (hasTokenData ? efficiencyGrade(tokenCost) : 'unknown')
 
   const osvLink = server.npm_package
     ? `https://osv.dev/list?ecosystem=npm&q=${encodeURIComponent(server.npm_package)}`
     : server.pip_package
       ? `https://osv.dev/list?ecosystem=PyPI&q=${encodeURIComponent(server.pip_package)}`
       : null
+
+  // Documentation evidence (computed client-side from available data)
+  const toolsDocumented = server.tools?.filter(t => t.description?.length > 10).length || 0
+  const toolsWithSchemas = server.tools?.filter(t => t.input_schema && Object.keys(t.input_schema).length > 0).length || 0
+  const hasInstallConfig = Object.keys(server.install_configs || {}).length > 0
+  const hasTagline = !!server.tagline
+  const hasApiName = !!server.api_name
+  const hasHomepage = !!server.homepage_url
+
+  // Compatibility
+  const supportsStdio = server.transport?.includes('stdio') || false
+  const supportsHttp = server.transport?.includes('http') || server.transport?.includes('sse') || false
+  const hasMultipleTransports = (server.transport?.length || 0) > 1
+  const clientCount = server.compatible_clients?.length || 0
+  const hasTransportData = (server.transport?.length || 0) > 0
 
   return (
     <div className="border border-border rounded-md p-4">
@@ -146,111 +190,193 @@ export default function ScoreCard({ server }: { server: Server }) {
       </div>
 
       <div className="space-y-1">
-        {/* Security */}
+        {/* Security (0-30) */}
         <ScoreBar label="Security" score={Math.min(server.score_security || 0, SCORE_WEIGHTS.security)} max={SCORE_WEIGHTS.security}>
           <Evidence
             pass={server.cve_count === 0}
             text={server.cve_count === 0 ? 'No known CVEs' : `${server.cve_count} CVE(s) found`}
+            pts={server.cve_count === 0 ? '' : `-${server.cve_count * 10}`}
             link={osvLink || undefined}
             linkText="check OSV.dev →"
           />
           <Evidence
             pass={server.has_authentication}
             text={server.has_authentication ? 'Has authentication' : 'No authentication'}
+            pts={server.has_authentication ? '' : '-4'}
           />
           <Evidence
-            pass={!!server.license}
-            text={server.license ? `License: ${server.license}` : 'No license specified'}
+            pass={!!server.license && server.license !== 'NOASSERTION'}
+            text={server.license && server.license !== 'NOASSERTION' ? `License: ${server.license}` : 'No license specified'}
+            pts={server.license && server.license !== 'NOASSERTION' ? '' : '-3'}
             link={server.github_url ? `${server.github_url}/blob/main/LICENSE` : undefined}
           />
           <Evidence
             pass={!server.is_archived}
             text={server.is_archived ? 'Repository archived' : 'Repository active'}
+            pts={server.is_archived ? '-8' : ''}
           />
           <Evidence
             pass={server.security_verified}
             text={server.security_verified ? 'MCPpedia security verified' : 'Not yet security verified'}
+            pts={server.security_verified ? '+5' : ''}
           />
         </ScoreBar>
 
-        {/* Maintenance */}
+        {/* Maintenance (0-25) */}
         <ScoreBar label="Maintenance" score={Math.min(server.score_maintenance || 0, SCORE_WEIGHTS.maintenance)} max={SCORE_WEIGHTS.maintenance}>
           <Evidence
-            pass={daysSinceCommit !== null && daysSinceCommit <= 30}
+            pass={commitPassState(daysSinceCommit)}
             text={daysSinceCommit !== null ? `Last commit: ${daysSinceCommit} days ago` : 'No commit data'}
+            pts={commitPts(daysSinceCommit)}
             link={server.github_url ? `${server.github_url}/commits` : undefined}
             linkText="view commits →"
           />
           <Evidence
             pass={server.github_stars >= 100}
             text={`${server.github_stars.toLocaleString()} GitHub stars`}
+            pts={server.github_stars >= 5000 ? '+5' : server.github_stars >= 1000 ? '+4' : server.github_stars >= 100 ? '+3' : server.github_stars >= 10 ? '+1' : '+0'}
             link={server.github_url || undefined}
             linkText="view repo →"
           />
           <Evidence
             pass={server.npm_weekly_downloads >= 100}
             text={server.npm_weekly_downloads > 0 ? `${server.npm_weekly_downloads.toLocaleString()} weekly downloads` : 'No npm download data'}
+            pts={server.npm_weekly_downloads >= 10000 ? '+5' : server.npm_weekly_downloads >= 1000 ? '+4' : server.npm_weekly_downloads >= 100 ? '+2' : '+0'}
             link={server.npm_package ? `https://www.npmjs.com/package/${server.npm_package}` : undefined}
             linkText="view on npm →"
           />
+          {(server.github_open_issues || 0) > 50 && (
+            <Evidence
+              pass={false}
+              text={`${server.github_open_issues} open issues`}
+              pts={(server.github_open_issues || 0) > 100 ? '-2' : '-1'}
+            />
+          )}
           <Evidence
             pass={server.verified}
             text={server.verified ? 'MCPpedia verified' : 'Not yet verified'}
+            pts={server.verified ? '+3' : ''}
           />
         </ScoreBar>
 
-        {/* Efficiency */}
+        {/* Efficiency (0-20) */}
         <ScoreBar label="Efficiency" score={Math.min(server.score_efficiency || 0, SCORE_WEIGHTS.efficiency)} max={SCORE_WEIGHTS.efficiency}>
-          <Evidence
-            pass={tokenCost <= 1500}
-            text={`${toolCount} tools = ~${tokenCost.toLocaleString()} tokens of context`}
-          />
-          <Evidence
-            pass={null}
-            text={`${((tokenCost / 200000) * 100).toFixed(1)}% of a 200K context window`}
-          />
-          <Evidence
-            pass={null}
-            text={`Token efficiency grade: ${server.token_efficiency_grade || (tokenCost <= 500 ? 'A' : tokenCost <= 1500 ? 'B' : tokenCost <= 4000 ? 'C' : 'D')}`}
-          />
+          {hasTokenData ? (
+            <>
+              <Evidence
+                pass={tokenCost <= 4000}
+                text={`${toolCount} tools = ~${tokenCost.toLocaleString()} tokens of context`}
+                pts={tokenCost <= 500 ? '+20' : tokenCost <= 1500 ? '+16' : tokenCost <= 4000 ? '+12' : tokenCost <= 8000 ? '+6' : '+2'}
+              />
+              <Evidence
+                pass={null}
+                text={`${((tokenCost / 200000) * 100).toFixed(1)}% of a 200K context window`}
+              />
+              <Evidence
+                pass={null}
+                text={`Token efficiency grade: ${grade}`}
+              />
+            </>
+          ) : (
+            <Evidence
+              pass={null}
+              text={`${toolCount} tools — token cost not yet measured`}
+            />
+          )}
         </ScoreBar>
 
-        {/* Documentation */}
+        {/* Documentation (0-15) */}
         <ScoreBar label="Documentation" score={Math.min(server.score_documentation || 0, SCORE_WEIGHTS.documentation)} max={SCORE_WEIGHTS.documentation}>
           <Evidence
             pass={!!server.description && server.description.length > 50}
-            text={server.description ? 'Has description' : 'No description'}
+            text={server.description && server.description.length > 50 ? 'Has description' : 'No description (>50 chars)'}
+            pts={server.description && server.description.length > 50 ? '+2' : '+0'}
           />
           <Evidence
-            pass={toolCount > 0 && server.tools?.every(t => t.description?.length > 10)}
-            text={toolCount > 0 ? `${server.tools?.filter(t => t.description?.length > 10).length}/${toolCount} tools documented` : 'No tools'}
+            pass={null}
+            text={`Metadata: ${[hasTagline && 'tagline', server.github_url && 'repo', hasHomepage && 'homepage', hasApiName && 'API name'].filter(Boolean).join(', ') || 'none'}`}
+            pts={`+${(hasTagline ? 1 : 0) + (server.github_url ? 1 : 0) + (hasHomepage ? 1 : 0) + (hasApiName ? 1 : 0)}`}
           />
           <Evidence
-            pass={Object.keys(server.install_configs || {}).length > 0}
-            text={Object.keys(server.install_configs || {}).length > 0 ? 'Install config provided' : 'No install config'}
+            pass={toolCount > 0 && toolsDocumented === toolCount}
+            text={toolCount > 0
+              ? `${toolsDocumented}/${toolCount} tools documented`
+              : 'No tools'}
+            pts={toolCount > 0
+              ? (toolsDocumented === toolCount ? '+5' : toolsDocumented > toolCount * 0.5 ? '+3' : toolsDocumented > 0 ? '+1' : '+0')
+              : '+0'}
           />
+          {toolCount > 0 && (
+            <Evidence
+              pass={toolsWithSchemas > toolCount * 0.5}
+              text={`${toolsWithSchemas}/${toolCount} tools have input schemas`}
+              pts={toolsWithSchemas > toolCount * 0.5 ? '+3' : '+0'}
+            />
+          )}
           <Evidence
-            pass={!!server.github_url}
-            text={server.github_url ? 'Has README on GitHub' : 'No GitHub link'}
-            link={server.github_url || undefined}
-            linkText="read README →"
+            pass={hasInstallConfig}
+            text={hasInstallConfig ? 'Install config provided' : 'No install config'}
+            pts={hasInstallConfig ? '+3' : '+0'}
           />
+          {server.doc_readme_quality ? (
+            <>
+              <Evidence
+                pass={server.doc_readme_quality === 'excellent' || server.doc_readme_quality === 'good'}
+                text={`README quality: ${server.doc_readme_quality}`}
+                pts={server.doc_readme_quality === 'excellent' ? '+3' : server.doc_readme_quality === 'good' ? '+2' : server.doc_readme_quality === 'basic' ? '+1' : '+0'}
+              />
+              <Evidence
+                pass={server.doc_has_setup}
+                text={server.doc_has_setup ? 'README has setup instructions' : 'No setup instructions in README'}
+                pts={server.doc_has_setup ? '+2' : '+0'}
+              />
+              <Evidence
+                pass={server.doc_has_examples}
+                text={server.doc_has_examples ? 'README has examples' : 'No examples in README'}
+                pts={server.doc_has_examples ? '+2' : '+0'}
+              />
+            </>
+          ) : (
+            <Evidence
+              pass={!!server.github_url}
+              text={server.github_url ? 'Has README on GitHub' : 'No GitHub link'}
+              link={server.github_url || undefined}
+              linkText="read README →"
+            />
+          )}
         </ScoreBar>
 
-        {/* Compatibility */}
+        {/* Compatibility (0-10) */}
         <ScoreBar label="Compatibility" score={Math.min(server.score_compatibility || 0, SCORE_WEIGHTS.compatibility)} max={SCORE_WEIGHTS.compatibility}>
-          <Evidence
-            pass={server.transport?.includes('stdio')}
-            text={server.transport?.includes('stdio') ? 'Supports stdio (local)' : 'No stdio support'}
-          />
-          <Evidence
-            pass={server.transport?.includes('http') || server.transport?.includes('sse')}
-            text={server.transport?.includes('http') || server.transport?.includes('sse') ? 'Supports HTTP/SSE (remote)' : 'No HTTP/SSE support'}
-          />
-          <Evidence
-            pass={(server.transport?.length || 0) > 1}
-            text={`${server.transport?.length || 0} transport(s): ${server.transport?.join(', ') || 'none'}`}
-          />
+          {hasTransportData ? (
+            <>
+              <Evidence
+                pass={supportsStdio}
+                text={supportsStdio ? 'Supports stdio (local)' : 'No stdio support'}
+                pts={supportsStdio ? '+4' : '+0'}
+              />
+              <Evidence
+                pass={supportsHttp}
+                text={supportsHttp ? 'Supports HTTP/SSE (remote)' : 'No HTTP/SSE support'}
+                pts={supportsHttp ? '+4' : '+0'}
+              />
+              {hasMultipleTransports && (
+                <Evidence pass={true} text="Multiple transports" pts="+2" />
+              )}
+              {clientCount > 0 && (
+                <Evidence
+                  pass={true}
+                  text={`${clientCount} tested client(s): ${server.compatible_clients?.join(', ')}`}
+                  pts={`+${Math.min(clientCount * 2, 6)}`}
+                />
+              )}
+            </>
+          ) : (
+            <Evidence
+              pass={null}
+              text="No transport data available"
+            />
+          )}
         </ScoreBar>
       </div>
 

@@ -40,7 +40,12 @@ interface OSVVulnerability {
   modified?: string
 }
 
-export async function queryOSV(packageName: string, ecosystem: 'npm' | 'PyPI'): Promise<OSVVulnerability[]> {
+export interface OSVQueryResult {
+  vulns: OSVVulnerability[]
+  status: 'success' | 'failed'
+}
+
+export async function queryOSV(packageName: string, ecosystem: 'npm' | 'PyPI'): Promise<OSVQueryResult> {
   try {
     const res = await fetch('https://api.osv.dev/v1/query', {
       method: 'POST',
@@ -50,11 +55,11 @@ export async function queryOSV(packageName: string, ecosystem: 'npm' | 'PyPI'): 
       }),
     })
 
-    if (!res.ok) return []
+    if (!res.ok) return { vulns: [], status: 'failed' }
     const data = await res.json()
-    return data.vulns || []
+    return { vulns: data.vulns || [], status: 'success' }
   } catch {
-    return []
+    return { vulns: [], status: 'failed' }
   }
 }
 
@@ -99,6 +104,7 @@ export interface SecurityScanResult {
     published_at: string | null
   }>
   has_authentication: boolean
+  scan_status: 'success' | 'failed' | 'pending'
 }
 
 export async function scanSecurity(
@@ -110,11 +116,14 @@ export async function scanSecurity(
   securityVerified: boolean
 ): Promise<SecurityScanResult> {
   const advisories: SecurityScanResult['advisories'] = []
+  let anyFailed = false
+  const hasPackageToScan = !!(npmPackage || pipPackage)
 
   // Query OSV for npm package
   if (npmPackage) {
-    const vulns = await queryOSV(npmPackage, 'npm')
-    for (const v of vulns) {
+    const result = await queryOSV(npmPackage, 'npm')
+    if (result.status === 'failed') anyFailed = true
+    for (const v of result.vulns) {
       const cvssScore = parseCVSSScore(v.severity)
       const fixedEvent = v.affected?.[0]?.ranges?.[0]?.events?.find(e => e.fixed)
       advisories.push({
@@ -136,8 +145,9 @@ export async function scanSecurity(
 
   // Query OSV for pip package
   if (pipPackage) {
-    const vulns = await queryOSV(pipPackage, 'PyPI')
-    for (const v of vulns) {
+    const result = await queryOSV(pipPackage, 'PyPI')
+    if (result.status === 'failed') anyFailed = true
+    for (const v of result.vulns) {
       const cvssScore = parseCVSSScore(v.severity)
       const fixedEvent = v.affected?.[0]?.ranges?.[0]?.events?.find(e => e.fixed)
       advisories.push({
@@ -178,9 +188,10 @@ export async function scanSecurity(
 
   return {
     score,
-    cve_count: advisories.length,
+    cve_count: openVulns.length,
     advisories,
     has_authentication: hasAuth,
+    scan_status: anyFailed ? 'failed' : hasPackageToScan ? 'success' : 'pending',
   }
 }
 

@@ -115,7 +115,7 @@ export default function ServerTester({ server }: { server: Server }) {
         /* HTTP server — test from browser */
         <div>
           <p className="text-sm text-text-muted mb-3">
-            This server supports HTTP transport. Test if it&apos;s reachable right now.
+            This server supports HTTP transport. Be the first to test it — help the community know if it works.
           </p>
           <button
             onClick={testHttpServer}
@@ -136,7 +136,7 @@ export default function ServerTester({ server }: { server: Server }) {
         /* Stdio server — show copy-paste command */
         <div>
           <p className="text-sm text-text-muted mb-3">
-            Run this in your terminal to test if the server starts:
+            Run this in your terminal to verify the server starts. Then let us know if it worked — your result helps other developers.
           </p>
           <div className="relative">
             <pre className="bg-code-bg border border-border rounded-md p-3 text-sm font-mono overflow-x-auto">

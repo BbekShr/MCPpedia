@@ -208,7 +208,15 @@ export default function DiscussionSection({ serverId }: { serverId: string }) {
           ))}
         </div>
       ) : (
-        <p className="text-sm text-text-muted mb-6">No discussions yet. Be the first to share your experience!</p>
+        <div className="border border-border rounded-md p-4 mb-6 bg-bg-secondary">
+          <p className="text-sm text-text-primary font-medium mb-1">Start a conversation</p>
+          <p className="text-xs text-text-muted mb-2">Ask a question, share a tip, or report an issue.</p>
+          <div className="flex flex-wrap gap-2 text-xs text-text-muted">
+            <span className="px-2 py-0.5 rounded-full bg-bg border border-border">Has anyone used this with Cursor?</span>
+            <span className="px-2 py-0.5 rounded-full bg-bg border border-border">How do you handle auth?</span>
+            <span className="px-2 py-0.5 rounded-full bg-bg border border-border">Any alternatives?</span>
+          </div>
+        </div>
       )}
 
       {/* New discussion form */}

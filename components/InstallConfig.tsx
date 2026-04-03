@@ -13,42 +13,57 @@ interface Props {
   slug?: string
 }
 
+function generateCliCommand(
+  slug: string,
+  command: string,
+  cmdArgs: string[],
+  env?: Record<string, string>
+): string {
+  const envParts = env ? Object.entries(env).map(([k, v]) => `-e ${k}=${v}`).join(' ') + ' ' : ''
+  return `claude mcp add ${slug} ${envParts}-- ${command} ${cmdArgs.join(' ')}`
+}
+
 function generateConfig(
   client: string,
   serverName: string,
   npmPackage?: string | null,
   pipPackage?: string | null,
   requiresApiKey?: boolean
-): Record<string, unknown> {
+): Record<string, unknown> | string {
   const slug = serverName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 
   if (npmPackage) {
-    const base: Record<string, unknown> = {
+    const base: Record<string, string | string[] | Record<string, string>> = {
       command: 'npx',
       args: ['-y', npmPackage],
     }
-    if (requiresApiKey) {
-      base.env = { API_KEY: '<your-api-key>' }
-    }
+    const env = requiresApiKey ? { API_KEY: '<your-api-key>' } : undefined
+    if (env) base.env = env
 
     if (client === 'claude-code') {
-      return { mcpServers: { [slug]: base } }
+      return generateCliCommand(slug, 'npx', ['-y', npmPackage], env)
     }
     return { mcpServers: { [slug]: base } }
   }
 
   if (pipPackage) {
-    const base: Record<string, unknown> = {
+    const base: Record<string, string | string[] | Record<string, string>> = {
       command: 'uvx',
       args: [pipPackage],
     }
-    if (requiresApiKey) {
-      base.env = { API_KEY: '<your-api-key>' }
+    const env = requiresApiKey ? { API_KEY: '<your-api-key>' } : undefined
+    if (env) base.env = env
+
+    if (client === 'claude-code') {
+      return generateCliCommand(slug, 'uvx', [pipPackage], env)
     }
     return { mcpServers: { [slug]: base } }
   }
 
   // No package info — show a helpful message
+  if (client === 'claude-code') {
+    return `# Check the server's README for setup instructions\nclaude mcp add ${slug} -- <command> <args>`
+  }
   return {
     mcpServers: {
       [slug]: {
@@ -71,11 +86,27 @@ export default function InstallConfig({ configs, compatibleClients, serverName, 
 
   // Use provided config if it exists, otherwise auto-generate from package info
   const hasRealConfig = configs[activeClient] && Object.keys(configs[activeClient] as object).length > 0
-  const config = hasRealConfig
-    ? configs[activeClient]
-    : generateConfig(activeClient, serverName, npmPackage, pipPackage, requiresApiKey)
 
-  const configStr = JSON.stringify(config, null, 2)
+  // For Claude Code, convert stored JSON config to CLI command
+  const config = (() => {
+    if (activeClient === 'claude-code' && hasRealConfig) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const stored = configs[activeClient] as any
+      const mcpServers = stored?.mcpServers
+      if (mcpServers) {
+        const key = Object.keys(mcpServers)[0]
+        const entry = mcpServers[key]
+        if (entry?.command && entry?.args) {
+          return generateCliCommand(key, entry.command, entry.args, entry.env)
+        }
+      }
+    }
+    if (hasRealConfig && activeClient !== 'claude-code') return configs[activeClient]
+    return generateConfig(activeClient, serverName, npmPackage, pipPackage, requiresApiKey)
+  })()
+
+  const isCliCommand = typeof config === 'string'
+  const configStr = isCliCommand ? config : JSON.stringify(config, null, 2)
 
   async function handleCopy() {
     await navigator.clipboard.writeText(configStr)
@@ -127,13 +158,19 @@ export default function InstallConfig({ configs, compatibleClients, serverName, 
       </div>
 
       {/* Help text */}
-      {!hasRealConfig && npmPackage && (
+      {isCliCommand && (
+        <p className="text-xs text-text-muted mt-2">
+          Run this command in your terminal.
+          {requiresApiKey && <span className="text-yellow"> Replace <code>&lt;your-api-key&gt;</code> with your actual key.</span>}
+        </p>
+      )}
+      {!isCliCommand && !hasRealConfig && npmPackage && (
         <p className="text-xs text-text-muted mt-2">
           Auto-generated from package name. Add to your client&apos;s MCP config file.
           {requiresApiKey && <span className="text-yellow"> Replace <code>&lt;your-api-key&gt;</code> with your actual key.</span>}
         </p>
       )}
-      {!hasRealConfig && !npmPackage && !pipPackage && (
+      {!isCliCommand && !hasRealConfig && !npmPackage && !pipPackage && (
         <p className="text-xs text-text-muted mt-2">
           No install config available. Check the server&apos;s README for setup instructions.
         </p>

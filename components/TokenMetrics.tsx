@@ -32,7 +32,7 @@ export default function TokenMetrics({ server }: { server: Server }) {
         </div>
         <div className="flex justify-between">
           <dt className="text-text-muted">Est. context cost</dt>
-          <dd className="text-text-primary">~{estimatedTokens.toLocaleString()} tokens</dd>
+          <dd className="text-text-primary">~{(Math.round(estimatedTokens / 100) * 100).toLocaleString()} tokens (est.)</dd>
         </div>
         <div className="flex justify-between">
           <dt className="text-text-muted">% of 200K context</dt>

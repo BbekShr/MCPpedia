@@ -167,7 +167,15 @@ export default function ReviewSection({ serverId }: { serverId: string }) {
           ))}
         </div>
       ) : (
-        <p className="text-sm text-text-muted mb-4">No reviews yet. Be the first!</p>
+        <div className="border border-border rounded-md p-4 mb-4 bg-bg-secondary">
+          <p className="text-sm text-text-primary font-medium mb-1">Have you used this server?</p>
+          <p className="text-xs text-text-muted mb-2">Share your experience — it helps other developers decide.</p>
+          <div className="flex flex-wrap gap-2 text-xs text-text-muted">
+            <span className="px-2 py-0.5 rounded-full bg-bg border border-border">How easy was setup?</span>
+            <span className="px-2 py-0.5 rounded-full bg-bg border border-border">Did it work reliably?</span>
+            <span className="px-2 py-0.5 rounded-full bg-bg border border-border">How was the documentation?</span>
+          </div>
+        </div>
       )}
 
       {/* Write review */}

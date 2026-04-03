@@ -49,11 +49,17 @@ export interface Server {
   security_issues: SecurityIssue[]
   cve_count: number
   last_security_scan: string | null
+  security_scan_status: 'success' | 'failed' | 'pending'
   security_verified: boolean
   // Token efficiency
   estimated_tokens_per_call: number
   total_tool_tokens: number
   token_efficiency_grade: 'A' | 'B' | 'C' | 'D' | 'F' | 'unknown'
+  // Documentation evidence
+  doc_readme_quality: 'excellent' | 'good' | 'basic' | 'poor' | 'none' | null
+  doc_has_setup: boolean
+  doc_has_examples: boolean
+  doc_tool_schema_ratio: number | null
   // Registry
   registry_id: string | null
   registry_synced_at: string | null
