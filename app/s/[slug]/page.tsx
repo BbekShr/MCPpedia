@@ -127,16 +127,13 @@ export default async function ServerDetailPage({
   const prompts = s.prompts || []
 
   const sections = [
-    { id: 'score', label: 'MCPpedia Score' },
     { id: 'about', label: 'Should You Use It?' },
     { id: 'install', label: 'Quick Install' },
     { id: 'test', label: 'Test It' },
-    { id: 'security', label: 'Security' },
     tools.length > 0 ? { id: 'tools', label: `Tools (${tools.length})` } : null,
     resources.length > 0 ? { id: 'resources', label: 'Resources' } : null,
-    prompts.length > 0 ? { id: 'prompts', label: 'Prompts' } : null,
     s.api_name ? { id: 'api-info', label: 'API Info' } : null,
-    changelogs && changelogs.length > 0 ? { id: 'versions', label: 'Version History' } : null,
+    { id: 'details', label: 'Score Breakdown' },
     { id: 'reviews', label: 'Reviews' },
     { id: 'discussion', label: 'Discussion' },
   ].filter(Boolean) as { id: string; label: string }[]
@@ -247,29 +244,43 @@ export default async function ServerDetailPage({
         </aside>
 
         {/* Main content */}
-        <div className="flex-1 min-w-0 space-y-12 [&>section:not(:first-child)]:pt-8 [&>section:not(:first-child)]:border-t [&>section:not(:first-child)]:border-border">
-          {/* MCPpedia Score + Security */}
+        <div className="flex-1 min-w-0 space-y-10 [&>section:not(:first-child)]:pt-8 [&>section:not(:first-child)]:border-t [&>section:not(:first-child)]:border-border">
+
+          {/* Quick summary — score + key facts in one compact row */}
           <section id="score">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <ScoreCard server={s} advisories={(advisories as SecurityAdvisory[]) || []} />
-              <SecurityCard server={s} advisories={(advisories as SecurityAdvisory[]) || []} />
-            </div>
-            {/* Embed badge */}
-            <div className="mt-4 border border-border rounded-md p-3 bg-bg-secondary">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-text-primary">Embed this score in your README</span>
-                <a
-                  href={`/api/badge/${s.slug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-accent hover:text-accent-hover"
-                >
-                  Preview badge
-                </a>
+            <div className="flex items-center gap-4 flex-wrap">
+              {/* Score ring — compact */}
+              <div className="flex items-center gap-3 px-4 py-2 border border-border rounded-md bg-bg-secondary">
+                <div className="text-2xl font-bold text-text-primary">{s.score_total || 0}</div>
+                <div className="text-xs text-text-muted leading-tight">
+                  MCPpedia<br />Score
+                </div>
               </div>
-              <div className="bg-code-bg border border-border rounded p-2 font-mono text-xs text-text-muted break-all select-all">
-                {'[![MCPpedia Score](https://mcppedia.org/api/badge/' + s.slug + ')](https://mcppedia.org/s/' + s.slug + ')'}
+              {/* Key facts as pills */}
+              <div className="flex flex-wrap gap-2 text-xs">
+                <span className={`px-2 py-1 rounded-md ${s.cve_count === 0 ? 'bg-green/10 text-green' : 'bg-red/10 text-red'}`}>
+                  {s.cve_count === 0 ? 'No CVEs' : `${s.cve_count} CVE(s)`}
+                </span>
+                <span className={`px-2 py-1 rounded-md ${s.health_status === 'active' ? 'bg-green/10 text-green' : 'bg-bg-tertiary text-text-muted'}`}>
+                  {s.health_status === 'active' ? 'Active' : s.health_status}
+                </span>
+                {tools.length > 0 && (
+                  <span className="px-2 py-1 rounded-md bg-accent/10 text-accent">{tools.length} tools</span>
+                )}
+                {s.transport?.includes('stdio') && (
+                  <span className="px-2 py-1 rounded-md bg-bg-tertiary text-text-muted">stdio</span>
+                )}
+                {(s.transport?.includes('http') || s.transport?.includes('sse')) && (
+                  <span className="px-2 py-1 rounded-md bg-bg-tertiary text-text-muted">remote</span>
+                )}
+                {s.license && s.license !== 'NOASSERTION' && (
+                  <span className="px-2 py-1 rounded-md bg-bg-tertiary text-text-muted">{s.license}</span>
+                )}
               </div>
+              {/* Link to full score */}
+              <Link href="/methodology" className="ml-auto text-xs text-accent hover:text-accent-hover hidden md:block">
+                How we score &rarr;
+              </Link>
             </div>
           </section>
 
@@ -533,6 +544,26 @@ export default async function ServerDetailPage({
               </Link>
             </section>
           )}
+
+          {/* Reviews */}
+          {/* Detailed score + security breakdown */}
+          <section id="details">
+            <h2 className="text-lg font-semibold text-text-primary mb-4">Score Breakdown</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <ScoreCard server={s} advisories={(advisories as SecurityAdvisory[]) || []} />
+              <SecurityCard server={s} advisories={(advisories as SecurityAdvisory[]) || []} />
+            </div>
+            {/* Embed badge */}
+            <div className="mt-4 border border-border rounded-md p-3 bg-bg-secondary">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-text-primary">Embed this score in your README</span>
+                <a href={`/api/badge/${s.slug}`} target="_blank" rel="noopener noreferrer" className="text-xs text-accent hover:text-accent-hover">Preview badge</a>
+              </div>
+              <div className="bg-code-bg border border-border rounded p-2 font-mono text-xs text-text-muted break-all select-all">
+                {'[![MCPpedia Score](https://mcppedia.org/api/badge/' + s.slug + ')](https://mcppedia.org/s/' + s.slug + ')'}
+              </div>
+            </div>
+          </section>
 
           {/* Reviews */}
           <section id="reviews">
