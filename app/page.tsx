@@ -2,11 +2,27 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import ServerCard from '@/components/ServerCard'
 import SearchBar from '@/components/SearchBar'
-import { CATEGORIES, CATEGORY_LABELS } from '@/lib/constants'
+import { CATEGORIES, CATEGORY_LABELS, SITE_NAME, SITE_DESCRIPTION, SITE_URL } from '@/lib/constants'
+import { JsonLdScript, generateOrganizationJsonLd, generateWebSiteJsonLd } from '@/lib/seo'
 import type { Server } from '@/lib/types'
 import type { Category } from '@/lib/constants'
+import type { Metadata } from 'next'
 
 export const revalidate = 60
+
+export const metadata: Metadata = {
+  title: `${SITE_NAME} — Find the Right MCP Server`,
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    title: `${SITE_NAME} — Find the Right MCP Server`,
+    description: SITE_DESCRIPTION,
+    url: SITE_URL,
+    type: 'website',
+  },
+  alternates: {
+    canonical: SITE_URL,
+  },
+}
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -18,6 +34,8 @@ export default async function HomePage() {
     { count: serverCount },
     { count: withCVEs },
     { count: officialCount },
+    { data: serversWithCVEs },
+    { count: openCVECount },
   ] = await Promise.all([
     supabase
       .from('servers')
@@ -53,10 +71,22 @@ export default async function HomePage() {
       .select('*', { count: 'exact', head: true })
       .eq('author_type', 'official')
       .eq('is_archived', false),
+    supabase
+      .from('servers')
+      .select('*')
+      .gt('cve_count', 0)
+      .eq('is_archived', false)
+      .order('cve_count', { ascending: false })
+      .limit(6),
+    supabase
+      .from('security_advisories')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'open'),
   ])
 
   return (
     <div>
+      <JsonLdScript data={[generateOrganizationJsonLd(), generateWebSiteJsonLd()]} />
       {/* Hero — clear value prop */}
       <section className="border-b border-border" style={{ background: 'var(--hero-gradient)' }}>
         <div className="max-w-[1200px] mx-auto px-4 py-16 md:py-20">
@@ -84,15 +114,15 @@ export default async function HomePage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-text-primary">{(serverCount || 0).toLocaleString()}</div>
-              <div className="text-xs text-text-muted">Servers tracked</div>
+              <div className="text-xs text-text-muted">Servers tracked and counting</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-text-primary">{officialCount || 0}</div>
               <div className="text-xs text-text-muted">Official servers</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-red">{withCVEs || 0}</div>
-              <div className="text-xs text-text-muted">With known CVEs</div>
+              <div className="text-2xl font-bold text-red">{openCVECount || 0}</div>
+              <div className="text-xs text-text-muted">Open CVEs across {withCVEs || 0} servers</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green">Daily</div>
@@ -170,6 +200,28 @@ export default async function HomePage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {(officialServers as Server[]).map(server => (
+                <ServerCard key={server.id} server={server} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Servers with CVEs — transparency */}
+      {serversWithCVEs && serversWithCVEs.length > 0 && (
+        <section className="border-t border-border">
+          <div className="max-w-[1200px] mx-auto px-4 py-8">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-text-primary">Servers with known CVEs</h2>
+                <p className="text-xs text-text-muted">{withCVEs || 0} servers have vulnerabilities — check before you install</p>
+              </div>
+              <Link href="/security" className="text-sm text-accent hover:text-accent-hover">
+                All advisories &rarr;
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {(serversWithCVEs as Server[]).map(server => (
                 <ServerCard key={server.id} server={server} />
               ))}
             </div>

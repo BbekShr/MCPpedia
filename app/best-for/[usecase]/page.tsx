@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import ServerCard from '@/components/ServerCard'
 import Link from 'next/link'
 import type { Server } from '@/lib/types'
+import { SITE_URL } from '@/lib/constants'
 import type { Metadata } from 'next'
 
 const USE_CASES: Record<string, {
@@ -64,6 +65,15 @@ export async function generateMetadata({
   return {
     title: `${uc.title} — MCPpedia`,
     description: uc.description,
+    openGraph: {
+      title: uc.title,
+      description: uc.description,
+      type: 'website',
+      url: `${SITE_URL}/best-for/${usecase}`,
+    },
+    alternates: {
+      canonical: `${SITE_URL}/best-for/${usecase}`,
+    },
   }
 }
 

@@ -38,6 +38,7 @@ export default function Nav() {
     { href: '/servers', label: 'Servers' },
     { href: '/get-started', label: 'Get Started' },
     { href: '/security', label: 'Security' },
+    { href: '/blog', label: 'Blog' },
     { href: '/about', label: 'About' },
   ]
 

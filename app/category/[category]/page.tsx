@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import ServerCard from '@/components/ServerCard'
-import { CATEGORIES, CATEGORY_LABELS, ITEMS_PER_PAGE, SITE_NAME } from '@/lib/constants'
+import { CATEGORIES, CATEGORY_LABELS, ITEMS_PER_PAGE, SITE_NAME, SITE_URL } from '@/lib/constants'
+import { JsonLdScript, generateCollectionJsonLd, generateBreadcrumbJsonLd } from '@/lib/seo'
 import type { Server } from '@/lib/types'
 import type { Category } from '@/lib/constants'
 import type { Metadata } from 'next'
@@ -20,9 +21,19 @@ export async function generateMetadata({
   const label = CATEGORY_LABELS[category as Category]
   if (!label) return { title: 'Category Not Found' }
 
+  const description = `Browse the best ${label.toLowerCase()} MCP servers. Find tools for ${label.toLowerCase()} on MCPpedia.`
   return {
     title: `${label} MCP Servers - ${SITE_NAME}`,
-    description: `Browse the best ${label.toLowerCase()} MCP servers. Find tools for ${label.toLowerCase()} on MCPpedia.`,
+    description,
+    openGraph: {
+      title: `${label} MCP Servers`,
+      description,
+      type: 'website',
+      url: `${SITE_URL}/category/${category}`,
+    },
+    alternates: {
+      canonical: `${SITE_URL}/category/${category}`,
+    },
   }
 }
 
@@ -71,6 +82,13 @@ export default async function CategoryPage({
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 py-8">
+      <JsonLdScript data={[
+        generateCollectionJsonLd(`${label} MCP Servers`, `Browse the best ${label.toLowerCase()} MCP servers on MCPpedia.`, `${SITE_URL}/category/${category}`),
+        generateBreadcrumbJsonLd([
+          { name: 'Home', url: SITE_URL },
+          { name: label, url: `${SITE_URL}/category/${category}` },
+        ]),
+      ]} />
       <h1 className="text-2xl font-semibold text-text-primary mb-2">{label} MCP Servers</h1>
       <p className="text-text-muted mb-6">{count || 0} servers in this category</p>
 

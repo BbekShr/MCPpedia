@@ -1,16 +1,15 @@
-name: Blog Generator
+name: Blog Security Alerts
 
 on:
   schedule:
-    - cron: '0 10 * * 1'  # Monday 10am UTC
-    - cron: '0 10 * * 4'  # Thursday 10am UTC
+    - cron: '0 7 * * *'  # Daily 7am UTC (after score computation at 5am)
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  generate:
+  check-and-publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,18 +20,18 @@ jobs:
 
       - run: npm ci
 
-      - name: Generate blog posts
-        run: npx tsx bots/generate-blog.ts
+      - name: Check for security alerts and publish if found
+        run: npx tsx bots/generate-blog.ts --security-only
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
-      - name: Commit and push new posts
+      - name: Commit and push if new alerts
         run: |
           git config user.name "mcppedia-bot"
           git config user.email "bot@mcppedia.org"
           git add content/blog/
-          git diff --cached --quiet && echo "No new posts generated" && exit 0
-          git commit -m "blog: auto-generate articles [bot]"
+          git diff --cached --quiet && echo "No security alerts to publish" && exit 0
+          git commit -m "blog: security alert [bot]"
           git push

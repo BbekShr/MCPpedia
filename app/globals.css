@@ -11,18 +11,18 @@
   --text: #1f2328;
   --text-muted: #656d76;
   --border: #d0d7de;
-  --accent: #0969da;
-  --accent-hover: #0550ae;
-  --accent-subtle: rgba(9, 105, 218, 0.08);
+  --accent: #0284c7;
+  --accent-hover: #0369a1;
+  --accent-subtle: rgba(2, 132, 199, 0.08);
   --green: #1a7f37;
   --yellow: #9a6700;
   --red: #cf222e;
-  --tag-bg: #ddf4ff;
-  --tag-text: #0969da;
+  --tag-bg: #e0f2fe;
+  --tag-text: #0284c7;
   --code-bg: #f6f8fa;
 
   /* Gradients */
-  --hero-gradient: linear-gradient(135deg, #f0f7ff 0%, #f6f8fa 50%, #faf5ff 100%);
+  --hero-gradient: linear-gradient(135deg, #e0f2fe 0%, #f8fafc 40%, #f5f3ff 100%);
 
   /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
@@ -38,17 +38,17 @@
   --text: #e6edf3;
   --text-muted: #8b949e;
   --border: #30363d;
-  --accent: #58a6ff;
-  --accent-hover: #79c0ff;
-  --accent-subtle: rgba(88, 166, 255, 0.08);
+  --accent: #38bdf8;
+  --accent-hover: #7dd3fc;
+  --accent-subtle: rgba(56, 189, 248, 0.08);
   --green: #3fb950;
   --yellow: #d29922;
   --red: #f85149;
-  --tag-bg: #132338;
-  --tag-text: #58a6ff;
+  --tag-bg: #0c2d48;
+  --tag-text: #38bdf8;
   --code-bg: #161b22;
 
-  --hero-gradient: linear-gradient(135deg, #0d1525 0%, #0d1117 50%, #150d1f 100%);
+  --hero-gradient: linear-gradient(135deg, #0c1929 0%, #0d1117 40%, #170d24 100%);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
   --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -73,8 +73,8 @@
   --color-tag-text: var(--tag-text);
   --color-code-bg: var(--code-bg);
 
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-  --font-mono: "SF Mono", "Fira Code", "Consolas", monospace;
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: var(--font-jetbrains), "SF Mono", "Fira Code", "Consolas", monospace;
 }
 
 body {
@@ -126,4 +126,40 @@ a, button, input, select, textarea {
 [data-theme="dark"] ::-webkit-scrollbar-thumb {
   background: var(--border);
   border-radius: 4px;
+}
+
+/* Blog editorial styles */
+.blog-content > :first-child {
+  margin-top: 0 !important;
+}
+
+.blog-content p:first-of-type::first-line {
+  font-weight: 500;
+}
+
+.blog-content > .lead-paragraph {
+  font-size: 1.2em;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
+/* Drop cap on first paragraph */
+.blog-dropcap > p:first-of-type::first-letter {
+  float: left;
+  font-size: 3.5em;
+  font-weight: 700;
+  line-height: 0.8;
+  margin-right: 0.1em;
+  margin-top: 0.1em;
+  color: var(--accent);
+}
+
+/* View transitions for smooth page navigation */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.15s;
 }
