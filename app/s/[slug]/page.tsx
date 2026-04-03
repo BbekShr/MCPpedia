@@ -254,17 +254,22 @@ export default async function ServerDetailPage({
               <ScoreCard server={s} advisories={(advisories as SecurityAdvisory[]) || []} />
               <SecurityCard server={s} advisories={(advisories as SecurityAdvisory[]) || []} />
             </div>
-            <div className="mt-3 text-xs text-text-muted">
-              <a
-                href={`https://mcppedia.org/badge/${s.slug}`}
-                className="text-accent hover:text-accent-hover"
-              >
-                Embed this score
-              </a>
-              {' · '}
-              <code className="bg-code-bg px-1 rounded">
-                {'[![MCPpedia Score](https://mcppedia.org/badge/' + s.slug + ')](https://mcppedia.org/s/' + s.slug + ')'}
-              </code>
+            {/* Embed badge */}
+            <div className="mt-4 border border-border rounded-md p-3 bg-bg-secondary">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-text-primary">Embed this score in your README</span>
+                <a
+                  href={`/api/badge/${s.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-accent hover:text-accent-hover"
+                >
+                  Preview badge
+                </a>
+              </div>
+              <div className="bg-code-bg border border-border rounded p-2 font-mono text-xs text-text-muted break-all select-all">
+                {'[![MCPpedia Score](https://mcppedia.org/api/badge/' + s.slug + ')](https://mcppedia.org/s/' + s.slug + ')'}
+              </div>
             </div>
           </section>
 
