@@ -30,7 +30,11 @@ export default function ServerIcon({ name, authorGithub, size = 32, className = 
   // GitHub avatars are always crisp at any size. Use as primary.
   const [imgSrc, setImgSrc] = useState<string | null>(() => {
     if (authorGithub) {
-      return `https://github.com/${authorGithub}.png?size=128`
+      // Strip leading @ and validate — GitHub usernames are alphanumeric + hyphens only
+      const clean = authorGithub.replace(/^@/, '')
+      if (clean && /^[\w-]+$/.test(clean)) {
+        return `https://github.com/${clean}.png?size=128`
+      }
     }
     return null
   })
