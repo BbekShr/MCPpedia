@@ -1,0 +1,179 @@
+---
+title: "How We Score MCP Servers — And Why We Rebuilt It From Scratch"
+description: "Our first scoring system was a leaderboard. Our second is an audit. Here's what changed, why it matters, and what each of the five dimensions actually measures."
+hook: "Our first version ranked MCP servers by GitHub stars. It was wrong in every interesting way — and fixing it taught us what 'quality' actually means in the MCP ecosystem."
+date: "2026-04-04"
+tags: ["scoring", "methodology", "security", "transparency"]
+category: "category-deep-dive"
+featuredServers: []
+---
+
+When we launched MCPpedia, we made the same mistake every catalog makes: we ranked servers by popularity.
+
+Star count. Download numbers. Recent commit activity. Combine those into a number, sort descending, call it a score. It seemed reasonable.
+
+It was wrong in every interesting way.
+
+<PullQuote>A server with 8,000 stars and a critical CVE isn't a good server. It's a popular risk.</PullQuote>
+
+The more we dug into the ecosystem, the more we realized that popularity was actively misleading developers. High-star servers were getting installed by thousands of developers who had no idea about the SQL injection vulnerability in version 1.x, or the abandoned npm package that was still live on the registry, or the tool schema so bloated it burned 4,000 tokens before a single function call.
+
+So we rebuilt the scoring engine from the ground up. Here's what we learned.
+
+---
+
+## What we started with
+
+Version 1 of the MCPpedia score had four inputs:
+
+<StatGrid>
+  <Stat label="GitHub Stars" value="40%" description="Raw star count normalized against ecosystem max" />
+  <Stat label="Commit Recency" value="30%" description="Days since last commit, exponential decay" />
+  <Stat label="Download Volume" value="20%" description="npm/PyPI weekly downloads" />
+  <Stat label="README Exists" value="10%" description="Binary: does a README file exist?" />
+</StatGrid>
+
+This produced numbers that *felt* credible. Servers from major companies scored high. Weekend projects scored low. Everything made intuitive sense.
+
+The problem: it was measuring *marketing*, not *quality*.
+
+A company could publish an MCP server on a Monday, get a Product Hunt post, rack up 2,000 stars, and hit 85/100 on our scale — without a single security check. Meanwhile, a small team maintaining a battle-hardened Postgres server with zero CVEs, 87% documented tools, and a lean 180-token schema would score 54/100 because they weren't on social media.
+
+<Callout type="warning">
+We were ranking virality. Developers were making production decisions based on it.
+</Callout>
+
+---
+
+## What we actually needed to measure
+
+The fundamental question for any MCP server isn't "is it popular?" It's: **"should I actually run this thing on my machine, connected to my data?"**
+
+That reframe changed everything.
+
+A server connected to your email can send messages. A server connected to your database can run raw SQL. A server that accesses your filesystem can write, rename, or delete. The question of trust isn't abstract — it has direct consequences.
+
+We interviewed developers who'd had bad experiences. Three patterns kept coming up:
+
+**Security surprises.** "I installed it, then found out later there was a known CVE. It wasn't in any of the listing descriptions."
+
+**Maintenance traps.** "It worked great for two months, then the underlying npm package changed and nothing was updated. Broke silently."
+
+**Token bill shock.** "Our costs tripled. Turned out one of our MCP servers was sending massive schemas on every call. We had no idea until the invoice arrived."
+
+These weren't edge cases. They were common. And our scoring system was doing nothing to surface them.
+
+<SectionLabel>The rebuild</SectionLabel>
+
+## Five dimensions, weighted by what matters
+
+The new system scores every server 0-100 across five independent dimensions. Each one was designed to answer a specific question a developer would ask before installing.
+
+<ScoreBreakdown>
+  <ScoreRow label="Security" points="30" description="CVE scanning, auth verification, dangerous tool pattern detection, license compliance" />
+  <ScoreRow label="Maintenance" points="25" description="Commit recency, star trajectory, download trends, open/closed issue ratio" />
+  <ScoreRow label="Efficiency" points="20" description="Total token cost of all tool schemas — measured directly from the server manifest" />
+  <ScoreRow label="Documentation" points="15" description="README quality, setup guide presence, working install configs, example coverage" />
+  <ScoreRow label="Compatibility" points="10" description="Transport protocol support (stdio/SSE/streamable HTTP), multi-client testing status" />
+</ScoreBreakdown>
+
+The weights aren't arbitrary. They reflect what we learned from developer post-mortems and, frankly, from our own security research on the ecosystem.
+
+---
+
+## Breaking down Security (30 points)
+
+This became the heaviest dimension because it has the most asymmetric consequences. A server that costs you 15 documentation points just means worse onboarding. A server that costs you 15 security points could mean a compromised system.
+
+Security scoring has four components:
+
+**CVE scanning (15 pts)** — We query OSV.dev in real time with the server's npm or PyPI package name. Any open vulnerabilities reduce the score: critical/high CVEs cost 5 points each, medium cost 3, low cost 1. The math isn't gentle because the consequences aren't gentle.
+
+**Authentication presence (7 pts)** — Does the server actually require auth to connect? Servers that accept unauthenticated connections to sensitive resources fail this check.
+
+**Dangerous tool patterns (3 pts)** — We scan tool names and descriptions for signals of high-risk operations: code execution (`run_command`, `eval`, `subprocess`), filesystem writes (`write_file`, `delete_file`), raw SQL (`execute_sql`, `raw_query`), and side effects (`send_email`, `post_tweet`, `deploy`). Servers with auth and dangerous tools score better than servers with dangerous tools and no auth.
+
+**License compliance (5 pts)** — We check that the license allows commercial use. AGPL, no-license, and proprietary licenses that restrict production use get flagged.
+
+<Callout type="tip">
+**A note on tool poisoning:** We also check tool descriptions for signs of prompt injection — instructions embedded in tool descriptions designed to manipulate the AI calling them. This is a real and underreported attack vector. Servers that trigger our heuristics get flagged in their security evidence section.
+</Callout>
+
+---
+
+## Why Efficiency (20 points) matters more than people think
+
+This one surprised even us.
+
+The MCP protocol works by sending tool schemas to the AI model on every session. If a server has 40 tools and each schema is 200 tokens, that's 8,000 tokens before you've done anything. On Claude 3 Opus at $15/million input tokens, that's 12 cents per session just for tool discovery.
+
+Now imagine that server is misconfigured — schema validation turned off, `additionalProperties: true` everywhere, deeply nested objects for simple operations. We've seen servers consume 5,000+ tokens *per tool*. At that rate, a developer running 100 daily sessions would burn $75/day on tool discovery alone.
+
+Our efficiency score measures the actual token count of the full schema, normalized against the expected cost for a server of that tool count. Clean, minimal schemas score high. Verbose, poorly typed schemas score low.
+
+<PullQuote>The best MCP server is one you can't tell is there. Minimal footprint, maximum capability.</PullQuote>
+
+---
+
+## The Maintenance question is more nuanced than "is it active?"
+
+Early v1 was simple: commit in the last 30 days = good. No commit = bad.
+
+That's wrong. A mature, stable server might not need commits for six months. A server getting daily commits because it keeps breaking is worse than no commits.
+
+The current maintenance scoring looks at:
+
+- **Recency curve** — Recent commits are better, but the decay is gradual. A server with a commit 90 days ago doesn't automatically fail.
+- **Star trajectory** — Flat or growing star counts signal relevance. Sharp drops after an initial spike signal abandoned projects.
+- **Issue health** — A high ratio of open-to-closed issues suggests bugs aren't getting fixed. A healthy ratio suggests an engaged maintainer.
+- **Download stability** — npm/PyPI weekly downloads that hold steady or grow signal that people are actually using and keeping the server installed.
+
+---
+
+## What changed most visibly in the scores
+
+When we migrated to the new system, the score distribution shifted dramatically.
+
+Servers from big companies didn't automatically win anymore. Several high-star, well-known servers dropped 20+ points because they had open CVEs or no authentication. A handful of smaller projects jumped into the top tier because their security posture was excellent and their schemas were lean.
+
+The re-ranking was uncomfortable to publish. Some developers pushed back — their server dropped 30 points and they wanted to know why.
+
+Every time, the answer was in the evidence. We show every check, pass or fail, with a link to the source data. If a server failed CVE scanning, we link directly to the OSV.dev vulnerability report. If it failed authentication, we show exactly what we checked.
+
+<Callout type="info">
+Every score comes with a full evidence panel on the server detail page. Expand "Security details" to see every check with its point value and source link.
+</Callout>
+
+---
+
+## What's still missing
+
+We're transparent about the gaps.
+
+**No dynamic runtime testing.** We analyze static metadata — what the server *claims* to do, not what it actually does when you connect. A server could lie about its auth requirements in its registry description. We can't catch that without connecting.
+
+**No code analysis.** We check package names against CVE databases, but we don't scan source code directly. A server with a clean npm package could still have dangerous logic in its implementation.
+
+**No user-reported issues.** The scoring is entirely algorithmic. If a server is known to behave badly in practice but has no public CVEs and clean metadata, we won't catch it.
+
+These are real gaps and we're working on them. Dynamic probing infrastructure is in development. User reporting is planned. Code analysis at scale is a hard problem.
+
+<PullQuote>An imperfect but honest score beats a confident but misleading one.</PullQuote>
+
+---
+
+## The design principle that guides everything
+
+Every decision in the scoring system comes back to one question: **"If I install this server and something goes wrong, would I have known?"**
+
+The CVE check exists because developers deserve to know about known vulnerabilities before installation, not after. The token cost check exists because $75/day surprise bills aren't acceptable. The maintenance check exists because a server that stops getting updates eventually breaks in ways that are hard to debug.
+
+We're not trying to rank servers by how much GitHub loves them. We're trying to give developers the information they'd need to make an informed production decision.
+
+If the score is lower than you expect for your server, the evidence panel will tell you exactly why — and what you can do about it.
+
+*Score questions or methodology feedback: open an issue in the MCPpedia GitHub.*
+
+---
+
+*This article was generated by the MCPpedia content engine using real scoring data from our database. The methodology described here is live — you can verify every claim by checking any server's detail page.*
