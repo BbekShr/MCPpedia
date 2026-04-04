@@ -57,6 +57,7 @@ interface ProfileRow {
 
 interface EditRow {
   id: string
+  server_id: string
   field_name: string
   old_value: unknown
   new_value: unknown
