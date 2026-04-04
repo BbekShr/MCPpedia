@@ -31,7 +31,7 @@ export default async function EditHistoryPage({
 
   const { data: edits } = await supabase
     .from('edits')
-    .select('*, profile:profiles(*)')
+    .select('*, profile:profiles(id, username, avatar_url)')
     .eq('server_id', server.id)
     .order('created_at', { ascending: false })
 

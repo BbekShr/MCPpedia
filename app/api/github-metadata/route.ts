@@ -25,8 +25,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Invalid URL' }, { status: 400 })
   }
 
-  if (parsed.hostname !== 'github.com' && parsed.hostname !== 'www.github.com') {
-    return NextResponse.json({ error: 'Must be a github.com URL' }, { status: 400 })
+  if (parsed.protocol !== 'https:' || (parsed.hostname !== 'github.com' && parsed.hostname !== 'www.github.com')) {
+    return NextResponse.json({ error: 'Must be a https://github.com URL' }, { status: 400 })
+  }
+
+  // Ensure path matches owner/repo pattern to prevent path traversal
+  if (!/^\/[\w.-]+\/[\w.-]+\/?$/.test(parsed.pathname)) {
+    return NextResponse.json({ error: 'Invalid GitHub repository URL' }, { status: 400 })
   }
 
   const metadata = await fetchRepoMetadata(url)

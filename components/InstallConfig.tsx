@@ -13,14 +13,20 @@ interface Props {
   slug?: string
 }
 
+function shellQuote(s: string): string {
+  // Wrap in single quotes; escape any embedded single quotes as '\''
+  return `'${s.replace(/'/g, "'\\''")}'`
+}
+
 function generateCliCommand(
   slug: string,
   command: string,
   cmdArgs: string[],
   env?: Record<string, string>
 ): string {
-  const envParts = env ? Object.entries(env).map(([k, v]) => `-e ${k}=${v}`).join(' ') + ' ' : ''
-  return `claude mcp add ${slug} ${envParts}-- ${command} ${cmdArgs.join(' ')}`
+  const envParts = env ? Object.entries(env).map(([k, v]) => `-e ${shellQuote(k)}=${shellQuote(v)}`).join(' ') + ' ' : ''
+  const quotedArgs = cmdArgs.map(shellQuote).join(' ')
+  return `claude mcp add ${shellQuote(slug)} ${envParts}-- ${shellQuote(command)} ${quotedArgs}`
 }
 
 function generateConfig(

@@ -1,7 +1,6 @@
 /**
- * Simple in-memory rate limiter.
- * Uses a sliding window approach. Resets on server restart.
- * For production at scale, replace with Redis/Upstash.
+ * In-memory sliding window rate limiter.
+ * Sufficient for single-instance deployments. Resets on server restart.
  */
 
 const store = new Map<string, { count: number; resetAt: number }>()
@@ -47,7 +46,6 @@ export function checkRateLimit(
 
 /**
  * Rate limit by user ID for authenticated endpoints.
- * Default: 30 requests per minute.
  */
 export function rateLimitUser(userId: string, action: string, limit = 30, windowMs = 60_000): RateLimitResult {
   return checkRateLimit(`user:${userId}:${action}`, limit, windowMs)
@@ -55,7 +53,6 @@ export function rateLimitUser(userId: string, action: string, limit = 30, window
 
 /**
  * Rate limit by IP for unauthenticated endpoints.
- * Default: 10 requests per minute.
  */
 export function rateLimitIp(ip: string, action: string, limit = 10, windowMs = 60_000): RateLimitResult {
   return checkRateLimit(`ip:${ip}:${action}`, limit, windowMs)

@@ -5,6 +5,7 @@ import HealthBadge from '@/components/HealthBadge'
 import Link from 'next/link'
 import type { Server } from '@/lib/types'
 import type { HealthStatus } from '@/lib/constants'
+import { PUBLIC_SERVER_FIELDS } from '@/lib/constants'
 import type { Metadata } from 'next'
 
 export async function generateMetadata({
@@ -64,8 +65,8 @@ export default async function ComparePage({
   const supabase = await createClient()
 
   const [{ data: serverA }, { data: serverB }] = await Promise.all([
-    supabase.from('servers').select('*').eq('slug', slugA).single(),
-    supabase.from('servers').select('*').eq('slug', slugB).single(),
+    supabase.from('servers').select(PUBLIC_SERVER_FIELDS).eq('slug', slugA).single(),
+    supabase.from('servers').select(PUBLIC_SERVER_FIELDS).eq('slug', slugB).single(),
   ])
 
   if (!serverA || !serverB) notFound()

@@ -28,7 +28,8 @@ export async function POST(request: Request) {
   const rl = rateLimitUser(user.id, 'archive', 20, 3600_000)
   if (!rl.allowed) return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
 
-  const body = await request.json()
+  let body
+  try { body = await request.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
   const parsed = archiveSchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
@@ -46,7 +47,8 @@ export async function POST(request: Request) {
     .eq('id', server_id)
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('archive error:', error.message)
+    return NextResponse.json({ error: 'Failed to update archive status' }, { status: 500 })
   }
 
   // Log the action as an edit for audit trail

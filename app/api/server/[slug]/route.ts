@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { PUBLIC_SERVER_FIELDS } from '@/lib/constants'
 
 export async function GET(
   _request: Request,
@@ -10,7 +11,7 @@ export async function GET(
 
   const { data: server, error } = await supabase
     .from('servers')
-    .select('*')
+    .select(PUBLIC_SERVER_FIELDS)
     .eq('slug', slug)
     .single()
 

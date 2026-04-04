@@ -66,13 +66,20 @@ export class BotRun {
   async fail(error: string) {
     if (!this.id) return
     const duration = Date.now() - this.startTime
+    // Strip potential secrets from error messages before persisting
+    const sanitized = error
+      .replace(/sk-[a-zA-Z0-9_-]{20,}/g, 'sk-***')
+      .replace(/ghp_[a-zA-Z0-9]{20,}/g, 'ghp_***')
+      .replace(/eyJ[a-zA-Z0-9_-]{20,}/g, 'eyJ***')
+      .replace(/Bearer [a-zA-Z0-9_.-]+/gi, 'Bearer ***')
+      .slice(0, 2000)
     await db().from('bot_runs').update({
       status: 'failed',
       finished_at: new Date().toISOString(),
       duration_ms: duration,
       servers_processed: this.processed,
       servers_updated: this.updated,
-      error_message: error.slice(0, 2000),
+      error_message: sanitized,
       summary: this.summary,
     }).eq('id', this.id)
   }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import DOMPurify from 'isomorphic-dompurify'
 
 export default function ReadmeContent({ githubUrl }: { githubUrl: string }) {
   const [readme, setReadme] = useState<string | null>(null)
@@ -46,7 +47,7 @@ export default function ReadmeContent({ githubUrl }: { githubUrl: string }) {
         className={`readme-content prose prose-sm max-w-none text-text-primary prose-headings:text-text-primary prose-a:text-accent prose-code:text-text-primary prose-code:bg-code-bg prose-code:px-1 prose-code:rounded prose-pre:bg-code-bg prose-pre:border prose-pre:border-border prose-img:rounded-md prose-img:border prose-img:border-border ${
           !expanded && isLong ? 'max-h-[600px] overflow-hidden relative' : ''
         }`}
-        dangerouslySetInnerHTML={{ __html: readme }}
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(readme) }}
       />
       {isLong && !expanded && (
         <div className="relative -mt-20 pt-20 bg-gradient-to-t from-bg to-transparent">

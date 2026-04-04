@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { rateLimitIp } from '@/lib/rate-limit'
+import { PUBLIC_SERVER_FIELDS } from '@/lib/constants'
 
 export async function GET(request: Request) {
   // Rate limit search by IP
@@ -10,7 +11,7 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url)
   const q = searchParams.get('q') || ''
-  const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50)
+  const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '20') || 20, 1), 50)
 
   const supabase = await createClient()
 
@@ -25,13 +26,16 @@ export async function GET(request: Request) {
       page_offset: 0,
     })
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error('search error:', error.message)
+      return NextResponse.json({ error: 'Search failed' }, { status: 500 })
+    }
     return NextResponse.json({ servers: data || [] })
   }
 
   const { data } = await supabase
     .from('servers')
-    .select('*')
+    .select(PUBLIC_SERVER_FIELDS)
     .order('score_total', { ascending: false })
     .limit(limit)
 
