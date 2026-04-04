@@ -31,7 +31,7 @@ export async function GET() {
 
       try {
         // Fetch all uncategorized servers (paginate)
-        const servers: { id: string; slug: string; name: string; tagline: string | null }[] = []
+        const servers: { id: string; slug: string; name: string; tagline: string | null; description: string | null }[] = []
         let page = 0
         const PAGE_SIZE = 1000
         while (true) {
