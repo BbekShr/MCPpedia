@@ -20,15 +20,30 @@ function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
   return { owner: match[1], repo: match[2].replace(/\.git$/, '') }
 }
 
+// Known installer/CLI tools that are never the actual MCP server package
+const NPX_SKIP_PACKAGES = new Set([
+  '@smithery/cli',
+  '@modelcontextprotocol/inspector',
+  '@modelcontextprotocol/conformance',
+  'mcp-remote',
+  'tsx',
+  'ts-node',
+  'add-mcp',
+  'chrome-devtools-mcp',
+  '-y',
+])
+
 function extractNpmPackage(readme: string): string | null {
+  // Handle: npx @smithery/cli install @actual/package
+  // or: npx -y @smithery/cli install @actual/package
+  const smitheryInstall = readme.match(/npx\s+(?:-y\s+)?@smithery\/cli\s+install\s+(@[\w.-]+\/[\w.-]+|[\w][\w.-]*)/m)
+  if (smitheryInstall) return smitheryInstall[1]
+
   // Match: npx -y @scope/package or npx @scope/package
   const npxMatch = readme.match(/npx\s+(?:-y\s+)?(@[\w.-]+\/[\w.-]+|[\w][\w.-]*)/m)
   if (npxMatch) {
     const pkg = npxMatch[1]
-    // Filter out common non-packages
-    if (!['mcp-remote', '-y', 'tsx', 'ts-node'].includes(pkg)) {
-      return pkg
-    }
+    if (!NPX_SKIP_PACKAGES.has(pkg)) return pkg
   }
 
   // Match: npm install @scope/package
@@ -133,6 +148,8 @@ async function main() {
     (!s.npm_package && !s.pip_package && (!s.install_configs || JSON.stringify(s.install_configs) === '{}'))
     // OR have package names but no README-sourced configs (auto-gen in UI is less accurate)
     || ((s.npm_package || s.pip_package) && (!s.install_configs || JSON.stringify(s.install_configs) === '{}'))
+    // OR has a known-wrong npm_package (installer tools, not the actual server)
+    || (s.npm_package && NPX_SKIP_PACKAGES.has(s.npm_package))
     // OR missing categories
     || !s.categories || s.categories.length === 0
   )
@@ -165,8 +182,10 @@ async function main() {
         const installConfig = extractInstallConfig(readme)
         const transport = extractTransport(readme)
 
-        // Only set npm/pip if not already set from registry
-        if (npmPkg && !server.npm_package) updates.npm_package = npmPkg
+        // Set npm/pip if not already set, or if the existing value is a known-wrong installer tool
+        const hasWrongNpm = server.npm_package && NPX_SKIP_PACKAGES.has(server.npm_package)
+        if (npmPkg && (!server.npm_package || hasWrongNpm)) updates.npm_package = npmPkg
+        else if (hasWrongNpm && !npmPkg) updates.npm_package = null  // clear the wrong value
         if (pipPkg && !server.pip_package) updates.pip_package = pipPkg
         if (transport.length > 0) updates.transport = transport
 

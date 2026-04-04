@@ -37,7 +37,7 @@ export async function GET() {
         while (true) {
           const { data: batch } = await admin
             .from('servers')
-            .select('id, slug, name, tagline')
+            .select('id, slug, name, tagline, description')
             .or('categories.is.null,categories.eq.[]')
             .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
@@ -65,7 +65,8 @@ export async function GET() {
           const updates: { id: string; categories: string[] }[] = []
 
           for (const srv of batch) {
-            const cats = categorize(srv.name, srv.tagline)
+            const fullText = [srv.tagline, srv.description].filter(Boolean).join(' ')
+            const cats = categorize(srv.name, fullText)
             updates.push({ id: srv.id, categories: cats })
           }
 
@@ -91,7 +92,8 @@ export async function GET() {
 
         send({ type: 'done', total, updated, message: `Categorized ${updated} servers` })
       } catch (err) {
-        send({ type: 'error', message: String(err) })
+        console.error('categorize error:', err)
+        send({ type: 'error', message: 'Categorization failed' })
       }
 
       controller.close()
