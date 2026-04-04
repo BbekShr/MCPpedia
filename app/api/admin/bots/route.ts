@@ -123,16 +123,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
   }
 
-  const body = await request.json()
-  const botId = body.bot as string
+  let body
+  try { body = await request.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
+  const botId = body.bot
+  if (typeof botId !== 'string' || botId.length > 100) {
+    return NextResponse.json({ error: 'Invalid bot parameter' }, { status: 400 })
+  }
 
   const bot = BOT_REGISTRY[botId]
   if (!bot) {
-    return NextResponse.json({ error: `Unknown bot: ${botId}` }, { status: 400 })
+    return NextResponse.json({ error: 'Unknown bot' }, { status: 400 })
   }
 
   if (!bot.workflow) {
-    return NextResponse.json({ error: `Bot "${botId}" has no GitHub workflow — run it manually` }, { status: 400 })
+    return NextResponse.json({ error: 'Bot has no GitHub workflow — run it manually' }, { status: 400 })
   }
 
   // Trigger GitHub Actions workflow_dispatch
@@ -155,8 +159,8 @@ export async function POST(request: Request) {
   )
 
   if (!res.ok) {
-    const text = await res.text()
-    return NextResponse.json({ error: `GitHub API error: ${res.status} ${text}` }, { status: 502 })
+    console.error(`GitHub API error triggering ${bot.name}: ${res.status}`)
+    return NextResponse.json({ error: `Failed to trigger workflow (GitHub returned ${res.status})` }, { status: 502 })
   }
 
   return NextResponse.json({ ok: true, message: `Triggered ${bot.name}` })

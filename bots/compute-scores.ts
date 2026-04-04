@@ -67,19 +67,21 @@ async function main() {
   for (const server of servers) {
     console.log(`[${processed + 1}/${servers.length}] ${server.slug}`)
 
-    // 1. SECURITY — query OSV.dev for real CVEs
+    // 2. EFFICIENCY — measure actual tool schema tokens (compute tools early, security needs it)
+    const tools = (server.tools || []) as Tool[]
+
+    // 1. SECURITY — CVEs + tool safety + tool poisoning + injection vectors + dep health
     const security = await scanSecurity(
       server.npm_package,
       server.pip_package,
       server.has_authentication || false,
       server.license,
       server.is_archived || false,
-      server.security_verified || false
+      server.security_verified || false,
+      tools,
+      server.tool_definition_hash || null
     )
-    console.log(`  Security: ${security.score}/${SCORE_WEIGHTS.security} (${security.cve_count} CVEs found)`)
-
-    // 2. EFFICIENCY — measure actual tool schema tokens
-    const tools = (server.tools || []) as Tool[]
+    console.log(`  Security: ${security.score}/${SCORE_WEIGHTS.security} (${security.cve_count} CVEs, ${security.evidence.length} checks)`)
     const efficiency = measureTokenEfficiency(tools)
     console.log(`  Efficiency: ${efficiency.score}/${SCORE_WEIGHTS.efficiency} (${efficiency.total_tool_tokens} tokens, grade ${efficiency.grade})`)
 
@@ -142,6 +144,17 @@ async function main() {
         cve_count: security.cve_count,
         security_scan_status: security.scan_status,
         last_security_scan: new Date().toISOString(),
+        security_evidence: security.evidence,
+        has_code_execution: security.evidence.some(e => e.id === 'tool-safety' && e.pass === false),
+        has_injection_risk: security.evidence.some(e => (e.id === 'injection' || e.id === 'tool-poisoning') && e.pass === false),
+        dangerous_pattern_count: security.evidence.find(e => e.id === 'tool-safety')?.points !== undefined
+          ? (security.evidence.find(e => e.id === 'tool-safety')!.max_points - security.evidence.find(e => e.id === 'tool-safety')!.points)
+          : 0,
+        dep_health_score: security.evidence.find(e => e.id === 'dep-health')?.points ?? null,
+        dependency_count: null, // deps.dev doesn't reliably return this yet
+        has_tool_poisoning: security.has_tool_poisoning,
+        tool_poisoning_flags: security.tool_poisoning_flags,
+        tool_definition_hash: security.tool_definition_hash,
         // Efficiency fields
         total_tool_tokens: efficiency.total_tool_tokens,
         estimated_tokens_per_call: efficiency.estimated_tokens_per_call,

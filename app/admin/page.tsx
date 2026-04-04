@@ -176,11 +176,15 @@ export default function AdminPage() {
   }
 
   async function changeRole(userId: string, newRole: string) {
+    const VALID_ROLES = ['contributor', 'editor', 'maintainer', 'admin']
+    if (!VALID_ROLES.includes(newRole)) return
     await supabase.from('profiles').update({ role: newRole }).eq('id', userId)
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u))
   }
 
   async function approveEdit(editId: string, serverId: string, fieldName: string, newValue: unknown) {
+    const ALLOWED = ['name','tagline','description','api_name','api_pricing','api_rate_limits','homepage_url','npm_package','pip_package']
+    if (!ALLOWED.includes(fieldName)) return
     // Apply the edit
     await supabase.from('servers').update({ [fieldName]: newValue }).eq('id', serverId)
     // Mark as approved
@@ -479,7 +483,7 @@ export default function AdminPage() {
               {e.status === 'pending' && (
                 <div className="flex gap-2">
                   <button
-                    onClick={() => approveEdit(e.id, e.server?.slug ? '' : '', e.field_name, e.new_value)}
+                    onClick={() => approveEdit(e.id, e.server_id, e.field_name, e.new_value)}
                     className="text-xs px-3 py-1 rounded bg-green text-white hover:bg-green/80"
                   >
                     Approve

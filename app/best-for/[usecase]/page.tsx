@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import ServerCard from '@/components/ServerCard'
 import Link from 'next/link'
 import type { Server } from '@/lib/types'
-import { SITE_URL } from '@/lib/constants'
+import { SITE_URL, PUBLIC_SERVER_FIELDS } from '@/lib/constants'
 import type { Metadata } from 'next'
 
 const USE_CASES: Record<string, {
@@ -91,7 +91,7 @@ export default async function BestForPage({
   // Fetch servers matching categories, sorted by MCPpedia score
   const { data: servers } = await supabase
     .from('servers')
-    .select('*')
+    .select(PUBLIC_SERVER_FIELDS)
     .overlaps('categories', uc.categories)
     .order('score_total', { ascending: false })
     .limit(20)

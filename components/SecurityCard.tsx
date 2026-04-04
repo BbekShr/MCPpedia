@@ -110,45 +110,47 @@ export default function SecurityCard({
       {/* Verdict */}
       <p className={`text-sm font-medium mb-3 ${verdictColor}`}>{verdict}</p>
 
-      {/* Evidence rows */}
+      {/* Evidence rows — dynamic from scoring engine, fallback to legacy */}
       <div className="border-t border-border pt-2 space-y-0">
-        <Row
-          pass={openCount === 0}
-          label="CVEs"
-          detail={totalCVEs === 0
-            ? 'No known CVEs for this package'
-            : fixedCount > 0 && openCount === 0
-              ? `${fixedCount} fixed CVE${fixedCount !== 1 ? 's' : ''} \u2014 update to ${fixedAdvisories[0].fixed_version || 'latest'}${fixedCount > 1 ? '+' : ''}`
-              : `${totalCVEs} found \u2014 ${openCount} open, ${fixedCount} fixed`}
-          href={osv}
-          linkText="check OSV.dev \u2192"
-        />
-        <Row
-          pass={server.has_authentication ? true : null}
-          label="Authentication"
-          detail={server.has_authentication
-            ? 'Requires authentication to connect'
-            : 'None required \u2014 easy to connect'}
-        />
-        <Row
-          pass={!!server.license && server.license !== 'NOASSERTION'}
-          label="License"
-          detail={server.license && server.license !== 'NOASSERTION' ? server.license : 'Not specified'}
-          href={server.license && server.github_url ? `${server.github_url}/blob/main/LICENSE` : null}
-          linkText="view license \u2192"
-        />
-        <Row
-          pass={!server.is_archived}
-          label="Repository"
-          detail={server.is_archived ? 'Archived \u2014 no longer accepting changes' : 'Active'}
-          href={server.github_url}
-          linkText="view repo \u2192"
-        />
-        <Row
-          pass={server.security_verified}
-          label="MCPpedia review"
-          detail={server.security_verified ? 'Security verified by MCPpedia' : 'Not yet reviewed by MCPpedia'}
-        />
+        {server.security_evidence && server.security_evidence.length > 0 ? (
+          server.security_evidence.map(e => (
+            <Row
+              key={e.id}
+              pass={e.pass}
+              label={e.label}
+              detail={e.detail}
+              href={e.link}
+              linkText={e.link_text}
+            />
+          ))
+        ) : (
+          <>
+            <Row
+              pass={openCount === 0}
+              label="CVEs"
+              detail={totalCVEs === 0
+                ? 'No known CVEs for this package'
+                : `${totalCVEs} found — ${openCount} open, ${fixedCount} fixed`}
+              href={osv}
+              linkText="check OSV.dev →"
+            />
+            <Row
+              pass={server.has_authentication ? true : null}
+              label="Authentication"
+              detail={server.has_authentication ? 'Requires authentication' : 'None required'}
+            />
+            <Row
+              pass={!!server.license && server.license !== 'NOASSERTION'}
+              label="License"
+              detail={server.license && server.license !== 'NOASSERTION' ? server.license : 'Not specified'}
+            />
+            <Row
+              pass={!server.is_archived}
+              label="Repository"
+              detail={server.is_archived ? 'Archived' : 'Active'}
+            />
+          </>
+        )}
       </div>
 
       {/* Advisory details */}

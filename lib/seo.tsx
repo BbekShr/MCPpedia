@@ -13,7 +13,7 @@ export function JsonLdScript({ data }: { data: Record<string, unknown> | Record<
         <script
           key={i}
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(item) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(item).replace(/</g, '\\u003C').replace(/>/g, '\\u003E').replace(/&/g, '\\u0026') }}
         />
       ))}
     </>

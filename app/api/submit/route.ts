@@ -12,7 +12,8 @@ export async function POST(request: Request) {
   const rl = rateLimitUser(user.id, 'submit', 5, 3600_000) // 5 per hour
   if (!rl.allowed) return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
 
-  const body = await request.json()
+  let body
+  try { body = await request.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
   const parsed = submitServerSchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
@@ -20,11 +21,16 @@ export async function POST(request: Request) {
 
   const data = parsed.data
   const slug = data.name
+    .normalize('NFC')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
 
-  // Check for duplicate
+  if (!slug) {
+    return NextResponse.json({ error: 'Name must contain at least one letter or number' }, { status: 400 })
+  }
+
+  // Check for duplicate slug
   const { data: existing } = await supabase
     .from('servers')
     .select('id')
@@ -33,6 +39,17 @@ export async function POST(request: Request) {
 
   if (existing) {
     return NextResponse.json({ error: 'A server with this name already exists' }, { status: 409 })
+  }
+
+  // Check for duplicate GitHub URL
+  const { data: existingByUrl } = await supabase
+    .from('servers')
+    .select('id, slug')
+    .eq('github_url', data.github_url)
+    .single()
+
+  if (existingByUrl) {
+    return NextResponse.json({ error: 'This GitHub repository is already listed' }, { status: 409 })
   }
 
   // Enrich from GitHub
@@ -72,7 +89,8 @@ export async function POST(request: Request) {
     .single()
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('submit insert error:', error.message)
+    return NextResponse.json({ error: 'Failed to submit server' }, { status: 500 })
   }
 
   return NextResponse.json({ server }, { status: 201 })

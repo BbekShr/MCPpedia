@@ -1,5 +1,14 @@
 import type { Server } from '@/lib/types'
 
+function safeUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url)
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? url : null
+  } catch {
+    return null
+  }
+}
+
 export default function EnvInstructions({ server }: { server: Server }) {
   const envVars = server.env_instructions || {}
   const entries = Object.entries(envVars)
@@ -18,9 +27,9 @@ export default function EnvInstructions({ server }: { server: Server }) {
             </div>
             <div className="pl-3 border-l-2 border-accent/30">
               <pre className="text-xs text-text-muted whitespace-pre-wrap leading-relaxed">{info.steps}</pre>
-              {info.url && (
+              {info.url && safeUrl(info.url) && (
                 <a
-                  href={info.url}
+                  href={safeUrl(info.url)!}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-xs text-accent hover:text-accent-hover mt-1.5"

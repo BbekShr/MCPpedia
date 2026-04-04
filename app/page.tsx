@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import ServerCard from '@/components/ServerCard'
 import SearchBar from '@/components/SearchBar'
-import { CATEGORIES, CATEGORY_LABELS, SITE_NAME, SITE_DESCRIPTION, SITE_URL } from '@/lib/constants'
+import { CATEGORIES, CATEGORY_LABELS, SITE_NAME, SITE_DESCRIPTION, SITE_URL, PUBLIC_SERVER_FIELDS } from '@/lib/constants'
 import { JsonLdScript, generateOrganizationJsonLd, generateWebSiteJsonLd } from '@/lib/seo'
 import type { Server } from '@/lib/types'
 import type { Category } from '@/lib/constants'
@@ -39,48 +39,48 @@ export default async function HomePage() {
   ] = await Promise.all([
     supabase
       .from('servers')
-      .select('*')
+      .select(PUBLIC_SERVER_FIELDS)
       .eq('is_archived', false)
       .gt('score_total', 0)
       .order('score_total', { ascending: false })
       .limit(6),
     supabase
       .from('servers')
-      .select('*')
+      .select(PUBLIC_SERVER_FIELDS)
       .eq('author_type', 'official')
       .eq('is_archived', false)
       .order('score_total', { ascending: false })
       .limit(6),
     supabase
       .from('servers')
-      .select('*')
+      .select(PUBLIC_SERVER_FIELDS)
       .eq('is_archived', false)
       .order('created_at', { ascending: false })
       .limit(4),
     supabase
       .from('servers')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('is_archived', false),
     supabase
       .from('servers')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .gt('cve_count', 0)
       .eq('is_archived', false),
     supabase
       .from('servers')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('author_type', 'official')
       .eq('is_archived', false),
     supabase
       .from('servers')
-      .select('*')
+      .select(PUBLIC_SERVER_FIELDS)
       .gt('cve_count', 0)
       .eq('is_archived', false)
       .order('cve_count', { ascending: false })
       .limit(6),
     supabase
       .from('security_advisories')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('status', 'open'),
   ])
 

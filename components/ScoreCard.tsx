@@ -148,27 +148,6 @@ function efficiencyGrade(tokens: number): 'A' | 'B' | 'C' | 'D' | 'F' {
 }
 
 export default function ScoreCard({ server, advisories = [] }: { server: Server; advisories?: SecurityAdvisory[] }) {
-  const [refreshing, setRefreshing] = useState(false)
-  const [refreshResult, setRefreshResult] = useState<string | null>(null)
-
-  async function handleRefresh() {
-    setRefreshing(true)
-    setRefreshResult(null)
-    try {
-      const res = await fetch(`/api/server/${server.slug}/refresh-score`, { method: 'POST' })
-      if (!res.ok) throw new Error('Failed to refresh')
-      const data = await res.json()
-      setRefreshResult(`Score updated: ${data.score_total}/100`)
-      // Reload page after short delay to show fresh data
-      setTimeout(() => window.location.reload(), 1500)
-    } catch {
-      setRefreshResult('Refresh failed — try again later')
-    } finally {
-      setRefreshing(false)
-    }
-  }
-
-  const openCVEs = advisories.filter(a => a.status === 'open').length
   const subcategorySum = (server.score_security || 0) + (server.score_maintenance || 0) + (server.score_efficiency || 0) + (server.score_documentation || 0) + (server.score_compatibility || 0)
   const total = Math.min(subcategorySum || server.score_total || 0, 100)
   const toolCount = server.tools?.length || 0
@@ -178,12 +157,6 @@ export default function ScoreCard({ server, advisories = [] }: { server: Server;
     ? Math.floor((Date.now() - new Date(server.github_last_commit).getTime()) / 86400000)
     : null
   const grade = server.token_efficiency_grade || (hasTokenData ? efficiencyGrade(tokenCost) : 'unknown')
-
-  const osvLink = server.npm_package
-    ? `https://osv.dev/list?ecosystem=npm&q=${encodeURIComponent(server.npm_package)}`
-    : server.pip_package
-      ? `https://osv.dev/list?ecosystem=PyPI&q=${encodeURIComponent(server.pip_package)}`
-      : null
 
   // Documentation evidence (computed client-side from available data)
   const toolsDocumented = server.tools?.filter(t => t.description?.length > 10).length || 0
@@ -211,35 +184,39 @@ export default function ScoreCard({ server, advisories = [] }: { server: Server;
       </div>
 
       <div className="space-y-1">
-        {/* Security (0-30) */}
+        {/* Security (0-30) — dynamic evidence with legacy fallback */}
         <ScoreBar label="Security" score={Math.min(server.score_security || 0, SCORE_WEIGHTS.security)} max={SCORE_WEIGHTS.security}>
-          <Evidence
-            pass={openCVEs === 0}
-            text={openCVEs === 0 ? 'No known CVEs' : `${openCVEs} CVE(s) found`}
-            pts={openCVEs === 0 ? '' : `-${openCVEs * 10}`}
-            link={osvLink || undefined}
-            linkText="check OSV.dev →"
-          />
-          <Evidence
-            pass={null}
-            text={server.has_authentication ? 'Has authentication' : 'No authentication required'}
-          />
-          <Evidence
-            pass={!!server.license && server.license !== 'NOASSERTION'}
-            text={server.license && server.license !== 'NOASSERTION' ? `License: ${server.license}` : 'No license specified'}
-            pts={server.license && server.license !== 'NOASSERTION' ? '' : '-3'}
-            link={server.github_url ? `${server.github_url}/blob/main/LICENSE` : undefined}
-          />
-          <Evidence
-            pass={!server.is_archived}
-            text={server.is_archived ? 'Repository archived' : 'Repository active'}
-            pts={server.is_archived ? '-8' : ''}
-          />
-          <Evidence
-            pass={server.security_verified}
-            text={server.security_verified ? 'MCPpedia security verified' : 'Not yet security verified'}
-            pts={server.security_verified ? '+5' : ''}
-          />
+          {server.security_evidence && server.security_evidence.length > 0 ? (
+            server.security_evidence.map(e => (
+              <Evidence
+                key={e.id}
+                pass={e.pass}
+                text={e.detail}
+                pts={e.points !== 0 ? `${e.points >= 0 ? '+' : ''}${e.points}` : ''}
+                link={e.link}
+                linkText={e.link_text}
+              />
+            ))
+          ) : (
+            <>
+              <Evidence
+                pass={server.cve_count === 0}
+                text={server.cve_count === 0 ? 'No known CVEs' : `${server.cve_count} CVE(s) found`}
+              />
+              <Evidence
+                pass={null}
+                text={server.has_authentication ? 'Has authentication' : 'No authentication required'}
+              />
+              <Evidence
+                pass={!!server.license && server.license !== 'NOASSERTION'}
+                text={server.license && server.license !== 'NOASSERTION' ? `License: ${server.license}` : 'No license specified'}
+              />
+              <Evidence
+                pass={!server.is_archived}
+                text={server.is_archived ? 'Repository archived' : 'Repository active'}
+              />
+            </>
+          )}
         </ScoreBar>
 
         {/* Maintenance (0-25) */}
@@ -402,25 +379,11 @@ export default function ScoreCard({ server, advisories = [] }: { server: Server;
 
       {/* Footer */}
       <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
-        <div className="flex items-center gap-3">
-          {server.score_computed_at && (
-            <p className="text-xs text-text-muted">
-              Scored {timeAgo(server.score_computed_at)}
-            </p>
-          )}
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="text-xs text-accent hover:text-accent-hover disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {refreshing ? 'Refreshing...' : 'Refresh score'}
-          </button>
-          {refreshResult && (
-            <span className={`text-xs ${refreshResult.includes('failed') ? 'text-red' : 'text-green'}`}>
-              {refreshResult}
-            </span>
-          )}
-        </div>
+        {server.score_computed_at && (
+          <p className="text-xs text-text-muted">
+            Last scored {timeAgo(server.score_computed_at)}
+          </p>
+        )}
         <Link href="/methodology" className="text-xs text-accent hover:text-accent-hover">
           How we score →
         </Link>

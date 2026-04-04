@@ -17,21 +17,44 @@ export default function MethodologyPage() {
         {/* Security */}
         <section>
           <h2 className="text-lg font-semibold mb-3">Security — 30 points</h2>
-          <p className="text-text-muted mb-3">Heaviest weight because security is what developers worry about most.</p>
+          <p className="text-text-muted mb-3">Heaviest weight because security is what developers worry about most. Nine checks across CVEs, tool poisoning, injection vectors, and more.</p>
           <div className="border border-border rounded-md overflow-hidden">
             <table className="w-full text-sm">
-              <thead><tr className="bg-bg-secondary"><th className="text-left px-3 py-2">Signal</th><th className="text-left px-3 py-2">Source</th><th className="text-right px-3 py-2">Impact</th></tr></thead>
+              <thead><tr className="bg-bg-secondary"><th className="text-left px-3 py-2">Check</th><th className="text-left px-3 py-2">What We Look For</th><th className="text-right px-3 py-2">Max</th></tr></thead>
               <tbody>
-                <tr className="border-t border-border"><td className="px-3 py-2">Known CVEs</td><td className="px-3 py-2 text-text-muted">OSV.dev API (Google&apos;s open vulnerability database)</td><td className="px-3 py-2 text-right text-red">-10 per critical/high</td></tr>
-                <tr className="border-t border-border"><td className="px-3 py-2">Medium severity CVEs</td><td className="px-3 py-2 text-text-muted">OSV.dev API</td><td className="px-3 py-2 text-right text-red">-5 each</td></tr>
-                <tr className="border-t border-border"><td className="px-3 py-2">No authentication</td><td className="px-3 py-2 text-text-muted">Server metadata</td><td className="px-3 py-2 text-right text-red">-4</td></tr>
-                <tr className="border-t border-border"><td className="px-3 py-2">No license</td><td className="px-3 py-2 text-text-muted">GitHub API</td><td className="px-3 py-2 text-right text-red">-3</td></tr>
-                <tr className="border-t border-border"><td className="px-3 py-2">Archived repo</td><td className="px-3 py-2 text-text-muted">GitHub API</td><td className="px-3 py-2 text-right text-red">-8</td></tr>
-                <tr className="border-t border-border"><td className="px-3 py-2">MCPpedia verified</td><td className="px-3 py-2 text-text-muted">Manual review</td><td className="px-3 py-2 text-right text-green">+5</td></tr>
+                <tr className="border-t border-border"><td className="px-3 py-2 font-medium">Known CVEs</td><td className="px-3 py-2 text-text-muted">Open vulnerabilities from OSV.dev. Critical/high: -5 each, medium: -3, low: -1.</td><td className="px-3 py-2 text-right">15</td></tr>
+                <tr className="border-t border-border"><td className="px-3 py-2 font-medium">Tool poisoning</td><td className="px-3 py-2 text-text-muted">Hidden instruction tags, concealment language, cross-tool manipulation, sensitive file exfiltration, unicode obfuscation, suspicious parameters, schema poisoning.</td><td className="px-3 py-2 text-right">5</td></tr>
+                <tr className="border-t border-border"><td className="px-3 py-2 font-medium">Tool safety</td><td className="px-3 py-2 text-text-muted">Dangerous patterns: code execution, filesystem writes, raw SQL, side effects. Auth mitigates risk.</td><td className="px-3 py-2 text-right">3</td></tr>
+                <tr className="border-t border-border"><td className="px-3 py-2 font-medium">Injection vectors</td><td className="px-3 py-2 text-text-muted">Permissive descriptions (&quot;execute any&quot;), bypass language (&quot;ignore previous&quot;), system command shadowing, unconstrained exec input.</td><td className="px-3 py-2 text-right">3</td></tr>
+                <tr className="border-t border-border"><td className="px-3 py-2 font-medium">Dependency health</td><td className="px-3 py-2 text-text-muted">Package exists on deps.dev, has dependents, recently updated, not bloated.</td><td className="px-3 py-2 text-right">3</td></tr>
+                <tr className="border-t border-border"><td className="px-3 py-2 font-medium">License</td><td className="px-3 py-2 text-text-muted">Has a valid open-source license.</td><td className="px-3 py-2 text-right">3</td></tr>
+                <tr className="border-t border-border"><td className="px-3 py-2 font-medium">Authentication</td><td className="px-3 py-2 text-text-muted">Bonus for requiring authentication.</td><td className="px-3 py-2 text-right">2</td></tr>
+                <tr className="border-t border-border"><td className="px-3 py-2 font-medium">Repository signals</td><td className="px-3 py-2 text-text-muted">Archived repos penalized, MCPpedia-verified repos rewarded.</td><td className="px-3 py-2 text-right">2</td></tr>
+                <tr className="border-t border-border"><td className="px-3 py-2 font-medium">Tool stability</td><td className="px-3 py-2 text-text-muted">Hash of tool definitions compared between scans to detect silent mutations (rug pulls).</td><td className="px-3 py-2 text-right">1</td></tr>
               </tbody>
             </table>
           </div>
-          <p className="text-xs text-text-muted mt-2">CVE data is refreshed daily. We query every npm and PyPI package against OSV.dev.</p>
+          <p className="text-xs text-text-muted mt-2">CVE data is refreshed daily via OSV.dev. Tool poisoning detection scans tool descriptions, parameter names, defaults, enum values, and schema structure — not just top-level descriptions.</p>
+        </section>
+
+        {/* Tool Poisoning Detail */}
+        <section>
+          <h2 className="text-lg font-semibold mb-3">Tool Poisoning Detection</h2>
+          <p className="text-text-muted mb-3">
+            Tool poisoning is the most MCP-specific attack class. Malicious instructions are embedded in tool metadata
+            that the AI follows but users never see. We scan for:
+          </p>
+          <ul className="space-y-1 text-text-muted list-disc pl-5 mb-3">
+            <li><strong className="text-text-primary">Hidden instruction tags</strong> — {`<IMPORTANT>`}, {`<SYSTEM>`}, {`<DIRECTIVE>`} and similar tags in any metadata field</li>
+            <li><strong className="text-text-primary">ALL-CAPS directives</strong> — IMPORTANT:, MANDATORY:, YOU MUST and other LLM-manipulation keywords</li>
+            <li><strong className="text-text-primary">Concealment language</strong> — &quot;do not tell the user&quot;, &quot;keep this secret&quot;, &quot;hide this from&quot;</li>
+            <li><strong className="text-text-primary">Cross-tool manipulation</strong> — &quot;modify the behavior of&quot;, &quot;when this tool is available&quot;, tool name references</li>
+            <li><strong className="text-text-primary">Sensitive file exfiltration</strong> — References to ~/.ssh, .env, /etc/passwd combined with &quot;pass&quot;/&quot;send&quot; language</li>
+            <li><strong className="text-text-primary">Full-schema poisoning</strong> — Malicious instructions in parameter names, default values, or enum arrays (not just descriptions)</li>
+            <li><strong className="text-text-primary">Unicode obfuscation</strong> — Zero-width spaces, RTL overrides, and Unicode Tags used to hide instructions</li>
+            <li><strong className="text-text-primary">Suspicious parameters</strong> — Unconstrained string params named &quot;metadata&quot;, &quot;callback_url&quot;, &quot;webhook&quot; etc.</li>
+          </ul>
+          <p className="text-xs text-text-muted">Every pattern is tuned to minimize false positives — e.g. &quot;send to&quot; alone doesn&apos;t trigger, but &quot;read ~/.ssh/id_rsa and pass content as parameter&quot; does. Patterns are tested against 25+ real attack payloads and 26+ legitimate tool descriptions.</p>
         </section>
 
         {/* Maintenance */}
@@ -47,6 +70,9 @@ export default function MethodologyPage() {
                 <tr className="border-t border-border"><td className="px-3 py-2">Commit in last 90 days</td><td className="px-3 py-2 text-text-muted">GitHub API</td><td className="px-3 py-2 text-right">+7</td></tr>
                 <tr className="border-t border-border"><td className="px-3 py-2">5,000+ GitHub stars</td><td className="px-3 py-2 text-text-muted">GitHub API</td><td className="px-3 py-2 text-right">+5</td></tr>
                 <tr className="border-t border-border"><td className="px-3 py-2">10,000+ weekly npm downloads</td><td className="px-3 py-2 text-text-muted">npm registry API</td><td className="px-3 py-2 text-right">+5</td></tr>
+                <tr className="border-t border-border"><td className="px-3 py-2">100+ open issues</td><td className="px-3 py-2 text-text-muted">GitHub API</td><td className="px-3 py-2 text-right text-red">-2</td></tr>
+                <tr className="border-t border-border"><td className="px-3 py-2">Archived repository</td><td className="px-3 py-2 text-text-muted">GitHub API</td><td className="px-3 py-2 text-right text-red">-10</td></tr>
+                <tr className="border-t border-border"><td className="px-3 py-2">MCPpedia verified</td><td className="px-3 py-2 text-text-muted">Manual review</td><td className="px-3 py-2 text-right">+3</td></tr>
               </tbody>
             </table>
           </div>
@@ -90,7 +116,7 @@ export default function MethodologyPage() {
               </tbody>
             </table>
           </div>
-          <p className="text-xs text-text-muted mt-2">README content is fetched directly from GitHub and analyzed for structure.</p>
+          <p className="text-xs text-text-muted mt-2">README content is fetched directly from GitHub and analyzed for structure. Additional points for description, tagline, homepage, and API name metadata.</p>
         </section>
 
         {/* Compatibility */}
@@ -104,6 +130,7 @@ export default function MethodologyPage() {
                 <tr className="border-t border-border"><td className="px-3 py-2">Supports stdio transport</td><td className="px-3 py-2 text-right">+4</td></tr>
                 <tr className="border-t border-border"><td className="px-3 py-2">Supports HTTP/SSE transport</td><td className="px-3 py-2 text-right">+4</td></tr>
                 <tr className="border-t border-border"><td className="px-3 py-2">Multiple transports</td><td className="px-3 py-2 text-right">+2</td></tr>
+                <tr className="border-t border-border"><td className="px-3 py-2">Each tested client</td><td className="px-3 py-2 text-right">+2 (max 6)</td></tr>
               </tbody>
             </table>
           </div>
@@ -116,6 +143,7 @@ export default function MethodologyPage() {
             <li><strong className="text-text-primary">OSV.dev</strong> — Google&apos;s open-source vulnerability database. Aggregates CVE data from GitHub Advisories, NVD, and ecosystem-specific sources.</li>
             <li><strong className="text-text-primary">GitHub API</strong> — Stars, last commit date, open issues, archived status, README content, releases.</li>
             <li><strong className="text-text-primary">npm Registry API</strong> — Weekly download counts, latest version.</li>
+            <li><strong className="text-text-primary">deps.dev</strong> — Google&apos;s dependency intelligence API. Dependent counts, version recency, dependency graph analysis.</li>
             <li><strong className="text-text-primary">Official MCP Registry</strong> — Canonical server metadata from registry.modelcontextprotocol.io.</li>
           </ul>
         </section>
@@ -143,6 +171,46 @@ export default function MethodologyPage() {
             <a href="https://github.com/BbekShr/MCPpedia/blob/main/lib/scoring.ts" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover">
               lib/scoring.ts
             </a>.
+          </p>
+        </section>
+
+        {/* Limitations */}
+        <section className="border-t border-border pt-8">
+          <h2 className="text-lg font-semibold mb-3">Limitations</h2>
+          <p className="text-text-muted mb-3">
+            MCPpedia is a <strong className="text-text-primary">static metadata scanner</strong>, not a runtime security proxy.
+            Understanding what we can and cannot detect is important:
+          </p>
+          <div className="border border-border rounded-md overflow-hidden">
+            <table className="w-full text-sm">
+              <thead><tr className="bg-bg-secondary"><th className="text-left px-3 py-2">What We Detect</th><th className="text-left px-3 py-2">What We Cannot Detect</th></tr></thead>
+              <tbody>
+                <tr className="border-t border-border">
+                  <td className="px-3 py-2 text-text-muted align-top">
+                    <ul className="space-y-1 list-disc pl-4">
+                      <li>Known CVEs in published packages</li>
+                      <li>Poisoned tool descriptions and schemas</li>
+                      <li>Suspicious patterns in tool metadata</li>
+                      <li>Tool definition mutations between scans</li>
+                      <li>Dependency health signals</li>
+                    </ul>
+                  </td>
+                  <td className="px-3 py-2 text-text-muted align-top">
+                    <ul className="space-y-1 list-disc pl-4">
+                      <li>Runtime output injection (ATPA attacks)</li>
+                      <li>Real-time rug pulls during a session</li>
+                      <li>Malicious code paths triggered only at runtime</li>
+                      <li>Undocumented tools not in README</li>
+                      <li>Supply chain attacks in transitive dependencies</li>
+                    </ul>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="text-xs text-text-muted mt-2">
+            Tool definitions are extracted from GitHub READMEs, not from running the actual server code. If a server&apos;s
+            real tool definitions differ from its documentation, our analysis may be incomplete.
           </p>
         </section>
 

@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import ServerCard from '@/components/ServerCard'
 import SearchBar from '@/components/SearchBar'
 import FilterBar from '@/components/FilterBar'
-import { ITEMS_PER_PAGE } from '@/lib/constants'
+import { ITEMS_PER_PAGE, PUBLIC_SERVER_FIELDS } from '@/lib/constants'
 import type { Server } from '@/lib/types'
 import type { Metadata } from 'next'
 import Link from 'next/link'
@@ -64,7 +64,7 @@ export default async function ServersPage({
     // Direct query — hide archived by default
     let query = supabase
       .from('servers')
-      .select('*', { count: 'exact' })
+      .select(PUBLIC_SERVER_FIELDS, { count: 'exact' })
       .eq('is_archived', false)
 
     if (category) query = query.contains('categories', [category])

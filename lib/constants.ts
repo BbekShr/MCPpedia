@@ -14,6 +14,12 @@ export const CATEGORIES = [
   'entertainment',
   'health',
   'marketing',
+  'search',
+  'writing',
+  'maps',
+  'ecommerce',
+  'legal',
+  'browser',
   'other',
 ] as const
 
@@ -35,6 +41,12 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   'entertainment': 'Entertainment',
   'health': 'Health',
   'marketing': 'Marketing',
+  'search': 'Search',
+  'writing': 'Writing',
+  'maps': 'Maps & Geo',
+  'ecommerce': 'E-Commerce',
+  'legal': 'Legal',
+  'browser': 'Browser',
   'other': 'Other',
 }
 
@@ -78,3 +90,27 @@ export const REVALIDATE_GUIDES = 86400      // 24 hours
 export const SITE_NAME = 'MCPpedia'
 export const SITE_DESCRIPTION = 'The free, open, community-driven encyclopedia for MCP servers.'
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://mcppedia.org'
+
+// Public fields safe to expose in API responses (excludes internal scoring details, scan internals, claimed_by, etc.)
+export const PUBLIC_SERVER_FIELDS = [
+  'id', 'slug', 'name', 'tagline', 'description',
+  'github_url', 'npm_package', 'pip_package', 'homepage_url',
+  'license', 'author_name', 'author_github', 'author_type',
+  'transport', 'compatible_clients', 'install_configs',
+  'tools', 'resources', 'prompts',
+  'api_name', 'api_pricing', 'api_rate_limits', 'requires_api_key',
+  'github_stars', 'github_last_commit', 'github_open_issues', 'npm_weekly_downloads',
+  'is_archived', 'health_status', 'health_checked_at',
+  'categories', 'tags', 'source', 'verified',
+  'created_at', 'updated_at',
+  'score_total', 'score_security', 'score_maintenance',
+  'score_documentation', 'score_compatibility', 'score_efficiency', 'score_computed_at',
+  'has_authentication', 'cve_count', 'security_evidence',
+  'has_tool_poisoning', 'tool_poisoning_flags', 'tool_definition_hash',
+  'total_tool_tokens', 'estimated_tokens_per_call', 'token_efficiency_grade',
+  'doc_readme_quality', 'doc_has_setup', 'doc_has_examples', 'doc_tool_schema_ratio',
+  'env_instructions', 'prerequisites',
+  'last_health_check_status', 'last_health_check_at', 'health_check_uptime',
+  'publisher_verified', 'review_count', 'review_avg',
+  'community_verification_count', 'community_verified',
+].join(', ')

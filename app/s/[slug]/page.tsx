@@ -2,8 +2,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { PUBLIC_SERVER_FIELDS } from '@/lib/constants'
 import HealthBadge from '@/components/HealthBadge'
-import CategoryTag from '@/components/CategoryTag'
 import ToolsList from '@/components/ToolsList'
 import InstallConfig from '@/components/InstallConfig'
 import DiscussionSection from '@/components/DiscussionSection'
@@ -16,6 +16,7 @@ import ServerTester from '@/components/ServerTester'
 import ServerIcon from '@/components/ServerIcon'
 import EnvInstructions from '@/components/EnvInstructions'
 import CommunityVerify from '@/components/CommunityVerify'
+import CategoryEditor from '@/components/CategoryEditor'
 import ServerSidebar from '@/components/ServerSidebar'
 import { SITE_NAME, SITE_URL } from '@/lib/constants'
 import { JsonLdScript, generateServerJsonLd, generateBreadcrumbJsonLd } from '@/lib/seo'
@@ -103,7 +104,7 @@ export default async function ServerDetailPage({
 
   const { data: server } = await supabase
     .from('servers')
-    .select('*')
+    .select(PUBLIC_SERVER_FIELDS)
     .eq('slug', slug)
     .single()
 
@@ -173,11 +174,7 @@ export default async function ServerDetailPage({
           {s.verified && <VerifiedBadge type="mcppedia" />}
           {s.community_verified && <VerifiedBadge type="community" />}
         </div>
-        {s.categories.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-3">
-            {s.categories.map(cat => <CategoryTag key={cat} category={cat} />)}
-          </div>
-        )}
+        <CategoryEditor slug={s.slug} initialCategories={s.categories} />
         {/* Stats row */}
         <div className="flex flex-wrap items-center gap-3 text-sm text-text-muted">
           {s.github_stars > 0 && <span>&#9733; {formatNumber(s.github_stars)}</span>}

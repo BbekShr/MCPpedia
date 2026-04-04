@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { fetchRepoMetadata, fetchReadme } from '@/lib/github'
 import {
@@ -28,6 +29,22 @@ export async function POST(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params
+
+  // Auth: only maintainers and admins may trigger a score refresh
+  const userClient = await createClient()
+  const { data: { user } } = await userClient.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { data: profile } = await userClient
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile || !['maintainer', 'admin'].includes(profile.role)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   const supabase = createAdminClient()
 
   const { data: server, error } = await supabase
@@ -84,7 +101,9 @@ export async function POST(
     server.has_authentication || false,
     server.license,
     server.is_archived || false,
-    server.security_verified || false
+    server.security_verified || false,
+    tools,
+    server.tool_definition_hash || null
   )
 
   const efficiency = measureTokenEfficiency(tools)
@@ -137,6 +156,16 @@ export async function POST(
       cve_count: security.cve_count,
       security_scan_status: security.scan_status,
       last_security_scan: new Date().toISOString(),
+      security_evidence: security.evidence,
+      has_code_execution: security.evidence.some(e => e.id === 'tool-safety' && e.pass === false),
+      has_injection_risk: security.evidence.some(e => (e.id === 'injection' || e.id === 'tool-poisoning') && e.pass === false),
+      dangerous_pattern_count: security.evidence.find(e => e.id === 'tool-safety')?.points !== undefined
+        ? (security.evidence.find(e => e.id === 'tool-safety')!.max_points - security.evidence.find(e => e.id === 'tool-safety')!.points)
+        : 0,
+      dep_health_score: security.evidence.find(e => e.id === 'dep-health')?.points ?? null,
+      has_tool_poisoning: security.has_tool_poisoning,
+      tool_poisoning_flags: security.tool_poisoning_flags,
+      tool_definition_hash: security.tool_definition_hash,
       total_tool_tokens: efficiency.total_tool_tokens,
       estimated_tokens_per_call: efficiency.estimated_tokens_per_call,
       token_efficiency_grade: efficiency.grade,

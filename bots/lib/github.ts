@@ -11,7 +11,9 @@ export interface GitHubRepo {
   description: string | null
   stargazers_count: number
   pushed_at: string
+  created_at: string
   archived: boolean
+  fork: boolean
   open_issues_count: number
   license: { spdx_id: string } | null
   owner: { login: string }
@@ -31,6 +33,28 @@ export async function searchRepos(query: string, perPage = 100): Promise<GitHubR
   }
   const data = await res.json()
   return data.items || []
+}
+
+/** Paginated search — fetches up to maxPages pages (max 1000 results per query from GitHub) */
+export async function searchReposPaginated(query: string, maxPages = 10, perPage = 100): Promise<GitHubRepo[]> {
+  const all: GitHubRepo[] = []
+  for (let page = 1; page <= maxPages; page++) {
+    const res = await fetch(
+      `https://api.github.com/search/repositories?q=${encodeURIComponent(query)}&per_page=${perPage}&sort=stars&order=desc&page=${page}`,
+      { headers: headers() }
+    )
+    if (!res.ok) {
+      if (res.status === 422) break // GitHub returns 422 when page * perPage > 1000
+      console.error(`GitHub search page ${page} failed: ${res.status}`)
+      break
+    }
+    const data = await res.json()
+    const items = data.items || []
+    all.push(...items)
+    if (items.length < perPage) break // no more results
+    await new Promise(r => setTimeout(r, 2500)) // stay under 30 req/min
+  }
+  return all
 }
 
 export async function getRepo(owner: string, repo: string): Promise<GitHubRepo | null> {

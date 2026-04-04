@@ -13,6 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const { data: servers } = await supabase
     .from('servers')
     .select('slug, updated_at')
+    .eq('is_archived', false)
     .order('updated_at', { ascending: false })
 
   const serverEntries = (servers || []).map(s => ({

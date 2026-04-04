@@ -47,10 +47,20 @@ export interface Server {
   // Security
   has_authentication: boolean
   security_issues: SecurityIssue[]
+  security_evidence: SecurityEvidence[]
   cve_count: number
   last_security_scan: string | null
   security_scan_status: 'success' | 'failed' | 'pending'
   security_verified: boolean
+  has_code_execution: boolean
+  has_injection_risk: boolean
+  dangerous_pattern_count: number
+  dep_health_score: number | null
+  dependency_count: number | null
+  // Tool poisoning detection
+  has_tool_poisoning: boolean
+  tool_poisoning_flags: string[]
+  tool_definition_hash: string | null
   // Token efficiency
   estimated_tokens_per_call: number
   total_tool_tokens: number
@@ -82,6 +92,17 @@ export interface Server {
   // Community verification
   community_verification_count: number
   community_verified: boolean
+}
+
+export interface SecurityEvidence {
+  id: string
+  label: string
+  pass: boolean | null
+  detail: string
+  points: number
+  max_points: number
+  link?: string
+  link_text?: string
 }
 
 export interface SecurityIssue {

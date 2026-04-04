@@ -13,7 +13,7 @@ config({ path: '.env.local' })
 
 import { createAdminClient } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
-import { searchRepos, type GitHubRepo } from './lib/github'
+import { searchRepos, searchReposPaginated, type GitHubRepo } from './lib/github'
 import { categorize } from './lib/categorize'
 
 const supabase = createAdminClient()
@@ -118,36 +118,79 @@ async function getExistingPipPackages(): Promise<Set<string>> {
 async function discoverFromGitHub(): Promise<GitHubRepo[]> {
   console.log('Searching GitHub...')
 
-  // Prioritize high-quality repos first, then cast a wider net
-  const queries = [
-    // High-quality: starred repos
-    'topic:mcp-server stars:>50',
-    'topic:mcp-server stars:10..50',
-    'topic:modelcontextprotocol stars:>10',
-    '"mcp server" in:description stars:>20',
-    'mcp-server in:name stars:>10',
-
-    // Broad discovery
+  // Paginated queries — these have >100 results, so we fetch multiple pages
+  const paginatedQueries = [
     'topic:mcp-server',
     'topic:modelcontextprotocol',
     '"mcp server" in:description',
     'mcp-server in:name',
     '"model context protocol" in:description',
-
-    // Language-specific (catches servers that don't use the topic)
     '"@modelcontextprotocol/sdk" in:file language:typescript',
     '"mcp.server" in:file language:python',
-    'mcp server tool language:typescript stars:>5',
-    'mcp server tool language:python stars:>5',
+    'mcp-server in:name language:typescript',
+    'mcp-server in:name language:python',
+    'mcp-server in:name language:go',
+    'mcp-server in:name language:rust',
+    'mcp-server in:name language:java',
+    'mcp-server in:name language:csharp',
+    'mcp in:name server in:name',
+    '"mcp" "tools" "server" in:description',
+  ]
+
+  // Single-page queries — more targeted, unlikely to have >100 results
+  const singleQueries = [
+    // High-quality
+    'topic:mcp-server stars:>50',
+    'topic:mcp-server stars:10..50',
+    'topic:modelcontextprotocol stars:>10',
+    '"mcp server" in:description stars:>20',
+
+    // SDK-specific patterns
+    '"from mcp.server" in:file language:python',
+    '"McpServer" in:file language:typescript',
+    '"StdioServerTransport" in:file language:typescript',
+    '"FastMCP" in:file language:python',
 
     // Ecosystem-specific
-    '"mcpServers" in:readme stars:>5',
-    '"MCP" "server" "tool" in:description stars:>20',
+    '"mcpServers" in:readme',
+    '"MCP" "server" "tool" in:description stars:>5',
+
+    // Framework-specific
+    'mcp server language:kotlin',
+    'mcp server language:ruby',
+    'mcp server language:swift',
+    'mcp server language:php',
+
+    // Date-range: recently created (catch brand new servers)
+    'mcp-server in:name created:>2025-01-01',
+    'topic:mcp-server created:>2025-01-01',
+    '"mcp server" in:description created:>2025-06-01',
+    '"mcp server" in:description created:>2026-01-01',
+
+    // Naming patterns
+    'mcp- in:name "server" in:description',
+    '-mcp in:name "server" in:description',
+    'mcp_server in:name',
   ]
 
   const allRepos = new Map<string, GitHubRepo>()
 
-  for (const query of queries) {
+  // Paginated queries first (up to 1000 results each)
+  for (const query of paginatedQueries) {
+    try {
+      const repos = await searchReposPaginated(query, 10, 100)
+      for (const repo of repos) {
+        allRepos.set(repo.full_name.toLowerCase(), repo)
+      }
+      console.log(`  [paginated] "${query}" → ${repos.length} results (total unique: ${allRepos.size})`)
+    } catch (err) {
+      console.error(`  Error searching "${query}": ${err}`)
+    }
+    await new Promise(r => setTimeout(r, 2000))
+  }
+
+  // Single-page queries
+  for (const query of singleQueries) {
     try {
       const repos = await searchRepos(query, 100)
       for (const repo of repos) {
@@ -157,7 +200,7 @@ async function discoverFromGitHub(): Promise<GitHubRepo[]> {
     } catch (err) {
       console.error(`  Error searching "${query}": ${err}`)
     }
-    await new Promise(r => setTimeout(r, 2000)) // GitHub search rate limit: 30 req/min
+    await new Promise(r => setTimeout(r, 2000))
   }
 
   console.log(`Found ${allRepos.size} unique repos from GitHub`)
@@ -177,7 +220,12 @@ async function discoverFromNpm(): Promise<NpmSearchResult[]> {
   console.log('Searching npm...')
   const results: NpmSearchResult[] = []
 
-  const queries = ['mcp-server', 'mcp server', 'modelcontextprotocol', '@modelcontextprotocol']
+  const queries = [
+    'mcp-server', 'mcp server', 'modelcontextprotocol',
+    '@modelcontextprotocol', 'mcp tool server',
+    'mcp-tool', 'fastmcp', 'mcp plugin',
+    'model context protocol server',
+  ]
 
   for (const q of queries) {
     try {
@@ -231,54 +279,54 @@ async function discoverFromPyPI(): Promise<PyPIResult[]> {
   console.log('Searching PyPI...')
   const results: PyPIResult[] = []
 
-  // PyPI's simple search API is limited — use the JSON API with keyword search
-  const queries = ['mcp-server', 'mcp server', 'modelcontextprotocol']
+  // PyPI doesn't have a search API that returns JSON.
+  // Strategy: check known MCP-related package name prefixes via the JSON API directly.
+  const prefixes = [
+    'mcp-server-', 'mcp_server_', 'mcp-', 'fastmcp-',
+    'modelcontextprotocol-', 'pymcp-',
+  ]
 
-  for (const q of queries) {
-    try {
-      // PyPI doesn't have a great search API, but we can use the warehouse search endpoint
-      const res = await fetch(
-        `https://pypi.org/search/?q=${encodeURIComponent(q)}&o=`,
-        { headers: { Accept: 'application/json' } }
-      )
-
-      if (!res.ok) {
-        // Fallback: parse HTML or skip
-        console.warn(`  PyPI search "${q}" returned ${res.status} — trying XML API`)
-        // Try the XML-RPC API instead
-        const xmlRes = await fetch('https://pypi.org/pypi', {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/xml' },
-          body: `<?xml version="1.0"?><methodCall><methodName>search</methodName><params><param><value><struct><member><name>name</name><value><string>${q}</string></value></member></struct></value></param></params></methodCall>`,
-        })
-        if (!xmlRes.ok) {
-          console.warn(`  PyPI XML-RPC also failed: ${xmlRes.status}`)
-          continue
-        }
-        const xmlText = await xmlRes.text()
-        // Parse simple results from XML
-        const nameMatches = xmlText.matchAll(/<name>name<\/name>\s*<value><string>([^<]+)<\/string>/g)
-        const summaryMatches = xmlText.matchAll(/<name>summary<\/name>\s*<value><string>([^<]+)<\/string>/g)
-        const names = Array.from(nameMatches, m => m[1])
-        const summaries = Array.from(summaryMatches, m => m[1])
-        for (let i = 0; i < names.length; i++) {
-          results.push({ name: names[i], version: '', summary: summaries[i] || '' })
-        }
-        console.log(`  "${q}" (XML-RPC) → ${names.length} results`)
-        continue
-      }
-
-      // If JSON works, parse it
+  // Also check the Simple API index for packages matching our prefixes
+  try {
+    console.log('  Fetching PyPI simple index...')
+    const res = await fetch('https://pypi.org/simple/', {
+      headers: { Accept: 'application/vnd.pypi.simple.v1+json' },
+    })
+    if (res.ok) {
       const data = await res.json()
-      if (Array.isArray(data)) {
-        for (const pkg of data) {
-          results.push({ name: pkg.name, version: pkg.version || '', summary: pkg.summary || '' })
+      const projects: Array<{ name: string }> = data.projects || []
+      console.log(`  PyPI index has ${projects.length} total packages`)
+
+      const mcpPackages = projects.filter(p => {
+        const lower = p.name.toLowerCase()
+        return prefixes.some(prefix => lower.startsWith(prefix)) ||
+          (lower.includes('mcp') && (lower.includes('server') || lower.includes('tool')))
+      })
+
+      console.log(`  Found ${mcpPackages.length} MCP-related packages in index`)
+
+      // Fetch metadata for each to get summary
+      for (const pkg of mcpPackages) {
+        try {
+          const metaRes = await fetch(`https://pypi.org/pypi/${encodeURIComponent(pkg.name)}/json`)
+          if (!metaRes.ok) continue
+          const meta = await metaRes.json()
+          results.push({
+            name: pkg.name,
+            version: meta.info?.version || '',
+            summary: meta.info?.summary || '',
+          })
+        } catch {
+          // Skip individual failures
         }
+        // Be nice to PyPI
+        await new Promise(r => setTimeout(r, 100))
       }
-    } catch (err) {
-      console.error(`  Error searching PyPI for "${q}": ${err}`)
+    } else {
+      console.warn(`  PyPI simple index failed: ${res.status}`)
     }
-    await new Promise(r => setTimeout(r, 1000))
+  } catch (err) {
+    console.error(`  Error fetching PyPI index: ${err}`)
   }
 
   // Deduplicate
@@ -291,6 +339,61 @@ async function discoverFromPyPI(): Promise<PyPIResult[]> {
 
   console.log(`Found ${unique.length} unique PyPI packages`)
   return unique
+}
+
+// ---- Quality filters ----
+
+const MCP_KEYWORDS = [
+  'mcp', 'model context protocol', 'modelcontextprotocol',
+  'mcp server', 'mcp-server', 'mcp_server',
+  'mcp tool', 'mcp plugin', 'fastmcp',
+]
+
+const FALSE_POSITIVE_KEYWORDS = [
+  'minecraft', 'minecraft server', 'multicraft',
+  'media control protocol', 'master control program',
+  'micro channel', 'mobile content provider',
+]
+
+function isLikelyMcpServer(repo: GitHubRepo): boolean {
+  // Skip forks — they're duplicates of the original
+  if (repo.fork) return false
+
+  // Skip archived repos
+  if (repo.archived) return false
+
+  const name = repo.full_name.toLowerCase()
+  const desc = (repo.description || '').toLowerCase()
+  const topics = repo.topics.map(t => t.toLowerCase())
+  const combined = `${name} ${desc} ${topics.join(' ')}`
+
+  // Reject false positives
+  if (FALSE_POSITIVE_KEYWORDS.some(kw => desc.includes(kw))) return false
+
+  // Must have at least one MCP keyword in name, description, or topics
+  const hasMcpSignal = MCP_KEYWORDS.some(kw => combined.includes(kw))
+  if (!hasMcpSignal) return false
+
+  // Skip zero-star repos created > 6 months ago (dead on arrival)
+  if (repo.stargazers_count === 0 && repo.created_at) {
+    const ageMs = Date.now() - new Date(repo.created_at).getTime()
+    const sixMonths = 180 * 24 * 60 * 60 * 1000
+    if (ageMs > sixMonths) return false
+  }
+
+  return true
+}
+
+function isLikelyMcpNpmPackage(name: string, description: string | null): boolean {
+  const lower = `${name} ${description || ''}`.toLowerCase()
+  if (FALSE_POSITIVE_KEYWORDS.some(kw => lower.includes(kw))) return false
+  return MCP_KEYWORDS.some(kw => lower.includes(kw))
+}
+
+function isLikelyMcpPyPIPackage(name: string, summary: string | null): boolean {
+  const lower = `${name} ${summary || ''}`.toLowerCase()
+  if (FALSE_POSITIVE_KEYWORDS.some(kw => lower.includes(kw))) return false
+  return MCP_KEYWORDS.some(kw => lower.includes(kw))
 }
 
 // ---- Insertion helpers ----
@@ -440,8 +543,9 @@ async function main() {
 
     // 1. GitHub discovery
     const repos = await discoverFromGitHub()
-    const newRepos = repos.filter(r => !existingUrls.has(r.html_url.toLowerCase()))
-    console.log(`\n${newRepos.length} new GitHub repos to add`)
+    const qualityRepos = repos.filter(r => isLikelyMcpServer(r))
+    const newRepos = qualityRepos.filter(r => !existingUrls.has(r.html_url.toLowerCase()))
+    console.log(`\n${repos.length} total → ${qualityRepos.length} passed quality filter → ${newRepos.length} new`)
     run.addProcessed(repos.length)
 
     // Sort by stars descending — insert best repos first
@@ -455,8 +559,9 @@ async function main() {
 
     // 2. npm discovery
     const npmPkgs = await discoverFromNpm()
-    const newNpmPkgs = npmPkgs.filter(p => !existingNpmPkgs.has(p.name))
-    console.log(`\n${newNpmPkgs.length} new npm packages to add`)
+    const qualityNpm = npmPkgs.filter(p => isLikelyMcpNpmPackage(p.name, p.description || null))
+    const newNpmPkgs = qualityNpm.filter(p => !existingNpmPkgs.has(p.name))
+    console.log(`\n${npmPkgs.length} total → ${qualityNpm.length} passed quality filter → ${newNpmPkgs.length} new`)
 
     for (const pkg of newNpmPkgs) {
       const success = await insertFromNpm(pkg, existingSlugs, existingNpmPkgs)
@@ -466,8 +571,9 @@ async function main() {
 
     // 3. PyPI discovery
     const pypiPkgs = await discoverFromPyPI()
-    const newPypiPkgs = pypiPkgs.filter(p => !existingPipPkgs.has(p.name))
-    console.log(`\n${newPypiPkgs.length} new PyPI packages to add`)
+    const qualityPypi = pypiPkgs.filter(p => isLikelyMcpPyPIPackage(p.name, p.summary || null))
+    const newPypiPkgs = qualityPypi.filter(p => !existingPipPkgs.has(p.name))
+    console.log(`\n${pypiPkgs.length} total → ${qualityPypi.length} passed quality filter → ${newPypiPkgs.length} new`)
 
     for (const pkg of newPypiPkgs) {
       const success = await insertFromPyPI(pkg, existingSlugs, existingPipPkgs)

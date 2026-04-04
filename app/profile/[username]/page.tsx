@@ -23,7 +23,7 @@ export default async function ProfilePage({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('*')
+    .select('id, username, display_name, avatar_url, github_username, bio, servers_submitted, edits_approved, discussions_count, role, created_at')
     .eq('username', username)
     .single()
 
