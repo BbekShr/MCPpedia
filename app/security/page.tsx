@@ -53,7 +53,16 @@ function timeAgo(date: string): string {
 export default async function SecurityPage() {
   const supabase = await createClient()
 
-  const [{ data: advisories }, { data: allAdvisories }, { count: totalServers }, { count: serversWithCVEs }] = await Promise.all([
+  const [
+    { data: advisories },
+    { data: allAdvisories },
+    { count: totalServers },
+    { count: serversWithCVEs },
+    { count: toolPoisoningCount },
+    { count: injectionRiskCount },
+    { count: codeExecutionCount },
+    { data: lastScanData },
+  ] = await Promise.all([
     supabase
       .from('security_advisories')
       .select('*, server:servers(name, slug)')
@@ -71,22 +80,55 @@ export default async function SecurityPage() {
       .select('*', { count: 'exact', head: true })
       .gt('cve_count', 0)
       .eq('is_archived', false),
+    supabase
+      .from('servers')
+      .select('*', { count: 'exact', head: true })
+      .eq('has_tool_poisoning', true)
+      .eq('is_archived', false),
+    supabase
+      .from('servers')
+      .select('*', { count: 'exact', head: true })
+      .eq('has_injection_risk', true)
+      .eq('is_archived', false),
+    supabase
+      .from('servers')
+      .select('*', { count: 'exact', head: true })
+      .eq('has_code_execution', true)
+      .eq('is_archived', false),
+    supabase
+      .from('servers')
+      .select('last_security_scan')
+      .not('last_security_scan', 'is', null)
+      .order('last_security_scan', { ascending: false })
+      .limit(1)
+      .single(),
   ])
 
   const all = (allAdvisories || []) as Array<{ severity: string; status: string }>
   const totalCVEs = all.length
   const openCount = all.filter(a => a.status === 'open').length
   const fixedCount = all.filter(a => a.status === 'fixed').length
+  const open = all.filter(a => a.status === 'open')
   const severityCounts = {
-    critical: all.filter(s => s.severity === 'critical').length,
-    high: all.filter(s => s.severity === 'high').length,
-    medium: all.filter(s => s.severity === 'medium').length,
-    low: all.filter(s => s.severity === 'low').length,
+    critical: open.filter(s => s.severity === 'critical').length,
+    high: open.filter(s => s.severity === 'high').length,
+    medium: open.filter(s => s.severity === 'medium').length,
+    low: open.filter(s => s.severity === 'low').length,
+    info: open.filter(s => !['critical', 'high', 'medium', 'low'].includes(s.severity)).length,
   }
   const cleanServers = (totalServers || 0) - (serversWithCVEs || 0)
   const cleanPct = totalServers ? Math.floor((cleanServers / totalServers) * 1000) / 10 : 0
+  const lastScan = (lastScanData as { last_security_scan: string } | null)?.last_security_scan
+  const lastScanFormatted = lastScan
+    ? new Date(lastScan).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })
+    : null
 
-  const advList = (advisories as AdvisoryWithServer[]) || []
+  const SEVERITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, info: 4 }
+  const advList = ((advisories as AdvisoryWithServer[]) || []).sort((a, b) => {
+    const sevDiff = (SEVERITY_ORDER[a.severity] ?? 5) - (SEVERITY_ORDER[b.severity] ?? 5)
+    if (sevDiff !== 0) return sevDiff
+    return new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime()
+  })
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 py-8">
@@ -95,41 +137,98 @@ export default async function SecurityPage() {
         <p className="text-text-muted">
           Known vulnerabilities in MCP servers, tracked via{' '}
           <a href="https://osv.dev" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover">OSV.dev</a>.
-          Updated daily. Scoring methodology is{' '}
+          Scanned daily. Scoring methodology is{' '}
           <Link href="/methodology" className="text-accent hover:text-accent-hover">open source</Link>.
         </p>
+        {lastScanFormatted && (
+          <p className="text-xs text-text-muted mt-1">Last scan: {lastScanFormatted}</p>
+        )}
       </div>
 
       {/* Dashboard stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-8">
-        <div className="border border-border rounded-md p-3 text-center">
-          <div className="text-2xl font-bold text-red">{serversWithCVEs || 0}</div>
-          <div className="text-xs text-text-muted">Servers affected</div>
+      <div className="space-y-3 mb-8">
+        {/* Overview row */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="border border-border rounded-md p-3 text-center">
+            <div className="text-2xl font-bold text-red">{serversWithCVEs || 0}</div>
+            <div className="text-xs text-text-muted">Servers affected</div>
+          </div>
+          <div className="border border-border rounded-md p-3 text-center">
+            <div className="text-2xl font-bold text-red">{openCount}</div>
+            <div className="text-xs text-text-muted">Open CVEs</div>
+          </div>
+          <div className="border border-border rounded-md p-3 text-center">
+            <div className="text-2xl font-bold text-green">{fixedCount}</div>
+            <div className="text-xs text-text-muted">Fixed CVEs</div>
+          </div>
         </div>
-        <div className="border border-border rounded-md p-3 text-center">
-          <div className="text-2xl font-bold text-red">{openCount}</div>
-          <div className="text-xs text-text-muted">Open CVEs</div>
+
+        {/* Severity breakdown — open CVEs only */}
+        <div className="border border-border rounded-md p-3">
+          <div className="text-xs font-medium text-text-muted uppercase tracking-wide mb-2">Open CVEs by severity</div>
+          <div className="grid grid-cols-5 gap-3">
+            <div className="text-center border-l-2 border-l-red pl-2">
+              <div className="text-2xl font-bold text-red">{severityCounts.critical}</div>
+              <div className="text-xs text-text-muted">Critical</div>
+            </div>
+            <div className="text-center border-l-2 border-l-red/60 pl-2">
+              <div className="text-2xl font-bold text-text-primary">{severityCounts.high}</div>
+              <div className="text-xs text-text-muted">High</div>
+            </div>
+            <div className="text-center border-l-2 border-l-yellow pl-2">
+              <div className="text-2xl font-bold text-text-primary">{severityCounts.medium}</div>
+              <div className="text-xs text-text-muted">Medium</div>
+            </div>
+            <div className="text-center border-l-2 border-l-border pl-2">
+              <div className="text-2xl font-bold text-text-primary">{severityCounts.low}</div>
+              <div className="text-xs text-text-muted">Low</div>
+            </div>
+            {severityCounts.info > 0 && (
+              <div className="text-center border-l-2 border-l-border pl-2">
+                <div className="text-2xl font-bold text-text-muted">{severityCounts.info}</div>
+                <div className="text-xs text-text-muted">Unscored</div>
+              </div>
+            )}
+          </div>
         </div>
-        <div className="border border-border rounded-md p-3 text-center">
-          <div className="text-2xl font-bold text-green">{fixedCount}</div>
-          <div className="text-xs text-text-muted">Fixed CVEs</div>
+      </div>
+
+      {/* Beyond CVEs */}
+      <div className="border border-border rounded-md p-4 mb-4">
+        <div className="text-xs font-medium text-text-muted uppercase tracking-wide mb-3">Beyond CVEs — AI-specific threats</div>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded bg-red/10 flex items-center justify-center shrink-0 mt-0.5">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div>
+              <div className="text-xl font-bold text-text-primary">{toolPoisoningCount ?? 0}</div>
+              <div className="text-xs font-medium text-text-primary">Tool poisoning</div>
+              <div className="text-xs text-text-muted mt-0.5">Hidden instructions in tool descriptions that manipulate the AI</div>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded bg-yellow/10 flex items-center justify-center shrink-0 mt-0.5">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div>
+              <div className="text-xl font-bold text-text-primary">{injectionRiskCount ?? 0}</div>
+              <div className="text-xs font-medium text-text-primary">Injection risk</div>
+              <div className="text-xs text-text-muted mt-0.5">Prompt injection patterns like "ignore previous instructions"</div>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded bg-red/10 flex items-center justify-center shrink-0 mt-0.5">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+            </div>
+            <div>
+              <div className="text-xl font-bold text-text-primary">{codeExecutionCount ?? 0}</div>
+              <div className="text-xs font-medium text-text-primary">Code execution</div>
+              <div className="text-xs text-text-muted mt-0.5">Servers with shell, eval, or subprocess tool patterns</div>
+            </div>
+          </div>
         </div>
-        <div className="border border-border rounded-md p-3 text-center border-l-3 border-l-red">
-          <div className="text-2xl font-bold text-red">{severityCounts.critical}</div>
-          <div className="text-xs text-text-muted">Critical</div>
-        </div>
-        <div className="border border-border rounded-md p-3 text-center border-l-3 border-l-red/60">
-          <div className="text-2xl font-bold text-text-primary">{severityCounts.high}</div>
-          <div className="text-xs text-text-muted">High</div>
-        </div>
-        <div className="border border-border rounded-md p-3 text-center border-l-3 border-l-yellow">
-          <div className="text-2xl font-bold text-text-primary">{severityCounts.medium}</div>
-          <div className="text-xs text-text-muted">Medium</div>
-        </div>
-        <div className="border border-border rounded-md p-3 text-center">
-          <div className="text-2xl font-bold text-text-primary">{severityCounts.low}</div>
-          <div className="text-xs text-text-muted">Low</div>
-        </div>
+        <p className="text-xs text-text-muted mt-3">Only covers servers where tool manifests were successfully fetched. Counts may be understated for servers without a live endpoint.</p>
       </div>
 
       {/* Clean server highlight */}
