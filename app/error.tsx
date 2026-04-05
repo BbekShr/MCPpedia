@@ -10,9 +10,7 @@ export default function Error({
   reset: () => void
 }) {
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.error(error)
-    }
+    console.error(error)
   }, [error])
 
   return (
@@ -22,6 +20,9 @@ export default function Error({
       <p className="text-text-muted mb-6 text-sm">
         An unexpected error occurred. This has been logged.
       </p>
+      {error?.message && (
+        <p className="text-xs text-red font-mono mb-4 text-left bg-code-bg p-2 rounded">{error.message}</p>
+      )}
       <button
         onClick={reset}
         className="px-4 py-2 text-sm rounded-md bg-accent text-white hover:bg-accent-hover transition-colors"
