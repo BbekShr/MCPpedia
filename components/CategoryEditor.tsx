@@ -88,7 +88,7 @@ export default function CategoryEditor({
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 z-50 bg-bg-primary border border-border rounded-md shadow-lg p-3 w-72">
+        <div className="absolute top-full left-0 mt-1 z-50 bg-bg border border-border rounded-md shadow-lg p-3 w-72">
           <p className="text-xs text-text-muted mb-2">Select up to 3 categories</p>
           <div className="grid grid-cols-2 gap-1 mb-3">
             {SELECTABLE.map(cat => {
