@@ -1,0 +1,75 @@
+---
+title: "What Is MCPpedia?"
+description: "The MCP ecosystem exploded faster than anyone could track it. MCPpedia is the directory that tries to make sense of it — automatically, every day."
+hook: "The MCP ecosystem grew faster than any directory could keep up with. So we built one that never sleeps, never stops scanning, and doesn't rely on anyone to submit anything."
+date: "2026-04-06"
+tags: ["mcppedia", "about", "overview"]
+category: "weekly-roundup"
+featuredServers: []
+---
+
+The MCP ecosystem didn't get a directory. It got thousands of servers scattered across GitHub, npm, PyPI, and a dozen third-party registries — with no central place to find them, compare them, or understand whether they were safe to run.
+
+MCPpedia is the answer to that problem.
+
+---
+
+## A catalog that runs itself
+
+Most directories work like this: someone submits a tool, a human reviews it, it gets listed. That model doesn't work for a space growing at the pace MCP is.
+
+We built bots instead. They crawl GitHub, npm, PyPI, and known registries continuously. When a new MCP server appears anywhere in that surface area, it gets picked up, scored, and added to the catalog — automatically, without anyone having to submit anything.
+
+The same bots that find servers also maintain them. Metadata updates, security scans, score recomputation — all on automated schedules. A server that was clean last month gets rescanned today.
+
+<Callout type="info">
+Every server in the catalog was discovered by automation, not by waiting for someone to fill out a form. Coverage is the point.
+</Callout>
+
+---
+
+## Why a score instead of a star count
+
+Early attempts at MCP curation ranked servers by GitHub stars. Popular was treated as good.
+
+That's wrong in practice. Stars measure marketing. A server can have thousands of stars and an open critical CVE, a broken install path, and a schema that burns 5,000 tokens before a single tool call. We've seen it.
+
+The MCPpedia score is built to answer the question a developer actually needs answered before installing something: **is this safe to run, and will it work?**
+
+Eight specific checks feed into the score. Every check is shown on the server detail page — not just the number, but the evidence behind it. If something fails, you see exactly why.
+
+---
+
+## What makes this different from other directories
+
+**We scan, we don't just list.** Most MCP directories show you what servers claim about themselves. We run real checks: live CVE queries against OSV.dev, tool definition hashing to detect silent changes, pattern analysis on tool descriptions to catch manipulation attempts.
+
+**We cover things CVEs don't.** Traditional vulnerability databases track known bugs in package versions. They have nothing to say about a server that embeds hidden instructions in its tool descriptions, or one that accepts unauthenticated connections to your database. We built checks for those.
+
+**The catalog has no editorial gatekeeping.** We don't pick favorites. A server from a solo developer with a perfect score ranks above a corporate-backed server with open vulnerabilities. The score is the filter.
+
+**It updates daily.** The MCP ecosystem is not static. Servers get abandoned, new CVEs get published, tool definitions change. A snapshot catalog goes stale immediately. Ours runs on a daily cycle.
+
+---
+
+## Who it's for
+
+**Developers** who need to connect AI assistants to external tools and want to know what's production-safe before they install anything.
+
+**Security teams** who need to evaluate MCP server risk before approving something for enterprise use — and need documentation they can point to.
+
+**Server authors** who want objective, third-party feedback on how their server scores and what to improve to rank higher.
+
+---
+
+## What's on the roadmap
+
+The current catalog scores what servers *claim* to be. The next layer is testing what they actually *do* — connecting to live servers, calling their tools, validating behavior against their descriptions.
+
+User reviews, verified publisher badges, and source-level code scanning are all in the backlog. The goal is a complete picture of every server: not just metadata and static analysis, but real-world behavior from developers who've run it.
+
+<PullQuote>The MCP ecosystem is being built in real time. MCPpedia is the map — updated daily, never waiting for someone to submit a pin.</PullQuote>
+
+---
+
+*Have a server we're missing, or found something wrong with a listing? Open an issue on GitHub.*
