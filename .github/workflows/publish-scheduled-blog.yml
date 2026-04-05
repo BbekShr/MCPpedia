@@ -1,0 +1,90 @@
+name: Publish Scheduled Blog Post
+
+on:
+  schedule:
+    # 6:00 AM CST = 12:00 UTC
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check for posts scheduled for today
+        id: check
+        run: |
+          TODAY=$(date -u '+%Y-%m-%d')
+          echo "Today is $TODAY"
+
+          # Find any blog post file matching today's date
+          POST=$(ls content/blog/${TODAY}-*.mdx 2>/dev/null | head -1)
+
+          if [ -n "$POST" ]; then
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "post=$POST" >> $GITHUB_OUTPUT
+
+            # Extract title and hook from frontmatter
+            TITLE=$(grep '^title:' "$POST" | head -1 | sed 's/^title: *"//' | sed 's/"$//')
+            HOOK=$(grep '^hook:' "$POST" | head -1 | sed 's/^hook: *"//' | sed 's/"$//')
+            SLUG=$(basename "$POST" .mdx)
+
+            echo "title=$TITLE" >> $GITHUB_OUTPUT
+            echo "hook=$HOOK" >> $GITHUB_OUTPUT
+            echo "slug=$SLUG" >> $GITHUB_OUTPUT
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+            echo "No blog post scheduled for today ($TODAY)"
+          fi
+
+      - name: Commit post to trigger deployment
+        if: steps.check.outputs.found == 'true'
+        run: |
+          git config user.name "MCPpedia Bot"
+          git config user.email "bot@mcppedia.com"
+
+          # Touch the file to update its timestamp and trigger revalidation
+          touch "${{ steps.check.outputs.post }}"
+          git add "${{ steps.check.outputs.post }}"
+
+          # Only commit if there are actual changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit — post was already published"
+          else
+            git commit -m "Publish: ${{ steps.check.outputs.title }}"
+            git push
+          fi
+
+      - name: Print HN submission link
+        if: steps.check.outputs.found == 'true'
+        run: |
+          TITLE="${{ steps.check.outputs.title }}"
+          HOOK="${{ steps.check.outputs.hook }}"
+          SLUG="${{ steps.check.outputs.slug }}"
+          URL="https://mcppedia.com/blog/${SLUG}"
+
+          # URL-encode for HN submit link
+          ENCODED_TITLE=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$TITLE'))")
+          ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$URL'))")
+
+          HN_LINK="https://news.ycombinator.com/submitlink?u=${ENCODED_URL}&t=${ENCODED_TITLE}"
+
+          echo ""
+          echo "========================================"
+          echo "POST IS LIVE — Submit to Hacker News:"
+          echo "========================================"
+          echo ""
+          echo "Title:  $TITLE"
+          echo "URL:    $URL"
+          echo "Hook:   $HOOK"
+          echo ""
+          echo "HN submit link (one click):"
+          echo "$HN_LINK"
+          echo ""
+          echo "========================================"
