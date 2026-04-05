@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 /* ============================================
    MCPpedia Design System
@@ -152,6 +153,84 @@ a, button, input, select, textarea {
   margin-right: 0.1em;
   margin-top: 0.1em;
   color: var(--accent);
+}
+
+/* Blog typography — explicit spacing so it never relies on purged classes */
+.blog-content p {
+  margin-bottom: 1.5rem;
+  line-height: 1.85;
+}
+
+.blog-content h2 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  margin-top: 3.5rem;
+  margin-bottom: 1rem;
+  color: var(--text);
+}
+
+.blog-content h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-top: 2.5rem;
+  margin-bottom: 0.75rem;
+  color: var(--text);
+}
+
+.blog-content h2 + p,
+.blog-content h3 + p {
+  margin-top: 0;
+}
+
+.blog-content hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 3rem 0;
+}
+
+.blog-content ul,
+.blog-content ol {
+  margin: 1.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.blog-content li {
+  margin-bottom: 0.5rem;
+  line-height: 1.75;
+}
+
+.blog-content strong {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.blog-content a {
+  color: var(--accent);
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  text-decoration: none;
+}
+
+.blog-content a:hover {
+  border-bottom-color: var(--accent);
+}
+
+.blog-content code {
+  background: var(--code-bg);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.blog-content blockquote {
+  border-left: 3px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+  border-radius: 0 12px 12px 0;
+  padding: 1rem 1.5rem;
+  margin: 2rem 0;
+  font-style: normal;
 }
 
 /* View transitions for smooth page navigation */
