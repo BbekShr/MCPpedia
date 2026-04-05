@@ -12,6 +12,7 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
   title: 'Browse MCP Servers',
   description: 'Search and browse MCP servers scored on security, maintenance, and efficiency. Filter by category, transport, status, and more.',
+  alternates: { canonical: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://mcppedia.org'}/servers` },
 }
 
 export default async function ServersPage({

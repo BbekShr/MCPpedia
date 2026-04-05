@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
   title: 'Security Advisories',
   description: 'Latest security vulnerabilities found in MCP servers. CVE tracking powered by OSV.dev. Updated daily.',
+  alternates: { canonical: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://mcppedia.org'}/security` },
 }
 
 interface AdvisoryWithServer {

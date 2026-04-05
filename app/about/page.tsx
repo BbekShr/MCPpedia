@@ -7,6 +7,7 @@ export const revalidate = 60
 export const metadata: Metadata = {
   title: 'About',
   description: 'MCPpedia is the free, open, community-driven encyclopedia for MCP servers. Every server scored on security, maintenance, and efficiency.',
+  alternates: { canonical: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://mcppedia.org'}/about` },
 }
 
 export default async function AboutPage() {

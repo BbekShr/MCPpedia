@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: 'Guides',
   description: 'Learn about MCP servers — what they are, how to set them up, and which ones to use.',
+  alternates: { canonical: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://mcppedia.org'}/guides` },
 }
 
 export default function GuidesPage() {

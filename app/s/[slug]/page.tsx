@@ -56,7 +56,7 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
-      type: 'article',
+      type: 'website',
       siteName: SITE_NAME,
     },
     twitter: {
