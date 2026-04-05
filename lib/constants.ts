@@ -88,7 +88,7 @@ export const REVALIDATE_LISTINGS = 60       // seconds
 export const REVALIDATE_GUIDES = 86400      // 24 hours
 
 export const SITE_NAME = 'MCPpedia'
-export const SITE_DESCRIPTION = 'The free, open, community-driven encyclopedia for MCP servers.'
+export const SITE_DESCRIPTION = 'Discover and compare 17,000+ MCP servers — each scored on security, maintenance, and efficiency with real CVE scanning. Find the right server before you install.'
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://mcppedia.org'
 
 // Public fields safe to expose in API responses (excludes internal scoring details, scan internals, claimed_by, etc.)
