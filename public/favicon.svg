@@ -1,10 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
   <rect width="32" height="32" rx="7" fill="#0284c7"/>
-  <!-- Eyes -->
-  <circle cx="11" cy="12" r="3" fill="white"/>
-  <circle cx="21" cy="12" r="3" fill="white"/>
-  <!-- Smile -->
-  <circle cx="9" cy="21" r="2.5" fill="white"/>
-  <circle cx="16" cy="23.5" r="2.5" fill="white"/>
-  <circle cx="23" cy="21" r="2.5" fill="white"/>
+  <rect x="4" y="4" width="24" height="24" rx="5" stroke="white" stroke-width="2.5"/>
+  <circle cx="11" cy="13" r="2" fill="white"/>
+  <circle cx="21" cy="13" r="2" fill="white"/>
+  <path d="M10.5 20c1.3 2 2.7 2.8 5.5 2.8s4.2-.8 5.5-2.8" stroke="white" stroke-width="2" stroke-linecap="round"/>
 </svg>
