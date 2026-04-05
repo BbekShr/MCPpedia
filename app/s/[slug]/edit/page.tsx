@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { Server } from '@/lib/types'
 import type { User } from '@supabase/supabase-js'
 import Link from 'next/link'
+import { PUBLIC_SERVER_FIELDS } from '@/lib/constants'
 
 export default function EditServerPage() {
   const params = useParams()
@@ -45,7 +46,7 @@ export default function EditServerPage() {
         })
       }
     })
-    supabase.from('servers').select('*').eq('slug', slug).single().then(({ data }) => {
+    supabase.from('servers').select(PUBLIC_SERVER_FIELDS).eq('slug', slug).single().then(({ data }) => {
       if (data) {
         const s = data as Server
         setServer(s)

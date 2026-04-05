@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { rateLimitIp, rateLimitUser } from '@/lib/rate-limit'
 import { z } from 'zod'
 
@@ -31,8 +32,10 @@ export async function POST(request: Request) {
 
   const data = parsed.data
 
-  // Insert health check record
-  const { error } = await supabase.from('health_checks').insert({
+  // Use admin client for data operations — health_checks has no user INSERT policy
+  const admin = createAdminClient()
+
+  const { error } = await admin.from('health_checks').insert({
     server_id: data.server_id,
     status: data.status,
     response_time_ms: data.response_time_ms || null,
@@ -47,7 +50,7 @@ export async function POST(request: Request) {
 
   // Update server's last health check status
   // Use majority vote from last 5 user reports
-  const { data: recentChecks } = await supabase
+  const { data: recentChecks } = await admin
     .from('health_checks')
     .select('status')
     .eq('server_id', data.server_id)
@@ -59,7 +62,7 @@ export async function POST(request: Request) {
     const majorityStatus = passCount > recentChecks.length / 2 ? 'pass' : 'fail'
 
     // Calculate uptime from all checks
-    const { data: allChecks } = await supabase
+    const { data: allChecks } = await admin
       .from('health_checks')
       .select('status')
       .eq('server_id', data.server_id)
@@ -70,7 +73,7 @@ export async function POST(request: Request) {
     const passes = allChecks?.filter((c: { status: string }) => c.status === 'pass').length || 0
     const uptime = (passes / total) * 100
 
-    await supabase
+    await admin
       .from('servers')
       .update({
         last_health_check_status: majorityStatus,

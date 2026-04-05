@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { CATEGORIES } from '@/lib/constants'
+import { rateLimitUser } from '@/lib/rate-limit'
 
 export async function POST(
   request: Request,
@@ -11,6 +12,9 @@ export async function POST(
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return Response.json({ error: 'Sign in to suggest categories' }, { status: 401 })
+
+  const rl = rateLimitUser(user.id, 'categories', 10, 3600_000) // 10 per hour
+  if (!rl.allowed) return Response.json({ error: 'Rate limited' }, { status: 429 })
 
   const body = await request.json().catch(() => null)
   if (!body || !Array.isArray(body.categories)) {

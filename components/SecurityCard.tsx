@@ -32,6 +32,14 @@ function SeverityBadge({ severity }: { severity: string }) {
   )
 }
 
+function safeUrl(url: string | null | undefined): string | null {
+  if (!url) return null
+  try {
+    const p = new URL(url)
+    return p.protocol === 'https:' || p.protocol === 'http:' ? url : null
+  } catch { return null }
+}
+
 function Row({ pass, label, detail, href, linkText }: {
   pass: boolean | null
   label: string
@@ -39,6 +47,7 @@ function Row({ pass, label, detail, href, linkText }: {
   href?: string | null
   linkText?: string
 }) {
+  const safeHref = safeUrl(href)
   return (
     <div className="flex items-start gap-2 py-1.5">
       <span className={`mt-0.5 text-sm shrink-0 ${pass === true ? 'text-green' : pass === false ? 'text-red' : 'text-text-muted'}`}>
@@ -47,8 +56,8 @@ function Row({ pass, label, detail, href, linkText }: {
       <div className="min-w-0">
         <span className="text-sm text-text-primary">{label}</span>
         <span className="text-sm text-text-muted"> &mdash; {detail}</span>
-        {href && (
-          <a href={href} target="_blank" rel="noopener noreferrer" className="text-xs text-accent hover:text-accent-hover ml-1.5">
+        {safeHref && (
+          <a href={safeHref} target="_blank" rel="noopener noreferrer" className="text-xs text-accent hover:text-accent-hover ml-1.5">
             {linkText || 'verify \u2192'}
           </a>
         )}

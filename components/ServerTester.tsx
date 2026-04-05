@@ -22,11 +22,14 @@ export default function ServerTester({ server }: { server: Server }) {
     server.homepage_url.startsWith('http://') || server.homepage_url.startsWith('https://')
   )
 
-  // Generate the test command for stdio servers
+  // Generate the test command for stdio servers (shell-quoted to prevent injection)
+  function shellQuote(s: string): string {
+    return `'${s.replace(/'/g, "'\\''")}'`
+  }
   const testCommand = server.npm_package
-    ? `npx -y ${server.npm_package} 2>&1 | head -1 && echo "✓ Server started successfully"`
+    ? `npx -y ${shellQuote(server.npm_package)} 2>&1 | head -1 && echo "✓ Server started successfully"`
     : server.pip_package
-      ? `uvx ${server.pip_package} 2>&1 | head -1 && echo "✓ Server started successfully"`
+      ? `uvx ${shellQuote(server.pip_package)} 2>&1 | head -1 && echo "✓ Server started successfully"`
       : null
 
   // For HTTP servers, test from the browser
