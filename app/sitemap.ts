@@ -1,5 +1,6 @@
 import { CATEGORIES, SITE_URL } from '@/lib/constants'
 import { getAllBlogPosts } from '@/lib/blog'
+import { getAllGuides } from '@/lib/mdx'
 import type { MetadataRoute } from 'next'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -29,13 +30,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }))
 
-  const guideEntries = [
-    'what-is-mcp',
-    'install-first-server',
-    'best-servers-2026',
-  ].map(slug => ({
-    url: `${SITE_URL}/guides/${slug}`,
+  const guideEntries = getAllGuides().map(g => ({
+    url: `${SITE_URL}/guides/${g.slug}`,
+    lastModified: g.date ? new Date(g.date) : undefined,
     changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }))
+
+  const bestForEntries = [
+    'developers', 'data-engineering', 'productivity',
+    'ai-agents', 'cloud-infrastructure', 'security',
+  ].map(slug => ({
+    url: `${SITE_URL}/best-for/${slug}`,
+    changeFrequency: 'weekly' as const,
     priority: 0.7,
   }))
 
@@ -55,5 +62,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }))
 
-  return [...staticPages, ...serverEntries, ...categoryEntries, ...guideEntries, ...blogEntries]
+  return [...staticPages, ...serverEntries, ...categoryEntries, ...guideEntries, ...bestForEntries, ...blogEntries]
 }

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getGuide, getAllGuides } from '@/lib/mdx'
-import { SITE_NAME } from '@/lib/constants'
+import { SITE_NAME, SITE_URL } from '@/lib/constants'
 import type { Metadata } from 'next'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 
@@ -18,9 +18,23 @@ export async function generateMetadata({
   const guide = getGuide(slug)
   if (!guide) return { title: 'Guide Not Found' }
 
+  const url = `${SITE_URL}/guides/${slug}`
   return {
     title: `${guide.meta.title} - ${SITE_NAME}`,
     description: guide.meta.description,
+    alternates: { canonical: url },
+    openGraph: {
+      title: guide.meta.title,
+      description: guide.meta.description,
+      type: 'article',
+      publishedTime: guide.meta.date,
+      authors: guide.meta.author ? [guide.meta.author] : undefined,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: guide.meta.title,
+      description: guide.meta.description,
+    },
   }
 }
 
