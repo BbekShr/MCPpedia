@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="#0284c7"/>
+  <!-- Eyes -->
+  <circle cx="11" cy="12" r="3" fill="white"/>
+  <circle cx="21" cy="12" r="3" fill="white"/>
+  <!-- Smile -->
+  <circle cx="9" cy="21" r="2.5" fill="white"/>
+  <circle cx="16" cy="23.5" r="2.5" fill="white"/>
+  <circle cx="23" cy="21" r="2.5" fill="white"/>
+</svg>

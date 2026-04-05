@@ -43,6 +43,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <head>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="alternate icon" href="/favicon.ico" />
         <link rel="alternate" type="application/rss+xml" title={`${SITE_NAME} Blog`} href="/blog/feed.xml" />
         <script
           dangerouslySetInnerHTML={{
