@@ -48,7 +48,7 @@ export default function EditServerPage() {
     })
     supabase.from('servers').select(PUBLIC_SERVER_FIELDS).eq('slug', slug).single().then(({ data }) => {
       if (data) {
-        const s = data as Server
+        const s = data as unknown as Server
         setServer(s)
         setForm({
           name: s.name || '',
