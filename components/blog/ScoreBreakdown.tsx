@@ -1,5 +1,13 @@
+const maxPoints: Record<string, number> = {
+  Security: 30,
+  Maintenance: 25,
+  Efficiency: 20,
+  Documentation: 15,
+  Compatibility: 10,
+}
+
 const colors: Record<string, { bar: string; bg: string; text: string }> = {
-  Security: { bar: 'bg-red', bg: 'bg-red/10', text: 'text-red' },
+  Security: { bar: 'bg-blue-500', bg: 'bg-blue-500/10', text: 'text-blue-500' },
   Maintenance: { bar: 'bg-yellow', bg: 'bg-yellow/10', text: 'text-yellow' },
   Efficiency: { bar: 'bg-accent', bg: 'bg-accent/10', text: 'text-accent' },
   Documentation: { bar: 'bg-green', bg: 'bg-green/10', text: 'text-green' },
@@ -16,7 +24,7 @@ export function ScoreRow(props: Record<string, unknown>) {
     <div className="flex items-start gap-4 py-4">
       <div className={`shrink-0 w-14 h-14 rounded-xl ${c.bg} flex flex-col items-center justify-center`}>
         <span className={`text-lg font-bold ${c.text} leading-none`}>{pts}</span>
-        <span className={`text-[10px] ${c.text} opacity-70`}>/ 100</span>
+        <span className={`text-[10px] ${c.text} opacity-70`}>/ {maxPoints[label] || 100}</span>
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-bold text-text-primary">{label}</div>

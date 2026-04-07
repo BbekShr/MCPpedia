@@ -1,0 +1,165 @@
+---
+title: "We Built an MCP Server for Finding MCP Servers"
+description: "The MCPpedia MCP Server is live. Now your AI can search, evaluate, and compare 17,000+ MCP servers — without ever leaving the conversation."
+hook: "An MCP server that helps you find MCP servers. It's MCP servers all the way down."
+date: "2026-04-07"
+tags: ["launch", "announcement", "mcp-server"]
+category: "server-spotlight"
+featuredServers: []
+---
+
+# The MCP Server Inside the MCP Server
+
+You know that scene in Inception where they go deeper — a dream within a dream within a dream — and at each level, the rules change but the mission stays the same?
+
+We just did that with MCP.
+
+**MCPpedia is a catalog of 17,000+ MCP servers.** We score them on security, maintenance, efficiency, documentation, and compatibility. We scan for CVEs, detect tool poisoning, flag injection risks. We've been doing this on a website.
+
+But here's the problem: when you ask your AI *"what's a good MCP server for databases?"* — the AI can't check MCPpedia. It can't verify scores. It can't scan for CVEs on your behalf. It just... guesses. Based on whatever it remembers from training data that's already months old.
+
+**So we built an MCP server that gives your AI direct access to our entire catalog.**
+
+<PullQuote>An MCP server that evaluates MCP servers. It's not recursion — it's the trust layer the ecosystem was missing.</PullQuote>
+
+---
+
+<SectionLabel>How Deep Does It Go?</SectionLabel>
+
+Here's what's actually happening when you ask Claude *"find me a safe database server"*:
+
+![The Inception Stack — how your query flows through 4 layers: You, Your AI, MCPpedia MCP Server, MCPpedia Database, and back with a scored result](/blog/inception-stack.svg)
+
+Your AI uses an MCP server to evaluate other MCP servers before recommending them to you. The result isn't a guess — it's a ranked list with scores: **Supabase MCP at 95/100, MongoDB at 91/100**, each backed by real CVE scans and maintenance data. That's not a gimmick — **that's the trust infrastructure the ecosystem needs.**
+
+---
+
+<SectionLabel>Why This Matters More Than You Think</SectionLabel>
+
+The MCP ecosystem has a problem. There are 17,000+ servers and counting. Most of them are mediocre. Some are abandoned. A few are actively dangerous — with hidden instructions in tool descriptions designed to manipulate your AI.
+
+Right now, when you ask an AI to recommend an MCP server, it's operating blind. It might recommend something with:
+
+- **Known CVEs** it can't check
+- **Tool poisoning** it can't detect
+- **8,000 tokens of schema bloat** eating your context window
+- **No commits in a year** — effectively abandoned
+
+The MCPpedia MCP Server changes this. Every recommendation is backed by real data:
+
+<StatGrid>
+<Stat value="17,000+" label="Servers cataloged" />
+<Stat value="90/100" label="Our own MCPpedia score" />
+<Stat value="431" label="Total tokens (Grade A)" />
+<Stat value="60/min" label="Free rate limit" />
+</StatGrid>
+
+---
+
+<SectionLabel>The 5 Tools</SectionLabel>
+
+We kept the surface area small on purpose. Top-scoring MCP servers don't ship 50 tools — they ship the right ones.
+
+### search_servers
+The entry point. Search by keyword, filter by category, set a minimum quality score. Your AI asks *"database server"* and gets back scored, ranked results — not a random GitHub list.
+
+### get_server_details
+The deep dive. Full scoring breakdown, every tool listed, install configs ready to paste, links to source code. Pass `security: true` and it becomes a full security audit — CVE count, tool poisoning flags, injection risk analysis, evidence trail.
+
+### compare_servers
+Side-by-side. Drop in 2-5 server slugs and get a markdown table comparing them across all scoring dimensions. No more opening 5 tabs to compare READMEs.
+
+### get_install_config
+*"How do I install this in Cursor?"* — answered instantly with a ready-to-paste JSON config. Supports Claude Desktop, Cursor, Claude Code, and Windsurf.
+
+### get_trending
+What's hot. Top-rated, most-starred, or newest servers. Filter by category. This is how your AI stays current — not from training data, but from live rankings.
+
+---
+
+<SectionLabel>Security: We Eat Our Own Cooking</SectionLabel>
+
+We score every MCP server on security. So we scored ourselves:
+
+<ScoreBreakdown>
+<ScoreRow label="Security" points="30" description="Perfect score. Read-only API calls. No code execution, no file access, no shell commands. All queries go through a rate-limited API gateway — never directly to the database." />
+<ScoreRow label="Maintenance" points="15" description="Fresh commits, active development. Zero stars so far — this score climbs as the project matures." />
+<ScoreRow label="Efficiency" points="20" description="431 tokens across 5 tools. Grade A. Same tier as XcodeBuildMCP (97/100) and Tavily (96/100)." />
+<ScoreRow label="Documentation" points="15" description="Perfect score. Full README with configs for 4 clients, 6 real-world examples, transport documentation, environment variable reference." />
+<ScoreRow label="Compatibility" points="10" description="Perfect score. stdio + HTTP/SSE dual transport. Works with Claude Desktop, Cursor, Claude Code, and Windsurf." />
+</ScoreBreakdown>
+
+**Official score: 90/100** — with three perfect sub-scores (security, documentation, compatibility). The only room to grow is maintenance, which climbs naturally as the project gains stars and downloads.
+
+What we explicitly **cannot** detect (and we say so in every security report):
+
+- Runtime output injection attacks
+- Undocumented tools not in the README
+- Supply chain attacks in transitive dependencies
+- Malicious code paths only triggered at runtime
+
+Honesty about limitations **is** a security feature.
+
+---
+
+<SectionLabel>Install It in 30 Seconds</SectionLabel>
+
+### Claude Desktop
+Add to your `claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "MCPpedia": {
+      "command": "npx",
+      "args": ["-y", "mcp-server-mcppedia"]
+    }
+  }
+}
+```
+
+### Claude Code
+```bash
+claude mcp add MCPpedia -- npx -y mcp-server-mcppedia
+```
+
+### Cursor
+Add to `.cursor/mcp.json`:
+```json
+{
+  "mcpServers": {
+    "MCPpedia": {
+      "command": "npx",
+      "args": ["-y", "mcp-server-mcppedia"]
+    }
+  }
+}
+```
+
+No API keys. No sign-up. No configuration. It just works.
+
+---
+
+<SectionLabel>The Inception Moment</SectionLabel>
+
+Think about what happens next:
+
+1. Someone installs the MCPpedia MCP Server
+2. They ask their AI *"what's the best database MCP server?"*
+3. The AI uses MCPpedia (an MCP server) to search 17,000+ MCP servers
+4. It comes back with **Supabase MCP — 95/100, 2,587 stars, Grade A efficiency, zero CVEs**
+5. The user installs Supabase MCP with the config MCPpedia provided
+6. **Their AI is now better because an MCP server helped it choose wisely**
+
+It's servers all the way down. And at every layer, the quality goes up because the trust data is real — not hallucinated, not from stale training data, but from daily automated scans.
+
+<PullQuote>The best way to find an MCP server is to ask an MCP server. The meta is the product.</PullQuote>
+
+---
+
+<Callout type="info">
+MCPpedia MCP Server is open source and free. No API keys, no sign-up, 60 requests/minute.
+
+MCPpedia page: [mcp-server-mcppedia](https://mcppedia.org/s/mcp-server-mcppedia)
+GitHub: [BbekShr/mcp-server-mcppedia](https://github.com/BbekShr/mcp-server-mcppedia)
+npm: [mcp-server-mcppedia](https://www.npmjs.com/package/mcp-server-mcppedia)
+</Callout>
