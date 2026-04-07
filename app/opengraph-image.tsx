@@ -21,13 +21,12 @@ export default async function Image() {
       >
         {/* Logo row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '48px' }}>
-          <div style={{ width: 52, height: 52, borderRadius: 12, background: '#0284c7', display: 'flex', position: 'relative', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ position: 'absolute', top: 12, left: 11, width: 10, height: 10, borderRadius: '50%', background: 'white', display: 'flex' }} />
-            <div style={{ position: 'absolute', top: 12, right: 11, width: 10, height: 10, borderRadius: '50%', background: 'white', display: 'flex' }} />
-            <div style={{ position: 'absolute', bottom: 11, left: 10, width: 7, height: 7, borderRadius: '50%', background: 'white', display: 'flex' }} />
-            <div style={{ position: 'absolute', bottom: 8, left: 22, width: 7, height: 7, borderRadius: '50%', background: 'white', display: 'flex' }} />
-            <div style={{ position: 'absolute', bottom: 11, right: 10, width: 7, height: 7, borderRadius: '50%', background: 'white', display: 'flex' }} />
-          </div>
+          <svg width="52" height="52" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="3" width="18" height="18" rx="4" stroke="#0284c7" strokeWidth="2" />
+            <circle cx="8.5" cy="9.5" r="1.5" fill="#0284c7" />
+            <circle cx="15.5" cy="9.5" r="1.5" fill="#0284c7" />
+            <path d="M8 15c1 1.5 3 2.5 4 2.5s3-1 4-2.5" stroke="#0284c7" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
           <div style={{ display: 'flex', fontSize: 34, fontWeight: 700, color: '#1f2328', letterSpacing: '-0.02em' }}>
             MCP<span style={{ color: '#0284c7' }}>pedia</span>
           </div>

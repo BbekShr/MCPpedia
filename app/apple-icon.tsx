@@ -13,17 +13,15 @@ export default function AppleIcon() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#0284c7',
-          borderRadius: 40,
+          background: 'white',
         }}
       >
-        {/* Eyes */}
-        <div style={{ display: 'flex', position: 'absolute', top: 52, left: 46, width: 22, height: 22, borderRadius: '50%', background: 'white' }} />
-        <div style={{ display: 'flex', position: 'absolute', top: 52, right: 46, width: 22, height: 22, borderRadius: '50%', background: 'white' }} />
-        {/* Smile */}
-        <div style={{ display: 'flex', position: 'absolute', bottom: 44, left: 40, width: 16, height: 16, borderRadius: '50%', background: 'white' }} />
-        <div style={{ display: 'flex', position: 'absolute', bottom: 33, left: 74, width: 16, height: 16, borderRadius: '50%', background: 'white' }} />
-        <div style={{ display: 'flex', position: 'absolute', bottom: 44, right: 40, width: 16, height: 16, borderRadius: '50%', background: 'white' }} />
+        <svg width="160" height="160" viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="3" width="18" height="18" rx="4" stroke="#0284c7" strokeWidth="2" />
+          <circle cx="8.5" cy="9.5" r="1.5" fill="#0284c7" />
+          <circle cx="15.5" cy="9.5" r="1.5" fill="#0284c7" />
+          <path d="M8 15c1 1.5 3 2.5 4 2.5s3-1 4-2.5" stroke="#0284c7" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
       </div>
     ),
     { ...size }
