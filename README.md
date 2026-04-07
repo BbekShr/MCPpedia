@@ -13,14 +13,20 @@ The encyclopedia for MCP servers. Browse, compare, and evaluate Model Context Pr
 - **One-click install configs** — copy-paste configs for Claude Desktop, Cursor, Claude Code, and Windsurf
 - **Server comparison** — side-by-side comparison of any two servers
 - **Community reviews and discussion** — user reviews with star ratings
+- **Blog** — auto-generated and editorial articles about MCP servers and the ecosystem
+- **Newsletter** — weekly digest of new and trending servers
+- **Best-of lists** — curated lists of top servers by category and use case
+- **Embeddable badges** — score badges you can add to your server's README
+- **MCP server** — an MCP server for querying MCPpedia data programmatically (`mcppedia-server/`)
 
 ## Tech Stack
 
 - **Framework:** Next.js (App Router)
+- **Styling:** Tailwind CSS
 - **Database:** Supabase (PostgreSQL)
 - **Security data:** OSV.dev API
 - **Server registry:** registry.modelcontextprotocol.io
-- **AI:** Anthropic Claude (schema extraction)
+- **AI:** Anthropic Claude (schema extraction, blog generation, description enrichment)
 - **Hosting:** Vercel
 
 ## Getting Started
@@ -34,8 +40,8 @@ The encyclopedia for MCP servers. Browse, compare, and evaluate Model Context Pr
 ### Setup
 
 ```bash
-git clone https://github.com/bibekshrestha/mcppedia.git
-cd mcppedia
+git clone https://github.com/BbekShr/MCPpedia.git
+cd MCPpedia
 npm install
 cp .env.example .env.local
 # Fill in your keys in .env.local
@@ -59,28 +65,37 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Project Structure
 
 ```
-app/            Next.js pages and API routes
-bots/           Automated data pipeline scripts (run via GitHub Actions)
-components/     React components
-lib/            Shared utilities, types, scoring engine
-scripts/        One-off data scripts
-supabase/       Database migrations
-content/        Static content (guides, etc.)
+app/              Next.js pages and API routes
+bots/             Automated data pipeline scripts (run via GitHub Actions)
+components/       React components
+lib/              Shared utilities, types, scoring engine
+scripts/          One-off data scripts
+supabase/         Database migrations
+content/          Static content (blog posts, guides)
+cli/              CLI tool for querying MCPpedia
+mcppedia-server/  MCP server for querying MCPpedia data
 ```
 
 ## Bots
 
-Automated bots run daily via GitHub Actions to keep data fresh:
+Automated bots run via GitHub Actions to keep data fresh:
 
 | Bot | Schedule | What it does |
 |-----|----------|-------------|
-| `sync-registry` | 1am UTC | Syncs servers from the official MCP Registry |
-| `update-metadata` | 3am UTC | Refreshes GitHub stars, commits, issues, npm downloads |
-| `compute-scores` | 5am UTC | Computes all scores (security, efficiency, docs, etc.) |
-| `extract-schemas` | 6am UTC | Extracts tool schemas from server packages using Claude |
-| `detect-changelogs` | 7am UTC | Detects version changes from GitHub releases |
-| `extract-install-info` | 8am UTC | Extracts install configs and categories |
-| `discover` | Weekly | Discovers new MCP servers from GitHub and npm |
+| `sync-registry` | Daily 1am UTC | Syncs servers from the official MCP Registry |
+| `discover` | Daily 2am UTC | Discovers new MCP servers from GitHub and npm |
+| `update-metadata` | Daily 3am UTC | Refreshes GitHub stars, commits, issues, npm downloads |
+| `extract-install-info` | Daily 4am UTC | Extracts install configs and categories |
+| `enrich-descriptions` | Daily 4:30am UTC | Enriches server descriptions using Claude |
+| `compute-scores` | Daily 5am UTC | Computes all scores (security, efficiency, docs, etc.) |
+| `extract-schemas` | Daily 5am UTC | Extracts tool schemas from server packages using Claude |
+| `track-trending` | Daily 6:30am UTC | Tracks trending servers |
+| `blog-security-alerts` | Daily 7am UTC | Generates blog posts for security alerts |
+| `generate-blog` | Mon & Thu 10am UTC | Auto-generates blog articles |
+| `publish-scheduled-blog` | Daily 12pm UTC | Publishes scheduled blog posts |
+| `send-digest` | Friday 10am UTC | Sends the weekly newsletter digest |
+| `check-broken-links` | Weekly (Sun 6am UTC) | Checks for broken links across the site |
+| `detect-duplicates` | Weekly (Mon 6am UTC) | Detects duplicate server entries |
 
 Run any bot locally:
 
