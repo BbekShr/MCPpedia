@@ -71,7 +71,10 @@ export function generateBreadcrumbJsonLd(items: { name: string; url: string }[])
 
 // ── Article (Blog Posts) ────────────────────────────────────────────
 
-export function generateArticleJsonLd(post: BlogMeta) {
+export function generateArticleJsonLd(post: BlogMeta, content?: string) {
+  const wordCount = content
+    ? content.trim().split(/\s+/).length
+    : post.readingTime * 238
   return {
     '@context': 'https://schema.org',
     '@type': 'Article',
@@ -79,7 +82,7 @@ export function generateArticleJsonLd(post: BlogMeta) {
     description: post.description,
     datePublished: post.date,
     dateModified: post.date,
-    wordCount: post.readingTime * 238,
+    wordCount,
     articleSection: post.category,
     keywords: post.tags,
     author: {
@@ -153,6 +156,44 @@ export function generateServerJsonLd(server: Server) {
         ratingCount: 1,
       },
     }),
+  }
+}
+
+// ── FAQPage (Server Detail) ──────────────────────────────────────────
+
+export interface FAQItem {
+  question: string
+  answer: string
+}
+
+export function generateFAQJsonLd(faqs: FAQItem[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map(faq => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.answer,
+      },
+    })),
+  }
+}
+
+// ── ItemList (Category / Listing Pages) ─────────────────────────────
+
+export function generateItemListJsonLd(items: { name: string; url: string; description?: string }[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    itemListElement: items.map((item, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: item.name,
+      url: item.url,
+      ...(item.description && { description: item.description }),
+    })),
   }
 }
 

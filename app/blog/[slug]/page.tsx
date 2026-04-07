@@ -96,7 +96,7 @@ export default async function BlogPostPage({
   return (
     <>
       <JsonLdScript data={[
-        generateArticleJsonLd(post.meta),
+        generateArticleJsonLd(post.meta, post.content),
         generateBreadcrumbJsonLd([
           { name: 'Home', url: SITE_URL },
           { name: 'Blog', url: `${SITE_URL}/blog` },
