@@ -1,0 +1,48 @@
+{
+  "name": "mcp-server-mcppedia",
+  "version": "0.1.2",
+  "description": "MCP server for discovering, evaluating, and comparing MCP servers via the MCPpedia catalog",
+  "license": "MIT",
+  "type": "module",
+  "homepage": "https://mcppedia.org/s/mcp-server-mcppedia",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BbekShr/mcp-server-mcppedia.git"
+  },
+  "bugs": {
+    "url": "https://github.com/BbekShr/mcp-server-mcppedia/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "mcppedia-server": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "prepublishOnly": "tsc",
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "start:http": "node dist/index.js --http"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "zod": "^3.24.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "tsx": "^4.19.4",
+    "typescript": "^5"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "mcppedia",
+    "ai",
+    "llm"
+  ]
+}

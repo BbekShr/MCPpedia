@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { getAllBlogPosts, type BlogCategory } from '@/lib/blog'
 import { SITE_URL } from '@/lib/constants'
 import { JsonLdScript, generateCollectionJsonLd, generateBreadcrumbJsonLd } from '@/lib/seo'
+import NewsletterSignup from '@/components/NewsletterSignup'
 import type { Metadata } from 'next'
 
 const blogDescription = 'Weekly insights on the MCP ecosystem — new servers, trending projects, security alerts, and deep dives.'
@@ -135,6 +136,14 @@ export default function BlogPage() {
           )}
         </div>
       )}
+
+      {/* Newsletter */}
+      <div className="mt-12">
+        <NewsletterSignup
+          variant="banner"
+          context="Get weekly MCP security alerts and new server roundups delivered to your inbox."
+        />
+      </div>
     </div>
   )
 }

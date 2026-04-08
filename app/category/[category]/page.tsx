@@ -8,6 +8,8 @@ import type { Category } from '@/lib/constants'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
+export const revalidate = 60
+
 export async function generateStaticParams() {
   return CATEGORIES.map(c => ({ category: c }))
 }

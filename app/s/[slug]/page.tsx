@@ -7,6 +7,9 @@ import HealthBadge from '@/components/HealthBadge'
 import ToolsList from '@/components/ToolsList'
 import InstallConfig from '@/components/InstallConfig'
 import DiscussionSection from '@/components/DiscussionSection'
+import NewsletterSignup from '@/components/NewsletterSignup'
+import BadgeEmbed from '@/components/BadgeEmbed'
+import ServerFAQ, { buildServerFAQs } from '@/components/ServerFAQ'
 import ScoreCard from '@/components/ScoreCard'
 import SecurityCard from '@/components/SecurityCard'
 import HealthCheckBadge from '@/components/HealthCheckBadge'
@@ -19,7 +22,7 @@ import CommunityVerify from '@/components/CommunityVerify'
 import CategoryEditor from '@/components/CategoryEditor'
 import ServerSidebar from '@/components/ServerSidebar'
 import { SITE_NAME, SITE_URL } from '@/lib/constants'
-import { JsonLdScript, generateServerJsonLd, generateBreadcrumbJsonLd } from '@/lib/seo'
+import { JsonLdScript, generateServerJsonLd, generateBreadcrumbJsonLd, generateFAQJsonLd } from '@/lib/seo'
 import type { Server, Changelog, SecurityAdvisory } from '@/lib/types'
 import type { HealthStatus } from '@/lib/constants'
 import type { Metadata } from 'next'
@@ -45,7 +48,7 @@ export async function generateMetadata({
   const score = server.score_total || 0
   const grade = score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 40 ? 'C' : score >= 20 ? 'D' : 'F'
 
-  const title = `${server.name} — MCPpedia Score: ${score}/100 (${grade})`
+  const title = `${server.name} MCP Server — Score: ${score}/100 (${grade})`
   const description = server.tagline
     ? `${server.tagline}. ${toolCount} tools. Scored on security, maintenance, and efficiency.`
     : `${server.name} MCP Server. ${toolCount} tools. Score: ${score}/100.`
@@ -129,6 +132,7 @@ export default async function ServerDetailPage({
   const tools = s.tools || []
   const resources = s.resources || []
   const prompts = s.prompts || []
+  const faqs = buildServerFAQs(s)
   const openCVEs = advisories?.filter((a: { status: string }) => a.status === 'open').length || 0
   const fixedCVEs = advisories?.filter((a: { status: string }) => a.status === 'fixed').length || 0
   const daysSinceCommit = s.github_last_commit ? Math.floor((Date.now() - new Date(s.github_last_commit).getTime()) / 86400000) : null
@@ -146,6 +150,7 @@ export default async function ServerDetailPage({
           { name: 'Servers', url: `${SITE_URL}/servers` },
           { name: s.name, url: `${SITE_URL}/s/${s.slug}` },
         ]),
+        ...(faqs.length > 0 ? [generateFAQJsonLd(faqs)] : []),
       ]} />
       {/* Archived banner */}
       {s.is_archived && (
@@ -407,14 +412,8 @@ export default async function ServerDetailPage({
             <ScoreCard server={s} advisories={(advisories as SecurityAdvisory[]) || []} />
             <SecurityCard server={s} advisories={(advisories as SecurityAdvisory[]) || []} />
           </div>
-          <div className="mt-4 border border-border rounded-md p-3 bg-bg-secondary">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-text-primary">Embed this score in your README</span>
-              <a href={`/api/badge/${s.slug}`} target="_blank" rel="noopener noreferrer" className="text-xs text-accent hover:text-accent-hover">Preview badge</a>
-            </div>
-            <div className="bg-code-bg border border-border rounded p-2 font-mono text-xs text-text-muted break-all select-all">
-              {'[![MCPpedia Score](https://mcppedia.org/api/badge/' + s.slug + ')](https://mcppedia.org/s/' + s.slug + ')'}
-            </div>
+          <div className="mt-4">
+            <BadgeEmbed slug={s.slug} />
           </div>
         </section>
 
@@ -425,6 +424,18 @@ export default async function ServerDetailPage({
             {s.review_count > 0 && <span className="text-sm font-normal text-text-muted ml-2">({s.review_count})</span>}
           </h2>
           <ReviewSection serverId={s.id} />
+        </section>
+
+        {/* FAQ */}
+        {faqs.length > 0 && (
+          <ServerFAQ faqs={faqs} />
+        )}
+
+        {/* Newsletter */}
+        <section className="pt-8 border-t border-border">
+          <NewsletterSignup
+            context={`Get CVE alerts and security updates for ${s.name} and similar servers.`}
+          />
         </section>
 
         {/* Discussion */}

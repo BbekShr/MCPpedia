@@ -4,7 +4,10 @@ import ServerCard from '@/components/ServerCard'
 import Link from 'next/link'
 import type { Server } from '@/lib/types'
 import { SITE_URL, PUBLIC_SERVER_FIELDS } from '@/lib/constants'
+import { JsonLdScript, generateItemListJsonLd, generateBreadcrumbJsonLd } from '@/lib/seo'
 import type { Metadata } from 'next'
+
+export const revalidate = 60
 
 const USE_CASES: Record<string, {
   title: string
@@ -96,8 +99,24 @@ export default async function BestForPage({
     .order('score_total', { ascending: false })
     .limit(20)
 
+  const itemListJsonLd = servers && servers.length > 0
+    ? generateItemListJsonLd(
+        (servers as Server[]).map(s => ({
+          name: `${s.name} MCP Server`,
+          url: `${SITE_URL}/s/${s.slug}`,
+          description: s.tagline || undefined,
+        }))
+      )
+    : null
+
   return (
     <div className="max-w-[1200px] mx-auto px-4 py-8">
+      {itemListJsonLd && <JsonLdScript data={itemListJsonLd} />}
+      <JsonLdScript data={generateBreadcrumbJsonLd([
+        { name: 'Home', url: SITE_URL },
+        { name: 'Best MCP Servers', url: `${SITE_URL}/best-for` },
+        { name: uc.title, url: `${SITE_URL}/best-for/${usecase}` },
+      ])} />
       <h1 className="text-2xl font-semibold text-text-primary mb-2">{uc.title}</h1>
       <p className="text-text-muted mb-8">{uc.description}</p>
 

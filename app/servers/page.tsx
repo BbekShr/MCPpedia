@@ -2,7 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import ServerCard from '@/components/ServerCard'
 import SearchBar from '@/components/SearchBar'
 import FilterBar from '@/components/FilterBar'
-import { ITEMS_PER_PAGE, PUBLIC_SERVER_FIELDS } from '@/lib/constants'
+import { ITEMS_PER_PAGE, PUBLIC_SERVER_FIELDS, SITE_URL } from '@/lib/constants'
+import { JsonLdScript, generateItemListJsonLd } from '@/lib/seo'
 import type { Server } from '@/lib/types'
 import type { Metadata } from 'next'
 import Link from 'next/link'
@@ -104,8 +105,20 @@ export default async function ServersPage({
 
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE)
 
+  // Build ItemList schema for the first page of default (non-search) results
+  const itemListJsonLd = !q && page === 1 && servers.length > 0
+    ? generateItemListJsonLd(
+        servers.slice(0, 20).map(s => ({
+          name: `${s.name} MCP Server`,
+          url: `${SITE_URL}/s/${s.slug}`,
+          description: s.tagline || s.description || undefined,
+        }))
+      )
+    : null
+
   return (
     <div className="max-w-[1200px] mx-auto px-4 py-6">
+      {itemListJsonLd && <JsonLdScript data={itemListJsonLd} />}
       <div className="mb-6">
         <SearchBar
           placeholder={`Search ${totalCount.toLocaleString()}+ MCP servers...`}
