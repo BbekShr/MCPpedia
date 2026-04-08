@@ -88,6 +88,14 @@ export default async function AnalyticsPage() {
     from += pageSize
   }
 
+  // Fetch MCP API usage (last 90 days)
+  const { data: rawMcpUsage } = await supabase
+    .from('mcp_api_usage')
+    .select('usage_date, action, count')
+    .order('usage_date', { ascending: true })
+    .limit(600) // ~90 days * 6 actions
+  const mcpUsage = (rawMcpUsage || []) as Array<{ usage_date: string; action: string; count: number }>
+
   // Fetch historical snapshots (last 90 days)
   const { data: history } = await supabase
     .from('daily_metrics')
@@ -447,6 +455,49 @@ export default async function AnalyticsPage() {
           </div>
         </section>
       </div>
+
+      {/* MCP Server API Usage */}
+      {mcpUsage.length > 0 && (
+        <section className="mb-10">
+          <h2 className="text-lg font-semibold text-text-primary mb-4">MCP Server API Usage</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+            {(() => {
+              const todayStr = new Date().toISOString().slice(0, 10)
+              const todayRows = mcpUsage.filter(r => r.usage_date === todayStr)
+              const todayTotal = todayRows.reduce((s, r) => s + r.count, 0)
+              const allTimeTotal = mcpUsage.reduce((s, r) => s + r.count, 0)
+              const actionTotals: Record<string, number> = {}
+              for (const r of mcpUsage) actionTotals[r.action] = (actionTotals[r.action] || 0) + r.count
+              const topActions = Object.entries(actionTotals).sort((a, b) => b[1] - a[1])
+              return (
+                <>
+                  <StatBox label="Today" value={todayTotal} />
+                  <StatBox label="All Time" value={allTimeTotal.toLocaleString()} />
+                  {topActions.slice(0, 4).map(([action, count]) => (
+                    <StatBox key={action} label={action} value={count.toLocaleString()} />
+                  ))}
+                </>
+              )
+            })()}
+          </div>
+          {(() => {
+            const dailyTotals: Record<string, number> = {}
+            for (const r of mcpUsage) dailyTotals[r.usage_date] = (dailyTotals[r.usage_date] || 0) + r.count
+            const days = Object.entries(dailyTotals).sort((a, b) => a[0].localeCompare(b[0]))
+            if (days.length < 2) return null
+            return (
+              <div className="border border-border rounded-lg p-4">
+                <p className="text-xs text-text-muted mb-2">Daily API calls</p>
+                <Sparkline data={days.map(d => d[1])} color="bg-accent" />
+                <div className="flex justify-between text-[10px] text-text-muted mt-1">
+                  <span>{days[0][0]}</span>
+                  <span>{days[days.length - 1][0]}</span>
+                </div>
+              </div>
+            )
+          })()}
+        </section>
+      )}
 
       {/* Footer note */}
       <div className="border-t border-border pt-6 text-sm text-text-muted">
