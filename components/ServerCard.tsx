@@ -29,10 +29,18 @@ const gradeColors: Record<string, string> = {
   F: 'text-red',
 }
 
+function scoreGrade(score: number): string {
+  if (score >= 80) return 'A'
+  if (score >= 60) return 'B'
+  if (score >= 40) return 'C'
+  if (score >= 20) return 'D'
+  return 'F'
+}
+
 export default function ServerCard({ server }: { server: Server }) {
   const toolCount = server.tools?.length || 0
   const score = server.score_total || 0
-  const grade = server.token_efficiency_grade || 'unknown'
+  const grade = score > 0 ? scoreGrade(score) : 'unknown'
   const transports = server.transport || []
   const hasRemote = transports.includes('http') || transports.includes('sse')
 
