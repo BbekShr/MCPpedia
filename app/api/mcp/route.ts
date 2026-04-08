@@ -105,6 +105,10 @@ export async function POST(request: Request) {
 
   const supabase = await createClient()
 
+  // Track usage — fire and forget, don't block the response
+  const today = new Date().toISOString().slice(0, 10)
+  supabase.rpc('increment_mcp_usage', { p_date: today, p_action: action }).then()
+
   try {
     switch (action) {
       case 'search': {
