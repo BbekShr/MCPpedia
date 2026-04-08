@@ -45,3 +45,6 @@ mcppedia-server/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# internal docs
+social-posts-and-outreach.md
