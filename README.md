@@ -88,6 +88,7 @@ Automated bots run via GitHub Actions to keep data fresh:
 | `extract-install-info` | Daily 4am UTC | Extracts install configs and categories |
 | `enrich-descriptions` | Daily 4:30am UTC | Enriches server descriptions using Claude |
 | `compute-scores` | Daily 5am UTC | Computes all scores (security, efficiency, docs, etc.) |
+| `snapshot-metrics` | Daily 5:30am UTC | Snapshots ecosystem metrics for historical tracking |
 | `extract-schemas` | Daily 5am UTC | Extracts tool schemas from server packages using Claude |
 | `track-trending` | Daily 6:30am UTC | Tracks trending servers |
 | `blog-security-alerts` | Daily 7am UTC | Generates blog posts for security alerts |

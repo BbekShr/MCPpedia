@@ -35,12 +35,35 @@ function Bar({ value, max, label, count, color = 'bg-accent' }: {
   )
 }
 
-function StatBox({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
+function StatBox({ label, value, sub, delta }: { label: string; value: string | number; sub?: string; delta?: number }) {
   return (
     <div className="border border-border rounded-lg p-4">
       <p className="text-xs text-text-muted mb-1">{label}</p>
       <p className="text-2xl font-semibold text-text-primary tabular-nums">{value}</p>
+      {delta !== undefined && delta !== 0 && (
+        <p className={`text-xs mt-0.5 font-medium ${delta > 0 ? 'text-green' : 'text-red'}`}>
+          {delta > 0 ? '+' : ''}{delta.toLocaleString()} vs 7d ago
+        </p>
+      )}
       {sub && <p className="text-xs text-text-muted mt-1">{sub}</p>}
+    </div>
+  )
+}
+
+function Sparkline({ data, color = 'bg-accent' }: { data: number[]; color?: string }) {
+  if (data.length < 2) return null
+  const min = Math.min(...data)
+  const max = Math.max(...data)
+  const range = max - min || 1
+  return (
+    <div className="flex items-end gap-[2px] h-10">
+      {data.map((v, i) => (
+        <div
+          key={i}
+          className={`flex-1 ${color} rounded-t min-h-[2px]`}
+          style={{ height: `${Math.max(4, Math.round(((v - min) / range) * 100))}%` }}
+        />
+      ))}
     </div>
   )
 }
@@ -64,6 +87,33 @@ export default async function AnalyticsPage() {
     if (data.length < pageSize) break
     from += pageSize
   }
+
+  // Fetch historical snapshots (last 90 days)
+  const { data: history } = await supabase
+    .from('daily_metrics')
+    .select('snapshot_date, total_servers, avg_score_total, total_github_stars, total_npm_weekly_downloads, total_tools, servers_with_cves, open_cves, servers_with_auth')
+    .order('snapshot_date', { ascending: true })
+    .limit(90)
+
+  const historyRows = (history || []) as Array<{
+    snapshot_date: string; total_servers: number; avg_score_total: number;
+    total_github_stars: number; total_npm_weekly_downloads: number; total_tools: number;
+    servers_with_cves: number; open_cves: number; servers_with_auth: number;
+  }>
+
+  // Find the row from ~7 days ago for delta calculations
+  const targetDate = new Date()
+  targetDate.setDate(targetDate.getDate() - 7)
+  const targetStr = targetDate.toISOString().slice(0, 10)
+  const prev = historyRows.length > 0
+    ? historyRows.reduce((closest, row) =>
+        Math.abs(new Date(row.snapshot_date).getTime() - targetDate.getTime()) <
+        Math.abs(new Date(closest.snapshot_date).getTime() - targetDate.getTime())
+          ? row : closest
+      )
+    : null
+  // Only use prev if it's actually from a different day (not today's row)
+  const hasPrev = prev && prev.snapshot_date <= targetStr
 
   const all = (servers as Pick<Server, 'categories' | 'health_status' | 'author_type' | 'api_pricing' | 'transport' | 'compatible_clients' | 'score_total' | 'score_security' | 'score_maintenance' | 'score_documentation' | 'score_compatibility' | 'score_efficiency' | 'token_efficiency_grade' | 'github_stars' | 'npm_weekly_downloads' | 'cve_count' | 'has_authentication' | 'tools' | 'created_at'>[]) || []
   const total = all.length
@@ -198,15 +248,35 @@ export default async function AnalyticsPage() {
 
       {/* Top-level stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
-        <StatBox label="Total Servers" value={total} />
-        <StatBox label="Avg MCPpedia Score" value={`${avgScore}/100`} />
-        <StatBox label="Total GitHub Stars" value={totalStars.toLocaleString()} />
-        <StatBox label="Weekly npm Downloads" value={totalDownloads.toLocaleString()} />
-        <StatBox label="Total Tools Exposed" value={totalTools.toLocaleString()} />
-        <StatBox label="Servers with CVEs" value={withCVEs} sub={`${openCVEs} open CVEs`} />
+        <StatBox label="Total Servers" value={total} delta={hasPrev ? total - prev!.total_servers : undefined} />
+        <StatBox label="Avg MCPpedia Score" value={`${avgScore}/100`} delta={hasPrev ? avgScore - prev!.avg_score_total : undefined} />
+        <StatBox label="Total GitHub Stars" value={totalStars.toLocaleString()} delta={hasPrev ? totalStars - prev!.total_github_stars : undefined} />
+        <StatBox label="Weekly npm Downloads" value={totalDownloads.toLocaleString()} delta={hasPrev ? totalDownloads - prev!.total_npm_weekly_downloads : undefined} />
+        <StatBox label="Total Tools Exposed" value={totalTools.toLocaleString()} delta={hasPrev ? totalTools - prev!.total_tools : undefined} />
+        <StatBox label="Servers with CVEs" value={withCVEs} sub={`${openCVEs} open CVEs`} delta={hasPrev ? withCVEs - prev!.servers_with_cves : undefined} />
         <StatBox label="With Authentication" value={`${pct(withAuth, total)}%`} sub={`${withAuth} of ${total}`} />
         <StatBox label="Official Servers" value={authorCounts.official} sub={`${pct(authorCounts.official, total)}% of total`} />
       </div>
+
+      {/* Trend sparklines */}
+      {historyRows.length >= 7 && (
+        <section className="mb-10">
+          <h2 className="text-lg font-semibold text-text-primary mb-4">Trends ({historyRows.length} days)</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: 'Total Servers', data: historyRows.map(h => h.total_servers), color: 'bg-accent' },
+              { label: 'Avg Score', data: historyRows.map(h => h.avg_score_total), color: 'bg-green' },
+              { label: 'GitHub Stars', data: historyRows.map(h => h.total_github_stars), color: 'bg-yellow' },
+              { label: 'Open CVEs', data: historyRows.map(h => h.open_cves), color: 'bg-red' },
+            ].map(t => (
+              <div key={t.label} className="border border-border rounded-lg p-4">
+                <p className="text-xs text-text-muted mb-2">{t.label}</p>
+                <Sparkline data={t.data} color={t.color} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Average scores breakdown */}
       <section className="mb-10">
