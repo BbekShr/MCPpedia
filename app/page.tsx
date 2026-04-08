@@ -242,6 +242,12 @@ export default async function HomePage() {
               { href: '/best-for/ai-agents', label: 'AI & Agents', desc: 'Memory, reasoning, search', color: 'border-l-accent' },
               { href: '/best-for/cloud-infrastructure', label: 'Cloud & DevOps', desc: 'AWS, Docker, Kubernetes', color: 'border-l-green' },
               { href: '/best-for/security', label: 'Security', desc: 'Scanning, compliance, secrets', color: 'border-l-red' },
+              { href: '/best-for/web-scraping', label: 'Web Scraping', desc: 'Crawling, extraction, automation', color: 'border-l-accent' },
+              { href: '/best-for/file-management', label: 'File Management', desc: 'Cloud storage, documents, storage', color: 'border-l-yellow' },
+              { href: '/best-for/monitoring', label: 'Monitoring', desc: 'Logging, metrics, alerting', color: 'border-l-green' },
+              { href: '/best-for/communication', label: 'Communication', desc: 'Email, chat, notifications', color: 'border-l-accent' },
+              { href: '/best-for/databases', label: 'Databases', desc: 'SQL, NoSQL, vectors, caching', color: 'border-l-green' },
+              { href: '/best-for/design-tools', label: 'Design & Creative', desc: 'Image generation, design tools', color: 'border-l-yellow' },
             ].map(item => (
               <Link
                 key={item.href}

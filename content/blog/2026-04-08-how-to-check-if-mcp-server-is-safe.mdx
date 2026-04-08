@@ -1,0 +1,209 @@
+---
+title: "How to Check if an MCP Server Is Safe Before Installing"
+description: "A practical guide to evaluating MCP server security, understanding CVE scanning, and avoiding malicious or vulnerable tools."
+hook: "Installing a random MCP server can expose your data. Here's exactly what to look for."
+date: "2026-04-08"
+tags: ["security", "safety", "mcp-servers", "best-practices"]
+category: "deep-dive"
+featuredServers: []
+---
+
+MCP servers are powerful. They give Claude access to your databases, file systems, APIs, and services. Which means they can also give malicious code access to the same things.
+
+This is why security matters. Before you install an MCP server—especially one you found in the registry or recommended by a stranger—you need to know what you're actually inviting into your system.
+
+The good news? There are concrete steps you can take. Let's walk through them.
+
+## The Real Risks
+
+When you install an MCP server, you're trusting it with:
+
+- **File system access**: Can it read, write, or delete your files?
+- **API credentials**: Will it steal your API keys or database passwords?
+- **Network traffic**: Does it have outbound access? Where is it sending data?
+- **Code execution**: Can it run arbitrary commands on your machine?
+
+These aren't theoretical concerns. MCPpedia has already scanned over 17,000 servers and found vulnerable ones in the wild. Some were accidentally bad (novice developers, security oversights). Others were actively malicious.
+
+The difference between "this server is fine" and "this server is stealing your credentials" often comes down to 10 minutes of evaluation upfront.
+
+## Step 1: Check the MCPpedia Security Score
+
+This is the fastest filter.
+
+Every MCP server on MCPpedia gets a security score from 0–100 based on:
+
+- **CVE scanning**: Known vulnerabilities in dependencies
+- **Code review**: Does the code have obvious injection vectors?
+- **Permission design**: Does it request more access than it needs?
+- **Maintainability**: Is the code readable, or is it obfuscated?
+
+<PullQuote>
+A score above 85 means the server has passed basic security review. Below 75 is a yellow flag. Below 50 is a red flag—avoid unless you have a very good reason.
+</PullQuote>
+
+Here's what to do:
+
+1. Find the server on MCPpedia.com
+2. Look at the security score in the top right
+3. Click "Security Details" to see what was flagged
+
+If the score is low, you don't need to dig further—use a different server or ask the maintainer to fix the issues.
+
+## Step 2: Understand What It Actually Does
+
+Read the `README` or documentation. Specifically:
+
+- **What permissions does it request?** Does a file-reading tool actually need network access? Red flag.
+- **What can it access?** Can it read your entire home directory, or just a specific folder?
+- **Where does data go?** Does it send anything to external servers? To which ones?
+
+If the documentation is vague or missing, that's a warning sign. Good tools are transparent.
+
+Look for this in the server's code or MCPpedia page:
+
+```
+"tools": [
+  {
+    "name": "read_file",
+    "description": "Read a file from disk",
+    "scope": "/allowed/directory/*"  // Good: limited scope
+  }
+]
+```
+
+vs.
+
+```
+"tools": [
+  {
+    "name": "execute_command",
+    "description": "Run anything",
+    "scope": "/"  // Bad: unlimited scope
+  }
+]
+```
+
+## Step 3: Check for Injection Vectors
+
+This is the most common attack. An MCP server accepts user input, doesn't validate it, and passes it directly to a dangerous operation.
+
+Example:
+
+```javascript
+// BAD: Injection vulnerability
+const filepath = getUserInput();
+fs.readFile(filepath); // User could pass "../../../etc/passwd"
+
+// GOOD: Input validation
+const filepath = getUserInput();
+if (!filepath.startsWith(ALLOWED_DIR)) throw new Error("Invalid path");
+fs.readFile(filepath);
+```
+
+MCPpedia's security scanner checks for these patterns. When you see a low score, one reason might be "potential injection in file handling" or "unsanitized SQL queries."
+
+If the detailed report mentions this, you need a different server. Injection vulnerabilities are serious.
+
+## Step 4: Look for CVEs in Dependencies
+
+MCP servers are built on top of libraries. Those libraries sometimes have security vulnerabilities (CVEs—Common Vulnerabilities and Exposures).
+
+MCPpedia scans the entire dependency tree. If you see "3 CVEs found" in the security report, click through and read what they are.
+
+- **Old CVEs that are patched**: Usually fine if the server is up to date.
+- **Recent, unpatched CVEs**: Major red flag. Don't install it.
+
+Example: A popular database library gets a remote-code-execution CVE published. If an MCP server depends on that library and hasn't updated yet, you'd be installing that vulnerability directly.
+
+## Step 5: Check the Maintainer
+
+Who wrote this? Is it a one-person hobby project from 2022 that hasn't been updated? Is it maintained by a reputable company?
+
+This matters because:
+
+- **Active projects** get security updates. Abandoned projects don't.
+- **Known maintainers** (e.g., Anthropic, established companies) tend to prioritize security.
+- **Community projects** can be great, but verify they're actually maintained.
+
+Red flags:
+
+- No visible maintainer
+- "Last updated 18 months ago" on a project from 2023
+- Issues asking "is this safe?" with no response from the author
+- No code repository or source (if you can't see the code, it's suspicious)
+
+## Step 6: Read User Reviews (If Available)
+
+Some tools are scanned by security researchers or used widely enough that feedback exists. Look for:
+
+- Reviews from other developers
+- Security audits or third-party verifications
+- GitHub issues discussing security concerns
+
+If 50 people are using it and nobody's complained about credential theft or malicious behavior, that's a modest signal of safety.
+
+## Step 7: Test It Safely First
+
+When you do install a server, test it with minimal permissions:
+
+1. Don't give it access to sensitive directories (yet)
+2. Don't use it with high-value API keys
+3. Monitor what it actually does vs. what it claims to do
+
+If it's reading your entire home directory when it claims to only read a specific folder, uninstall it immediately.
+
+<Callout type="warning">
+Never enter sensitive credentials directly into an MCP server's interface. If a server asks for your database password, API key, or private information, handle credentials through environment variables or secure config files that the server accesses independently. This prevents the server from seeing the credential itself.
+</Callout>
+
+## Real-World Example: What MCPpedia Checks
+
+Here's what a security report actually looks like:
+
+**Server: Database Query Tool (fictional)**
+- **Security Score: 72/100** (below 85 threshold)
+- **Issues Found:**
+  - Potential SQL injection in query builder (unsanitized user input)
+  - Dependency on deprecated MySQL library with 2 unpatched CVEs
+  - Requests full database credentials instead of using role-based auth
+  - No input validation on table names
+
+**Verdict:** Don't install. The maintainer needs to:
+1. Add input validation
+2. Update dependencies
+3. Implement proper auth scoping
+
+vs.
+
+**Server: Filesystem Browser (fictional)**
+- **Security Score: 94/100** (excellent)
+- **Issues Found:** None
+- **Checks Passed:**
+  - All inputs validated against whitelist
+  - No arbitrary code execution possible
+  - Requests only read-access to specified directories
+  - Well-maintained, updated monthly
+  - No known CVEs
+
+**Verdict:** Safe to install. You can trust it with directory access.
+
+## The Three-Question Rule
+
+When in doubt, ask yourself:
+
+1. **Is this from a trusted source?** (MCPpedia score 85+, active maintainer, transparent documentation)
+2. **Does it request more access than it needs?** (If yes, skip it)
+3. **Has someone independently verified the code?** (Good sign if yes, not critical if no—see #1)
+
+If you answer "no" to any of these, find an alternative.
+
+## Install with Confidence
+
+MCPpedia exists partly to solve this problem. Every server is scanned for known vulnerabilities, tested for injection vectors, and scored transparently.
+
+You'll never have a guarantee that software is 100% safe. But with these steps, you can dramatically reduce your risk.
+
+Start with high-scoring servers from known maintainers. Test them carefully. And if something feels off, trust your instinct and uninstall.
+
+Your Claude Desktop setup will thank you for the caution.

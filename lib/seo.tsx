@@ -125,6 +125,36 @@ export function generateCollectionJsonLd(name: string, description: string, url:
 
 // ── SoftwareApplication (Server Detail) ─────────────────────────────
 
+export function generateSoftwareApplicationJsonLd(server: Server) {
+  const score = server.score_total || 0
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: server.name,
+    description: server.tagline || server.description || `${server.name} MCP Server`,
+    applicationCategory: 'DeveloperApplication',
+    operatingSystem: 'Cross-platform',
+    url: `${SITE_URL}/s/${server.slug}`,
+    ...(server.npm_package && { installUrl: `https://www.npmjs.com/package/${server.npm_package}` }),
+    ...(server.pip_package && { installUrl: `https://pypi.org/project/${server.pip_package}` }),
+    ...(server.license && server.license !== 'NOASSERTION' && { license: server.license }),
+    ...(server.github_url && { codeRepository: server.github_url }),
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+    },
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: (score / 20).toFixed(1),
+      bestRating: '5',
+      worstRating: '0',
+      ratingCount: Math.max(server.review_count || 0, 1),
+    },
+  }
+}
+
 export function generateServerJsonLd(server: Server) {
   const score = server.score_total || 0
   return {

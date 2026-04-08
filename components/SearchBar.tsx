@@ -27,12 +27,15 @@ function SearchBarInner({
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
+  const [isFocused, setIsFocused] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const abortRef = useRef<AbortController | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Track the latest query we sent so stale responses are ignored
   const latestQueryRef = useRef('')
+
+  const popularSearches = ['supabase', 'github', 'slack', 'postgres', 'memory', 'filesystem', 'browser', 'docker']
 
   const isOnServersPage = pathname === '/servers' || pathname === action
 
@@ -121,6 +124,7 @@ function SearchBarInner({
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Escape') {
       setShowDropdown(false)
+      setIsFocused(false)
       inputRef.current?.blur()
       return
     }
@@ -134,6 +138,17 @@ function SearchBarInner({
       e.preventDefault()
       setActiveIndex(prev => Math.max(prev - 1, -1))
     }
+  }
+
+  function handlePopularSearch(term: string) {
+    setQuery(term)
+    setIsFocused(false)
+    setShowDropdown(false)
+    // Navigate to results with the popular search term
+    const params = new URLSearchParams(isOnServersPage ? searchParams.toString() : '')
+    params.set('q', term)
+    params.delete('page')
+    router.push(`${action}?${params.toString()}`)
   }
 
   return (
@@ -154,7 +169,13 @@ function SearchBarInner({
             name="q"
             value={query}
             onChange={handleChange}
-            onFocus={() => { if (suggestions.length > 0 && query.trim()) setShowDropdown(true) }}
+            onFocus={() => {
+              setIsFocused(true)
+              if (suggestions.length > 0 && query.trim()) setShowDropdown(true)
+            }}
+            onBlur={() => {
+              setIsFocused(false)
+            }}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             autoComplete="off"
@@ -164,6 +185,25 @@ function SearchBarInner({
           />
         </div>
       </form>
+
+      {/* Popular searches - shown when focused and empty */}
+      {isFocused && !query && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          <span className="text-xs text-text-muted">Popular:</span>
+          {popularSearches.map(term => (
+            <button
+              key={term}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                handlePopularSearch(term)
+              }}
+              className="text-xs px-2.5 py-1 rounded-full border border-border text-text-muted hover:text-accent hover:border-accent/30 transition-colors"
+            >
+              {term}
+            </button>
+          ))}
+        </div>
+      )}
 
       {showDropdown && suggestions.length > 0 && (
         <div className="absolute z-50 w-full mt-1 bg-bg border border-border rounded-md shadow-[var(--shadow-lg)] overflow-hidden">

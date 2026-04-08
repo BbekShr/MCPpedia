@@ -40,6 +40,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const bestForEntries = [
     'developers', 'data-engineering', 'productivity',
     'ai-agents', 'cloud-infrastructure', 'security',
+    'web-scraping', 'file-management', 'monitoring',
+    'communication', 'databases', 'design-tools',
   ].map(slug => ({
     url: `${SITE_URL}/best-for/${slug}`,
     changeFrequency: 'weekly' as const,

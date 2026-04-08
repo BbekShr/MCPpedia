@@ -6,6 +6,7 @@ import { JsonLdScript, generateArticleJsonLd, generateBreadcrumbJsonLd } from '@
 import type { Metadata } from 'next'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import ReadingProgress from '@/components/ReadingProgress'
+import NewsletterSignup from '@/components/NewsletterSignup'
 import ShareButtons from '@/components/blog/ShareButtons'
 import { blogComponents } from '@/components/blog'
 
@@ -108,15 +109,13 @@ export default async function BlogPostPage({
       {/* Hero */}
       <div className="border-b border-border bg-gradient-to-b from-bg-secondary to-bg">
         <div className="max-w-[680px] mx-auto px-4 pt-10 pb-10">
-          <Link
-            href="/blog"
-            className="inline-flex items-center gap-1.5 text-sm text-text-muted hover:text-accent transition-colors mb-8 group"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="group-hover:-translate-x-0.5 transition-transform">
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
-            All posts
-          </Link>
+          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm text-text-muted mb-8">
+            <Link href="/" className="hover:text-accent transition-colors">Home</Link>
+            <span className="text-text-muted/50">/</span>
+            <Link href="/blog" className="hover:text-accent transition-colors">Blog</Link>
+            <span className="text-text-muted/50">/</span>
+            <span className="text-text-primary font-medium truncate max-w-[300px]">{post.meta.title}</span>
+          </nav>
 
           <div className="flex items-center gap-3 mb-5">
             <span className={`text-xs px-2.5 py-1 rounded-full font-semibold border ${categoryColors[post.meta.category]}`}>
@@ -214,6 +213,13 @@ export default async function BlogPostPage({
           </div>
         )}
 
+        {/* Newsletter */}
+        <div className="mt-10 pt-8 border-t border-border">
+          <NewsletterSignup
+            context="Weekly CVE alerts, new server roundups, and MCP ecosystem insights. Free."
+          />
+        </div>
+
         {/* Related */}
         {related.length > 0 && (
           <div className="mt-14 pt-10 border-t border-border">
@@ -250,6 +256,19 @@ export default async function BlogPostPage({
           </p>
         </div>
       </article>
+
+      {/* Sticky CTA bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-bg/95 backdrop-blur-sm">
+        <div className="max-w-[680px] mx-auto px-4 py-3 flex items-center justify-between">
+          <p className="text-sm text-text-muted hidden sm:block">Discover the safest MCP servers for your stack</p>
+          <Link
+            href="/servers"
+            className="px-4 py-2 text-sm font-medium rounded-md bg-accent text-white hover:bg-accent-hover transition-colors whitespace-nowrap"
+          >
+            Search 17,500+ MCP servers &rarr;
+          </Link>
+        </div>
+      </div>
     </>
   )
 }

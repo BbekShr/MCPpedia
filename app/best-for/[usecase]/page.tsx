@@ -51,6 +51,42 @@ const USE_CASES: Record<string, {
     categories: ['security'],
     keywords: ['security', 'scan', 'vulnerability', 'secrets', 'compliance'],
   },
+  'web-scraping': {
+    title: 'Best MCP Servers for Web Scraping & Crawling',
+    description: 'Web crawling, data extraction, and browser automation — MCP servers for gathering and processing web data.',
+    categories: ['developer-tools'],
+    keywords: ['scrape', 'crawl', 'extract', 'selenium', 'browser', 'automation'],
+  },
+  'file-management': {
+    title: 'Best MCP Servers for File & Document Management',
+    description: 'File systems, cloud storage, and document processing — MCP servers for managing files and data.',
+    categories: ['developer-tools'],
+    keywords: ['filesystem', 'storage', 'documents', 's3', 'files', 'pdf'],
+  },
+  'monitoring': {
+    title: 'Best MCP Servers for Monitoring & Observability',
+    description: 'Logging, alerting, metrics, and APM — MCP servers for observing and monitoring systems.',
+    categories: ['devops'],
+    keywords: ['logging', 'metrics', 'monitoring', 'alerts', 'observability', 'apm'],
+  },
+  'communication': {
+    title: 'Best MCP Servers for Communication & Messaging',
+    description: 'Email, chat platforms, and notifications — MCP servers for team communication and messaging.',
+    categories: ['communication'],
+    keywords: ['email', 'slack', 'chat', 'messaging', 'notifications', 'sms'],
+  },
+  'databases': {
+    title: 'Best MCP Servers for Databases & Storage',
+    description: 'SQL, NoSQL, vector databases, and caching — MCP servers for data storage and retrieval.',
+    categories: ['data'],
+    keywords: ['database', 'sql', 'nosql', 'vector', 'mongodb', 'redis', 'postgres'],
+  },
+  'design-tools': {
+    title: 'Best MCP Servers for Design & Creative Tools',
+    description: 'Image generation, design systems, and media processing — MCP servers for creative workflows.',
+    categories: ['ai-ml'],
+    keywords: ['design', 'image', 'creative', 'generation', 'media', 'graphics'],
+  },
 }
 
 export async function generateStaticParams() {

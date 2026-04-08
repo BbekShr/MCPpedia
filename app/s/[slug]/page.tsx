@@ -21,8 +21,10 @@ import EnvInstructions from '@/components/EnvInstructions'
 import CommunityVerify from '@/components/CommunityVerify'
 import CategoryEditor from '@/components/CategoryEditor'
 import ServerSidebar from '@/components/ServerSidebar'
+import ServerCard from '@/components/ServerCard'
+import ServerReadme from '@/components/ServerReadme'
 import { SITE_NAME, SITE_URL } from '@/lib/constants'
-import { JsonLdScript, generateServerJsonLd, generateBreadcrumbJsonLd, generateFAQJsonLd } from '@/lib/seo'
+import { JsonLdScript, generateSoftwareApplicationJsonLd, generateServerJsonLd, generateBreadcrumbJsonLd, generateFAQJsonLd } from '@/lib/seo'
 import type { Server, Changelog, SecurityAdvisory } from '@/lib/types'
 import type { HealthStatus } from '@/lib/constants'
 import type { Metadata } from 'next'
@@ -115,7 +117,7 @@ export default async function ServerDetailPage({
 
   const s = server as Server
 
-  const [{ data: changelogs }, { data: advisories }] = await Promise.all([
+  const [{ data: changelogs }, { data: advisories }, { data: similarServers }] = await Promise.all([
     supabase
       .from('changelogs')
       .select('*')
@@ -127,6 +129,15 @@ export default async function ServerDetailPage({
       .select('*')
       .eq('server_id', s.id)
       .order('published_at', { ascending: false }),
+    supabase
+      .from('servers')
+      .select(PUBLIC_SERVER_FIELDS)
+      .overlaps('categories', s.categories || [])
+      .neq('slug', slug)
+      .eq('is_archived', false)
+      .gt('score_total', 0)
+      .order('score_total', { ascending: false })
+      .limit(4),
   ])
 
   const tools = s.tools || []
@@ -144,6 +155,7 @@ export default async function ServerDetailPage({
   return (
     <div className="max-w-[1200px] mx-auto px-4 py-6">
       <JsonLdScript data={[
+        generateSoftwareApplicationJsonLd(s as Server),
         generateServerJsonLd(s as Server),
         generateBreadcrumbJsonLd([
           { name: 'Home', url: SITE_URL },
@@ -152,6 +164,14 @@ export default async function ServerDetailPage({
         ]),
         ...(faqs.length > 0 ? [generateFAQJsonLd(faqs)] : []),
       ]} />
+      {/* Breadcrumb */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm text-text-muted mb-4">
+        <Link href="/" className="hover:text-accent transition-colors">Home</Link>
+        <span className="text-text-muted/50">/</span>
+        <Link href="/servers" className="hover:text-accent transition-colors">Servers</Link>
+        <span className="text-text-muted/50">/</span>
+        <span className="text-text-primary font-medium truncate max-w-[300px]">{s.name}</span>
+      </nav>
       {/* Archived banner */}
       {s.is_archived && (
         <div className="mb-6 p-4 rounded-md border border-red bg-red/5">
@@ -227,6 +247,20 @@ export default async function ServerDetailPage({
               pipPackage={s.pip_package}
               requiresApiKey={s.requires_api_key}
             />
+          </section>
+
+          {/* Badge — help spread the word */}
+          <section className="border border-accent/20 rounded-md p-4 bg-accent/5">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-text-primary">Are you the author?</p>
+                <p className="text-xs text-text-muted">Add this badge to your README to show your security score and help users find safe servers.</p>
+              </div>
+            </div>
+            <BadgeEmbed slug={s.slug} />
           </section>
 
           {/* Env Instructions */}
@@ -310,6 +344,9 @@ export default async function ServerDetailPage({
               <CommunityVerify serverId={s.id} initialCount={s.community_verification_count || 0} />
             </div>
           </section>
+
+          {/* README */}
+          <ServerReadme githubUrl={s.github_url} />
 
           {/* Test it */}
           <section id="test" className="pt-8 border-t border-border">
@@ -412,9 +449,6 @@ export default async function ServerDetailPage({
             <ScoreCard server={s} advisories={(advisories as SecurityAdvisory[]) || []} />
             <SecurityCard server={s} advisories={(advisories as SecurityAdvisory[]) || []} />
           </div>
-          <div className="mt-4">
-            <BadgeEmbed slug={s.slug} />
-          </div>
         </section>
 
         {/* Reviews */}
@@ -429,6 +463,23 @@ export default async function ServerDetailPage({
         {/* FAQ */}
         {faqs.length > 0 && (
           <ServerFAQ faqs={faqs} />
+        )}
+
+        {/* Similar Servers */}
+        {similarServers && similarServers.length > 0 && (
+          <section className="pt-8 border-t border-border">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-text-primary">Similar servers</h2>
+              <Link href={`/servers?category=${(s.categories || [])[0] || ''}`} className="text-sm text-accent hover:text-accent-hover">
+                View all &rarr;
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {(similarServers as Server[]).map(server => (
+                <ServerCard key={server.id} server={server} />
+              ))}
+            </div>
+          </section>
         )}
 
         {/* Newsletter */}

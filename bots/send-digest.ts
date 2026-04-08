@@ -172,7 +172,10 @@ function buildHtmlEmail(params: {
         <tr>
           <td style="padding:24px 32px 0;">
             <p style="margin:0;font-size:13px;color:#8b949e;">
-              <a href="${siteUrl}" style="color:#24292f;font-weight:700;text-decoration:none;">MCPpedia</a>
+              <a href="${siteUrl}" style="text-decoration:none;">
+                <img src="${siteUrl}/apple-icon" alt="MCPpedia" width="24" height="24" style="display:inline-block;vertical-align:middle;margin-right:8px;border-radius:5px;" />
+                <span style="color:#24292f;font-weight:700;">MCPpedia</span>
+              </a>
               <span style="margin:0 6px;color:#d0d7de;">&middot;</span>
               <span>Weekly</span>
             </p>
