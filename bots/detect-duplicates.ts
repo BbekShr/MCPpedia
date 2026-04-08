@@ -23,11 +23,25 @@ async function main() {
 
   if (!servers) { console.log('No servers'); return }
 
+  // Known monorepos that contain multiple distinct MCP servers — skip these
+  const MONOREPO_URLS = new Set([
+    'https://github.com/modelcontextprotocol/servers',
+    'https://github.com/mintmcp/servers',
+    'https://github.com/ryudi84/sovereign-mcp-servers',
+    'https://github.com/dave-london/pare',
+    'https://github.com/mansurjisan/ocean-mcp',
+    'https://github.com/iowarp/clio-kit',
+    'https://github.com/martc03/gov-mcp-servers',
+    'https://github.com/la-rebelion/hapimcp',
+    'https://github.com/waystation-ai/mcp',
+  ].map(u => u.toLowerCase()))
+
   // Group by normalized GitHub URL
   const byUrl = new Map<string, typeof servers>()
 
   for (const server of servers) {
     const url = server.github_url.toLowerCase().replace(/\.git$/, '').replace(/\/$/, '')
+    if (MONOREPO_URLS.has(url)) continue
     if (!byUrl.has(url)) byUrl.set(url, [])
     byUrl.get(url)!.push(server)
   }
