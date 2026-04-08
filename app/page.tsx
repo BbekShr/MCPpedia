@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import ServerCard from '@/components/ServerCard'
 import SearchBar from '@/components/SearchBar'
+import NewsletterSignup from '@/components/NewsletterSignup'
 import { CATEGORIES, CATEGORY_LABELS, SITE_NAME, SITE_DESCRIPTION, SITE_URL, PUBLIC_SERVER_FIELDS } from '@/lib/constants'
 import { JsonLdScript, generateOrganizationJsonLd, generateWebSiteJsonLd } from '@/lib/seo'
 import type { Server } from '@/lib/types'
@@ -98,7 +99,7 @@ export default async function HomePage() {
             <p className="text-base text-text-muted mb-6 max-w-lg">
               Every server scored on security, maintenance, and efficiency — backed by real CVE data, not opinions.
             </p>
-            <div className="max-w-xl mb-4">
+            <div className="max-w-xl mb-4 min-h-[48px]">
               <SearchBar
                 placeholder={`Search ${serverCount || 0}+ MCP servers...`}
                 large
@@ -140,7 +141,7 @@ export default async function HomePage() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-text-primary mb-0.5">Security scanned</h3>
+              <p className="text-sm font-semibold text-text-primary mb-0.5">Security scanned</p>
               <p className="text-xs text-text-muted">Every server checked against OSV.dev for CVEs. Daily.</p>
             </div>
           </div>
@@ -149,7 +150,7 @@ export default async function HomePage() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-text-primary mb-0.5">Scored, not listed</h3>
+              <p className="text-sm font-semibold text-text-primary mb-0.5">Scored, not listed</p>
               <p className="text-xs text-text-muted">Every server rated 0-100 on security, maintenance, docs, and context cost.</p>
             </div>
           </div>
@@ -158,7 +159,7 @@ export default async function HomePage() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2" strokeLinecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-text-primary mb-0.5">Copy-paste install</h3>
+              <p className="text-sm font-semibold text-text-primary mb-0.5">Copy-paste install</p>
               <p className="text-xs text-text-muted">Config ready for Claude Desktop, Cursor, and Claude Code. No guessing.</p>
             </div>
           </div>
@@ -294,6 +295,16 @@ export default async function HomePage() {
           </div>
         </section>
       )}
+
+      {/* Newsletter */}
+      <section className="border-t border-border">
+        <div className="max-w-[1200px] mx-auto px-4 py-8">
+          <NewsletterSignup
+            variant="banner"
+            context="Weekly CVE alerts, new server roundups, and MCP ecosystem insights. Free."
+          />
+        </div>
+      </section>
 
       {/* New to MCP? */}
       <section className="border-t border-border">
