@@ -51,7 +51,7 @@ export async function generateMetadata({
   const { meta } = post
   const socialDescription = meta.hook || meta.description
   return {
-    title: `${meta.title} - ${SITE_NAME}`,
+    title: meta.title,
     description: meta.description,
     openGraph: {
       title: meta.title,

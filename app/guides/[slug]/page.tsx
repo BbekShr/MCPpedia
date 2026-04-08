@@ -20,7 +20,7 @@ export async function generateMetadata({
 
   const url = `${SITE_URL}/guides/${slug}`
   return {
-    title: `${guide.meta.title} - ${SITE_NAME}`,
+    title: guide.meta.title,
     description: guide.meta.description,
     alternates: { canonical: url },
     openGraph: {

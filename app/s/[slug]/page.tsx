@@ -50,10 +50,11 @@ export async function generateMetadata({
   const score = server.score_total || 0
   const grade = score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 40 ? 'C' : score >= 20 ? 'D' : 'F'
 
-  const title = `${server.name} MCP Server — Score: ${score}/100 (${grade})`
+  const nameForTitle = server.name.toLowerCase().includes('mcp') ? server.name : `${server.name} MCP Server`
+  const title = `${nameForTitle} — Score: ${score}/100 (${grade})`
   const description = server.tagline
     ? `${server.tagline}. ${toolCount} tools. Scored on security, maintenance, and efficiency.`
-    : `${server.name} MCP Server. ${toolCount} tools. Score: ${score}/100.`
+    : `${nameForTitle}. ${toolCount} tools. Score: ${score}/100.`
 
   return {
     title,

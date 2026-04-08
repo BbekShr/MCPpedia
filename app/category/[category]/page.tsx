@@ -25,7 +25,7 @@ export async function generateMetadata({
 
   const description = `Browse the best ${label.toLowerCase()} MCP servers. Find tools for ${label.toLowerCase()} on MCPpedia.`
   return {
-    title: `${label} MCP Servers - ${SITE_NAME}`,
+    title: `${label} MCP Servers`,
     description,
     openGraph: {
       title: `${label} MCP Servers`,
