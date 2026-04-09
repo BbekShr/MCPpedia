@@ -7,7 +7,6 @@ export async function GET() {
   const posts = getAllBlogPosts()
 
   const items = posts
-    .slice(0, 20)
     .map(post => {
       const url = `${SITE_URL}/blog/${post.slug}`
       return `

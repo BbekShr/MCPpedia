@@ -40,21 +40,9 @@ export default async function ServersPage({
   let totalCount = 0
 
   if (q) {
-    // Use FTS function
+    // Fetch all search results, then apply app-side filters (min_score, transport, author)
+    // and paginate in JS. Supabase RPC doesn't support count with head:true.
     const { data, error } = await supabase.rpc('search_servers', {
-      search_query: q,
-      category_filter: category || null,
-      status_filter: status || null,
-      pricing_filter: pricing || null,
-      sort_by: sort || 'relevance',
-      page_size: ITEMS_PER_PAGE,
-      page_offset: offset,
-    })
-    if (!error && data) {
-      servers = data as Server[]
-    }
-    // Get count
-    const { count } = await supabase.rpc('search_servers', {
       search_query: q,
       category_filter: category || null,
       status_filter: status || null,
@@ -62,8 +50,15 @@ export default async function ServersPage({
       sort_by: sort || 'relevance',
       page_size: 100000,
       page_offset: 0,
-    }, { count: 'exact', head: true })
-    totalCount = count || 0
+    })
+    if (!error && data) {
+      let results = data as Server[]
+      if (minScore > 0) results = results.filter(s => (s.score_total || 0) >= minScore)
+      if (transport) results = results.filter(s => (s.transport || []).includes(transport))
+      if (author) results = results.filter(s => s.author_type === author)
+      totalCount = results.length
+      servers = results.slice(offset, offset + ITEMS_PER_PAGE)
+    }
   } else {
     // Direct query — hide archived by default
     let query = supabase

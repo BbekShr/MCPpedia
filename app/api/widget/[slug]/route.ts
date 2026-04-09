@@ -9,6 +9,10 @@ function scoreGrade(score: number): string {
   return 'F'
 }
 
+function escapeXml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;')
+}
+
 function gradeColor(score: number): string {
   if (score >= 80) return '#1a7f37'
   if (score >= 60) return '#0277b5'
@@ -69,7 +73,7 @@ export async function GET(
         </style>
       </defs>
       <rect class="bg" x="0.5" y="0.5" width="${width - 1}" height="${height - 1}" />
-      <text class="title" x="12" y="22">${server.name}</text>
+      <text class="title" x="12" y="22">${escapeXml(server.name)}</text>
       <text class="badge" x="12" y="52">${score}</text>
       <text class="label" x="50" y="46">/ 100</text>
       <text class="label" x="50" y="58">Grade ${grade}</text>

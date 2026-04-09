@@ -82,5 +82,6 @@ export class BotRun {
       error_message: sanitized,
       summary: this.summary,
     }).eq('id', this.id)
+    process.exitCode = 1
   }
 }

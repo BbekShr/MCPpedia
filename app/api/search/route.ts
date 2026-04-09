@@ -5,7 +5,7 @@ import { PUBLIC_SERVER_FIELDS } from '@/lib/constants'
 
 export async function GET(request: Request) {
   // Rate limit search by IP
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  const ip = request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
   const rl = rateLimitIp(ip, 'search', 30, 60_000) // 30 per minute
   if (!rl.allowed) return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
 

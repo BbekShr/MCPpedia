@@ -193,7 +193,7 @@ export default async function BlogPostPage({
         )}
 
         {/* Featured servers */}
-        {post.meta.featuredServers.length > 0 && (
+        {post.meta.featuredServers?.length > 0 && (
           <div className="mt-8 p-6 rounded-xl bg-bg-secondary border border-border">
             <h3 className="text-sm font-bold text-text-primary mb-3 flex items-center gap-2">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

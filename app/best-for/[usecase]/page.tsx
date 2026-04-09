@@ -132,6 +132,7 @@ export default async function BestForPage({
     .from('servers')
     .select(PUBLIC_SERVER_FIELDS)
     .overlaps('categories', uc.categories)
+    .eq('is_archived', false)
     .order('score_total', { ascending: false })
     .limit(20)
 

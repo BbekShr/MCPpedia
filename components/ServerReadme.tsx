@@ -49,7 +49,7 @@ export default async function ServerReadme({ githubUrl }: { githubUrl: string | 
   if (!readme) return null
 
   // Resolve relative image URLs to GitHub raw URLs
-  const baseRawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main`
+  const baseRawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/HEAD`
   const processedReadme = readme
     // Markdown-style images: ![alt](relative/path)
     .replace(

@@ -70,14 +70,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to create discussion' }, { status: 500 })
   }
 
-  // Update profile discussion count (non-critical)
+  // Update profile discussion count (non-critical, display-only)
   try {
+    const { count } = await supabase
+      .from('discussions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
     await supabase
       .from('profiles')
-      .update({ discussions_count: (await supabase.from('discussions').select('*', { count: 'exact', head: true }).eq('user_id', user.id)).count || 0 })
+      .update({ discussions_count: count || 0 })
       .eq('id', user.id)
   } catch {
-    // Non-critical
+    // Non-critical — rate limiting uses real-time count, not this field
   }
 
   return NextResponse.json({ discussion }, { status: 201 })
