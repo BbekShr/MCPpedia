@@ -28,6 +28,20 @@ import { SITE_NAME, SITE_URL } from '@/lib/constants'
 import { JsonLdScript, generateSoftwareApplicationJsonLd, generateServerJsonLd, generateBreadcrumbJsonLd, generateFAQJsonLd } from '@/lib/seo'
 import type { Server, Changelog, SecurityAdvisory } from '@/lib/types'
 import type { HealthStatus } from '@/lib/constants'
+
+/** Strip HTML tags from a string, decode common entities, and collapse whitespace */
+function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, '')           // remove tags
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')             // collapse whitespace
+    .trim()
+}
 import type { Metadata } from 'next'
 
 export const revalidate = 60
@@ -192,7 +206,7 @@ export default async function ServerDetailPage({
             <span className="text-xs px-2 py-0.5 rounded bg-accent/10 text-accent font-medium">Official</span>
           )}
         </div>
-        {s.tagline && <p className="text-text-muted mb-3">{s.tagline}</p>}
+        {s.tagline && <p className="text-text-muted mb-3">{stripHtml(s.tagline)}</p>}
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <HealthBadge status={s.health_status as HealthStatus} />
           <HealthCheckBadge status={s.last_health_check_status} checkedAt={s.last_health_check_at} uptime={s.health_check_uptime || 0} />
@@ -275,7 +289,7 @@ export default async function ServerDetailPage({
             <h2 className="text-lg font-semibold text-text-primary mb-4">Should you use this server?</h2>
             <div className="space-y-4 text-sm">
               {(s.description || s.tagline) && (
-                <p className="text-text-primary text-base">{s.description || s.tagline}</p>
+                <p className="text-text-primary text-base">{stripHtml(s.description || s.tagline || '')}</p>
               )}
               <div className="space-y-3">
                 <div className="flex items-start gap-3 p-3 rounded-md border border-border">

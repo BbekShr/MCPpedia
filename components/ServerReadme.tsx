@@ -1,4 +1,22 @@
 import Markdown from 'react-markdown'
+import rehypeRaw from 'rehype-raw'
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
+
+// Extend default schema to allow common README elements
+const sanitizeSchema = {
+  ...defaultSchema,
+  tagNames: [
+    ...(defaultSchema.tagNames || []),
+    'details', 'summary', 'picture', 'source',
+  ],
+  attributes: {
+    ...defaultSchema.attributes,
+    img: [...(defaultSchema.attributes?.img || []), 'width', 'height', 'align'],
+    source: ['srcset', 'media', 'type'],
+    details: ['open'],
+    '*': [...(defaultSchema.attributes?.['*'] || []), 'align'],
+  },
+}
 
 export default async function ServerReadme({ githubUrl }: { githubUrl: string | null }) {
   if (!githubUrl) return null
@@ -31,10 +49,17 @@ export default async function ServerReadme({ githubUrl }: { githubUrl: string | 
 
   // Resolve relative image URLs to GitHub raw URLs
   const baseRawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main`
-  const processedReadme = readme.replace(
-    /!\[([^\]]*)\]\((?!https?:\/\/)([^)]+)\)/g,
-    (_, alt, src) => `![${alt}](${baseRawUrl}/${src})`
-  )
+  const processedReadme = readme
+    // Markdown-style images: ![alt](relative/path)
+    .replace(
+      /!\[([^\]]*)\]\((?!https?:\/\/)([^)]+)\)/g,
+      (_, alt, src) => `![${alt}](${baseRawUrl}/${src})`
+    )
+    // HTML <img> tags with relative src
+    .replace(
+      /(<img\s[^>]*src=["'])(?!https?:\/\/)([^"']+)(["'])/gi,
+      (_, before, src, after) => `${before}${baseRawUrl}/${src}${after}`
+    )
 
   return (
     <section id="readme" className="pt-8 border-t border-border">
@@ -60,7 +85,7 @@ export default async function ServerReadme({ githubUrl }: { githubUrl: string | 
           prose-th:text-left prose-th:font-semibold prose-th:border-b prose-th:border-border prose-th:pb-2
           prose-td:border-b prose-td:border-border prose-td:py-2
         ">
-          <Markdown>{processedReadme}</Markdown>
+          <Markdown rehypePlugins={[rehypeRaw, [rehypeSanitize, sanitizeSchema]]}>{processedReadme}</Markdown>
         </div>
       </details>
     </section>
