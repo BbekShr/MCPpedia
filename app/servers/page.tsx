@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import ServerCard from '@/components/ServerCard'
 import SearchBar from '@/components/SearchBar'
 import FilterBar from '@/components/FilterBar'
+import ScoreFilterPills from '@/components/ScoreFilterPills'
 import { ITEMS_PER_PAGE, PUBLIC_SERVER_FIELDS, SITE_URL } from '@/lib/constants'
 import { JsonLdScript, generateItemListJsonLd } from '@/lib/seo'
 import type { Server } from '@/lib/types'
@@ -29,6 +30,7 @@ export default async function ServersPage({
   const author = params.author || ''
   const transport = params.transport || ''
   const sort = params.sort || ''
+  const minScore = parseInt(params.min_score || '0', 10)
   const page = parseInt(params.page || '1', 10)
   const offset = (page - 1) * ITEMS_PER_PAGE
 
@@ -74,6 +76,7 @@ export default async function ServersPage({
     if (pricing) query = query.eq('api_pricing', pricing)
     if (author) query = query.eq('author_type', author)
     if (transport) query = query.contains('transport', [transport])
+    if (minScore > 0) query = query.gte('score_total', minScore)
 
     switch (sort) {
       case 'stars':
@@ -126,8 +129,12 @@ export default async function ServersPage({
         />
       </div>
 
-      <div className="mb-6">
+      <div className="mb-4">
         <FilterBar />
+      </div>
+
+      <div className="mb-4">
+        <ScoreFilterPills />
       </div>
 
       <div className="flex items-center justify-between mb-4">

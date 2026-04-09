@@ -22,6 +22,7 @@ import CommunityVerify from '@/components/CommunityVerify'
 import CategoryEditor from '@/components/CategoryEditor'
 import ServerSidebar from '@/components/ServerSidebar'
 import ServerCard from '@/components/ServerCard'
+import ScoreBadge from '@/components/ScoreBadge'
 import ServerReadme from '@/components/ServerReadme'
 import { SITE_NAME, SITE_URL } from '@/lib/constants'
 import { JsonLdScript, generateSoftwareApplicationJsonLd, generateServerJsonLd, generateBreadcrumbJsonLd, generateFAQJsonLd } from '@/lib/seo'
@@ -219,9 +220,7 @@ export default async function ServerDetailPage({
 
       {/* Mobile-only compact fact bar (replaces sidebar on small screens) */}
       <div className="lg:hidden flex flex-wrap items-center gap-2 mb-6 p-3 border border-border rounded-md bg-bg-secondary text-xs">
-        <span className={`font-bold text-base ${(s.score_total || 0) >= 70 ? 'text-green' : (s.score_total || 0) >= 40 ? 'text-yellow' : 'text-red'}`}>
-          {s.score_total || 0}
-        </span>
+        {(s.score_total || 0) > 0 && <ScoreBadge score={s.score_total || 0} size="md" />}
         <span className={`px-2 py-0.5 rounded ${s.cve_count === 0 ? 'bg-green/10 text-green' : 'bg-red/10 text-red'}`}>
           {s.cve_count === 0 ? 'No CVEs' : `${s.cve_count} CVEs`}
         </span>

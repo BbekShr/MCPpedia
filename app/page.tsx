@@ -166,6 +166,39 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Browse by use case — first orientation point for new visitors */}
+      <section className="border-t border-border">
+        <div className="max-w-[1200px] mx-auto px-4 py-8">
+          <h2 className="text-lg font-semibold text-text-primary mb-1">Find servers for...</h2>
+          <p className="text-xs text-text-muted mb-4">Browse by use case to find the right tools for your stack</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {[
+              { href: '/best-for/developers', label: 'Code & Dev Tools', desc: 'GitHub, databases, filesystems', color: 'border-l-accent' },
+              { href: '/best-for/data-engineering', label: 'Data & Analytics', desc: 'SQL, pipelines, dashboards', color: 'border-l-green' },
+              { href: '/best-for/productivity', label: 'Productivity', desc: 'Slack, email, calendar', color: 'border-l-yellow' },
+              { href: '/best-for/ai-agents', label: 'AI & Agents', desc: 'Memory, reasoning, search', color: 'border-l-accent' },
+              { href: '/best-for/cloud-infrastructure', label: 'Cloud & DevOps', desc: 'AWS, Docker, Kubernetes', color: 'border-l-green' },
+              { href: '/best-for/security', label: 'Security', desc: 'Scanning, compliance, secrets', color: 'border-l-red' },
+              { href: '/best-for/web-scraping', label: 'Web Scraping', desc: 'Crawling, extraction, automation', color: 'border-l-accent' },
+              { href: '/best-for/file-management', label: 'File Management', desc: 'Cloud storage, documents, storage', color: 'border-l-yellow' },
+              { href: '/best-for/monitoring', label: 'Monitoring', desc: 'Logging, metrics, alerting', color: 'border-l-green' },
+              { href: '/best-for/communication', label: 'Communication', desc: 'Email, chat, notifications', color: 'border-l-accent' },
+              { href: '/best-for/databases', label: 'Databases', desc: 'SQL, NoSQL, vectors, caching', color: 'border-l-green' },
+              { href: '/best-for/design-tools', label: 'Design & Creative', desc: 'Image generation, design tools', color: 'border-l-yellow' },
+            ].map(item => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`border border-border border-l-[3px] ${item.color} rounded-md p-4 min-h-[56px] hover:shadow-[var(--shadow-md)] hover:-translate-y-[1px] transition-all`}
+              >
+                <span className="font-medium text-sm text-text-primary block">{item.label}</span>
+                <span className="text-xs text-text-muted">{item.desc}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Top scored servers — the best of the best */}
       <section className="border-t border-border">
         <div className="max-w-[1200px] mx-auto px-4 py-8">
@@ -230,38 +263,6 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Browse by use case */}
-      <section className="border-t border-border">
-        <div className="max-w-[1200px] mx-auto px-4 py-8">
-          <h2 className="text-lg font-semibold text-text-primary mb-4">Find servers for...</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {[
-              { href: '/best-for/developers', label: 'Code & Dev Tools', desc: 'GitHub, databases, filesystems', color: 'border-l-accent' },
-              { href: '/best-for/data-engineering', label: 'Data & Analytics', desc: 'SQL, pipelines, dashboards', color: 'border-l-green' },
-              { href: '/best-for/productivity', label: 'Productivity', desc: 'Slack, email, calendar', color: 'border-l-yellow' },
-              { href: '/best-for/ai-agents', label: 'AI & Agents', desc: 'Memory, reasoning, search', color: 'border-l-accent' },
-              { href: '/best-for/cloud-infrastructure', label: 'Cloud & DevOps', desc: 'AWS, Docker, Kubernetes', color: 'border-l-green' },
-              { href: '/best-for/security', label: 'Security', desc: 'Scanning, compliance, secrets', color: 'border-l-red' },
-              { href: '/best-for/web-scraping', label: 'Web Scraping', desc: 'Crawling, extraction, automation', color: 'border-l-accent' },
-              { href: '/best-for/file-management', label: 'File Management', desc: 'Cloud storage, documents, storage', color: 'border-l-yellow' },
-              { href: '/best-for/monitoring', label: 'Monitoring', desc: 'Logging, metrics, alerting', color: 'border-l-green' },
-              { href: '/best-for/communication', label: 'Communication', desc: 'Email, chat, notifications', color: 'border-l-accent' },
-              { href: '/best-for/databases', label: 'Databases', desc: 'SQL, NoSQL, vectors, caching', color: 'border-l-green' },
-              { href: '/best-for/design-tools', label: 'Design & Creative', desc: 'Image generation, design tools', color: 'border-l-yellow' },
-            ].map(item => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`border border-border border-l-[3px] ${item.color} rounded-md p-4 hover:shadow-[var(--shadow-md)] hover:-translate-y-[1px] transition-all`}
-              >
-                <span className="font-medium text-sm text-text-primary block">{item.label}</span>
-                <span className="text-xs text-text-muted">{item.desc}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Browse by category pills */}
       <section className="border-t border-border">
         <div className="max-w-[1200px] mx-auto px-4 py-8">
@@ -271,7 +272,7 @@ export default async function HomePage() {
               <Link
                 key={cat}
                 href={`/category/${cat}`}
-                className="px-3 py-1.5 text-sm rounded-full border border-border text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-colors"
+                className="px-3.5 py-2 text-sm rounded-full border border-border text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-colors min-h-[44px] flex items-center"
               >
                 {CATEGORY_LABELS[cat as Category]}
               </Link>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { useRef, useState, useEffect, Suspense } from 'react'
+import { useRef, useState, useEffect, Suspense, useId } from 'react'
 import Link from 'next/link'
 
 interface Suggestion {
@@ -34,6 +34,7 @@ function SearchBarInner({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Track the latest query we sent so stale responses are ignored
   const latestQueryRef = useRef('')
+  const listboxId = useId()
 
   const popularSearches = ['supabase', 'github', 'slack', 'postgres', 'memory', 'filesystem', 'browser', 'docker']
 
@@ -179,6 +180,11 @@ function SearchBarInner({
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             autoComplete="off"
+            role="combobox"
+            aria-expanded={showDropdown && suggestions.length > 0}
+            aria-controls={listboxId}
+            aria-activedescendant={activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
+            aria-label="Search MCP servers"
             className={`w-full border border-border rounded-md bg-bg text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors duration-150 ${
               large ? 'pl-10 pr-4 py-3 text-base' : 'pl-10 pr-4 py-2 text-sm'
             }`}
@@ -197,7 +203,7 @@ function SearchBarInner({
                 e.preventDefault()
                 handlePopularSearch(term)
               }}
-              className="text-xs px-2.5 py-1 rounded-full border border-border text-text-muted hover:text-accent hover:border-accent/30 transition-colors"
+              className="text-xs px-3 py-1.5 rounded-full border border-border text-text-muted hover:text-accent hover:border-accent/30 transition-colors min-h-[36px]"
             >
               {term}
             </button>
@@ -206,10 +212,18 @@ function SearchBarInner({
       )}
 
       {showDropdown && suggestions.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-bg border border-border rounded-md shadow-[var(--shadow-lg)] overflow-hidden">
+        <div
+          id={listboxId}
+          role="listbox"
+          aria-label="Search suggestions"
+          className="absolute z-50 w-full mt-1 bg-bg border border-border rounded-md shadow-[var(--shadow-lg)] overflow-hidden"
+        >
           {suggestions.map((s, i) => (
             <Link
               key={s.slug}
+              id={`${listboxId}-option-${i}`}
+              role="option"
+              aria-selected={i === activeIndex}
               href={`/s/${s.slug}`}
               onClick={() => setShowDropdown(false)}
               className={`flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
@@ -221,11 +235,11 @@ function SearchBarInner({
                 {s.tagline && <div className="text-xs text-text-muted truncate">{s.tagline}</div>}
               </div>
               {s.score_total > 0 && (
-                <span className={`text-xs font-medium shrink-0 px-1.5 py-0.5 rounded ${
-                  s.score_total >= 80 ? 'bg-green/10 text-green' :
-                  s.score_total >= 60 ? 'bg-accent/10 text-accent' :
-                  s.score_total >= 40 ? 'bg-yellow/10 text-yellow' :
-                  'bg-bg-tertiary text-text-muted'
+                <span className={`text-xs font-bold shrink-0 px-1.5 py-0.5 rounded border ${
+                  s.score_total >= 80 ? 'bg-green/10 text-green border-green/20' :
+                  s.score_total >= 60 ? 'bg-accent/10 text-accent border-accent/20' :
+                  s.score_total >= 40 ? 'bg-yellow/10 text-yellow border-yellow/20' :
+                  'bg-bg-tertiary text-text-muted border-border'
                 }`}>
                   {s.score_total}
                 </span>

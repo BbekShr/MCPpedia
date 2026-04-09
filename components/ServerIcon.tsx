@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 
 interface Props {
   name: string
@@ -49,6 +50,8 @@ export default function ServerIcon({ name, authorGithub, size = 32, className = 
       <div
         className={`rounded-md flex items-center justify-center text-white font-bold shrink-0 ${className}`}
         style={{ width: size, height: size, backgroundColor: bgColor, fontSize: size * 0.45 }}
+        role="img"
+        aria-label={`${name} icon`}
       >
         {initial}
       </div>
@@ -56,11 +59,12 @@ export default function ServerIcon({ name, authorGithub, size = 32, className = 
   }
 
   return (
-    <img
+    <Image
       src={imgSrc}
       alt={`${name} icon`}
       width={size}
       height={size}
+      loading="lazy"
       className={`rounded-md shrink-0 bg-bg-tertiary object-cover ${className}`}
       onError={() => setFailed(true)}
     />

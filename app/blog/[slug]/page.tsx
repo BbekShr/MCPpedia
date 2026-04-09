@@ -8,6 +8,7 @@ import { MDXRemote } from 'next-mdx-remote/rsc'
 import ReadingProgress from '@/components/ReadingProgress'
 import NewsletterSignup from '@/components/NewsletterSignup'
 import ShareButtons from '@/components/blog/ShareButtons'
+import TableOfContents from '@/components/blog/TableOfContents'
 import { blogComponents } from '@/components/blog'
 
 const categoryLabels: Record<BlogCategory, string> = {
@@ -143,6 +144,9 @@ export default async function BlogPostPage({
           />
         </div>
       </div>
+
+      {/* Sticky Table of Contents (wide screens only) */}
+      <TableOfContents />
 
       {/* Article */}
       <article className="max-w-[680px] mx-auto px-4 pt-10 pb-16">
