@@ -23,7 +23,9 @@ function ScoreFilterPillsInner() {
       params.delete('min_score')
     }
     params.delete('page')
-    router.push(`/servers?${params.toString()}`)
+    const url = `/servers?${params.toString()}`
+    router.replace(url)
+    router.refresh()
   }
 
   return (

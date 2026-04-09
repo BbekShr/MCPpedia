@@ -53,7 +53,9 @@ function CategoryFiltersInner() {
       params.delete(key)
     }
     params.delete('page') // Reset to page 1 on filter change
-    router.push(`${pathname}?${params.toString()}`)
+    const url = `${pathname}?${params.toString()}`
+    router.replace(url)
+    router.refresh()
   }
 
   return (

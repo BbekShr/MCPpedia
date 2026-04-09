@@ -55,7 +55,9 @@ function FilterBarInner() {
       params.delete(paramName)
     }
     params.delete('page')
-    router.push(`/servers?${params.toString()}`)
+    const url = `/servers?${params.toString()}`
+    router.replace(url)
+    router.refresh()
   }
 
   function clearFilter(paramName: string) {
@@ -66,7 +68,9 @@ function FilterBarInner() {
     const params = new URLSearchParams()
     const q = searchParams.get('q')
     if (q) params.set('q', q)
-    router.push(`/servers?${params.toString()}`)
+    const url = `/servers?${params.toString()}`
+    router.replace(url)
+    router.refresh()
   }
 
   const sortOptions = [
