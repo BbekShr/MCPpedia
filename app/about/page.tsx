@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 
-export const revalidate = 60
+export const revalidate = 86400
 
 export const metadata: Metadata = {
   title: 'About',

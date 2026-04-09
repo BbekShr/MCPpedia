@@ -10,7 +10,7 @@ import type { Server } from '@/lib/types'
 import type { Category } from '@/lib/constants'
 import type { Metadata } from 'next'
 
-export const revalidate = 60
+export const revalidate = 86400
 
 export const metadata: Metadata = {
   title: `${SITE_NAME} — Find the Right MCP Server`,

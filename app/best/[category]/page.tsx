@@ -8,7 +8,7 @@ import { JsonLdScript, generateItemListJsonLd, generateBreadcrumbJsonLd } from '
 import type { Category } from '@/lib/constants'
 import type { Metadata } from 'next'
 
-export const revalidate = 60
+export const revalidate = 86400
 
 const CATEGORY_DESCRIPTIONS: Record<Category, string> = {
   'productivity': 'MCP servers for Slack, email, calendar, task management, and workflow automation — scored on security and reliability.',
