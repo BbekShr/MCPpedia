@@ -1,4 +1,5 @@
 import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 
@@ -75,17 +76,19 @@ export default async function ServerReadme({ githubUrl }: { githubUrl: string | 
           prose-h3:text-sm prose-h3:mt-4 prose-h3:mb-2
           prose-p:text-sm prose-p:leading-relaxed prose-p:mb-3
           prose-a:text-accent prose-a:no-underline hover:prose-a:underline
-          prose-code:text-sm prose-code:bg-code-bg prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:font-mono
-          prose-pre:bg-code-bg prose-pre:border prose-pre:border-border prose-pre:rounded-md prose-pre:text-sm
+          prose-code:text-sm prose-code:text-text-primary prose-code:bg-code-bg prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:font-mono
+          prose-pre:bg-code-bg prose-pre:text-text-primary prose-pre:border prose-pre:border-border prose-pre:rounded-md prose-pre:text-sm
           prose-li:text-sm prose-li:leading-relaxed
           prose-img:max-w-full prose-img:rounded-md
           prose-strong:text-text-primary
           prose-blockquote:border-l-2 prose-blockquote:border-border prose-blockquote:pl-4 prose-blockquote:text-text-muted prose-blockquote:not-italic
-          prose-table:text-sm
-          prose-th:text-left prose-th:font-semibold prose-th:border-b prose-th:border-border prose-th:pb-2
-          prose-td:border-b prose-td:border-border prose-td:py-2
+          prose-table:text-sm prose-table:w-full prose-table:border-collapse prose-table:border prose-table:border-border prose-table:rounded-md prose-table:overflow-hidden
+          prose-thead:bg-bg-tertiary
+          prose-th:text-left prose-th:font-semibold prose-th:border prose-th:border-border prose-th:px-3 prose-th:py-2
+          prose-td:border prose-td:border-border prose-td:px-3 prose-td:py-2
+          prose-tr:even:bg-bg-tertiary/50
         ">
-          <Markdown rehypePlugins={[rehypeRaw, [rehypeSanitize, sanitizeSchema]]}>{processedReadme}</Markdown>
+          <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, [rehypeSanitize, sanitizeSchema]]}>{processedReadme}</Markdown>
         </div>
       </details>
     </section>
