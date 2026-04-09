@@ -2,6 +2,8 @@ import { CATEGORIES, SITE_URL } from '@/lib/constants'
 import { getAllBlogPosts } from '@/lib/blog'
 import { getAllGuides } from '@/lib/mdx'
 import type { MetadataRoute } from 'next'
+import fs from 'fs'
+import path from 'path'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -64,5 +66,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }))
 
-  return [...staticPages, ...serverEntries, ...categoryEntries, ...guideEntries, ...bestForEntries, ...blogEntries]
+  // Comparison pages from generated pairs
+  let comparisonEntries: MetadataRoute.Sitemap = []
+  try {
+    const pairsPath = path.join(process.cwd(), 'data', 'comparison-pairs.json')
+    const pairsRaw = fs.readFileSync(pairsPath, 'utf-8')
+    const pairsData = JSON.parse(pairsRaw)
+    comparisonEntries = [
+      { url: `${SITE_URL}/compare`, changeFrequency: 'weekly' as const, priority: 0.6 },
+      ...(pairsData.pairs || []).map((p: { slugA: string; slugB: string }) => ({
+        url: `${SITE_URL}/compare/${p.slugA}-vs-${p.slugB}`,
+        changeFrequency: 'monthly' as const,
+        priority: 0.5,
+      })),
+    ]
+  } catch {
+    comparisonEntries = [
+      { url: `${SITE_URL}/compare`, changeFrequency: 'weekly' as const, priority: 0.6 },
+    ]
+  }
+
+  return [...staticPages, ...serverEntries, ...categoryEntries, ...guideEntries, ...bestForEntries, ...blogEntries, ...comparisonEntries]
 }

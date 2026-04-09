@@ -1,0 +1,36 @@
+name: Generate Comparison Pairs
+
+on:
+  schedule:
+    - cron: '0 6 * * 0'  # Sunday 6am UTC (after weekly score computation)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - run: npm ci
+
+      - name: Generate comparison pairs
+        run: npx tsx bots/generate-comparisons.ts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Commit and push updated pairs
+        run: |
+          git config user.name "mcppedia-bot"
+          git config user.email "bot@mcppedia.org"
+          git add data/comparison-pairs.json
+          git diff --cached --quiet && echo "No changes to comparison pairs" && exit 0
+          git commit -m "data: update comparison pairs [bot]"
+          git push

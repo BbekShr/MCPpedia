@@ -26,7 +26,7 @@ const CATEGORIES = [
 // ---------- Types ----------
 
 interface ArticlePlan {
-  type: 'weekly-roundup' | 'server-spotlight' | 'security-alert' | 'trending' | 'category-deep-dive'
+  type: 'weekly-roundup' | 'server-spotlight' | 'security-alert' | 'trending' | 'category-deep-dive' | 'seo-guide'
   data: Record<string, unknown>
   prompt: string
 }
@@ -36,7 +36,111 @@ interface Meta {
   lastSpotlightSlugs: string[]
   lastCategoryDeepDive: string | null
   lastCategoryDeepDiveDate: string | null
+  lastSeoTopicIndex: number
+  publishedSeoTopics: string[]
 }
+
+// ---------- SEO Keyword Targets ----------
+// These are high-intent search queries that MCPpedia should rank for.
+// Each topic targets a specific keyword cluster and provides context for the article.
+
+const SEO_TOPICS: Array<{
+  keyword: string
+  title: string
+  intent: string
+  angle: string
+  dataNeeded: 'top-servers' | 'category' | 'ecosystem-stats' | 'security'
+  category?: string
+}> = [
+  {
+    keyword: 'how to use MCP with Claude Desktop',
+    title: 'How to Use MCP Servers with Claude Desktop: Complete Setup Guide',
+    intent: 'tutorial',
+    angle: 'Step-by-step guide from zero to working MCP server. Cover installation, config file editing, testing, and troubleshooting. Recommend the 3 best beginner-friendly servers to start with.',
+    dataNeeded: 'top-servers',
+  },
+  {
+    keyword: 'best MCP servers 2026',
+    title: 'The Best MCP Servers in 2026: Ranked by Security, Speed, and Reliability',
+    intent: 'listicle',
+    angle: 'Definitive ranking of the top 15 MCP servers based on MCPpedia scores. Group by use case. Include score breakdowns and install configs for each.',
+    dataNeeded: 'top-servers',
+  },
+  {
+    keyword: 'MCP vs API what is the difference',
+    title: 'MCP vs Traditional APIs: What\'s the Difference and When to Use Each',
+    intent: 'explainer',
+    angle: 'Technical comparison of MCP protocol vs REST/GraphQL APIs. Explain when MCP makes sense (AI-native tooling, Claude integration) vs when a regular API is better. Use real examples from MCPpedia data.',
+    dataNeeded: 'ecosystem-stats',
+  },
+  {
+    keyword: 'is MCP server safe security risks',
+    title: 'Are MCP Servers Safe? Security Risks You Need to Know About',
+    intent: 'security-guide',
+    angle: 'Honest assessment of MCP security landscape using real CVE data. Cover tool poisoning, injection risks, and how to evaluate server safety. Link to MCPpedia scoring methodology.',
+    dataNeeded: 'security',
+  },
+  {
+    keyword: 'MCP server for coding programming',
+    title: 'The 10 Best MCP Servers for Coding and Software Development',
+    intent: 'listicle',
+    angle: 'Curated list for developers: GitHub, databases, filesystem, testing, CI/CD. For each, explain what it does, score, and specific use cases where it shines.',
+    dataNeeded: 'category',
+    category: 'developer-tools',
+  },
+  {
+    keyword: 'how to build MCP server',
+    title: 'How to Build Your Own MCP Server: A Developer\'s Guide',
+    intent: 'tutorial',
+    angle: 'Guide for developers who want to create their own MCP server. Cover the protocol basics, SDK options, best practices from top-scoring servers, and how to get listed on MCPpedia.',
+    dataNeeded: 'top-servers',
+  },
+  {
+    keyword: 'Claude Desktop plugins tools extensions',
+    title: 'Claude Desktop Plugins and Tools: The Complete Guide to MCP Servers',
+    intent: 'explainer',
+    angle: 'Explain that MCP servers ARE the plugin system for Claude Desktop. Cover how they work, where to find them (MCPpedia), how to install, and the top 10 most popular ones.',
+    dataNeeded: 'top-servers',
+  },
+  {
+    keyword: 'MCP server database SQL postgres',
+    title: 'Best MCP Servers for Databases: Query SQL from Claude in Seconds',
+    intent: 'listicle',
+    angle: 'Compare all database MCP servers: Postgres, MySQL, SQLite, MongoDB, Redis, vector DBs. Score comparison, feature matrix, which to pick for what use case.',
+    dataNeeded: 'category',
+    category: 'data',
+  },
+  {
+    keyword: 'MCP server Slack email productivity',
+    title: 'Turn Claude into Your Productivity Assistant: Best MCP Servers for Slack, Email, and More',
+    intent: 'listicle',
+    angle: 'Cover the productivity stack: Slack, Gmail, Calendar, Notion, Linear, Todoist. How each server works, what it can do, setup tips, and security considerations.',
+    dataNeeded: 'category',
+    category: 'productivity',
+  },
+  {
+    keyword: 'MCP server comparison which is best',
+    title: 'How to Choose the Right MCP Server: A Framework for Comparing Options',
+    intent: 'guide',
+    angle: 'Teach readers the 5 dimensions of MCPpedia scoring and how to use them to pick servers. Walk through a real comparison using 2-3 server pairs. Link to the comparison tool.',
+    dataNeeded: 'top-servers',
+  },
+  {
+    keyword: 'AI coding tools 2026 best',
+    title: 'AI Coding Tools in 2026: How MCP Servers Are Changing Development',
+    intent: 'thought-piece',
+    angle: 'MCP servers as the new category of AI dev tools. Cover the ecosystem size, growth trajectory, and why they matter. Feature the best dev-focused servers with real data.',
+    dataNeeded: 'ecosystem-stats',
+  },
+  {
+    keyword: 'MCP server GitHub integration',
+    title: 'GitHub + Claude: The Best MCP Servers for GitHub Integration',
+    intent: 'listicle',
+    angle: 'Deep comparison of GitHub-related MCP servers. PR reviews, issue management, code search, repo management. Which has the best tools, best security score, and easiest setup.',
+    dataNeeded: 'category',
+    category: 'developer-tools',
+  },
+]
 
 // ---------- Helpers ----------
 
@@ -46,6 +150,8 @@ function loadMeta(): Meta {
     lastSpotlightSlugs: [],
     lastCategoryDeepDive: null,
     lastCategoryDeepDiveDate: null,
+    lastSeoTopicIndex: -1,
+    publishedSeoTopics: [],
   }
   if (!fs.existsSync(metaPath)) return defaults
   try {
@@ -265,7 +371,59 @@ async function planArticles(meta: Meta): Promise<ArticlePlan[]> {
     }
   }
 
-  // Priority 5: Category deep dive
+  // Priority 5: SEO-targeted guide (alternates with category deep dives)
+  if (plans.length < 2) {
+    const unpublishedTopics = SEO_TOPICS.filter(t => !meta.publishedSeoTopics.includes(t.keyword))
+    if (unpublishedTopics.length > 0) {
+      // Pick the next unpublished topic in order
+      const topic = unpublishedTopics[0]
+      const seoData: Record<string, unknown> = {}
+
+      // Gather data based on what the topic needs
+      if (topic.dataNeeded === 'top-servers') {
+        const { data: topServers } = await supabase
+          .from('servers')
+          .select('slug, name, tagline, description, categories, github_stars, score_total, tools, score_security, score_maintenance, score_documentation, npm_weekly_downloads, transport, compatible_clients')
+          .eq('is_archived', false)
+          .gt('score_total', 0)
+          .order('score_total', { ascending: false })
+          .limit(15)
+        seoData.topServers = topServers || []
+        seoData.stats = await getEcosystemStats()
+      } else if (topic.dataNeeded === 'category' && topic.category) {
+        seoData.categoryServers = await getTopServersInCategory(topic.category)
+        seoData.stats = await getEcosystemStats()
+      } else if (topic.dataNeeded === 'ecosystem-stats') {
+        seoData.stats = await getEcosystemStats()
+        const { data: topServers } = await supabase
+          .from('servers')
+          .select('slug, name, tagline, categories, github_stars, score_total, tools, npm_weekly_downloads')
+          .eq('is_archived', false)
+          .order('score_total', { ascending: false })
+          .limit(10)
+        seoData.topServers = topServers || []
+      } else if (topic.dataNeeded === 'security') {
+        seoData.alerts = await getSecurityAlerts()
+        seoData.stats = await getEcosystemStats()
+        const { data: secStats } = await supabase
+          .from('servers')
+          .select('slug, name, score_total, score_security, cve_count, has_authentication, has_tool_poisoning')
+          .eq('is_archived', false)
+          .gt('cve_count', 0)
+          .order('cve_count', { ascending: false })
+          .limit(10)
+        seoData.serversWithCVEs = secStats || []
+      }
+
+      plans.push({
+        type: 'seo-guide',
+        data: { topic, ...seoData },
+        prompt: buildSeoGuidePrompt(topic, seoData),
+      })
+    }
+  }
+
+  // Priority 6: Category deep dive (fallback)
   if (plans.length < 2) {
     const lastCategory = meta.lastCategoryDeepDive
     const candidates = CATEGORIES.filter(c => c !== lastCategory)
@@ -373,6 +531,34 @@ ${JSON.stringify(servers, null, 2)}
 Write the article now. Give an overview of the category, compare the top servers (scores, tools, maintenance), and recommend which to use for different needs. Be opinionated — pick clear winners where the data supports it.`
 }
 
+function buildSeoGuidePrompt(topic: typeof SEO_TOPICS[number], data: Record<string, unknown>): string {
+  const dataSection = Object.entries(data)
+    .map(([key, val]) => `${key.toUpperCase()}:\n${JSON.stringify(val, null, 2)}`)
+    .join('\n\n')
+
+  return `Write an SEO-OPTIMIZED article (1000-1500 words) targeting the search query: "${topic.keyword}"
+
+TITLE (use this exact title): ${topic.title}
+ARTICLE INTENT: ${topic.intent}
+ANGLE: ${topic.angle}
+
+REAL DATA FROM MCPPEDIA:
+${dataSection}
+
+IMPORTANT SEO RULES:
+- Use the target keyword "${topic.keyword}" naturally in the first paragraph and 2-3 more times throughout.
+- Include related keywords naturally (MCP, Model Context Protocol, Claude, AI tools, etc.)
+- Use ## headings that include search-relevant terms.
+- Open with a paragraph that directly answers the search query — this is what Google shows as a snippet.
+- Include specific numbers and data from the provided data.
+- Link to MCPpedia server pages: [ServerName](/s/server-slug)
+- Link to MCPpedia features: [scoring methodology](/methodology), [server browser](/servers), [comparison tool](/compare)
+- End with a clear call to action pointing readers to MCPpedia.
+- This article needs to be SUBSTANTIALLY more useful than what competitors offer. Go deep.
+
+Write the article now.`
+}
+
 // ---------- Article Generation ----------
 
 async function generateArticle(plan: ArticlePlan): Promise<{ slug: string; content: string; featuredServers: string[] } | null> {
@@ -395,6 +581,12 @@ async function generateArticle(plan: ArticlePlan): Promise<{ slug: string; conte
     } catch { /* use defaults */ }
   }
 
+  // For SEO guides, prefer the pre-defined SEO title for consistency
+  if (plan.type === 'seo-guide' && plan.data.topic) {
+    const topic = plan.data.topic as typeof SEO_TOPICS[number]
+    title = topic.title
+  }
+
   // Remove the JSON block from the article body
   const articleBody = response.replace(/```json\s*\n?\{[\s\S]*?\}\s*\n?```/, '').trim()
 
@@ -415,7 +607,7 @@ async function generateArticle(plan: ArticlePlan): Promise<{ slug: string; conte
     `hook: "${hook.replace(/"/g, '\\"')}"`,
     `date: "${todayStr()}"`,
     `tags: ${JSON.stringify(getTagsForType(plan.type))}`,
-    `category: "${plan.type}"`,
+    `category: "${plan.type === 'seo-guide' ? 'category-deep-dive' : plan.type}"`,
     `featuredServers: ${JSON.stringify(featuredServers.slice(0, 10))}`,
     '---',
     '',
@@ -448,6 +640,7 @@ function getTagsForType(type: string): string[] {
     'security-alert': ['security', 'cve', 'advisory'],
     'trending': ['trending', 'stars', 'popular'],
     'category-deep-dive': ['deep-dive', 'comparison', 'guide'],
+    'seo-guide': ['guide', 'tutorial', 'how-to', 'seo'],
   }
   return tagMap[type] || ['mcp']
 }
@@ -501,6 +694,11 @@ async function main() {
       if (plan.type === 'category-deep-dive') {
         meta.lastCategoryDeepDive = (plan.data.category as string) || null
         meta.lastCategoryDeepDiveDate = todayStr()
+      }
+      if (plan.type === 'seo-guide' && plan.data.topic) {
+        const topic = plan.data.topic as typeof SEO_TOPICS[number]
+        meta.publishedSeoTopics = [...(meta.publishedSeoTopics || []), topic.keyword]
+        meta.lastSeoTopicIndex = SEO_TOPICS.findIndex(t => t.keyword === topic.keyword)
       }
 
       // Rate limit between articles
