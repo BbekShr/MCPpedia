@@ -65,6 +65,7 @@ export default function ServerIcon({ name, authorGithub, size = 32, className = 
       width={size}
       height={size}
       loading="lazy"
+      unoptimized
       className={`rounded-md shrink-0 bg-bg-tertiary object-cover ${className}`}
       onError={() => setFailed(true)}
     />
