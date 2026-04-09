@@ -1,23 +1,30 @@
 # MCPpedia
 
-The encyclopedia for MCP servers. Browse, compare, and evaluate Model Context Protocol servers with transparent, automated scoring.
+The encyclopedia for MCP servers. Browse, compare, and evaluate 17,800+ Model Context Protocol servers with transparent, automated scoring.
 
 **Live at [mcppedia.org](https://mcppedia.org)**
 
 ## Features
 
-- **Automated scoring** — every server scored 0-100 across security, maintenance, efficiency, documentation, and compatibility
+- **Automated scoring** — every server scored 0-100 across security, maintenance, efficiency, documentation, and compatibility, with color-coded grade badges (A/B/C/D/F)
 - **Real CVE scanning** — queries [OSV.dev](https://osv.dev) for known vulnerabilities in npm and PyPI packages
 - **Token efficiency measurement** — measures actual context window cost of each server's tool schemas
 - **Registry sync** — pulls from the [official MCP Registry](https://registry.modelcontextprotocol.io) daily
-- **One-click install configs** — copy-paste configs for Claude Desktop, Cursor, Claude Code, and Windsurf
+- **Advanced filtering** — filter servers by score tier, health status, transport type, and category; sort by score, stars, downloads, activity, or name
+- **One-click install configs** — copy-paste configs for Claude Desktop, Cursor, Claude Code, and Windsurf with a copy button on every card
+- **My Servers** — save favorites with heart icons, manage them on a personal dashboard, and export all configs as one JSON
+- **Trending** — "Trending this week" widget on the homepage highlighting top-downloaded high-scoring servers
 - **Server comparison** — side-by-side comparison of any two servers
+- **Server README rendering** — rendered markdown README directly on server detail pages
+- **Popular searches** — quick-access search suggestions shown on focus
 - **Community reviews and discussion** — user reviews with star ratings
-- **Blog** — auto-generated and editorial articles about MCP servers and the ecosystem
+- **Blog** — auto-generated and editorial articles about MCP servers and the ecosystem, with sticky table of contents on wide screens
 - **Newsletter** — weekly digest of new and trending servers
-- **Best-of lists** — curated lists of top servers by category and use case
-- **Embeddable badges** — score badges you can add to your server's README
+- **Best-of lists** — curated lists of top servers by use case (developers, AI agents, databases, security, monitoring, and more)
+- **Embeddable badges** — SVG score badges via `/api/widget/[slug]` in flat and detailed styles
+- **Public API** — `GET /api/v1/servers` with full filtering, sorting, pagination, and CORS headers
 - **MCP server** — an MCP server for querying MCPpedia data programmatically (`mcppedia-server/`)
+- **3-step submit flow** — guided server submission with repository, details, and classification steps
 
 ## Tech Stack
 
@@ -66,12 +73,15 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ```
 app/              Next.js pages and API routes
+  api/v1/         Public REST API
+  api/widget/     Embeddable SVG badge endpoint
 bots/             Automated data pipeline scripts (run via GitHub Actions)
 components/       React components
 lib/              Shared utilities, types, scoring engine
 scripts/          One-off data scripts
 supabase/         Database migrations
 content/          Static content (blog posts, guides)
+data/             Generated data (comparison pairs, etc.)
 cli/              CLI tool for querying MCPpedia
 mcppedia-server/  MCP server for querying MCPpedia data
 ```
