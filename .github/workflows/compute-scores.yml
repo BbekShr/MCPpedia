@@ -2,7 +2,7 @@ name: Score Computation
 
 on:
   schedule:
-    - cron: '0 5 * * *'  # Daily at 5am UTC (after all other bots)
+    - cron: '0 8 * * *'  # Daily at 8am UTC / 3am CST (after all other bots)
   workflow_dispatch:
 
 jobs:

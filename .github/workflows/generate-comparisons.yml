@@ -2,7 +2,7 @@ name: Generate Comparison Pairs
 
 on:
   schedule:
-    - cron: '0 6 * * 0'  # Sunday 6am UTC (after weekly score computation)
+    - cron: '0 9 * * 0'  # Sunday 9am UTC / 4am CST (after weekly score computation)
   workflow_dispatch:
 
 permissions:

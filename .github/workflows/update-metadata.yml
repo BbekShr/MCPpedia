@@ -2,7 +2,7 @@ name: Metadata Updater
 
 on:
   schedule:
-    - cron: '0 3 * * *'  # Daily at 3am UTC
+    - cron: '0 6 * * *'  # Daily at 6am UTC / 1am CST
   workflow_dispatch:
 
 jobs:

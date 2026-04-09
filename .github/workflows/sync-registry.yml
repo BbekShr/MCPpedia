@@ -2,7 +2,7 @@ name: Registry Sync
 
 on:
   schedule:
-    - cron: '0 1 * * *'  # Daily at 1am UTC (before discovery bot)
+    - cron: '0 4 * * *'  # Daily at 4am UTC / 11pm CST (before discovery bot)
   workflow_dispatch:
 
 jobs:

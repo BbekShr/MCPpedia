@@ -2,7 +2,7 @@ name: Description Enricher
 
 on:
   schedule:
-    - cron: '30 4 * * *'  # Daily at 4:30am UTC (after install-info extractor)
+    - cron: '30 7 * * *'  # Daily at 7:30am UTC / 2:30am CST (after install-info extractor)
   workflow_dispatch:
 
 jobs:

@@ -2,7 +2,7 @@ name: Daily Metrics Snapshot
 
 on:
   schedule:
-    - cron: '30 5 * * *'  # Daily at 5:30am UTC (after compute-scores at 5am)
+    - cron: '30 8 * * *'  # Daily at 8:30am UTC / 3:30am CST (after compute-scores)
   workflow_dispatch:
 
 jobs:

@@ -2,7 +2,7 @@ name: Duplicate Detector
 
 on:
   schedule:
-    - cron: '0 6 * * 1'  # Weekly on Monday at 6am UTC
+    - cron: '0 9 * * 1'  # Weekly on Monday at 9am UTC / 4am CST
   workflow_dispatch:
 
 jobs:

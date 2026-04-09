@@ -2,7 +2,7 @@ name: Blog Security Alerts
 
 on:
   schedule:
-    - cron: '0 7 * * *'  # Daily 7am UTC (after score computation at 5am)
+    - cron: '30 9 * * *'  # Daily 9:30am UTC / 4:30am CST (after score computation)
   workflow_dispatch:
 
 permissions:

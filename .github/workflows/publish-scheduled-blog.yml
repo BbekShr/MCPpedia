@@ -2,8 +2,8 @@ name: Publish Scheduled Blog Post
 
 on:
   schedule:
-    # 6:00 AM CST = 12:00 UTC
-    - cron: '0 12 * * *'
+    # 9:00 AM CST = 3:00 PM UTC (peak reading time)
+    - cron: '0 15 * * *'
   workflow_dispatch:
 
 jobs:

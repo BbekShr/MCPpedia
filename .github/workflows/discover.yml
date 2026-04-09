@@ -2,7 +2,7 @@ name: Discovery Bot
 
 on:
   schedule:
-    - cron: '0 2 * * *'  # Daily at 2am UTC
+    - cron: '0 5 * * *'  # Daily at 5am UTC / 12am CST
   workflow_dispatch:
 
 jobs:

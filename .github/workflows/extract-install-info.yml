@@ -2,7 +2,7 @@ name: Install Info Extractor
 
 on:
   schedule:
-    - cron: '0 4 * * *'  # Daily at 4am UTC (after metadata updater)
+    - cron: '0 7 * * *'  # Daily at 7am UTC / 2am CST (after metadata updater)
   workflow_dispatch:
 
 jobs:

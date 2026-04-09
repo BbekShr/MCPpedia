@@ -2,8 +2,8 @@ name: Blog Generator
 
 on:
   schedule:
-    - cron: '0 10 * * 1'  # Monday 10am UTC
-    - cron: '0 10 * * 4'  # Thursday 10am UTC
+    - cron: '0 9 * * 2'  # Tuesday 9am UTC / 4am CST (after scores at 3am)
+    - cron: '0 9 * * 4'  # Thursday 9am UTC / 4am CST
   workflow_dispatch:
 
 permissions:

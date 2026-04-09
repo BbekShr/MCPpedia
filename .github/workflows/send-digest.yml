@@ -2,7 +2,7 @@ name: Newsletter Digest
 
 on:
   schedule:
-    - cron: '0 10 * * 5'  # Friday 10am UTC
+    - cron: '0 15 * * 2'  # Tuesday 3pm UTC / 9am CST (best open rates)
   workflow_dispatch:
 
 jobs:

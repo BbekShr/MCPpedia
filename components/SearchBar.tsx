@@ -145,7 +145,6 @@ function SearchBarInner({
     setQuery(term)
     setIsFocused(false)
     setShowDropdown(false)
-    // Navigate to results with the popular search term
     const params = new URLSearchParams(isOnServersPage ? searchParams.toString() : '')
     params.set('q', term)
     params.delete('page')
@@ -192,10 +191,8 @@ function SearchBarInner({
         </div>
       </form>
 
-      {/* Popular searches - shown when focused and empty */}
       {isFocused && !query && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          <span className="text-xs text-text-muted">Popular:</span>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
           {popularSearches.map(term => (
             <button
               key={term}
