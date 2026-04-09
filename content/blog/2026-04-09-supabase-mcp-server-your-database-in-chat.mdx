@@ -1,0 +1,101 @@
+---
+title: "Supabase MCP Server: Your Database in Chat"
+description: "How a 2,592-star MCP server eliminates context-switching between your AI assistant and Supabase projects—with a hard look at its 97-point quality score."
+hook: "Stop copying SQL queries between tabs. The Supabase MCP Server brings execute_sql, migrations, and project management directly into your chat — no dashboard context-switching required. 97-point quality score, but documentation gaps exist."
+date: "2026-04-09"
+tags: ["spotlight","review"]
+category: "server-spotlight"
+featuredServers: ["supabase"]
+---
+# The Supabase MCP Server: Your Database in the Chat Window
+
+If you're already living in Supabase, here's the uncomfortable truth: **you're probably context-switching to manage it.** You query your database in one tab, your AI chat in another, and your migration scripts scattered across a third. The [Supabase MCP Server](/s/supabase) collapses that friction. It brings your entire Supabase project — databases, tables, migrations, the works — directly into your AI conversations. No more switching tabs. No more copying SQL back and forth. Just talk to your database like you talk to Claude.
+
+This is a **2,592-star project** with a stellar 97-point quality score. It's not flashy, but it's solid. It does one thing ruthlessly well: **tighten the loop between you and your Supabase infrastructure.**
+
+---
+
+<SectionLabel>What You Actually Get</SectionLabel>
+
+The server ships with four core tools that handle the most common workflows:
+
+### 1. list_projects
+See all your Supabase projects at a glance. No API fumbling. No dashboard navigation. Useful when you're juggling multiple environments (staging, prod, side projects) and need quick visibility.
+
+### 2. execute_sql
+Run SQL queries directly against your database through conversation. This is the centerpiece. You can explore schemas, debug queries, or run one-off analysis without leaving your chat. It's raw power — treat it accordingly.
+
+### 3. apply_migration
+Push database migrations without touching the CLI. If you're working with an AI assistant on schema design, this closes the loop: *discuss the change, generate the migration, apply it, verify the result.* All in one conversation. That's real productivity.
+
+### 4. list_tables
+Inspect your table structure on demand. Quick reference for schema exploration, especially useful when you're onboarding a new teammate or asking your AI assistant to write queries against unfamiliar tables.
+
+<Callout type="info">
+These four tools cover 80% of database management workflows. The server doesn't try to be everything — it nails the essentials.
+</Callout>
+
+---
+
+<SectionLabel>The Quality Breakdown</SectionLabel>
+
+The Supabase MCP Server scores a **97 total** — which puts it in the top tier — but the breakdown reveals where its strengths and weaknesses actually lie:
+
+<ScoreBreakdown>
+<ScoreRow label="Security" points="30" description="Clean architecture with API-key-based auth. No obvious vulnerabilities, but limited granular permission control within the server itself." />
+<ScoreRow label="Maintenance" points="22" description="Community-maintained with consistent updates. Supabase's ecosystem support helps, but this isn't a tier-1 prioritized project." />
+<ScoreRow label="Documentation" points="15" description="Functional but minimal. Setup works, but advanced use cases and edge cases aren't extensively covered." />
+<ScoreRow label="Efficiency" points="20" description="Lean footprint. Fast query execution. No bloat." />
+<ScoreRow label="Compatibility" points="10" description="Works with modern Node.js/Python stacks. Limited tested integrations with other MCP servers." />
+</ScoreBreakdown>
+
+**Translation:** This server is **secure and efficient** but doesn't hold your hand through complex scenarios. You need to know Supabase and SQL already. It assumes competence.
+
+<PullQuote>The Supabase MCP Server assumes you know what you're doing. And if you do, it gets out of your way.</PullQuote>
+
+---
+
+<SectionLabel>Who Should Use This</SectionLabel>
+
+### 1. Backend engineers using Supabase in production
+If Supabase is your database layer, this server becomes part of your workflow. Migrations, schema changes, quick data audits — all conversational. You're already context-switching enough. This eliminates one source of friction.
+
+### 2. Full-stack developers building with AI assistance
+You're sketching schema designs with an AI assistant. You want to go from concept → SQL → migration → applied in one flow. This server makes that frictionless. No manual transcription. No verification steps in the dashboard.
+
+### 3. Data analysts exploring Supabase datasets
+Run exploratory SQL without touching the Supabase dashboard. Ask your AI assistant to analyze data, generate queries, execute them. All in chat. Faster for iterative analysis.
+
+### 4. Teams managing multiple Supabase projects
+The `list_projects` tool shines here. Multi-environment workflows, quick project switching, visibility across your infrastructure. Useful when you need to reference a schema from staging while discussing design in prod.
+
+### Who shouldn't use this
+If you're running Supabase at massive scale with strict governance requirements, the documentation gaps might bite you. If your workflows are already optimized and you rarely touch raw SQL, the marginal benefit is low. And if you're using a different database — PostgreSQL hosted elsewhere, MongoDB, whatever — this server doesn't apply.
+
+---
+
+<SectionLabel>The Friction Test</SectionLabel>
+
+Let's be honest about the gaps. **Security gets a 30 because there's no way to scope permissions granularly.** You either give the server full API access or nothing. In high-security environments, that's a non-starter. You're trusting your AI chat client with production credentials. That's a calculated risk.
+
+The **documentation score of 15** is the real bite. Setup is straightforward, but what about error handling? Edge cases? Advanced scenarios? The README gets you 80% of the way there, then you're on your own. That's fine for experienced engineers. It's rough for teams new to MCP servers.
+
+<Callout type="warning">
+This server requires explicit trust in your chat environment. Your Supabase API keys live in the client. Use it in trusted contexts only.
+</Callout>
+
+---
+
+<SectionLabel>The Verdict</SectionLabel>
+
+The [Supabase MCP Server](/s/supabase) is a **sharp, focused tool** that solves a real problem: **context-switching between your database and your AI assistant.** It doesn't reinvent anything. It doesn't need to. It takes the most common Supabase operations and makes them conversational.
+
+The 97-point score is earned, not inflated. This is a **mature, security-conscious implementation** that respects your database. The documentation could be richer, and the permission model is crude, but neither of those is a deal-breaker for the target audience.
+
+**If you're already knee-deep in Supabase and your AI workflow involves SQL, this server saves you minutes every day.** Minutes add up. And the elimination of context-switching has a cognitive benefit you can't quantify in spreadsheets.
+
+The real question isn't whether this server is good — it clearly is. The question is whether your workflow creates enough friction for this kind of tightening to matter. If it does, install it. If you're content with your current setup, don't force it.
+
+But if you find yourself manually copying SQL queries from your chat into the Supabase dashboard, you already know the answer.
+
+---
