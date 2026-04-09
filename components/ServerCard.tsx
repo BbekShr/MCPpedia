@@ -3,6 +3,7 @@ import type { Server } from '@/lib/types'
 import ServerIcon from './ServerIcon'
 import ScoreBadge from './ScoreBadge'
 import CopyConfigButton from './CopyConfigButton'
+import FavoriteButton from './FavoriteButton'
 
 function formatNumber(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
@@ -58,6 +59,7 @@ export default function ServerCard({ server }: { server: Server }) {
           )}
           {/* Score badge */}
           {score > 0 && <ScoreBadge score={score} size="sm" />}
+          <FavoriteButton serverId={server.id} className="p-1 text-text-muted" />
         </div>
       </div>
 

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import ServerCard from '@/components/ServerCard'
 import SearchBar from '@/components/SearchBar'
 import NewsletterSignup from '@/components/NewsletterSignup'
+import TrendingWidget from '@/components/TrendingWidget'
 import { CATEGORIES, CATEGORY_LABELS, SITE_NAME, SITE_DESCRIPTION, SITE_URL, PUBLIC_SERVER_FIELDS } from '@/lib/constants'
 import { JsonLdScript, generateOrganizationJsonLd, generateWebSiteJsonLd } from '@/lib/seo'
 import type { Server } from '@/lib/types'
@@ -85,6 +86,15 @@ export default async function HomePage() {
       .eq('status', 'open'),
   ])
 
+  // Deduplicate: track server IDs already shown to avoid repeats across sections
+  const shownIds = new Set<string>()
+  function dedup(list: Server[] | null): Server[] {
+    if (!list) return []
+    const filtered = (list as Server[]).filter(s => !shownIds.has(s.id))
+    filtered.forEach(s => shownIds.add(s.id))
+    return filtered
+  }
+
   return (
     <div>
       <JsonLdScript data={[generateOrganizationJsonLd(), generateWebSiteJsonLd()]} />
@@ -166,6 +176,9 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Trending this week */}
+      <TrendingWidget />
+
       {/* Browse by use case — first orientation point for new visitors */}
       <section className="border-t border-border">
         <div className="max-w-[1200px] mx-auto px-4 py-8">
@@ -212,7 +225,7 @@ export default async function HomePage() {
             </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {(topScored as Server[] || []).map(server => (
+            {dedup(topScored as Server[]).map(server => (
               <ServerCard key={server.id} server={server} />
             ))}
           </div>
@@ -233,7 +246,7 @@ export default async function HomePage() {
               </Link>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {(officialServers as Server[]).map(server => (
+              {dedup(officialServers as Server[]).map(server => (
                 <ServerCard key={server.id} server={server} />
               ))}
             </div>
@@ -255,7 +268,7 @@ export default async function HomePage() {
               </Link>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {(serversWithCVEs as Server[]).map(server => (
+              {dedup(serversWithCVEs as Server[]).map(server => (
                 <ServerCard key={server.id} server={server} />
               ))}
             </div>
@@ -295,7 +308,7 @@ export default async function HomePage() {
               </Link>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {(recentlyAdded as Server[]).map(server => (
+              {dedup(recentlyAdded as Server[]).map(server => (
                 <ServerCard key={server.id} server={server} />
               ))}
             </div>
