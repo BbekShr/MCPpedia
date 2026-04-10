@@ -24,11 +24,11 @@ Most developers default to APIs because that's what they know. Power users reach
 
 **APIs** (REST, GraphQL, gRPC) are request-response interfaces built for code. Your application constructs a request, sends it to a server, and parses the response. You write the integration. You handle auth, errors, retries, and data mapping. Every endpoint is a contract between your code and theirs.
 
-**CLIs** (command-line interfaces) are text interfaces built for humans at a terminal. You type a command, get output, pipe it somewhere. `git`, `docker`, `aws`, `kubectl` — these are the tools developers live in. They're fast, scriptable, and composable through Unix pipes. But they require you to know the tool exists, remember the syntax, and manually chain steps together.
+**CLIs** (command-line interfaces) are text interfaces built for humans at a terminal. You type a command, get output, pipe it somewhere. `git`, `docker`, `aws`, `kubectl` — these are the tools developers live in. They're fast, scriptable, and composable through Unix pipes. But they require you to know the tool exists, remember the syntax, and manually chain steps together. Notably, **Claude Code is itself a CLI** — an AI-powered command-line tool where you interact with Claude directly from your terminal. It's the environment where MCP servers and Skills come alive.
 
 **MCP** (Model Context Protocol) is a standard built for AI. It lets AI assistants — Claude, Cursor, Windsurf, VS Code Copilot — discover and call tools dynamically. An MCP server exposes a set of tools with structured schemas. The AI reads those schemas, decides which tool to use, and calls it — no human writing integration code in between. MCP gives AI a **single capability** — like "search the web" or "query the database."
 
-**Skills** are the newest layer. A Claude Code Skill is a reusable prompt — a saved workflow that tells the AI *how* to accomplish a multi-step task. You invoke them with slash commands like `/commit`, `/review-pr`, or `/deploy`. Where MCP gives AI a tool, a Skill gives AI a **playbook**. It can chain multiple MCP tools together, enforce specific patterns, and encode team knowledge that would otherwise live in someone's head.
+**Skills** are the newest layer — and they live inside Claude Code. A Skill is a reusable prompt that tells the AI *how* to accomplish a multi-step task. You invoke them with slash commands like `/commit`, `/review-pr`, or `/deploy` right in the Claude Code CLI. Where MCP gives AI a tool, a Skill gives AI a **playbook**. It can chain multiple MCP tools together, enforce specific patterns, and encode team knowledge that would otherwise live in someone's head.
 
 <Callout type="info">
 Four interfaces, four eras: APIs automated machine-to-machine communication. CLIs gave developers superpowers at the terminal. MCP gives AI models access to tools. Skills give AI models workflows — multi-step recipes that combine tools, context, and judgment.
@@ -132,7 +132,7 @@ MCP servers are usually API and CLI clients themselves. The Supabase MCP server 
 
 And Skills sit on top of MCP — the cherry on top. A `/review-pr` Skill might use the GitHub MCP server to fetch the diff, an AI model to analyze it, and the Slack MCP server to post the summary. The Skill doesn't replace any of those tools — it orchestrates them into a workflow you can run with a single command.
 
-The stack looks like this: **APIs → CLIs → MCP → Skills.** Each layer makes the ones below it accessible to a broader audience. APIs are for code. CLIs are for developers. MCP is for AI. Skills are for teams. The higher you go, the less code you write — and the more people on your team can use the tools.
+The stack looks like this: **APIs → CLIs → MCP → Skills.** Each layer makes the ones below it accessible to a broader audience. APIs are for code. CLIs are for developers. MCP is for AI. Skills are for teams. And Claude Code is the CLI that ties the top three layers together — it's where you run MCP servers, invoke Skills, and let AI orchestrate it all from your terminal. The higher you go, the less code you write — and the more people on your team can use the tools.
 
 This is why the ecosystem grew to over 17,800 MCP servers so fast. Every existing API endpoint and every existing CLI tool is a potential MCP server waiting to be wrapped — and every common workflow is a Skill waiting to be written.
 
