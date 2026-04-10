@@ -1,153 +1,118 @@
 ---
 title: "MCP vs APIs vs CLI vs Skills: What's the Difference and When to Use Each"
-description: "APIs, CLIs, MCP servers, and Skills all connect you to tools — but they were built for different callers. Here's when to use each and why it matters."
-hook: "APIs are for apps. CLIs are for humans. MCP is for AI tools. Skills are for AI workflows. Four interfaces, four eras — and most developers haven't discovered the last two."
+description: "MCP vs APIs vs CLI vs Skills — four interfaces for connecting to tools, each built for a different caller. Here's how they compare and when to use each one."
+hook: "APIs are for apps. CLIs are for humans. MCP is for AI tools. Skills are for AI workflows. Four ways to connect to tools — here's when each one makes sense."
 date: "2026-04-10"
 tags: ["guide", "tutorial", "how-to", "seo"]
 category: "category-deep-dive"
 featuredServers: []
 ---
 
-There are four ways to connect to a tool in 2026: hit an API endpoint, run a CLI command, let an AI call an MCP server, or invoke a Skill.
-
-Each was built for a different caller and a different kind of work. APIs are for your code. CLIs are for you. MCP servers are for AI models that need tools. Skills are for AI models that need workflows. That distinction — **who is the caller and what are they doing** — changes everything. Think of it as a four-layer cake, where each layer builds on the ones below.
+**MCP vs APIs vs CLI vs Skills** — four ways to connect to tools, each built for a different caller. APIs are for your code. CLIs are for you. MCP is for AI. Skills are for your team. They're not competing. They're layers — and each one builds on the ones below it.
 
 ![The interface layer cake: APIs at the foundation, CLIs for power users, MCP for AI tools, and Skills for AI workflows](/blog/mcp-api-cli-skills-layer-cake.svg)
 
-Most developers default to APIs because that's what they know. Power users reach for CLIs because they're fast. But the two fastest-growing layers right now are MCP and Skills — and they're not replacing APIs or CLIs. They're building on top of them.
-
-<PullQuote>APIs were designed for developers who read documentation. CLIs for developers who read man pages. MCP for AI that reads tool schemas. Skills for AI that follows playbooks.</PullQuote>
-
 ---
 
-## The basics: what each actually is
+## MCP vs APIs vs CLI vs Skills — what each actually is
 
-**APIs** (REST, GraphQL, gRPC) are request-response interfaces built for code. Your application constructs a request, sends it to a server, and parses the response. You write the integration. You handle auth, errors, retries, and data mapping. Every endpoint is a contract between your code and theirs.
+### APIs: the foundation
 
-**CLIs** (command-line interfaces) are text interfaces built for humans at a terminal. You type a command, get output, pipe it somewhere. `git`, `docker`, `aws`, `kubectl` — these are the tools developers live in. They're fast, scriptable, and composable through Unix pipes. But they require you to know the tool exists, remember the syntax, and manually chain steps together. Notably, **Claude Code is itself a CLI** — an AI-powered command-line tool where you interact with Claude directly from your terminal. It's the environment where MCP servers and Skills come alive.
+REST, GraphQL, gRPC — your code calls an endpoint, gets data back. You write the auth, error handling, and response parsing. Every integration is a contract you maintain.
 
-**MCP** (Model Context Protocol) is a standard built for AI. It lets AI assistants — Claude, Cursor, Windsurf, VS Code Copilot — discover and call tools dynamically. An MCP server exposes a set of tools with structured schemas. The AI reads those schemas, decides which tool to use, and calls it — no human writing integration code in between. MCP gives AI a **single capability** — like "search the web" or "query the database."
+- **Caller:** your application code
+- **Integration effort:** hours to days
+- **Strength:** deterministic, testable, battle-tested
+- **Weakness:** every new service means more code to write and maintain
 
-**Skills** are the newest layer — and they live inside Claude Code. A Skill is a reusable prompt that tells the AI *how* to accomplish a multi-step task. You invoke them with slash commands like `/commit`, `/review-pr`, or `/deploy` right in the Claude Code CLI. Where MCP gives AI a tool, a Skill gives AI a **playbook**. It can chain multiple MCP tools together, enforce specific patterns, and encode team knowledge that would otherwise live in someone's head.
+APIs have powered the internet for decades. They're not going anywhere — but they were designed for machines talking to machines, not for AI.
+
+### CLIs: the power-user layer
+
+`git commit`, `docker build`, `aws s3 cp`, `kubectl apply` — you type commands, read output, pipe things together. CLIs are fast, scriptable, and composable through Unix pipes.
+
+- **Caller:** a human at a terminal
+- **Integration effort:** minutes (if you know the tool)
+- **Strength:** fast, direct, no overhead
+- **Weakness:** you need to know the tool exists, remember the syntax, and chain steps manually
+
+CLIs are how developers get things done quickly. But they don't scale to AI — a language model can't type `kubectl get pods` and read the output the way you do.
+
+### MCP: the AI layer
+
+Model Context Protocol lets AI assistants — Claude, Cursor, Windsurf, VS Code Copilot — discover and call tools dynamically. An [MCP server](/servers) publishes a structured schema describing its tools. The AI reads the schema, picks the right tool, and calls it with the right parameters. No integration code. No shell scripts.
+
+- **Caller:** an AI model
+- **Integration effort:** minutes (install server, add one config line)
+- **Strength:** AI handles discovery, selection, and orchestration
+- **Weakness:** security model is still maturing — [check server scores before installing](/methodology)
+
+This is the key difference in MCP vs APIs: with an API, *you* decide which endpoint to call and write code to call it. With MCP, *the AI* decides which tool to use and calls it for you. Over 17,800 MCP servers are already indexed on [MCPpedia](/servers), [scored across five dimensions](/methodology) including security, maintenance, and token efficiency.
 
 <Callout type="info">
-Four interfaces, four eras: APIs automated machine-to-machine communication. CLIs gave developers superpowers at the terminal. MCP gives AI models access to tools. Skills give AI models workflows — multi-step recipes that combine tools, context, and judgment.
+MCP doesn't replace APIs — most MCP servers call APIs under the hood. The Supabase MCP server uses the Supabase REST API. The GitHub MCP server calls the GitHub API. MCP is a translation layer that makes existing APIs accessible to AI.
 </Callout>
+
+### Skills: the workflow layer
+
+A Skill is a reusable prompt — a saved playbook that tells AI how to accomplish a multi-step task. You invoke them with slash commands like `/commit`, `/review-pr`, or `/deploy`.
+
+- **Caller:** an AI model, following a defined recipe
+- **Integration effort:** minutes (write a prompt file, save it)
+- **Strength:** repeatable, shareable, encodes team knowledge
+- **Weakness:** only as good as the MCP servers available to them
+
+Where MCP gives AI a single tool ("query the database"), a Skill gives AI a workflow ("run the tests, check for lint errors, build the project, open a PR, and post to Slack"). Skills chain MCP servers together into processes your whole team can run.
 
 ---
 
-## The key differences
+## How they compare
 
-### 1. Discovery
+| | API | CLI | MCP | Skill |
+|---|---|---|---|---|
+| **Who calls it** | Your code | You | AI model | AI following a playbook |
+| **Setup time** | Hours–days | Minutes | Minutes | Minutes |
+| **Discovery** | Read the docs | Run `--help` | AI reads the schema | Type `/` to see options |
+| **Composability** | Write orchestration code | Pipe commands | AI chains tools naturally | Defined multi-step recipe |
+| **Security** | You manage tokens/keys | OS-level credentials | Varies by server — [check scores](/methodology) | Inherits from MCP servers used |
+| **Best for** | Product integrations | Quick automation | AI-powered tasks | Repeatable team workflows |
 
-**APIs:** You read the docs. You find the endpoint list. You figure out which one does what you need. If the API doesn't have docs, you're reverse-engineering Swagger files.
-
-**CLIs:** You run `--help`. You search man pages. You Google for examples. You stack overflow the flags you don't understand.
-
-**MCP:** The AI reads the tool schema automatically. Every MCP server publishes a machine-readable description of every tool it offers — what it does, what parameters it takes, and what it returns. The AI model picks the right tool for the job. No docs required.
-
-**Skills:** You type `/` and see what's available. Skills are named, described, and self-documenting — but unlike MCP tools, they're curated by your team. They show up as slash commands because someone decided this workflow was worth codifying.
-
-This is why MCPpedia tracks **token efficiency** — the size of a server's tool schemas directly affects how much of the AI's context window gets consumed just by knowing the tools exist. A bloated schema with 50 tools and vague descriptions wastes thousands of tokens before a single call happens.
-
-### 2. Integration effort
-
-**APIs:** You write code. HTTP client, auth headers, request body, response parsing, error handling. Even with SDK wrappers, you're writing integration logic. A typical REST integration takes hours to days.
-
-**CLIs:** You write shell scripts. You parse stdout. You handle exit codes. You chain commands with pipes. Fragile, but fast for one-off tasks.
-
-**MCP:** You install a server and add one line to a config file. That's it. The AI handles the rest — choosing when to call it, what parameters to pass, how to interpret the response. Integration time: minutes.
-
-**Skills:** You write a markdown prompt file. No code, no config — just instructions in natural language that describe the workflow. A Skill can reference MCP tools, set conventions, and encode multi-step logic. Creation time: minutes. Sharing: drop the file in your repo.
-
-<StatGrid>
-  <Stat value="Hours–Days" label="API Integration" detail="Write code, handle auth, parse responses" />
-  <Stat value="Minutes" label="MCP Setup" detail="Install server, add config, done" />
-  <Stat value="Minutes" label="Skill Creation" detail="Write a prompt, save a file" />
-  <Stat value="17,800+" label="MCP Servers" detail="Available on MCPpedia today" />
-</StatGrid>
-
-### 3. Who decides what to call
-
-**APIs and CLIs:** You do. You decide which endpoint to hit, which command to run, in what order, with what parameters. The logic is in your code or your head.
-
-**MCP:** The AI decides on the fly. Based on your natural language request, the model reads all available tool schemas, picks the right one (or chains several), and constructs the call. You say "find all open issues assigned to me" and the AI figures out that means calling the GitHub MCP server's `list_issues` tool with the right filters.
-
-**Skills:** The Skill author decides the workflow, the AI decides the details. A `/deploy` Skill might say "run tests, check for lint errors, build the project, then push" — the overall recipe is fixed, but the AI handles each step dynamically using whatever MCP tools are available.
-
-This is the key distinction: **MCP is freeform improvisation. Skills are sheet music.** Both use the same AI, but Skills add structure and repeatability.
-
-### 4. Composability
-
-**APIs:** Composing multiple APIs requires orchestration code. Call API A, take the response, transform it, feed it to API B. You're the middleware.
-
-**CLIs:** Unix pipes give you composability — `curl | jq | grep` — but it's text-based and fragile.
-
-**MCP:** The AI composes tools naturally. If you have a GitHub MCP server and a Slack MCP server installed, you can say "summarize my open PRs and post them to #engineering" — the AI chains the calls automatically. No orchestration code. No middleware.
-
-**Skills:** Skills are *designed* for composition. A single Skill can orchestrate multiple MCP servers in a defined sequence — run the linter MCP, then the test MCP, then the GitHub MCP to open a PR. Skills are the orchestration layer that MCP doesn't have on its own.
-
-<Callout type="tip">
-MCP gives AI individual tools. Skills give AI recipes. The real power is using both: Skills as the playbook, MCP servers as the instruments.
-</Callout>
-
-### 5. Security model
-
-**APIs:** You manage API keys, OAuth tokens, scopes, and rate limits. Security is your responsibility.
-
-**CLIs:** You manage credentials in environment variables, config files, or keychains. Permissions are OS-level.
-
-**MCP:** The security model is still maturing — and this is where caution matters. MCP servers run locally (via stdio) or remotely (via HTTP/SSE), and they can access files, databases, APIs, and system resources. A poorly written server can expose more than intended.
-
-**Skills:** Skills inherit the security posture of the MCP tools they use — but they add a layer of control. A well-written Skill can enforce guardrails: "always run tests before pushing," "never force-push to main," "ask for confirmation before deleting." Skills are where team policies meet AI autonomy.
-
-This is exactly why MCPpedia scores every server across **five dimensions** — with Security weighted at 30%, the highest of any category. We scan for known CVEs, check for authentication mechanisms, and flag servers with overly broad tool definitions.
+<PullQuote>APIs need you to write code. CLIs need you to type commands. MCP lets AI handle the calls. Skills let AI follow your team's playbook.</PullQuote>
 
 ---
 
-## When to use each
+## When to use MCP vs APIs vs CLI vs Skills
 
-| Use case | Best choice | Why |
+| Situation | Best choice | Why |
 |---|---|---|
-| Building a product that needs data from another service | **API** | You need deterministic, reliable, well-tested integration code |
-| Automating a personal workflow with AI | **MCP** | Let the AI handle the orchestration |
-| One-off scripting and automation | **CLI** | Direct, fast, scriptable |
-| Letting non-developers interact with tools | **MCP** | Natural language beats API docs |
-| High-throughput, low-latency data pipelines | **API** | MCP adds overhead that pipelines don't need |
-| Exploring what a service can do | **MCP** | Ask the AI — it reads the schema for you |
-| CI/CD and build automation | **CLI** | Battle-tested, no AI unpredictability |
-| Repeatable multi-step dev workflows | **Skill** | Encode the recipe once, run it with `/command` |
-| Onboarding new team members to codebase patterns | **Skill** | Team knowledge as executable prompts |
-| Ad-hoc tasks you haven't done before | **MCP** | Let the AI improvise with available tools |
+| Building a product integration | **API** | Deterministic, testable, well-documented |
+| Quick terminal task | **CLI** | Direct, no overhead |
+| Letting AI access a service | **MCP** | Install once, AI handles the rest |
+| Repeatable team workflow | **Skill** | Encode the recipe as `/command` |
+| High-throughput data pipeline | **API** | MCP adds latency you don't want |
+| CI/CD automation | **CLI** | Battle-tested, predictable |
+| Ad-hoc task across multiple tools | **MCP** | AI improvises with available servers |
+| Onboarding new developers | **Skill** | Team knowledge as executable prompts |
 
-<PullQuote>Use APIs when you need precision. Use CLIs when you need speed. Use MCP when you need flexibility. Use Skills when you need repeatability.</PullQuote>
+The rule of thumb: **if a human writes the logic, use APIs or CLIs. If AI does the work, use MCP and Skills.**
 
----
-
-## It's layers all the way down
-
-Remember the layer cake from the top of this article? It's not just a metaphor — **each layer literally builds on the ones below it.**
-
-MCP servers are usually API and CLI clients themselves. The Supabase MCP server calls the Supabase REST API under the hood. The GitHub MCP server uses the GitHub API. The Filesystem MCP server runs the same operations as `ls`, `cat`, and `mkdir`. The Docker MCP server wraps the Docker CLI. They're the middle layers of the cake — richer, more capable, built on the foundation below.
-
-And Skills sit on top of MCP — the cherry on top. A `/review-pr` Skill might use the GitHub MCP server to fetch the diff, an AI model to analyze it, and the Slack MCP server to post the summary. The Skill doesn't replace any of those tools — it orchestrates them into a workflow you can run with a single command.
-
-The stack looks like this: **APIs → CLIs → MCP → Skills.** Each layer makes the ones below it accessible to a broader audience. APIs are for code. CLIs are for developers. MCP is for AI. Skills are for teams. And Claude Code is the CLI that ties the top three layers together — it's where you run MCP servers, invoke Skills, and let AI orchestrate it all from your terminal. The higher you go, the less code you write — and the more people on your team can use the tools.
-
-This is why the ecosystem grew to over 17,800 MCP servers so fast. Every existing API endpoint and every existing CLI tool is a potential MCP server waiting to be wrapped — and every common workflow is a Skill waiting to be written.
+Tools like Claude Code, Cursor, and Windsurf act as MCP clients — they're where you actually *use* MCP servers and Skills. But the concepts are protocol-level, not tied to any one tool.
 
 ---
 
-## The bottom line
+## MCP vs APIs vs CLI vs Skills — the bottom line
 
-**MCP vs APIs vs CLI vs Skills** isn't a competition. It's a stack.
+These four interfaces form a stack. Each layer makes the one below it accessible to a broader audience:
 
-APIs are the foundation — reliable, well-documented, battle-tested interfaces between services. CLIs are the power-user layer — fast, scriptable, composable through pipes. MCP is the AI-native tool layer that lets language models use those same services without anyone writing integration code. Skills are the AI-native workflow layer that turns multi-step processes into repeatable one-liners.
+- **APIs** let machines talk to machines
+- **CLIs** let developers command machines
+- **MCP** lets AI use machines
+- **Skills** let teams define how AI uses machines
 
-If you're building a product, use APIs. If you're automating your own workflow, reach for a CLI. If you're giving AI access to a tool, use MCP. If you're teaching AI how your team works, write a Skill.
+Every existing API is a potential MCP server. Every repeated workflow is a Skill waiting to be written. The ecosystem is already at 17,800+ servers and growing daily.
 
-The ecosystem is moving fast. Over 17,800 MCP servers are already indexed on [MCPpedia](/servers), scored for [security, maintenance, efficiency, documentation, and compatibility](/methodology). Whether you're picking your first server or evaluating your tenth, start with the data — not the hype.
+Not sure which MCP servers are right for your stack? [Browse them all](/servers), [compare side by side](/compare), or read [how we score them](/methodology).
 
 <Callout type="fire">
-Browse all MCP servers at [mcppedia.org/servers](/servers) — filtered, scored, and ready to install.
+Explore 17,800+ MCP servers at [mcppedia.org/servers](/servers) — filtered by category, scored for quality, ready to install.
 </Callout>
