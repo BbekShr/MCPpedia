@@ -5,6 +5,7 @@ import { SITE_NAME, SITE_URL } from '@/lib/constants'
 import { JsonLdScript, generateArticleJsonLd, generateBreadcrumbJsonLd } from '@/lib/seo'
 import type { Metadata } from 'next'
 import { MDXRemote } from 'next-mdx-remote/rsc'
+import remarkGfm from 'remark-gfm'
 import ReadingProgress from '@/components/ReadingProgress'
 import NewsletterSignup from '@/components/NewsletterSignup'
 import ShareButtons from '@/components/blog/ShareButtons'
@@ -166,7 +167,7 @@ export default async function BlogPostPage({
           prose-hr:border-border prose-hr:my-12
           prose-img:rounded-xl prose-img:border prose-img:border-border prose-img:shadow-sm
         ">
-          <MDXRemote source={post.content} components={blogComponents} />
+          <MDXRemote source={post.content} components={blogComponents} options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }} />
         </div>
 
         {/* Share CTA */}

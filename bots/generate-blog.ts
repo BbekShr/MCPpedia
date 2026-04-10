@@ -68,7 +68,7 @@ const SEO_TOPICS: Array<{
   },
   {
     keyword: 'MCP vs API what is the difference',
-    title: 'MCP vs Traditional APIs: What\'s the Difference and When to Use Each',
+    title: 'MCP vs APIs vs CLI: What\'s the Difference and When to Use Each',
     intent: 'explainer',
     angle: 'Technical comparison of MCP protocol vs REST/GraphQL APIs. Explain when MCP makes sense (AI-native tooling, Claude integration) vs when a regular API is better. Use real examples from MCPpedia data.',
     dataNeeded: 'ecosystem-stats',

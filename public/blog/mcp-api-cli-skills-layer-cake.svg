@@ -1,0 +1,212 @@
+<svg width="680" height="640" viewBox="0 0 680 640" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;height:auto">
+  <title>The interface layer cake: APIs, CLIs, MCP, and Skills</title>
+  <desc>A strawberry layered cake illustrating the four layers of developer interfaces</desc>
+  <defs>
+    <linearGradient id="stand-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#faf6f0"/><stop offset="100%" stop-color="#e8dfd2"/></linearGradient>
+    <linearGradient id="l1-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fce4ec"/><stop offset="100%" stop-color="#f8bbd9"/></linearGradient>
+    <linearGradient id="l2-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f48fb1"/><stop offset="100%" stop-color="#ec407a"/></linearGradient>
+    <linearGradient id="l3-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f06292"/><stop offset="100%" stop-color="#e91e63"/></linearGradient>
+    <linearGradient id="l4-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ec407a"/><stop offset="100%" stop-color="#c2185b"/></linearGradient>
+    <linearGradient id="cream-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fffef8"/><stop offset="100%" stop-color="#fff5f8"/></linearGradient>
+    <linearGradient id="cherry-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#d4313b"/><stop offset="100%" stop-color="#8b0000"/></linearGradient>
+  </defs>
+  
+  <!-- Background with rounded corners -->
+  <rect width="680" height="640" rx="16" fill="#1a1a2e"/>
+  
+  <!-- ========== CAKE STAND ========== -->
+  <ellipse cx="340" cy="590" rx="150" ry="20" fill="#d4c8b8"/>
+  <ellipse cx="340" cy="585" rx="150" ry="20" fill="url(#stand-g)"/>
+  <ellipse cx="340" cy="585" rx="135" ry="15" fill="none" stroke="#f0e8dc" stroke-width="3"/>
+  <path d="M295 585 Q280 565 290 540 L390 540 Q400 565 385 585 Z" fill="#e8dfd2"/>
+  <ellipse cx="340" cy="540" rx="55" ry="12" fill="url(#stand-g)"/>
+  <ellipse cx="340" cy="528" rx="140" ry="18" fill="#d4c8b8"/>
+  <ellipse cx="340" cy="523" rx="140" ry="18" fill="url(#stand-g)"/>
+  
+  <!-- ========== LAYER 1: APIs - Lightest pink ========== -->
+  <ellipse cx="340" cy="518" rx="130" ry="18" fill="#f8bbd9"/>
+  <rect x="210" y="425" width="260" height="93" fill="url(#l1-g)"/>
+  <ellipse cx="340" cy="425" rx="130" ry="18" fill="#fce4ec"/>
+  <!-- Frosting drips -->
+  <path d="M225 430 Q215 465 222 510 Q228 522 222 528" fill="#f8bbd9"/>
+  <path d="M270 427 Q258 475 268 520" fill="#f8bbd9"/>
+  <path d="M340 428 Q328 480 338 522" fill="#f8bbd9"/>
+  <path d="M410 427 Q422 480 414 522" fill="#f8bbd9"/>
+  <path d="M455 430 Q465 470 458 512" fill="#f8bbd9"/>
+  <!-- Cream border -->
+  <ellipse cx="340" cy="425" rx="127" ry="16" fill="none" stroke="#fff" stroke-width="12"/>
+  <ellipse cx="340" cy="425" rx="127" ry="16" fill="none" stroke="#fffafa" stroke-width="5"/>
+  
+  <!-- Icon: Two computers connected -->
+  <g transform="translate(295, 458)">
+    <rect x="0" y="8" width="26" height="20" rx="3" fill="#fff" stroke="#f8bbd9" stroke-width="1.5"/>
+    <rect x="4" y="12" width="18" height="12" rx="2" fill="#fce4ec"/>
+    <rect x="8" y="28" width="10" height="4" rx="1" fill="#fff"/>
+    <circle cx="45" cy="18" r="4" fill="#ec407a"/>
+    <circle cx="58" cy="18" r="4" fill="#ec407a"/>
+    <line x1="49" y1="18" x2="54" y2="18" stroke="#ec407a" stroke-width="2"/>
+    <rect x="64" y="8" width="26" height="20" rx="3" fill="#fff" stroke="#f8bbd9" stroke-width="1.5"/>
+    <rect x="68" y="12" width="18" height="12" rx="2" fill="#fce4ec"/>
+    <rect x="72" y="28" width="10" height="4" rx="1" fill="#fff"/>
+  </g>
+  
+  <!-- ========== LAYER 2: CLIs - Medium pink ========== -->
+  <ellipse cx="340" cy="415" rx="108" ry="15" fill="#ec407a"/>
+  <rect x="232" y="335" width="216" height="80" fill="url(#l2-g)"/>
+  <ellipse cx="340" cy="335" rx="108" ry="15" fill="#f8a4c0"/>
+  <!-- Frosting drips -->
+  <path d="M245 338 Q235 375 242 410" fill="#ec407a"/>
+  <path d="M295 336 Q283 378 292 413" fill="#ec407a"/>
+  <path d="M385 336 Q397 382 388 415" fill="#ec407a"/>
+  <path d="M435 338 Q445 378 438 408" fill="#ec407a"/>
+  <!-- Cream border -->
+  <ellipse cx="340" cy="335" rx="105" ry="13" fill="none" stroke="#fff" stroke-width="10"/>
+  <ellipse cx="340" cy="335" rx="105" ry="13" fill="none" stroke="#fffafa" stroke-width="4"/>
+  
+  <!-- Icon: Terminal window with person -->
+  <g transform="translate(300, 360)">
+    <!-- Person silhouette -->
+    <circle cx="20" cy="8" r="10" fill="#fff"/>
+    <path d="M10 22 Q20 32 30 22" fill="#fff"/>
+    <!-- Terminal -->
+    <rect x="38" y="2" width="48" height="32" rx="5" fill="#1a0a10" stroke="#fff" stroke-width="1.5"/>
+    <circle cx="47" cy="10" r="3" fill="#ff5f56"/>
+    <circle cx="56" cy="10" r="3" fill="#ffbd2e"/>
+    <circle cx="65" cy="10" r="3" fill="#27ca40"/>
+    <text x="46" y="27" fill="#27ca40" font-family="monospace" font-size="10">$_</text>
+  </g>
+  
+  <!-- ========== LAYER 3: MCP - Deeper pink ========== -->
+  <ellipse cx="340" cy="327" rx="88" ry="13" fill="#e91e63"/>
+  <rect x="252" y="260" width="176" height="67" fill="url(#l3-g)"/>
+  <ellipse cx="340" cy="260" rx="88" ry="13" fill="#f48fb1"/>
+  <!-- Frosting drips -->
+  <path d="M265 263 Q255 295 262 322" fill="#e91e63"/>
+  <path d="M310 261 Q298 300 308 325" fill="#e91e63"/>
+  <path d="M370 261 Q382 302 374 328" fill="#e91e63"/>
+  <path d="M415 263 Q425 298 418 320" fill="#e91e63"/>
+  <!-- Cream border -->
+  <ellipse cx="340" cy="260" rx="85" ry="11" fill="none" stroke="#fff" stroke-width="9"/>
+  <ellipse cx="340" cy="260" rx="85" ry="11" fill="none" stroke="#fffafa" stroke-width="3"/>
+  
+  <!-- Icon: AI brain reaching for wrench -->
+  <g transform="translate(295, 280)">
+    <circle cx="22" cy="14" r="14" fill="#fff" stroke="#f48fb1" stroke-width="1.5"/>
+    <path d="M14 11 Q18 7 22 11 Q26 15 30 11" fill="none" stroke="#e91e63" stroke-width="2"/>
+    <path d="M14 17 Q18 13 22 17 Q26 21 30 17" fill="none" stroke="#e91e63" stroke-width="2"/>
+    <line x1="36" y1="14" x2="52" y2="14" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="48" cy="14" r="3" fill="#ec407a"/>
+    <!-- Wrench -->
+    <rect x="58" y="8" width="24" height="12" rx="3" fill="#fff" stroke="#f48fb1" stroke-width="1"/>
+    <circle cx="64" cy="14" r="6" fill="none" stroke="#fff" stroke-width="4"/>
+  </g>
+  
+  <!-- ========== LAYER 4: Skills - Deepest pink ========== -->
+  <ellipse cx="340" cy="253" rx="68" ry="10" fill="#c2185b"/>
+  <rect x="272" y="198" width="136" height="55" fill="url(#l4-g)"/>
+  <ellipse cx="340" cy="198" rx="68" ry="10" fill="#f06292"/>
+  <!-- Frosting drips -->
+  <path d="M285 200 Q276 225 282 250" fill="#c2185b"/>
+  <path d="M325 199 Q315 230 322 253" fill="#c2185b"/>
+  <path d="M355 199 Q365 233 358 255" fill="#c2185b"/>
+  <path d="M395 200 Q404 227 398 248" fill="#c2185b"/>
+  <!-- Cream border -->
+  <ellipse cx="340" cy="198" rx="65" ry="9" fill="none" stroke="#fff" stroke-width="7"/>
+  <ellipse cx="340" cy="198" rx="65" ry="9" fill="none" stroke="#fffafa" stroke-width="2.5"/>
+  
+  <!-- Icon: AI + Recipe checklist -->
+  <g transform="translate(302, 212)">
+    <circle cx="14" cy="12" r="10" fill="#fff" stroke="#f48fb1" stroke-width="1"/>
+    <path d="M9 10 Q12 7 14 10 Q16 13 19 10" fill="none" stroke="#c2185b" stroke-width="1.5"/>
+    <path d="M9 14 Q12 11 14 14 Q16 17 19 14" fill="none" stroke="#c2185b" stroke-width="1.5"/>
+    <text x="26" y="16" fill="#fff" font-size="12" font-weight="bold">+</text>
+    <rect x="40" y="2" width="26" height="22" rx="3" fill="#fff" stroke="#f48fb1" stroke-width="1"/>
+    <line x1="46" y1="9" x2="60" y2="9" stroke="#ec407a" stroke-width="2"/>
+    <line x1="46" y1="15" x2="56" y2="15" stroke="#ec407a" stroke-width="2"/>
+    <line x1="46" y1="21" x2="52" y2="21" stroke="#ec407a" stroke-width="2"/>
+    <path d="M46 9 L48 11 L52 7" fill="none" stroke="#27ca40" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M46 15 L48 17 L52 13" fill="none" stroke="#27ca40" stroke-width="1.5" stroke-linecap="round"/>
+  </g>
+  
+  <!-- ========== TOP DECORATION ========== -->
+  <!-- Cream rosettes -->
+  <ellipse cx="310" cy="188" rx="14" ry="11" fill="url(#cream-g)"/>
+  <ellipse cx="340" cy="184" rx="16" ry="13" fill="url(#cream-g)"/>
+  <ellipse cx="370" cy="188" rx="14" ry="11" fill="url(#cream-g)"/>
+  <circle cx="310" cy="185" r="9" fill="#fffefa"/>
+  <circle cx="340" cy="180" r="11" fill="#fffefa"/>
+  <circle cx="370" cy="185" r="9" fill="#fffefa"/>
+  <circle cx="325" cy="175" r="8" fill="#fff"/>
+  <circle cx="355" cy="175" r="8" fill="#fff"/>
+  <circle cx="340" cy="167" r="10" fill="#fff"/>
+  <!-- Strawberry bits on cream -->
+  <circle cx="318" cy="183" r="2.5" fill="#e91e63"/>
+  <circle cx="348" cy="178" r="2" fill="#e91e63"/>
+  <circle cx="362" cy="184" r="2" fill="#e91e63"/>
+  <circle cx="332" cy="172" r="1.5" fill="#e91e63"/>
+  
+  <!-- Cherry on top -->
+  <ellipse cx="342" cy="160" rx="15" ry="5" fill="#8b0000" opacity="0.25"/>
+  <circle cx="340" cy="142" r="18" fill="url(#cherry-g)"/>
+  <ellipse cx="332" cy="134" rx="6" ry="5" fill="#ff6b6b" opacity="0.75"/>
+  <circle cx="330" cy="132" r="2.5" fill="#ffa0a0" opacity="0.85"/>
+  <path d="M340 124 Q352 108 368 98" fill="none" stroke="#228b22" stroke-width="4" stroke-linecap="round"/>
+  <ellipse cx="374" cy="94" rx="12" ry="6" fill="#2e8b2e" transform="rotate(-30, 374, 94)"/>
+  
+  <!-- ========== LEFT SIDE LABELS ========== -->
+  <g fill="#aaa" font-family="system-ui, -apple-system, sans-serif">
+    <text x="55" y="468" font-size="14" font-weight="500" fill="#e0e0e0">The foundation</text>
+    <text x="55" y="486" font-size="12">Code runs behind</text>
+    <text x="55" y="502" font-size="12">the scenes</text>
+    
+    <path d="M90 448 L90 408" stroke="#bbb" stroke-width="1" stroke-dasharray="4 3"/>
+    <polygon points="90,403 86,411 94,411" fill="#bbb"/>
+    
+    <text x="55" y="378" font-size="14" font-weight="500" fill="#e0e0e0">Power users</text>
+    <text x="55" y="396" font-size="12">Type commands</text>
+    
+    <path d="M90 358 L90 318" stroke="#bbb" stroke-width="1" stroke-dasharray="4 3"/>
+    <polygon points="90,313 86,321 94,321" fill="#bbb"/>
+    
+    <text x="55" y="290" font-size="14" font-weight="500" fill="#e0e0e0">AI era</text>
+    <text x="55" y="308" font-size="12">AI uses tools for you</text>
+    
+    <path d="M90 270 L90 238" stroke="#bbb" stroke-width="1" stroke-dasharray="4 3"/>
+    <polygon points="90,233 86,241 94,241" fill="#bbb"/>
+    
+    <text x="55" y="205" font-size="14" font-weight="500" fill="#e0e0e0">AI + playbooks</text>
+    <text x="55" y="225" font-size="12">Repeatable workflows</text>
+  </g>
+  
+  <!-- ========== RIGHT SIDE LABELS ========== -->
+  <g font-family="system-ui, -apple-system, sans-serif">
+    <!-- Skills -->
+    <line x1="408" y1="215" x2="478" y2="175" stroke="#bbb" stroke-width="1" stroke-dasharray="4 3"/>
+    <circle cx="408" cy="215" r="3" fill="#bbb"/>
+    <text x="486" y="168" font-size="15" font-weight="500" fill="#e0e0e0">Workflows</text>
+    <text x="486" y="186" font-size="12" fill="#aaa">AI follows a recipe</text>
+    <text x="486" y="202" font-size="11" fill="#bbb" font-style="italic">(Skills)</text>
+    
+    <!-- MCP -->
+    <line x1="428" y1="290" x2="488" y2="265" stroke="#bbb" stroke-width="1" stroke-dasharray="4 3"/>
+    <circle cx="428" cy="290" r="3" fill="#bbb"/>
+    <text x="496" y="258" font-size="15" font-weight="500" fill="#e0e0e0">AI tools</text>
+    <text x="496" y="276" font-size="12" fill="#aaa">AI picks the right one</text>
+    <text x="496" y="292" font-size="11" fill="#bbb" font-style="italic">(MCP)</text>
+    
+    <!-- CLIs -->
+    <line x1="448" y1="372" x2="498" y2="352" stroke="#bbb" stroke-width="1" stroke-dasharray="4 3"/>
+    <circle cx="448" cy="372" r="3" fill="#bbb"/>
+    <text x="506" y="345" font-size="15" font-weight="500" fill="#e0e0e0">Commands</text>
+    <text x="506" y="363" font-size="12" fill="#aaa">You type instructions</text>
+    <text x="506" y="379" font-size="11" fill="#bbb" font-style="italic">(CLIs)</text>
+    
+    <!-- APIs -->
+    <line x1="470" y1="468" x2="508" y2="448" stroke="#bbb" stroke-width="1" stroke-dasharray="4 3"/>
+    <circle cx="470" cy="468" r="3" fill="#bbb"/>
+    <text x="516" y="441" font-size="15" font-weight="500" fill="#e0e0e0">Connections</text>
+    <text x="516" y="459" font-size="12" fill="#aaa">Apps talk to apps</text>
+    <text x="516" y="475" font-size="11" fill="#bbb" font-style="italic">(APIs)</text>
+  </g>
+  
+</svg>
