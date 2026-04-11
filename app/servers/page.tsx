@@ -9,7 +9,7 @@ import type { Server } from '@/lib/types'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export const metadata: Metadata = {
   title: 'Browse MCP Servers',
@@ -40,24 +40,27 @@ export default async function ServersPage({
   let totalCount = 0
 
   if (q) {
-    // Fetch all search results, then apply app-side filters (min_score, transport, author)
-    // and paginate in JS. Supabase RPC doesn't support count with head:true.
+    // Fetch one page of search results from Supabase RPC with DB-side pagination.
+    // JS-side filters (min_score, transport, author) are applied post-fetch.
+    // We request one extra row to detect if there's a next page.
     const { data, error } = await supabase.rpc('search_servers', {
       search_query: q,
       category_filter: category || null,
       status_filter: status || null,
       pricing_filter: pricing || null,
       sort_by: sort || 'relevance',
-      page_size: 100000,
-      page_offset: 0,
+      page_size: ITEMS_PER_PAGE + 1,
+      page_offset: offset,
     })
     if (!error && data) {
       let results = data as Server[]
       if (minScore > 0) results = results.filter(s => (s.score_total || 0) >= minScore)
       if (transport) results = results.filter(s => (s.transport || []).includes(transport))
       if (author) results = results.filter(s => s.author_type === author)
-      totalCount = results.length
-      servers = results.slice(offset, offset + ITEMS_PER_PAGE)
+      const hasNextPage = results.length > ITEMS_PER_PAGE
+      servers = results.slice(0, ITEMS_PER_PAGE)
+      // Approximate total for search: show current offset + results fetched
+      totalCount = hasNextPage ? offset + ITEMS_PER_PAGE + 1 : offset + servers.length
     }
   } else {
     // Direct query — hide archived by default

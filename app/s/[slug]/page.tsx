@@ -102,7 +102,7 @@ export async function generateStaticParams() {
       .from('servers')
       .select('slug')
       .order('github_stars', { ascending: false })
-      .limit(100)
+      .limit(1000)
 
     return (data || []).map(s => ({ slug: s.slug }))
   } catch {

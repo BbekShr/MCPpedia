@@ -30,7 +30,10 @@ export async function GET(request: Request) {
       console.error('search error:', error.message)
       return NextResponse.json({ error: 'Search failed' }, { status: 500 })
     }
-    return NextResponse.json({ servers: data || [] })
+    return NextResponse.json(
+      { servers: data || [] },
+      { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } }
+    )
   }
 
   const { data } = await supabase
@@ -39,5 +42,8 @@ export async function GET(request: Request) {
     .order('score_total', { ascending: false })
     .limit(limit)
 
-  return NextResponse.json({ servers: data || [] })
+  return NextResponse.json(
+    { servers: data || [] },
+    { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } }
+  )
 }
