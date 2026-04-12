@@ -1,5 +1,4872 @@
 {
-  "generatedAt": "2026-04-08T00:00:00.000Z",
-  "totalPairs": 0,
-  "pairs": []
+  "generatedAt": "2026-04-12T09:37:22.925Z",
+  "totalPairs": 748,
+  "pairs": [
+    {
+      "slugA": "supabase",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Supabase MCP Server",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "tavily-mcp",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Tavily Mcp",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "memory",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Memory MCP Server",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "postgres",
+      "slugB": "xcodebuildmcp",
+      "nameA": "PostgreSQL MCP Server",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "puppeteer",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Puppeteer MCP Server",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "sequential-thinking",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Sequential Thinking MCP Server",
+      "nameB": "XcodeBuildMCP",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "scrumboy",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Scrumboy",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "mcp-agent-mail",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Mcp_agent_mail",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Apify Mcp Server",
+      "nameB": "XcodeBuildMCP",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "toolsdk-mcp-registry",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Toolsdk Mcp Registry",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Gemini Cli",
+      "nameB": "XcodeBuildMCP",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Context7",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "python-sdk",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Python Sdk",
+      "nameB": "XcodeBuildMCP",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "io-github-mnemox-ai-idea-reality-mcp",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Idea Reality MCP Server",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "firecrawl-mcp-server",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Firecrawl Mcp Server",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "modelcontextprotocol",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Modelcontextprotocol",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "context-mode",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Context Mode",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "XcodeBuildMCP",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "observability-mcp",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Observability Mcp",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "shadcn-ui-mcp-server",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Shadcn Ui Mcp Server",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "dbhub",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Dbhub",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "mcp-server-qdrant",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Mcp Server Qdrant",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "xcodebuildmcp",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "XcodeBuildMCP",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "deepwiki-mcp",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Deepwiki Mcp",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "io-github-alphavantage-alpha-vantage-mcp",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Alpha Vantage Mcp",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "mcp-server-browserbase",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Mcp Server Browserbase",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "io-github-wso2-fhir-mcp-server",
+      "slugB": "xcodebuildmcp",
+      "nameA": "io.github.wso2/fhir-mcp-server",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "supabase",
+      "slugB": "tavily-mcp",
+      "nameA": "Supabase MCP Server",
+      "nameB": "Tavily Mcp"
+    },
+    {
+      "slugA": "memory",
+      "slugB": "supabase",
+      "nameA": "Memory MCP Server",
+      "nameB": "Supabase MCP Server"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "supabase",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "Supabase MCP Server"
+    },
+    {
+      "slugA": "postgres",
+      "slugB": "supabase",
+      "nameA": "PostgreSQL MCP Server",
+      "nameB": "Supabase MCP Server",
+      "category": "data"
+    },
+    {
+      "slugA": "puppeteer",
+      "slugB": "supabase",
+      "nameA": "Puppeteer MCP Server",
+      "nameB": "Supabase MCP Server"
+    },
+    {
+      "slugA": "sequential-thinking",
+      "slugB": "supabase",
+      "nameA": "Sequential Thinking MCP Server",
+      "nameB": "Supabase MCP Server"
+    },
+    {
+      "slugA": "scrumboy",
+      "slugB": "supabase",
+      "nameA": "Scrumboy",
+      "nameB": "Supabase MCP Server"
+    },
+    {
+      "slugA": "mcp-agent-mail",
+      "slugB": "supabase",
+      "nameA": "Mcp_agent_mail",
+      "nameB": "Supabase MCP Server",
+      "category": "data"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "supabase",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Supabase MCP Server"
+    },
+    {
+      "slugA": "supabase",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Supabase MCP Server",
+      "nameB": "Toolsdk Mcp Registry",
+      "category": "data"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "supabase",
+      "nameA": "Gemini Cli",
+      "nameB": "Supabase MCP Server"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "supabase",
+      "nameA": "Context7",
+      "nameB": "Supabase MCP Server",
+      "category": "data"
+    },
+    {
+      "slugA": "python-sdk",
+      "slugB": "supabase",
+      "nameA": "Python Sdk",
+      "nameB": "Supabase MCP Server"
+    },
+    {
+      "slugA": "io-github-mnemox-ai-idea-reality-mcp",
+      "slugB": "supabase",
+      "nameA": "Idea Reality MCP Server",
+      "nameB": "Supabase MCP Server"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "supabase",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "Supabase MCP Server"
+    },
+    {
+      "slugA": "firecrawl-mcp-server",
+      "slugB": "supabase",
+      "nameA": "Firecrawl Mcp Server",
+      "nameB": "Supabase MCP Server"
+    },
+    {
+      "slugA": "modelcontextprotocol",
+      "slugB": "supabase",
+      "nameA": "Modelcontextprotocol",
+      "nameB": "Supabase MCP Server",
+      "category": "data"
+    },
+    {
+      "slugA": "context-mode",
+      "slugB": "supabase",
+      "nameA": "Context Mode",
+      "nameB": "Supabase MCP Server"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "supabase",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Supabase MCP Server"
+    },
+    {
+      "slugA": "observability-mcp",
+      "slugB": "supabase",
+      "nameA": "Observability Mcp",
+      "nameB": "Supabase MCP Server"
+    },
+    {
+      "slugA": "shadcn-ui-mcp-server",
+      "slugB": "supabase",
+      "nameA": "Shadcn Ui Mcp Server",
+      "nameB": "Supabase MCP Server"
+    },
+    {
+      "slugA": "dbhub",
+      "slugB": "supabase",
+      "nameA": "Dbhub",
+      "nameB": "Supabase MCP Server",
+      "category": "data"
+    },
+    {
+      "slugA": "mcp-server-qdrant",
+      "slugB": "supabase",
+      "nameA": "Mcp Server Qdrant",
+      "nameB": "Supabase MCP Server",
+      "category": "data"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "supabase",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "Supabase MCP Server"
+    },
+    {
+      "slugA": "deepwiki-mcp",
+      "slugB": "supabase",
+      "nameA": "Deepwiki Mcp",
+      "nameB": "Supabase MCP Server"
+    },
+    {
+      "slugA": "io-github-alphavantage-alpha-vantage-mcp",
+      "slugB": "supabase",
+      "nameA": "Alpha Vantage Mcp",
+      "nameB": "Supabase MCP Server"
+    },
+    {
+      "slugA": "mcp-server-browserbase",
+      "slugB": "supabase",
+      "nameA": "Mcp Server Browserbase",
+      "nameB": "Supabase MCP Server"
+    },
+    {
+      "slugA": "io-github-wso2-fhir-mcp-server",
+      "slugB": "supabase",
+      "nameA": "io.github.wso2/fhir-mcp-server",
+      "nameB": "Supabase MCP Server"
+    },
+    {
+      "slugA": "memory",
+      "slugB": "tavily-mcp",
+      "nameA": "Memory MCP Server",
+      "nameB": "Tavily Mcp"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "tavily-mcp",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "Tavily Mcp",
+      "category": "search"
+    },
+    {
+      "slugA": "postgres",
+      "slugB": "tavily-mcp",
+      "nameA": "PostgreSQL MCP Server",
+      "nameB": "Tavily Mcp"
+    },
+    {
+      "slugA": "puppeteer",
+      "slugB": "tavily-mcp",
+      "nameA": "Puppeteer MCP Server",
+      "nameB": "Tavily Mcp",
+      "category": "browser"
+    },
+    {
+      "slugA": "sequential-thinking",
+      "slugB": "tavily-mcp",
+      "nameA": "Sequential Thinking MCP Server",
+      "nameB": "Tavily Mcp"
+    },
+    {
+      "slugA": "scrumboy",
+      "slugB": "tavily-mcp",
+      "nameA": "Scrumboy",
+      "nameB": "Tavily Mcp"
+    },
+    {
+      "slugA": "mcp-agent-mail",
+      "slugB": "tavily-mcp",
+      "nameA": "Mcp_agent_mail",
+      "nameB": "Tavily Mcp"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "tavily-mcp",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Tavily Mcp",
+      "category": "browser"
+    },
+    {
+      "slugA": "tavily-mcp",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Tavily Mcp",
+      "nameB": "Toolsdk Mcp Registry"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "tavily-mcp",
+      "nameA": "Gemini Cli",
+      "nameB": "Tavily Mcp"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "tavily-mcp",
+      "nameA": "Context7",
+      "nameB": "Tavily Mcp"
+    },
+    {
+      "slugA": "python-sdk",
+      "slugB": "tavily-mcp",
+      "nameA": "Python Sdk",
+      "nameB": "Tavily Mcp"
+    },
+    {
+      "slugA": "io-github-mnemox-ai-idea-reality-mcp",
+      "slugB": "tavily-mcp",
+      "nameA": "Idea Reality MCP Server",
+      "nameB": "Tavily Mcp"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "tavily-mcp",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "Tavily Mcp"
+    },
+    {
+      "slugA": "firecrawl-mcp-server",
+      "slugB": "tavily-mcp",
+      "nameA": "Firecrawl Mcp Server",
+      "nameB": "Tavily Mcp",
+      "category": "browser"
+    },
+    {
+      "slugA": "modelcontextprotocol",
+      "slugB": "tavily-mcp",
+      "nameA": "Modelcontextprotocol",
+      "nameB": "Tavily Mcp"
+    },
+    {
+      "slugA": "context-mode",
+      "slugB": "tavily-mcp",
+      "nameA": "Context Mode",
+      "nameB": "Tavily Mcp"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "tavily-mcp",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Tavily Mcp"
+    },
+    {
+      "slugA": "observability-mcp",
+      "slugB": "tavily-mcp",
+      "nameA": "Observability Mcp",
+      "nameB": "Tavily Mcp"
+    },
+    {
+      "slugA": "shadcn-ui-mcp-server",
+      "slugB": "tavily-mcp",
+      "nameA": "Shadcn Ui Mcp Server",
+      "nameB": "Tavily Mcp"
+    },
+    {
+      "slugA": "dbhub",
+      "slugB": "tavily-mcp",
+      "nameA": "Dbhub",
+      "nameB": "Tavily Mcp"
+    },
+    {
+      "slugA": "mcp-server-qdrant",
+      "slugB": "tavily-mcp",
+      "nameA": "Mcp Server Qdrant",
+      "nameB": "Tavily Mcp"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "tavily-mcp",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "Tavily Mcp"
+    },
+    {
+      "slugA": "deepwiki-mcp",
+      "slugB": "tavily-mcp",
+      "nameA": "Deepwiki Mcp",
+      "nameB": "Tavily Mcp"
+    },
+    {
+      "slugA": "io-github-alphavantage-alpha-vantage-mcp",
+      "slugB": "tavily-mcp",
+      "nameA": "Alpha Vantage Mcp",
+      "nameB": "Tavily Mcp"
+    },
+    {
+      "slugA": "mcp-server-browserbase",
+      "slugB": "tavily-mcp",
+      "nameA": "Mcp Server Browserbase",
+      "nameB": "Tavily Mcp"
+    },
+    {
+      "slugA": "io-github-wso2-fhir-mcp-server",
+      "slugB": "tavily-mcp",
+      "nameA": "io.github.wso2/fhir-mcp-server",
+      "nameB": "Tavily Mcp"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "memory",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "Memory MCP Server"
+    },
+    {
+      "slugA": "memory",
+      "slugB": "postgres",
+      "nameA": "Memory MCP Server",
+      "nameB": "PostgreSQL MCP Server"
+    },
+    {
+      "slugA": "memory",
+      "slugB": "puppeteer",
+      "nameA": "Memory MCP Server",
+      "nameB": "Puppeteer MCP Server"
+    },
+    {
+      "slugA": "memory",
+      "slugB": "sequential-thinking",
+      "nameA": "Memory MCP Server",
+      "nameB": "Sequential Thinking MCP Server"
+    },
+    {
+      "slugA": "memory",
+      "slugB": "scrumboy",
+      "nameA": "Memory MCP Server",
+      "nameB": "Scrumboy"
+    },
+    {
+      "slugA": "mcp-agent-mail",
+      "slugB": "memory",
+      "nameA": "Mcp_agent_mail",
+      "nameB": "Memory MCP Server"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "memory",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Memory MCP Server"
+    },
+    {
+      "slugA": "memory",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Memory MCP Server",
+      "nameB": "Toolsdk Mcp Registry"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "memory",
+      "nameA": "Gemini Cli",
+      "nameB": "Memory MCP Server"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "memory",
+      "nameA": "Context7",
+      "nameB": "Memory MCP Server"
+    },
+    {
+      "slugA": "memory",
+      "slugB": "python-sdk",
+      "nameA": "Memory MCP Server",
+      "nameB": "Python Sdk"
+    },
+    {
+      "slugA": "io-github-mnemox-ai-idea-reality-mcp",
+      "slugB": "memory",
+      "nameA": "Idea Reality MCP Server",
+      "nameB": "Memory MCP Server",
+      "category": "other"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "memory",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "Memory MCP Server",
+      "category": "other"
+    },
+    {
+      "slugA": "firecrawl-mcp-server",
+      "slugB": "memory",
+      "nameA": "Firecrawl Mcp Server",
+      "nameB": "Memory MCP Server"
+    },
+    {
+      "slugA": "memory",
+      "slugB": "modelcontextprotocol",
+      "nameA": "Memory MCP Server",
+      "nameB": "Modelcontextprotocol"
+    },
+    {
+      "slugA": "context-mode",
+      "slugB": "memory",
+      "nameA": "Context Mode",
+      "nameB": "Memory MCP Server",
+      "category": "other"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "memory",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Memory MCP Server"
+    },
+    {
+      "slugA": "memory",
+      "slugB": "observability-mcp",
+      "nameA": "Memory MCP Server",
+      "nameB": "Observability Mcp"
+    },
+    {
+      "slugA": "memory",
+      "slugB": "shadcn-ui-mcp-server",
+      "nameA": "Memory MCP Server",
+      "nameB": "Shadcn Ui Mcp Server"
+    },
+    {
+      "slugA": "dbhub",
+      "slugB": "memory",
+      "nameA": "Dbhub",
+      "nameB": "Memory MCP Server"
+    },
+    {
+      "slugA": "mcp-server-qdrant",
+      "slugB": "memory",
+      "nameA": "Mcp Server Qdrant",
+      "nameB": "Memory MCP Server"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "memory",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "Memory MCP Server"
+    },
+    {
+      "slugA": "deepwiki-mcp",
+      "slugB": "memory",
+      "nameA": "Deepwiki Mcp",
+      "nameB": "Memory MCP Server"
+    },
+    {
+      "slugA": "io-github-alphavantage-alpha-vantage-mcp",
+      "slugB": "memory",
+      "nameA": "Alpha Vantage Mcp",
+      "nameB": "Memory MCP Server"
+    },
+    {
+      "slugA": "mcp-server-browserbase",
+      "slugB": "memory",
+      "nameA": "Mcp Server Browserbase",
+      "nameB": "Memory MCP Server",
+      "category": "other"
+    },
+    {
+      "slugA": "io-github-wso2-fhir-mcp-server",
+      "slugB": "memory",
+      "nameA": "io.github.wso2/fhir-mcp-server",
+      "nameB": "Memory MCP Server"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "postgres",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "PostgreSQL MCP Server"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "puppeteer",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "Puppeteer MCP Server"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "sequential-thinking",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "Sequential Thinking MCP Server"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "scrumboy",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "Scrumboy"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "mcp-agent-mail",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "Mcp_agent_mail"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "brave-search",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Brave Search MCP Server",
+      "category": "search"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "Toolsdk Mcp Registry"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "gemini-cli",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "Gemini Cli"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "context7",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "Context7"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "python-sdk",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "Python Sdk"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "io-github-mnemox-ai-idea-reality-mcp",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "Idea Reality MCP Server"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "browser-tools-mcp",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "Browser Tools Mcp"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "firecrawl-mcp-server",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "Firecrawl Mcp Server"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "modelcontextprotocol",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "Modelcontextprotocol"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "context-mode",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "Context Mode"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "brave-search",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Brave Search MCP Server"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "observability-mcp",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "Observability Mcp"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "shadcn-ui-mcp-server",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "Shadcn Ui Mcp Server"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "dbhub",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "Dbhub"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "mcp-server-qdrant",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "Mcp Server Qdrant"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "io-github-cameroncooke-xcodebuildmcp",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "deepwiki-mcp",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "Deepwiki Mcp"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "io-github-alphavantage-alpha-vantage-mcp",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "Alpha Vantage Mcp"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "mcp-server-browserbase",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "Mcp Server Browserbase"
+    },
+    {
+      "slugA": "brave-search",
+      "slugB": "io-github-wso2-fhir-mcp-server",
+      "nameA": "Brave Search MCP Server",
+      "nameB": "io.github.wso2/fhir-mcp-server"
+    },
+    {
+      "slugA": "postgres",
+      "slugB": "puppeteer",
+      "nameA": "PostgreSQL MCP Server",
+      "nameB": "Puppeteer MCP Server"
+    },
+    {
+      "slugA": "postgres",
+      "slugB": "sequential-thinking",
+      "nameA": "PostgreSQL MCP Server",
+      "nameB": "Sequential Thinking MCP Server"
+    },
+    {
+      "slugA": "postgres",
+      "slugB": "scrumboy",
+      "nameA": "PostgreSQL MCP Server",
+      "nameB": "Scrumboy"
+    },
+    {
+      "slugA": "mcp-agent-mail",
+      "slugB": "postgres",
+      "nameA": "Mcp_agent_mail",
+      "nameB": "PostgreSQL MCP Server",
+      "category": "data"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "postgres",
+      "nameA": "Apify Mcp Server",
+      "nameB": "PostgreSQL MCP Server"
+    },
+    {
+      "slugA": "postgres",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "PostgreSQL MCP Server",
+      "nameB": "Toolsdk Mcp Registry",
+      "category": "data"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "postgres",
+      "nameA": "Gemini Cli",
+      "nameB": "PostgreSQL MCP Server"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "postgres",
+      "nameA": "Context7",
+      "nameB": "PostgreSQL MCP Server",
+      "category": "data"
+    },
+    {
+      "slugA": "postgres",
+      "slugB": "python-sdk",
+      "nameA": "PostgreSQL MCP Server",
+      "nameB": "Python Sdk"
+    },
+    {
+      "slugA": "io-github-mnemox-ai-idea-reality-mcp",
+      "slugB": "postgres",
+      "nameA": "Idea Reality MCP Server",
+      "nameB": "PostgreSQL MCP Server"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "postgres",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "PostgreSQL MCP Server"
+    },
+    {
+      "slugA": "firecrawl-mcp-server",
+      "slugB": "postgres",
+      "nameA": "Firecrawl Mcp Server",
+      "nameB": "PostgreSQL MCP Server"
+    },
+    {
+      "slugA": "modelcontextprotocol",
+      "slugB": "postgres",
+      "nameA": "Modelcontextprotocol",
+      "nameB": "PostgreSQL MCP Server",
+      "category": "data"
+    },
+    {
+      "slugA": "context-mode",
+      "slugB": "postgres",
+      "nameA": "Context Mode",
+      "nameB": "PostgreSQL MCP Server"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "postgres",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "PostgreSQL MCP Server"
+    },
+    {
+      "slugA": "observability-mcp",
+      "slugB": "postgres",
+      "nameA": "Observability Mcp",
+      "nameB": "PostgreSQL MCP Server"
+    },
+    {
+      "slugA": "postgres",
+      "slugB": "shadcn-ui-mcp-server",
+      "nameA": "PostgreSQL MCP Server",
+      "nameB": "Shadcn Ui Mcp Server"
+    },
+    {
+      "slugA": "dbhub",
+      "slugB": "postgres",
+      "nameA": "Dbhub",
+      "nameB": "PostgreSQL MCP Server",
+      "category": "data"
+    },
+    {
+      "slugA": "mcp-server-qdrant",
+      "slugB": "postgres",
+      "nameA": "Mcp Server Qdrant",
+      "nameB": "PostgreSQL MCP Server",
+      "category": "data"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "postgres",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "PostgreSQL MCP Server"
+    },
+    {
+      "slugA": "deepwiki-mcp",
+      "slugB": "postgres",
+      "nameA": "Deepwiki Mcp",
+      "nameB": "PostgreSQL MCP Server"
+    },
+    {
+      "slugA": "io-github-alphavantage-alpha-vantage-mcp",
+      "slugB": "postgres",
+      "nameA": "Alpha Vantage Mcp",
+      "nameB": "PostgreSQL MCP Server"
+    },
+    {
+      "slugA": "mcp-server-browserbase",
+      "slugB": "postgres",
+      "nameA": "Mcp Server Browserbase",
+      "nameB": "PostgreSQL MCP Server"
+    },
+    {
+      "slugA": "io-github-wso2-fhir-mcp-server",
+      "slugB": "postgres",
+      "nameA": "io.github.wso2/fhir-mcp-server",
+      "nameB": "PostgreSQL MCP Server"
+    },
+    {
+      "slugA": "puppeteer",
+      "slugB": "sequential-thinking",
+      "nameA": "Puppeteer MCP Server",
+      "nameB": "Sequential Thinking MCP Server"
+    },
+    {
+      "slugA": "puppeteer",
+      "slugB": "scrumboy",
+      "nameA": "Puppeteer MCP Server",
+      "nameB": "Scrumboy"
+    },
+    {
+      "slugA": "mcp-agent-mail",
+      "slugB": "puppeteer",
+      "nameA": "Mcp_agent_mail",
+      "nameB": "Puppeteer MCP Server"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "puppeteer",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Puppeteer MCP Server",
+      "category": "browser"
+    },
+    {
+      "slugA": "puppeteer",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Puppeteer MCP Server",
+      "nameB": "Toolsdk Mcp Registry"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "puppeteer",
+      "nameA": "Gemini Cli",
+      "nameB": "Puppeteer MCP Server"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "puppeteer",
+      "nameA": "Context7",
+      "nameB": "Puppeteer MCP Server"
+    },
+    {
+      "slugA": "puppeteer",
+      "slugB": "python-sdk",
+      "nameA": "Puppeteer MCP Server",
+      "nameB": "Python Sdk"
+    },
+    {
+      "slugA": "io-github-mnemox-ai-idea-reality-mcp",
+      "slugB": "puppeteer",
+      "nameA": "Idea Reality MCP Server",
+      "nameB": "Puppeteer MCP Server"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "puppeteer",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "Puppeteer MCP Server"
+    },
+    {
+      "slugA": "firecrawl-mcp-server",
+      "slugB": "puppeteer",
+      "nameA": "Firecrawl Mcp Server",
+      "nameB": "Puppeteer MCP Server",
+      "category": "browser"
+    },
+    {
+      "slugA": "modelcontextprotocol",
+      "slugB": "puppeteer",
+      "nameA": "Modelcontextprotocol",
+      "nameB": "Puppeteer MCP Server"
+    },
+    {
+      "slugA": "context-mode",
+      "slugB": "puppeteer",
+      "nameA": "Context Mode",
+      "nameB": "Puppeteer MCP Server"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "puppeteer",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Puppeteer MCP Server"
+    },
+    {
+      "slugA": "observability-mcp",
+      "slugB": "puppeteer",
+      "nameA": "Observability Mcp",
+      "nameB": "Puppeteer MCP Server"
+    },
+    {
+      "slugA": "puppeteer",
+      "slugB": "shadcn-ui-mcp-server",
+      "nameA": "Puppeteer MCP Server",
+      "nameB": "Shadcn Ui Mcp Server"
+    },
+    {
+      "slugA": "dbhub",
+      "slugB": "puppeteer",
+      "nameA": "Dbhub",
+      "nameB": "Puppeteer MCP Server"
+    },
+    {
+      "slugA": "mcp-server-qdrant",
+      "slugB": "puppeteer",
+      "nameA": "Mcp Server Qdrant",
+      "nameB": "Puppeteer MCP Server"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "puppeteer",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "Puppeteer MCP Server"
+    },
+    {
+      "slugA": "deepwiki-mcp",
+      "slugB": "puppeteer",
+      "nameA": "Deepwiki Mcp",
+      "nameB": "Puppeteer MCP Server"
+    },
+    {
+      "slugA": "io-github-alphavantage-alpha-vantage-mcp",
+      "slugB": "puppeteer",
+      "nameA": "Alpha Vantage Mcp",
+      "nameB": "Puppeteer MCP Server"
+    },
+    {
+      "slugA": "mcp-server-browserbase",
+      "slugB": "puppeteer",
+      "nameA": "Mcp Server Browserbase",
+      "nameB": "Puppeteer MCP Server"
+    },
+    {
+      "slugA": "io-github-wso2-fhir-mcp-server",
+      "slugB": "puppeteer",
+      "nameA": "io.github.wso2/fhir-mcp-server",
+      "nameB": "Puppeteer MCP Server"
+    },
+    {
+      "slugA": "scrumboy",
+      "slugB": "sequential-thinking",
+      "nameA": "Scrumboy",
+      "nameB": "Sequential Thinking MCP Server"
+    },
+    {
+      "slugA": "mcp-agent-mail",
+      "slugB": "sequential-thinking",
+      "nameA": "Mcp_agent_mail",
+      "nameB": "Sequential Thinking MCP Server"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "sequential-thinking",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Sequential Thinking MCP Server",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "sequential-thinking",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Sequential Thinking MCP Server",
+      "nameB": "Toolsdk Mcp Registry"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "sequential-thinking",
+      "nameA": "Gemini Cli",
+      "nameB": "Sequential Thinking MCP Server",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "sequential-thinking",
+      "nameA": "Context7",
+      "nameB": "Sequential Thinking MCP Server"
+    },
+    {
+      "slugA": "python-sdk",
+      "slugB": "sequential-thinking",
+      "nameA": "Python Sdk",
+      "nameB": "Sequential Thinking MCP Server",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "io-github-mnemox-ai-idea-reality-mcp",
+      "slugB": "sequential-thinking",
+      "nameA": "Idea Reality MCP Server",
+      "nameB": "Sequential Thinking MCP Server"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "sequential-thinking",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "Sequential Thinking MCP Server"
+    },
+    {
+      "slugA": "firecrawl-mcp-server",
+      "slugB": "sequential-thinking",
+      "nameA": "Firecrawl Mcp Server",
+      "nameB": "Sequential Thinking MCP Server"
+    },
+    {
+      "slugA": "modelcontextprotocol",
+      "slugB": "sequential-thinking",
+      "nameA": "Modelcontextprotocol",
+      "nameB": "Sequential Thinking MCP Server"
+    },
+    {
+      "slugA": "context-mode",
+      "slugB": "sequential-thinking",
+      "nameA": "Context Mode",
+      "nameB": "Sequential Thinking MCP Server"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "sequential-thinking",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Sequential Thinking MCP Server",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "observability-mcp",
+      "slugB": "sequential-thinking",
+      "nameA": "Observability Mcp",
+      "nameB": "Sequential Thinking MCP Server"
+    },
+    {
+      "slugA": "sequential-thinking",
+      "slugB": "shadcn-ui-mcp-server",
+      "nameA": "Sequential Thinking MCP Server",
+      "nameB": "Shadcn Ui Mcp Server"
+    },
+    {
+      "slugA": "dbhub",
+      "slugB": "sequential-thinking",
+      "nameA": "Dbhub",
+      "nameB": "Sequential Thinking MCP Server"
+    },
+    {
+      "slugA": "mcp-server-qdrant",
+      "slugB": "sequential-thinking",
+      "nameA": "Mcp Server Qdrant",
+      "nameB": "Sequential Thinking MCP Server"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "sequential-thinking",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "Sequential Thinking MCP Server"
+    },
+    {
+      "slugA": "deepwiki-mcp",
+      "slugB": "sequential-thinking",
+      "nameA": "Deepwiki Mcp",
+      "nameB": "Sequential Thinking MCP Server"
+    },
+    {
+      "slugA": "io-github-alphavantage-alpha-vantage-mcp",
+      "slugB": "sequential-thinking",
+      "nameA": "Alpha Vantage Mcp",
+      "nameB": "Sequential Thinking MCP Server"
+    },
+    {
+      "slugA": "mcp-server-browserbase",
+      "slugB": "sequential-thinking",
+      "nameA": "Mcp Server Browserbase",
+      "nameB": "Sequential Thinking MCP Server"
+    },
+    {
+      "slugA": "io-github-wso2-fhir-mcp-server",
+      "slugB": "sequential-thinking",
+      "nameA": "io.github.wso2/fhir-mcp-server",
+      "nameB": "Sequential Thinking MCP Server"
+    },
+    {
+      "slugA": "mcp-agent-mail",
+      "slugB": "scrumboy",
+      "nameA": "Mcp_agent_mail",
+      "nameB": "Scrumboy"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "scrumboy",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Scrumboy"
+    },
+    {
+      "slugA": "scrumboy",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Scrumboy",
+      "nameB": "Toolsdk Mcp Registry"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "scrumboy",
+      "nameA": "Gemini Cli",
+      "nameB": "Scrumboy"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "scrumboy",
+      "nameA": "Context7",
+      "nameB": "Scrumboy"
+    },
+    {
+      "slugA": "python-sdk",
+      "slugB": "scrumboy",
+      "nameA": "Python Sdk",
+      "nameB": "Scrumboy"
+    },
+    {
+      "slugA": "io-github-mnemox-ai-idea-reality-mcp",
+      "slugB": "scrumboy",
+      "nameA": "Idea Reality MCP Server",
+      "nameB": "Scrumboy"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "scrumboy",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "Scrumboy"
+    },
+    {
+      "slugA": "firecrawl-mcp-server",
+      "slugB": "scrumboy",
+      "nameA": "Firecrawl Mcp Server",
+      "nameB": "Scrumboy"
+    },
+    {
+      "slugA": "modelcontextprotocol",
+      "slugB": "scrumboy",
+      "nameA": "Modelcontextprotocol",
+      "nameB": "Scrumboy"
+    },
+    {
+      "slugA": "context-mode",
+      "slugB": "scrumboy",
+      "nameA": "Context Mode",
+      "nameB": "Scrumboy"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "scrumboy",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Scrumboy"
+    },
+    {
+      "slugA": "observability-mcp",
+      "slugB": "scrumboy",
+      "nameA": "Observability Mcp",
+      "nameB": "Scrumboy"
+    },
+    {
+      "slugA": "scrumboy",
+      "slugB": "shadcn-ui-mcp-server",
+      "nameA": "Scrumboy",
+      "nameB": "Shadcn Ui Mcp Server"
+    },
+    {
+      "slugA": "dbhub",
+      "slugB": "scrumboy",
+      "nameA": "Dbhub",
+      "nameB": "Scrumboy"
+    },
+    {
+      "slugA": "mcp-server-qdrant",
+      "slugB": "scrumboy",
+      "nameA": "Mcp Server Qdrant",
+      "nameB": "Scrumboy"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "scrumboy",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "Scrumboy",
+      "category": "productivity"
+    },
+    {
+      "slugA": "deepwiki-mcp",
+      "slugB": "scrumboy",
+      "nameA": "Deepwiki Mcp",
+      "nameB": "Scrumboy"
+    },
+    {
+      "slugA": "io-github-alphavantage-alpha-vantage-mcp",
+      "slugB": "scrumboy",
+      "nameA": "Alpha Vantage Mcp",
+      "nameB": "Scrumboy"
+    },
+    {
+      "slugA": "mcp-server-browserbase",
+      "slugB": "scrumboy",
+      "nameA": "Mcp Server Browserbase",
+      "nameB": "Scrumboy"
+    },
+    {
+      "slugA": "io-github-wso2-fhir-mcp-server",
+      "slugB": "scrumboy",
+      "nameA": "io.github.wso2/fhir-mcp-server",
+      "nameB": "Scrumboy"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "mcp-agent-mail",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Mcp_agent_mail"
+    },
+    {
+      "slugA": "mcp-agent-mail",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Mcp_agent_mail",
+      "nameB": "Toolsdk Mcp Registry",
+      "category": "data"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "mcp-agent-mail",
+      "nameA": "Gemini Cli",
+      "nameB": "Mcp_agent_mail"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "mcp-agent-mail",
+      "nameA": "Context7",
+      "nameB": "Mcp_agent_mail",
+      "category": "data"
+    },
+    {
+      "slugA": "mcp-agent-mail",
+      "slugB": "python-sdk",
+      "nameA": "Mcp_agent_mail",
+      "nameB": "Python Sdk"
+    },
+    {
+      "slugA": "io-github-mnemox-ai-idea-reality-mcp",
+      "slugB": "mcp-agent-mail",
+      "nameA": "Idea Reality MCP Server",
+      "nameB": "Mcp_agent_mail"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "mcp-agent-mail",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "Mcp_agent_mail"
+    },
+    {
+      "slugA": "firecrawl-mcp-server",
+      "slugB": "mcp-agent-mail",
+      "nameA": "Firecrawl Mcp Server",
+      "nameB": "Mcp_agent_mail"
+    },
+    {
+      "slugA": "mcp-agent-mail",
+      "slugB": "modelcontextprotocol",
+      "nameA": "Mcp_agent_mail",
+      "nameB": "Modelcontextprotocol",
+      "category": "data"
+    },
+    {
+      "slugA": "context-mode",
+      "slugB": "mcp-agent-mail",
+      "nameA": "Context Mode",
+      "nameB": "Mcp_agent_mail"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "mcp-agent-mail",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Mcp_agent_mail"
+    },
+    {
+      "slugA": "mcp-agent-mail",
+      "slugB": "observability-mcp",
+      "nameA": "Mcp_agent_mail",
+      "nameB": "Observability Mcp"
+    },
+    {
+      "slugA": "mcp-agent-mail",
+      "slugB": "shadcn-ui-mcp-server",
+      "nameA": "Mcp_agent_mail",
+      "nameB": "Shadcn Ui Mcp Server"
+    },
+    {
+      "slugA": "dbhub",
+      "slugB": "mcp-agent-mail",
+      "nameA": "Dbhub",
+      "nameB": "Mcp_agent_mail",
+      "category": "data"
+    },
+    {
+      "slugA": "mcp-agent-mail",
+      "slugB": "mcp-server-qdrant",
+      "nameA": "Mcp_agent_mail",
+      "nameB": "Mcp Server Qdrant",
+      "category": "data"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "mcp-agent-mail",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "Mcp_agent_mail"
+    },
+    {
+      "slugA": "deepwiki-mcp",
+      "slugB": "mcp-agent-mail",
+      "nameA": "Deepwiki Mcp",
+      "nameB": "Mcp_agent_mail"
+    },
+    {
+      "slugA": "io-github-alphavantage-alpha-vantage-mcp",
+      "slugB": "mcp-agent-mail",
+      "nameA": "Alpha Vantage Mcp",
+      "nameB": "Mcp_agent_mail"
+    },
+    {
+      "slugA": "mcp-agent-mail",
+      "slugB": "mcp-server-browserbase",
+      "nameA": "Mcp_agent_mail",
+      "nameB": "Mcp Server Browserbase"
+    },
+    {
+      "slugA": "io-github-wso2-fhir-mcp-server",
+      "slugB": "mcp-agent-mail",
+      "nameA": "io.github.wso2/fhir-mcp-server",
+      "nameB": "Mcp_agent_mail"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Toolsdk Mcp Registry"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "gemini-cli",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Gemini Cli",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "context7",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Context7"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "python-sdk",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Python Sdk",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "io-github-mnemox-ai-idea-reality-mcp",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Idea Reality MCP Server"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "browser-tools-mcp",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Browser Tools Mcp"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "firecrawl-mcp-server",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Firecrawl Mcp Server",
+      "category": "browser"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "modelcontextprotocol",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Modelcontextprotocol"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "context-mode",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Context Mode"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "arxiv-mcp-server",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Arxiv Mcp Server",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "observability-mcp",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Observability Mcp"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "shadcn-ui-mcp-server",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Shadcn Ui Mcp Server"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "dbhub",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Dbhub"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "mcp-server-qdrant",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Mcp Server Qdrant"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "io-github-cameroncooke-xcodebuildmcp",
+      "nameA": "Apify Mcp Server",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "deepwiki-mcp",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Deepwiki Mcp"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "io-github-alphavantage-alpha-vantage-mcp",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Alpha Vantage Mcp"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "mcp-server-browserbase",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Mcp Server Browserbase"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "io-github-wso2-fhir-mcp-server",
+      "nameA": "Apify Mcp Server",
+      "nameB": "io.github.wso2/fhir-mcp-server"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Gemini Cli",
+      "nameB": "Toolsdk Mcp Registry"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Context7",
+      "nameB": "Toolsdk Mcp Registry",
+      "category": "data"
+    },
+    {
+      "slugA": "python-sdk",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Python Sdk",
+      "nameB": "Toolsdk Mcp Registry"
+    },
+    {
+      "slugA": "io-github-mnemox-ai-idea-reality-mcp",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Idea Reality MCP Server",
+      "nameB": "Toolsdk Mcp Registry"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "Toolsdk Mcp Registry"
+    },
+    {
+      "slugA": "firecrawl-mcp-server",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Firecrawl Mcp Server",
+      "nameB": "Toolsdk Mcp Registry"
+    },
+    {
+      "slugA": "modelcontextprotocol",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Modelcontextprotocol",
+      "nameB": "Toolsdk Mcp Registry",
+      "category": "data"
+    },
+    {
+      "slugA": "context-mode",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Context Mode",
+      "nameB": "Toolsdk Mcp Registry"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Toolsdk Mcp Registry"
+    },
+    {
+      "slugA": "observability-mcp",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Observability Mcp",
+      "nameB": "Toolsdk Mcp Registry"
+    },
+    {
+      "slugA": "shadcn-ui-mcp-server",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Shadcn Ui Mcp Server",
+      "nameB": "Toolsdk Mcp Registry"
+    },
+    {
+      "slugA": "dbhub",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Dbhub",
+      "nameB": "Toolsdk Mcp Registry",
+      "category": "data"
+    },
+    {
+      "slugA": "mcp-server-qdrant",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Mcp Server Qdrant",
+      "nameB": "Toolsdk Mcp Registry",
+      "category": "data"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "Toolsdk Mcp Registry"
+    },
+    {
+      "slugA": "deepwiki-mcp",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Deepwiki Mcp",
+      "nameB": "Toolsdk Mcp Registry"
+    },
+    {
+      "slugA": "io-github-alphavantage-alpha-vantage-mcp",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Alpha Vantage Mcp",
+      "nameB": "Toolsdk Mcp Registry"
+    },
+    {
+      "slugA": "mcp-server-browserbase",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Mcp Server Browserbase",
+      "nameB": "Toolsdk Mcp Registry"
+    },
+    {
+      "slugA": "io-github-wso2-fhir-mcp-server",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "io.github.wso2/fhir-mcp-server",
+      "nameB": "Toolsdk Mcp Registry"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "gemini-cli",
+      "nameA": "Context7",
+      "nameB": "Gemini Cli"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "python-sdk",
+      "nameA": "Gemini Cli",
+      "nameB": "Python Sdk",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "io-github-mnemox-ai-idea-reality-mcp",
+      "nameA": "Gemini Cli",
+      "nameB": "Idea Reality MCP Server"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "gemini-cli",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "Gemini Cli"
+    },
+    {
+      "slugA": "firecrawl-mcp-server",
+      "slugB": "gemini-cli",
+      "nameA": "Firecrawl Mcp Server",
+      "nameB": "Gemini Cli"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "modelcontextprotocol",
+      "nameA": "Gemini Cli",
+      "nameB": "Modelcontextprotocol"
+    },
+    {
+      "slugA": "context-mode",
+      "slugB": "gemini-cli",
+      "nameA": "Context Mode",
+      "nameB": "Gemini Cli"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "gemini-cli",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Gemini Cli",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "observability-mcp",
+      "nameA": "Gemini Cli",
+      "nameB": "Observability Mcp"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "shadcn-ui-mcp-server",
+      "nameA": "Gemini Cli",
+      "nameB": "Shadcn Ui Mcp Server"
+    },
+    {
+      "slugA": "dbhub",
+      "slugB": "gemini-cli",
+      "nameA": "Dbhub",
+      "nameB": "Gemini Cli"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "mcp-server-qdrant",
+      "nameA": "Gemini Cli",
+      "nameB": "Mcp Server Qdrant"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "io-github-cameroncooke-xcodebuildmcp",
+      "nameA": "Gemini Cli",
+      "nameB": "XcodeBuildMCP",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "deepwiki-mcp",
+      "slugB": "gemini-cli",
+      "nameA": "Deepwiki Mcp",
+      "nameB": "Gemini Cli"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "io-github-alphavantage-alpha-vantage-mcp",
+      "nameA": "Gemini Cli",
+      "nameB": "Alpha Vantage Mcp"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "mcp-server-browserbase",
+      "nameA": "Gemini Cli",
+      "nameB": "Mcp Server Browserbase"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "io-github-wso2-fhir-mcp-server",
+      "nameA": "Gemini Cli",
+      "nameB": "io.github.wso2/fhir-mcp-server"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "python-sdk",
+      "nameA": "Context7",
+      "nameB": "Python Sdk"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "io-github-mnemox-ai-idea-reality-mcp",
+      "nameA": "Context7",
+      "nameB": "Idea Reality MCP Server"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "context7",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "Context7"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "firecrawl-mcp-server",
+      "nameA": "Context7",
+      "nameB": "Firecrawl Mcp Server"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "modelcontextprotocol",
+      "nameA": "Context7",
+      "nameB": "Modelcontextprotocol",
+      "category": "data"
+    },
+    {
+      "slugA": "context-mode",
+      "slugB": "context7",
+      "nameA": "Context Mode",
+      "nameB": "Context7"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "context7",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Context7"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "observability-mcp",
+      "nameA": "Context7",
+      "nameB": "Observability Mcp"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "shadcn-ui-mcp-server",
+      "nameA": "Context7",
+      "nameB": "Shadcn Ui Mcp Server"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "dbhub",
+      "nameA": "Context7",
+      "nameB": "Dbhub",
+      "category": "data"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "mcp-server-qdrant",
+      "nameA": "Context7",
+      "nameB": "Mcp Server Qdrant",
+      "category": "data"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "io-github-cameroncooke-xcodebuildmcp",
+      "nameA": "Context7",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "deepwiki-mcp",
+      "nameA": "Context7",
+      "nameB": "Deepwiki Mcp"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "io-github-alphavantage-alpha-vantage-mcp",
+      "nameA": "Context7",
+      "nameB": "Alpha Vantage Mcp"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "mcp-server-browserbase",
+      "nameA": "Context7",
+      "nameB": "Mcp Server Browserbase"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "io-github-wso2-fhir-mcp-server",
+      "nameA": "Context7",
+      "nameB": "io.github.wso2/fhir-mcp-server"
+    },
+    {
+      "slugA": "io-github-mnemox-ai-idea-reality-mcp",
+      "slugB": "python-sdk",
+      "nameA": "Idea Reality MCP Server",
+      "nameB": "Python Sdk"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "python-sdk",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "Python Sdk"
+    },
+    {
+      "slugA": "firecrawl-mcp-server",
+      "slugB": "python-sdk",
+      "nameA": "Firecrawl Mcp Server",
+      "nameB": "Python Sdk"
+    },
+    {
+      "slugA": "modelcontextprotocol",
+      "slugB": "python-sdk",
+      "nameA": "Modelcontextprotocol",
+      "nameB": "Python Sdk"
+    },
+    {
+      "slugA": "context-mode",
+      "slugB": "python-sdk",
+      "nameA": "Context Mode",
+      "nameB": "Python Sdk"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "python-sdk",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Python Sdk",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "observability-mcp",
+      "slugB": "python-sdk",
+      "nameA": "Observability Mcp",
+      "nameB": "Python Sdk"
+    },
+    {
+      "slugA": "python-sdk",
+      "slugB": "shadcn-ui-mcp-server",
+      "nameA": "Python Sdk",
+      "nameB": "Shadcn Ui Mcp Server"
+    },
+    {
+      "slugA": "dbhub",
+      "slugB": "python-sdk",
+      "nameA": "Dbhub",
+      "nameB": "Python Sdk"
+    },
+    {
+      "slugA": "mcp-server-qdrant",
+      "slugB": "python-sdk",
+      "nameA": "Mcp Server Qdrant",
+      "nameB": "Python Sdk"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "python-sdk",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "Python Sdk"
+    },
+    {
+      "slugA": "deepwiki-mcp",
+      "slugB": "python-sdk",
+      "nameA": "Deepwiki Mcp",
+      "nameB": "Python Sdk"
+    },
+    {
+      "slugA": "io-github-alphavantage-alpha-vantage-mcp",
+      "slugB": "python-sdk",
+      "nameA": "Alpha Vantage Mcp",
+      "nameB": "Python Sdk"
+    },
+    {
+      "slugA": "mcp-server-browserbase",
+      "slugB": "python-sdk",
+      "nameA": "Mcp Server Browserbase",
+      "nameB": "Python Sdk"
+    },
+    {
+      "slugA": "io-github-wso2-fhir-mcp-server",
+      "slugB": "python-sdk",
+      "nameA": "io.github.wso2/fhir-mcp-server",
+      "nameB": "Python Sdk"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "io-github-mnemox-ai-idea-reality-mcp",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "Idea Reality MCP Server",
+      "category": "other"
+    },
+    {
+      "slugA": "firecrawl-mcp-server",
+      "slugB": "io-github-mnemox-ai-idea-reality-mcp",
+      "nameA": "Firecrawl Mcp Server",
+      "nameB": "Idea Reality MCP Server"
+    },
+    {
+      "slugA": "io-github-mnemox-ai-idea-reality-mcp",
+      "slugB": "modelcontextprotocol",
+      "nameA": "Idea Reality MCP Server",
+      "nameB": "Modelcontextprotocol"
+    },
+    {
+      "slugA": "context-mode",
+      "slugB": "io-github-mnemox-ai-idea-reality-mcp",
+      "nameA": "Context Mode",
+      "nameB": "Idea Reality MCP Server",
+      "category": "other"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "io-github-mnemox-ai-idea-reality-mcp",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Idea Reality MCP Server"
+    },
+    {
+      "slugA": "io-github-mnemox-ai-idea-reality-mcp",
+      "slugB": "observability-mcp",
+      "nameA": "Idea Reality MCP Server",
+      "nameB": "Observability Mcp"
+    },
+    {
+      "slugA": "io-github-mnemox-ai-idea-reality-mcp",
+      "slugB": "shadcn-ui-mcp-server",
+      "nameA": "Idea Reality MCP Server",
+      "nameB": "Shadcn Ui Mcp Server"
+    },
+    {
+      "slugA": "dbhub",
+      "slugB": "io-github-mnemox-ai-idea-reality-mcp",
+      "nameA": "Dbhub",
+      "nameB": "Idea Reality MCP Server"
+    },
+    {
+      "slugA": "io-github-mnemox-ai-idea-reality-mcp",
+      "slugB": "mcp-server-qdrant",
+      "nameA": "Idea Reality MCP Server",
+      "nameB": "Mcp Server Qdrant"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "io-github-mnemox-ai-idea-reality-mcp",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "Idea Reality MCP Server"
+    },
+    {
+      "slugA": "deepwiki-mcp",
+      "slugB": "io-github-mnemox-ai-idea-reality-mcp",
+      "nameA": "Deepwiki Mcp",
+      "nameB": "Idea Reality MCP Server"
+    },
+    {
+      "slugA": "io-github-alphavantage-alpha-vantage-mcp",
+      "slugB": "io-github-mnemox-ai-idea-reality-mcp",
+      "nameA": "Alpha Vantage Mcp",
+      "nameB": "Idea Reality MCP Server"
+    },
+    {
+      "slugA": "io-github-mnemox-ai-idea-reality-mcp",
+      "slugB": "mcp-server-browserbase",
+      "nameA": "Idea Reality MCP Server",
+      "nameB": "Mcp Server Browserbase",
+      "category": "other"
+    },
+    {
+      "slugA": "io-github-mnemox-ai-idea-reality-mcp",
+      "slugB": "io-github-wso2-fhir-mcp-server",
+      "nameA": "Idea Reality MCP Server",
+      "nameB": "io.github.wso2/fhir-mcp-server"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "firecrawl-mcp-server",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "Firecrawl Mcp Server"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "modelcontextprotocol",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "Modelcontextprotocol"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "context-mode",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "Context Mode",
+      "category": "other"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "browser-tools-mcp",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Browser Tools Mcp"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "observability-mcp",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "Observability Mcp"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "shadcn-ui-mcp-server",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "Shadcn Ui Mcp Server"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "dbhub",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "Dbhub"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "mcp-server-qdrant",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "Mcp Server Qdrant"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "io-github-cameroncooke-xcodebuildmcp",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "deepwiki-mcp",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "Deepwiki Mcp"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "io-github-alphavantage-alpha-vantage-mcp",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "Alpha Vantage Mcp"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "mcp-server-browserbase",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "Mcp Server Browserbase",
+      "category": "other"
+    },
+    {
+      "slugA": "browser-tools-mcp",
+      "slugB": "io-github-wso2-fhir-mcp-server",
+      "nameA": "Browser Tools Mcp",
+      "nameB": "io.github.wso2/fhir-mcp-server"
+    },
+    {
+      "slugA": "firecrawl-mcp-server",
+      "slugB": "modelcontextprotocol",
+      "nameA": "Firecrawl Mcp Server",
+      "nameB": "Modelcontextprotocol"
+    },
+    {
+      "slugA": "context-mode",
+      "slugB": "firecrawl-mcp-server",
+      "nameA": "Context Mode",
+      "nameB": "Firecrawl Mcp Server"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "firecrawl-mcp-server",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Firecrawl Mcp Server"
+    },
+    {
+      "slugA": "firecrawl-mcp-server",
+      "slugB": "observability-mcp",
+      "nameA": "Firecrawl Mcp Server",
+      "nameB": "Observability Mcp"
+    },
+    {
+      "slugA": "firecrawl-mcp-server",
+      "slugB": "shadcn-ui-mcp-server",
+      "nameA": "Firecrawl Mcp Server",
+      "nameB": "Shadcn Ui Mcp Server"
+    },
+    {
+      "slugA": "dbhub",
+      "slugB": "firecrawl-mcp-server",
+      "nameA": "Dbhub",
+      "nameB": "Firecrawl Mcp Server"
+    },
+    {
+      "slugA": "firecrawl-mcp-server",
+      "slugB": "mcp-server-qdrant",
+      "nameA": "Firecrawl Mcp Server",
+      "nameB": "Mcp Server Qdrant"
+    },
+    {
+      "slugA": "firecrawl-mcp-server",
+      "slugB": "io-github-cameroncooke-xcodebuildmcp",
+      "nameA": "Firecrawl Mcp Server",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "deepwiki-mcp",
+      "slugB": "firecrawl-mcp-server",
+      "nameA": "Deepwiki Mcp",
+      "nameB": "Firecrawl Mcp Server"
+    },
+    {
+      "slugA": "firecrawl-mcp-server",
+      "slugB": "io-github-alphavantage-alpha-vantage-mcp",
+      "nameA": "Firecrawl Mcp Server",
+      "nameB": "Alpha Vantage Mcp"
+    },
+    {
+      "slugA": "firecrawl-mcp-server",
+      "slugB": "mcp-server-browserbase",
+      "nameA": "Firecrawl Mcp Server",
+      "nameB": "Mcp Server Browserbase"
+    },
+    {
+      "slugA": "firecrawl-mcp-server",
+      "slugB": "io-github-wso2-fhir-mcp-server",
+      "nameA": "Firecrawl Mcp Server",
+      "nameB": "io.github.wso2/fhir-mcp-server"
+    },
+    {
+      "slugA": "context-mode",
+      "slugB": "modelcontextprotocol",
+      "nameA": "Context Mode",
+      "nameB": "Modelcontextprotocol"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "modelcontextprotocol",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Modelcontextprotocol"
+    },
+    {
+      "slugA": "modelcontextprotocol",
+      "slugB": "observability-mcp",
+      "nameA": "Modelcontextprotocol",
+      "nameB": "Observability Mcp"
+    },
+    {
+      "slugA": "modelcontextprotocol",
+      "slugB": "shadcn-ui-mcp-server",
+      "nameA": "Modelcontextprotocol",
+      "nameB": "Shadcn Ui Mcp Server"
+    },
+    {
+      "slugA": "dbhub",
+      "slugB": "modelcontextprotocol",
+      "nameA": "Dbhub",
+      "nameB": "Modelcontextprotocol",
+      "category": "data"
+    },
+    {
+      "slugA": "mcp-server-qdrant",
+      "slugB": "modelcontextprotocol",
+      "nameA": "Mcp Server Qdrant",
+      "nameB": "Modelcontextprotocol",
+      "category": "data"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "modelcontextprotocol",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "Modelcontextprotocol"
+    },
+    {
+      "slugA": "deepwiki-mcp",
+      "slugB": "modelcontextprotocol",
+      "nameA": "Deepwiki Mcp",
+      "nameB": "Modelcontextprotocol"
+    },
+    {
+      "slugA": "io-github-alphavantage-alpha-vantage-mcp",
+      "slugB": "modelcontextprotocol",
+      "nameA": "Alpha Vantage Mcp",
+      "nameB": "Modelcontextprotocol"
+    },
+    {
+      "slugA": "mcp-server-browserbase",
+      "slugB": "modelcontextprotocol",
+      "nameA": "Mcp Server Browserbase",
+      "nameB": "Modelcontextprotocol"
+    },
+    {
+      "slugA": "io-github-wso2-fhir-mcp-server",
+      "slugB": "modelcontextprotocol",
+      "nameA": "io.github.wso2/fhir-mcp-server",
+      "nameB": "Modelcontextprotocol"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "context-mode",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Context Mode"
+    },
+    {
+      "slugA": "context-mode",
+      "slugB": "observability-mcp",
+      "nameA": "Context Mode",
+      "nameB": "Observability Mcp"
+    },
+    {
+      "slugA": "context-mode",
+      "slugB": "shadcn-ui-mcp-server",
+      "nameA": "Context Mode",
+      "nameB": "Shadcn Ui Mcp Server"
+    },
+    {
+      "slugA": "context-mode",
+      "slugB": "dbhub",
+      "nameA": "Context Mode",
+      "nameB": "Dbhub"
+    },
+    {
+      "slugA": "context-mode",
+      "slugB": "mcp-server-qdrant",
+      "nameA": "Context Mode",
+      "nameB": "Mcp Server Qdrant"
+    },
+    {
+      "slugA": "context-mode",
+      "slugB": "io-github-cameroncooke-xcodebuildmcp",
+      "nameA": "Context Mode",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "context-mode",
+      "slugB": "deepwiki-mcp",
+      "nameA": "Context Mode",
+      "nameB": "Deepwiki Mcp"
+    },
+    {
+      "slugA": "context-mode",
+      "slugB": "io-github-alphavantage-alpha-vantage-mcp",
+      "nameA": "Context Mode",
+      "nameB": "Alpha Vantage Mcp"
+    },
+    {
+      "slugA": "context-mode",
+      "slugB": "mcp-server-browserbase",
+      "nameA": "Context Mode",
+      "nameB": "Mcp Server Browserbase",
+      "category": "other"
+    },
+    {
+      "slugA": "context-mode",
+      "slugB": "io-github-wso2-fhir-mcp-server",
+      "nameA": "Context Mode",
+      "nameB": "io.github.wso2/fhir-mcp-server"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "observability-mcp",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Observability Mcp"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "shadcn-ui-mcp-server",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Shadcn Ui Mcp Server"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "dbhub",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Dbhub"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "mcp-server-qdrant",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Mcp Server Qdrant"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "io-github-cameroncooke-xcodebuildmcp",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "deepwiki-mcp",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Deepwiki Mcp",
+      "category": "education"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "io-github-alphavantage-alpha-vantage-mcp",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Alpha Vantage Mcp"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "mcp-server-browserbase",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Mcp Server Browserbase"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "io-github-wso2-fhir-mcp-server",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "io.github.wso2/fhir-mcp-server"
+    },
+    {
+      "slugA": "observability-mcp",
+      "slugB": "shadcn-ui-mcp-server",
+      "nameA": "Observability Mcp",
+      "nameB": "Shadcn Ui Mcp Server"
+    },
+    {
+      "slugA": "dbhub",
+      "slugB": "observability-mcp",
+      "nameA": "Dbhub",
+      "nameB": "Observability Mcp"
+    },
+    {
+      "slugA": "mcp-server-qdrant",
+      "slugB": "observability-mcp",
+      "nameA": "Mcp Server Qdrant",
+      "nameB": "Observability Mcp"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "observability-mcp",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "Observability Mcp"
+    },
+    {
+      "slugA": "deepwiki-mcp",
+      "slugB": "observability-mcp",
+      "nameA": "Deepwiki Mcp",
+      "nameB": "Observability Mcp"
+    },
+    {
+      "slugA": "io-github-alphavantage-alpha-vantage-mcp",
+      "slugB": "observability-mcp",
+      "nameA": "Alpha Vantage Mcp",
+      "nameB": "Observability Mcp"
+    },
+    {
+      "slugA": "mcp-server-browserbase",
+      "slugB": "observability-mcp",
+      "nameA": "Mcp Server Browserbase",
+      "nameB": "Observability Mcp"
+    },
+    {
+      "slugA": "io-github-wso2-fhir-mcp-server",
+      "slugB": "observability-mcp",
+      "nameA": "io.github.wso2/fhir-mcp-server",
+      "nameB": "Observability Mcp"
+    },
+    {
+      "slugA": "dbhub",
+      "slugB": "shadcn-ui-mcp-server",
+      "nameA": "Dbhub",
+      "nameB": "Shadcn Ui Mcp Server"
+    },
+    {
+      "slugA": "mcp-server-qdrant",
+      "slugB": "shadcn-ui-mcp-server",
+      "nameA": "Mcp Server Qdrant",
+      "nameB": "Shadcn Ui Mcp Server"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "shadcn-ui-mcp-server",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "Shadcn Ui Mcp Server"
+    },
+    {
+      "slugA": "deepwiki-mcp",
+      "slugB": "shadcn-ui-mcp-server",
+      "nameA": "Deepwiki Mcp",
+      "nameB": "Shadcn Ui Mcp Server"
+    },
+    {
+      "slugA": "io-github-alphavantage-alpha-vantage-mcp",
+      "slugB": "shadcn-ui-mcp-server",
+      "nameA": "Alpha Vantage Mcp",
+      "nameB": "Shadcn Ui Mcp Server"
+    },
+    {
+      "slugA": "mcp-server-browserbase",
+      "slugB": "shadcn-ui-mcp-server",
+      "nameA": "Mcp Server Browserbase",
+      "nameB": "Shadcn Ui Mcp Server"
+    },
+    {
+      "slugA": "io-github-wso2-fhir-mcp-server",
+      "slugB": "shadcn-ui-mcp-server",
+      "nameA": "io.github.wso2/fhir-mcp-server",
+      "nameB": "Shadcn Ui Mcp Server"
+    },
+    {
+      "slugA": "dbhub",
+      "slugB": "mcp-server-qdrant",
+      "nameA": "Dbhub",
+      "nameB": "Mcp Server Qdrant",
+      "category": "data"
+    },
+    {
+      "slugA": "dbhub",
+      "slugB": "io-github-cameroncooke-xcodebuildmcp",
+      "nameA": "Dbhub",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "dbhub",
+      "slugB": "deepwiki-mcp",
+      "nameA": "Dbhub",
+      "nameB": "Deepwiki Mcp"
+    },
+    {
+      "slugA": "dbhub",
+      "slugB": "io-github-alphavantage-alpha-vantage-mcp",
+      "nameA": "Dbhub",
+      "nameB": "Alpha Vantage Mcp"
+    },
+    {
+      "slugA": "dbhub",
+      "slugB": "mcp-server-browserbase",
+      "nameA": "Dbhub",
+      "nameB": "Mcp Server Browserbase"
+    },
+    {
+      "slugA": "dbhub",
+      "slugB": "io-github-wso2-fhir-mcp-server",
+      "nameA": "Dbhub",
+      "nameB": "io.github.wso2/fhir-mcp-server"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "mcp-server-qdrant",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "Mcp Server Qdrant"
+    },
+    {
+      "slugA": "deepwiki-mcp",
+      "slugB": "mcp-server-qdrant",
+      "nameA": "Deepwiki Mcp",
+      "nameB": "Mcp Server Qdrant"
+    },
+    {
+      "slugA": "io-github-alphavantage-alpha-vantage-mcp",
+      "slugB": "mcp-server-qdrant",
+      "nameA": "Alpha Vantage Mcp",
+      "nameB": "Mcp Server Qdrant"
+    },
+    {
+      "slugA": "mcp-server-browserbase",
+      "slugB": "mcp-server-qdrant",
+      "nameA": "Mcp Server Browserbase",
+      "nameB": "Mcp Server Qdrant"
+    },
+    {
+      "slugA": "io-github-wso2-fhir-mcp-server",
+      "slugB": "mcp-server-qdrant",
+      "nameA": "io.github.wso2/fhir-mcp-server",
+      "nameB": "Mcp Server Qdrant"
+    },
+    {
+      "slugA": "deepwiki-mcp",
+      "slugB": "io-github-cameroncooke-xcodebuildmcp",
+      "nameA": "Deepwiki Mcp",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "io-github-alphavantage-alpha-vantage-mcp",
+      "slugB": "io-github-cameroncooke-xcodebuildmcp",
+      "nameA": "Alpha Vantage Mcp",
+      "nameB": "XcodeBuildMCP"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "mcp-server-browserbase",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "Mcp Server Browserbase"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "io-github-wso2-fhir-mcp-server",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "io.github.wso2/fhir-mcp-server"
+    },
+    {
+      "slugA": "deepwiki-mcp",
+      "slugB": "io-github-alphavantage-alpha-vantage-mcp",
+      "nameA": "Deepwiki Mcp",
+      "nameB": "Alpha Vantage Mcp"
+    },
+    {
+      "slugA": "deepwiki-mcp",
+      "slugB": "mcp-server-browserbase",
+      "nameA": "Deepwiki Mcp",
+      "nameB": "Mcp Server Browserbase"
+    },
+    {
+      "slugA": "deepwiki-mcp",
+      "slugB": "io-github-wso2-fhir-mcp-server",
+      "nameA": "Deepwiki Mcp",
+      "nameB": "io.github.wso2/fhir-mcp-server"
+    },
+    {
+      "slugA": "io-github-alphavantage-alpha-vantage-mcp",
+      "slugB": "mcp-server-browserbase",
+      "nameA": "Alpha Vantage Mcp",
+      "nameB": "Mcp Server Browserbase"
+    },
+    {
+      "slugA": "io-github-alphavantage-alpha-vantage-mcp",
+      "slugB": "io-github-wso2-fhir-mcp-server",
+      "nameA": "Alpha Vantage Mcp",
+      "nameB": "io.github.wso2/fhir-mcp-server"
+    },
+    {
+      "slugA": "io-github-wso2-fhir-mcp-server",
+      "slugB": "mcp-server-browserbase",
+      "nameA": "io.github.wso2/fhir-mcp-server",
+      "nameB": "Mcp Server Browserbase"
+    },
+    {
+      "slugA": "nitrostack",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Nitrostack",
+      "nameB": "XcodeBuildMCP",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "jcodemunch-mcp",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Jcodemunch Mcp",
+      "nameB": "XcodeBuildMCP",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "mcp-memory-service",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Mcp Memory Service",
+      "nameB": "XcodeBuildMCP",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "xcode-mcp-server",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Xcode Mcp Server",
+      "nameB": "XcodeBuildMCP",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "spec-workflow-mcp",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Spec Workflow Mcp",
+      "nameB": "XcodeBuildMCP",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "mcp-server-mcppedia",
+      "slugB": "xcodebuildmcp",
+      "nameA": "MCPpedia",
+      "nameB": "XcodeBuildMCP",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "desktopcommandermcp",
+      "slugB": "xcodebuildmcp",
+      "nameA": "DesktopCommanderMCP",
+      "nameB": "XcodeBuildMCP",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "nitrostack",
+      "nameA": "Gemini Cli",
+      "nameB": "Nitrostack",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "jcodemunch-mcp",
+      "nameA": "Gemini Cli",
+      "nameB": "Jcodemunch Mcp",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "mcp-memory-service",
+      "nameA": "Gemini Cli",
+      "nameB": "Mcp Memory Service",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "xcode-mcp-server",
+      "nameA": "Gemini Cli",
+      "nameB": "Xcode Mcp Server",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "spec-workflow-mcp",
+      "nameA": "Gemini Cli",
+      "nameB": "Spec Workflow Mcp",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "mcp-server-mcppedia",
+      "nameA": "Gemini Cli",
+      "nameB": "MCPpedia",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "desktopcommandermcp",
+      "slugB": "gemini-cli",
+      "nameA": "DesktopCommanderMCP",
+      "nameB": "Gemini Cli",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "nitrostack",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "Nitrostack",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "jcodemunch-mcp",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "Jcodemunch Mcp",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "mcp-memory-service",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "Mcp Memory Service",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "xcode-mcp-server",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "Xcode Mcp Server",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "spec-workflow-mcp",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "Spec Workflow Mcp",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "mcp-server-mcppedia",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "MCPpedia",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "desktopcommandermcp",
+      "slugB": "io-github-cameroncooke-xcodebuildmcp",
+      "nameA": "DesktopCommanderMCP",
+      "nameB": "XcodeBuildMCP",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "jcodemunch-mcp",
+      "slugB": "nitrostack",
+      "nameA": "Jcodemunch Mcp",
+      "nameB": "Nitrostack",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "mcp-memory-service",
+      "slugB": "nitrostack",
+      "nameA": "Mcp Memory Service",
+      "nameB": "Nitrostack",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "nitrostack",
+      "slugB": "xcode-mcp-server",
+      "nameA": "Nitrostack",
+      "nameB": "Xcode Mcp Server",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "nitrostack",
+      "slugB": "spec-workflow-mcp",
+      "nameA": "Nitrostack",
+      "nameB": "Spec Workflow Mcp",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "mcp-server-mcppedia",
+      "slugB": "nitrostack",
+      "nameA": "MCPpedia",
+      "nameB": "Nitrostack",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "desktopcommandermcp",
+      "slugB": "nitrostack",
+      "nameA": "DesktopCommanderMCP",
+      "nameB": "Nitrostack",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "jcodemunch-mcp",
+      "slugB": "mcp-memory-service",
+      "nameA": "Jcodemunch Mcp",
+      "nameB": "Mcp Memory Service",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "jcodemunch-mcp",
+      "slugB": "xcode-mcp-server",
+      "nameA": "Jcodemunch Mcp",
+      "nameB": "Xcode Mcp Server",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "jcodemunch-mcp",
+      "slugB": "spec-workflow-mcp",
+      "nameA": "Jcodemunch Mcp",
+      "nameB": "Spec Workflow Mcp",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "jcodemunch-mcp",
+      "slugB": "mcp-server-mcppedia",
+      "nameA": "Jcodemunch Mcp",
+      "nameB": "MCPpedia",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "desktopcommandermcp",
+      "slugB": "jcodemunch-mcp",
+      "nameA": "DesktopCommanderMCP",
+      "nameB": "Jcodemunch Mcp",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "mcp-memory-service",
+      "slugB": "xcode-mcp-server",
+      "nameA": "Mcp Memory Service",
+      "nameB": "Xcode Mcp Server",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "mcp-memory-service",
+      "slugB": "spec-workflow-mcp",
+      "nameA": "Mcp Memory Service",
+      "nameB": "Spec Workflow Mcp",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "mcp-memory-service",
+      "slugB": "mcp-server-mcppedia",
+      "nameA": "Mcp Memory Service",
+      "nameB": "MCPpedia",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "desktopcommandermcp",
+      "slugB": "mcp-memory-service",
+      "nameA": "DesktopCommanderMCP",
+      "nameB": "Mcp Memory Service",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "spec-workflow-mcp",
+      "slugB": "xcode-mcp-server",
+      "nameA": "Spec Workflow Mcp",
+      "nameB": "Xcode Mcp Server",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "mcp-server-mcppedia",
+      "slugB": "xcode-mcp-server",
+      "nameA": "MCPpedia",
+      "nameB": "Xcode Mcp Server",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "desktopcommandermcp",
+      "slugB": "xcode-mcp-server",
+      "nameA": "DesktopCommanderMCP",
+      "nameB": "Xcode Mcp Server",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "mcp-server-mcppedia",
+      "slugB": "spec-workflow-mcp",
+      "nameA": "MCPpedia",
+      "nameB": "Spec Workflow Mcp",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "desktopcommandermcp",
+      "slugB": "spec-workflow-mcp",
+      "nameA": "DesktopCommanderMCP",
+      "nameB": "Spec Workflow Mcp",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "desktopcommandermcp",
+      "slugB": "mcp-server-mcppedia",
+      "nameA": "DesktopCommanderMCP",
+      "nameB": "MCPpedia",
+      "category": "developer-tools"
+    },
+    {
+      "slugA": "notion-mcp-server",
+      "slugB": "scrumboy",
+      "nameA": "Notion Mcp Server",
+      "nameB": "Scrumboy",
+      "category": "productivity"
+    },
+    {
+      "slugA": "airtable-mcp-server",
+      "slugB": "scrumboy",
+      "nameA": "Airtable Mcp Server",
+      "nameB": "Scrumboy",
+      "category": "productivity"
+    },
+    {
+      "slugA": "io-github-es617-obsidian-sync-mcp",
+      "slugB": "scrumboy",
+      "nameA": "Obsidian Sync MCP Server",
+      "nameB": "Scrumboy",
+      "category": "productivity"
+    },
+    {
+      "slugA": "io-github-maxim-mazurok-teams-api",
+      "slugB": "scrumboy",
+      "nameA": "io.github.Maxim-Mazurok/teams-api",
+      "nameB": "Scrumboy",
+      "category": "productivity"
+    },
+    {
+      "slugA": "google-workspace-mcp",
+      "slugB": "scrumboy",
+      "nameA": "Google_workspace_mcp",
+      "nameB": "Scrumboy",
+      "category": "productivity"
+    },
+    {
+      "slugA": "io-github-eclipse-cj-paper-distill-mcp",
+      "slugB": "scrumboy",
+      "nameA": "Paper Distill MCP Server",
+      "nameB": "Scrumboy",
+      "category": "productivity"
+    },
+    {
+      "slugA": "scrumboy",
+      "slugB": "todoist-mcp",
+      "nameA": "Scrumboy",
+      "nameB": "Todoist Mcp",
+      "category": "productivity"
+    },
+    {
+      "slugA": "raindrop-io-mcp-server",
+      "slugB": "scrumboy",
+      "nameA": "Raindrop Io Mcp Server",
+      "nameB": "Scrumboy",
+      "category": "productivity"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "notion-mcp-server",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "Notion Mcp Server",
+      "category": "productivity"
+    },
+    {
+      "slugA": "airtable-mcp-server",
+      "slugB": "io-github-cameroncooke-xcodebuildmcp",
+      "nameA": "Airtable Mcp Server",
+      "nameB": "XcodeBuildMCP",
+      "category": "productivity"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "io-github-es617-obsidian-sync-mcp",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "Obsidian Sync MCP Server",
+      "category": "productivity"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "io-github-maxim-mazurok-teams-api",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "io.github.Maxim-Mazurok/teams-api",
+      "category": "productivity"
+    },
+    {
+      "slugA": "google-workspace-mcp",
+      "slugB": "io-github-cameroncooke-xcodebuildmcp",
+      "nameA": "Google_workspace_mcp",
+      "nameB": "XcodeBuildMCP",
+      "category": "productivity"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "io-github-eclipse-cj-paper-distill-mcp",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "Paper Distill MCP Server",
+      "category": "productivity"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "todoist-mcp",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "Todoist Mcp",
+      "category": "productivity"
+    },
+    {
+      "slugA": "io-github-cameroncooke-xcodebuildmcp",
+      "slugB": "raindrop-io-mcp-server",
+      "nameA": "XcodeBuildMCP",
+      "nameB": "Raindrop Io Mcp Server",
+      "category": "productivity"
+    },
+    {
+      "slugA": "airtable-mcp-server",
+      "slugB": "notion-mcp-server",
+      "nameA": "Airtable Mcp Server",
+      "nameB": "Notion Mcp Server",
+      "category": "productivity"
+    },
+    {
+      "slugA": "io-github-es617-obsidian-sync-mcp",
+      "slugB": "notion-mcp-server",
+      "nameA": "Obsidian Sync MCP Server",
+      "nameB": "Notion Mcp Server",
+      "category": "productivity"
+    },
+    {
+      "slugA": "io-github-maxim-mazurok-teams-api",
+      "slugB": "notion-mcp-server",
+      "nameA": "io.github.Maxim-Mazurok/teams-api",
+      "nameB": "Notion Mcp Server",
+      "category": "productivity"
+    },
+    {
+      "slugA": "google-workspace-mcp",
+      "slugB": "notion-mcp-server",
+      "nameA": "Google_workspace_mcp",
+      "nameB": "Notion Mcp Server",
+      "category": "productivity"
+    },
+    {
+      "slugA": "io-github-eclipse-cj-paper-distill-mcp",
+      "slugB": "notion-mcp-server",
+      "nameA": "Paper Distill MCP Server",
+      "nameB": "Notion Mcp Server",
+      "category": "productivity"
+    },
+    {
+      "slugA": "notion-mcp-server",
+      "slugB": "todoist-mcp",
+      "nameA": "Notion Mcp Server",
+      "nameB": "Todoist Mcp",
+      "category": "productivity"
+    },
+    {
+      "slugA": "notion-mcp-server",
+      "slugB": "raindrop-io-mcp-server",
+      "nameA": "Notion Mcp Server",
+      "nameB": "Raindrop Io Mcp Server",
+      "category": "productivity"
+    },
+    {
+      "slugA": "airtable-mcp-server",
+      "slugB": "io-github-es617-obsidian-sync-mcp",
+      "nameA": "Airtable Mcp Server",
+      "nameB": "Obsidian Sync MCP Server",
+      "category": "productivity"
+    },
+    {
+      "slugA": "airtable-mcp-server",
+      "slugB": "io-github-maxim-mazurok-teams-api",
+      "nameA": "Airtable Mcp Server",
+      "nameB": "io.github.Maxim-Mazurok/teams-api",
+      "category": "productivity"
+    },
+    {
+      "slugA": "airtable-mcp-server",
+      "slugB": "google-workspace-mcp",
+      "nameA": "Airtable Mcp Server",
+      "nameB": "Google_workspace_mcp",
+      "category": "productivity"
+    },
+    {
+      "slugA": "airtable-mcp-server",
+      "slugB": "io-github-eclipse-cj-paper-distill-mcp",
+      "nameA": "Airtable Mcp Server",
+      "nameB": "Paper Distill MCP Server",
+      "category": "productivity"
+    },
+    {
+      "slugA": "airtable-mcp-server",
+      "slugB": "todoist-mcp",
+      "nameA": "Airtable Mcp Server",
+      "nameB": "Todoist Mcp",
+      "category": "productivity"
+    },
+    {
+      "slugA": "airtable-mcp-server",
+      "slugB": "raindrop-io-mcp-server",
+      "nameA": "Airtable Mcp Server",
+      "nameB": "Raindrop Io Mcp Server",
+      "category": "productivity"
+    },
+    {
+      "slugA": "io-github-es617-obsidian-sync-mcp",
+      "slugB": "io-github-maxim-mazurok-teams-api",
+      "nameA": "Obsidian Sync MCP Server",
+      "nameB": "io.github.Maxim-Mazurok/teams-api",
+      "category": "productivity"
+    },
+    {
+      "slugA": "google-workspace-mcp",
+      "slugB": "io-github-es617-obsidian-sync-mcp",
+      "nameA": "Google_workspace_mcp",
+      "nameB": "Obsidian Sync MCP Server",
+      "category": "productivity"
+    },
+    {
+      "slugA": "io-github-eclipse-cj-paper-distill-mcp",
+      "slugB": "io-github-es617-obsidian-sync-mcp",
+      "nameA": "Paper Distill MCP Server",
+      "nameB": "Obsidian Sync MCP Server",
+      "category": "productivity"
+    },
+    {
+      "slugA": "io-github-es617-obsidian-sync-mcp",
+      "slugB": "todoist-mcp",
+      "nameA": "Obsidian Sync MCP Server",
+      "nameB": "Todoist Mcp",
+      "category": "productivity"
+    },
+    {
+      "slugA": "io-github-es617-obsidian-sync-mcp",
+      "slugB": "raindrop-io-mcp-server",
+      "nameA": "Obsidian Sync MCP Server",
+      "nameB": "Raindrop Io Mcp Server",
+      "category": "productivity"
+    },
+    {
+      "slugA": "google-workspace-mcp",
+      "slugB": "io-github-maxim-mazurok-teams-api",
+      "nameA": "Google_workspace_mcp",
+      "nameB": "io.github.Maxim-Mazurok/teams-api",
+      "category": "productivity"
+    },
+    {
+      "slugA": "io-github-eclipse-cj-paper-distill-mcp",
+      "slugB": "io-github-maxim-mazurok-teams-api",
+      "nameA": "Paper Distill MCP Server",
+      "nameB": "io.github.Maxim-Mazurok/teams-api",
+      "category": "productivity"
+    },
+    {
+      "slugA": "io-github-maxim-mazurok-teams-api",
+      "slugB": "todoist-mcp",
+      "nameA": "io.github.Maxim-Mazurok/teams-api",
+      "nameB": "Todoist Mcp",
+      "category": "productivity"
+    },
+    {
+      "slugA": "io-github-maxim-mazurok-teams-api",
+      "slugB": "raindrop-io-mcp-server",
+      "nameA": "io.github.Maxim-Mazurok/teams-api",
+      "nameB": "Raindrop Io Mcp Server",
+      "category": "productivity"
+    },
+    {
+      "slugA": "google-workspace-mcp",
+      "slugB": "io-github-eclipse-cj-paper-distill-mcp",
+      "nameA": "Google_workspace_mcp",
+      "nameB": "Paper Distill MCP Server",
+      "category": "productivity"
+    },
+    {
+      "slugA": "google-workspace-mcp",
+      "slugB": "todoist-mcp",
+      "nameA": "Google_workspace_mcp",
+      "nameB": "Todoist Mcp",
+      "category": "productivity"
+    },
+    {
+      "slugA": "google-workspace-mcp",
+      "slugB": "raindrop-io-mcp-server",
+      "nameA": "Google_workspace_mcp",
+      "nameB": "Raindrop Io Mcp Server",
+      "category": "productivity"
+    },
+    {
+      "slugA": "io-github-eclipse-cj-paper-distill-mcp",
+      "slugB": "todoist-mcp",
+      "nameA": "Paper Distill MCP Server",
+      "nameB": "Todoist Mcp",
+      "category": "productivity"
+    },
+    {
+      "slugA": "io-github-eclipse-cj-paper-distill-mcp",
+      "slugB": "raindrop-io-mcp-server",
+      "nameA": "Paper Distill MCP Server",
+      "nameB": "Raindrop Io Mcp Server",
+      "category": "productivity"
+    },
+    {
+      "slugA": "raindrop-io-mcp-server",
+      "slugB": "todoist-mcp",
+      "nameA": "Raindrop Io Mcp Server",
+      "nameB": "Todoist Mcp",
+      "category": "productivity"
+    },
+    {
+      "slugA": "io-github-levnikolaevich-hex-graph-mcp",
+      "slugB": "supabase",
+      "nameA": "Hex Graph MCP Server",
+      "nameB": "Supabase MCP Server",
+      "category": "data"
+    },
+    {
+      "slugA": "genai-toolbox",
+      "slugB": "supabase",
+      "nameA": "Genai Toolbox",
+      "nameB": "Supabase MCP Server",
+      "category": "data"
+    },
+    {
+      "slugA": "io-github-levnikolaevich-hex-graph-mcp",
+      "slugB": "postgres",
+      "nameA": "Hex Graph MCP Server",
+      "nameB": "PostgreSQL MCP Server",
+      "category": "data"
+    },
+    {
+      "slugA": "genai-toolbox",
+      "slugB": "postgres",
+      "nameA": "Genai Toolbox",
+      "nameB": "PostgreSQL MCP Server",
+      "category": "data"
+    },
+    {
+      "slugA": "io-github-levnikolaevich-hex-graph-mcp",
+      "slugB": "mcp-agent-mail",
+      "nameA": "Hex Graph MCP Server",
+      "nameB": "Mcp_agent_mail",
+      "category": "data"
+    },
+    {
+      "slugA": "genai-toolbox",
+      "slugB": "mcp-agent-mail",
+      "nameA": "Genai Toolbox",
+      "nameB": "Mcp_agent_mail",
+      "category": "data"
+    },
+    {
+      "slugA": "io-github-levnikolaevich-hex-graph-mcp",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Hex Graph MCP Server",
+      "nameB": "Toolsdk Mcp Registry",
+      "category": "data"
+    },
+    {
+      "slugA": "genai-toolbox",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Genai Toolbox",
+      "nameB": "Toolsdk Mcp Registry",
+      "category": "data"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "io-github-levnikolaevich-hex-graph-mcp",
+      "nameA": "Context7",
+      "nameB": "Hex Graph MCP Server",
+      "category": "data"
+    },
+    {
+      "slugA": "context7",
+      "slugB": "genai-toolbox",
+      "nameA": "Context7",
+      "nameB": "Genai Toolbox",
+      "category": "data"
+    },
+    {
+      "slugA": "io-github-levnikolaevich-hex-graph-mcp",
+      "slugB": "modelcontextprotocol",
+      "nameA": "Hex Graph MCP Server",
+      "nameB": "Modelcontextprotocol",
+      "category": "data"
+    },
+    {
+      "slugA": "genai-toolbox",
+      "slugB": "modelcontextprotocol",
+      "nameA": "Genai Toolbox",
+      "nameB": "Modelcontextprotocol",
+      "category": "data"
+    },
+    {
+      "slugA": "dbhub",
+      "slugB": "io-github-levnikolaevich-hex-graph-mcp",
+      "nameA": "Dbhub",
+      "nameB": "Hex Graph MCP Server",
+      "category": "data"
+    },
+    {
+      "slugA": "dbhub",
+      "slugB": "genai-toolbox",
+      "nameA": "Dbhub",
+      "nameB": "Genai Toolbox",
+      "category": "data"
+    },
+    {
+      "slugA": "io-github-levnikolaevich-hex-graph-mcp",
+      "slugB": "mcp-server-qdrant",
+      "nameA": "Hex Graph MCP Server",
+      "nameB": "Mcp Server Qdrant",
+      "category": "data"
+    },
+    {
+      "slugA": "genai-toolbox",
+      "slugB": "mcp-server-qdrant",
+      "nameA": "Genai Toolbox",
+      "nameB": "Mcp Server Qdrant",
+      "category": "data"
+    },
+    {
+      "slugA": "genai-toolbox",
+      "slugB": "io-github-levnikolaevich-hex-graph-mcp",
+      "nameA": "Genai Toolbox",
+      "nameB": "Hex Graph MCP Server",
+      "category": "data"
+    },
+    {
+      "slugA": "pi-mcporter",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Pi Mcporter",
+      "nameB": "XcodeBuildMCP",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "auto-claude-code-research-in-sleep",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Auto Claude Code Research In Sleep",
+      "nameB": "XcodeBuildMCP",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "ida-pro-mcp",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Ida Pro Mcp",
+      "nameB": "XcodeBuildMCP",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "brightdata-mcp",
+      "slugB": "xcodebuildmcp",
+      "nameA": "Brightdata Mcp",
+      "nameB": "XcodeBuildMCP",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "pi-mcporter",
+      "slugB": "sequential-thinking",
+      "nameA": "Pi Mcporter",
+      "nameB": "Sequential Thinking MCP Server",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "auto-claude-code-research-in-sleep",
+      "slugB": "sequential-thinking",
+      "nameA": "Auto Claude Code Research In Sleep",
+      "nameB": "Sequential Thinking MCP Server",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "ida-pro-mcp",
+      "slugB": "sequential-thinking",
+      "nameA": "Ida Pro Mcp",
+      "nameB": "Sequential Thinking MCP Server",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "brightdata-mcp",
+      "slugB": "sequential-thinking",
+      "nameA": "Brightdata Mcp",
+      "nameB": "Sequential Thinking MCP Server",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "pi-mcporter",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Pi Mcporter",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "auto-claude-code-research-in-sleep",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Auto Claude Code Research In Sleep",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "ida-pro-mcp",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Ida Pro Mcp",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "apify-mcp-server",
+      "slugB": "brightdata-mcp",
+      "nameA": "Apify Mcp Server",
+      "nameB": "Brightdata Mcp",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "pi-mcporter",
+      "nameA": "Gemini Cli",
+      "nameB": "Pi Mcporter",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "auto-claude-code-research-in-sleep",
+      "slugB": "gemini-cli",
+      "nameA": "Auto Claude Code Research In Sleep",
+      "nameB": "Gemini Cli",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "gemini-cli",
+      "slugB": "ida-pro-mcp",
+      "nameA": "Gemini Cli",
+      "nameB": "Ida Pro Mcp",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "brightdata-mcp",
+      "slugB": "gemini-cli",
+      "nameA": "Brightdata Mcp",
+      "nameB": "Gemini Cli",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "pi-mcporter",
+      "slugB": "python-sdk",
+      "nameA": "Pi Mcporter",
+      "nameB": "Python Sdk",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "auto-claude-code-research-in-sleep",
+      "slugB": "python-sdk",
+      "nameA": "Auto Claude Code Research In Sleep",
+      "nameB": "Python Sdk",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "ida-pro-mcp",
+      "slugB": "python-sdk",
+      "nameA": "Ida Pro Mcp",
+      "nameB": "Python Sdk",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "brightdata-mcp",
+      "slugB": "python-sdk",
+      "nameA": "Brightdata Mcp",
+      "nameB": "Python Sdk",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "pi-mcporter",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Pi Mcporter",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "auto-claude-code-research-in-sleep",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Auto Claude Code Research In Sleep",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "ida-pro-mcp",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Ida Pro Mcp",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "arxiv-mcp-server",
+      "slugB": "brightdata-mcp",
+      "nameA": "Arxiv Mcp Server",
+      "nameB": "Brightdata Mcp",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "auto-claude-code-research-in-sleep",
+      "slugB": "pi-mcporter",
+      "nameA": "Auto Claude Code Research In Sleep",
+      "nameB": "Pi Mcporter",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "ida-pro-mcp",
+      "slugB": "pi-mcporter",
+      "nameA": "Ida Pro Mcp",
+      "nameB": "Pi Mcporter",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "brightdata-mcp",
+      "slugB": "pi-mcporter",
+      "nameA": "Brightdata Mcp",
+      "nameB": "Pi Mcporter",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "auto-claude-code-research-in-sleep",
+      "slugB": "ida-pro-mcp",
+      "nameA": "Auto Claude Code Research In Sleep",
+      "nameB": "Ida Pro Mcp",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "auto-claude-code-research-in-sleep",
+      "slugB": "brightdata-mcp",
+      "nameA": "Auto Claude Code Research In Sleep",
+      "nameB": "Brightdata Mcp",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "brightdata-mcp",
+      "slugB": "ida-pro-mcp",
+      "nameA": "Brightdata Mcp",
+      "nameB": "Ida Pro Mcp",
+      "category": "ai-ml"
+    },
+    {
+      "slugA": "linkedin-mcp-server",
+      "slugB": "mcp-agent-mail",
+      "nameA": "Linkedin Mcp Server",
+      "nameB": "Mcp_agent_mail",
+      "category": "communication"
+    },
+    {
+      "slugA": "io-github-scrapercity-scrapercity-cli",
+      "slugB": "mcp-agent-mail",
+      "nameA": "Scrapercity Cli MCP Server",
+      "nameB": "Mcp_agent_mail",
+      "category": "communication"
+    },
+    {
+      "slugA": "io-github-mclose-dns-mcp",
+      "slugB": "mcp-agent-mail",
+      "nameA": "Dns MCP Server",
+      "nameB": "Mcp_agent_mail",
+      "category": "communication"
+    },
+    {
+      "slugA": "contrastapi",
+      "slugB": "mcp-agent-mail",
+      "nameA": "Contrastapi",
+      "nameB": "Mcp_agent_mail",
+      "category": "communication"
+    },
+    {
+      "slugA": "line-bot-mcp-server",
+      "slugB": "mcp-agent-mail",
+      "nameA": "Line Bot Mcp Server",
+      "nameB": "Mcp_agent_mail",
+      "category": "communication"
+    },
+    {
+      "slugA": "io-github-imdinu-apple-mail-mcp",
+      "slugB": "mcp-agent-mail",
+      "nameA": "io.github.imdinu/apple-mail-mcp",
+      "nameB": "Mcp_agent_mail",
+      "category": "communication"
+    },
+    {
+      "slugA": "imap-mcp-server",
+      "slugB": "mcp-agent-mail",
+      "nameA": "Imap Mcp Server",
+      "nameB": "Mcp_agent_mail",
+      "category": "communication"
+    },
+    {
+      "slugA": "mcp-agent-mail",
+      "slugB": "readwise-skills",
+      "nameA": "Mcp_agent_mail",
+      "nameB": "Readwise Skills",
+      "category": "communication"
+    },
+    {
+      "slugA": "aspose-mcp-server",
+      "slugB": "mcp-agent-mail",
+      "nameA": "Aspose Mcp Server",
+      "nameB": "Mcp_agent_mail",
+      "category": "communication"
+    },
+    {
+      "slugA": "io-github-scrapercity-scrapercity-cli",
+      "slugB": "linkedin-mcp-server",
+      "nameA": "Scrapercity Cli MCP Server",
+      "nameB": "Linkedin Mcp Server",
+      "category": "communication"
+    },
+    {
+      "slugA": "io-github-mclose-dns-mcp",
+      "slugB": "linkedin-mcp-server",
+      "nameA": "Dns MCP Server",
+      "nameB": "Linkedin Mcp Server",
+      "category": "communication"
+    },
+    {
+      "slugA": "contrastapi",
+      "slugB": "linkedin-mcp-server",
+      "nameA": "Contrastapi",
+      "nameB": "Linkedin Mcp Server",
+      "category": "communication"
+    },
+    {
+      "slugA": "line-bot-mcp-server",
+      "slugB": "linkedin-mcp-server",
+      "nameA": "Line Bot Mcp Server",
+      "nameB": "Linkedin Mcp Server",
+      "category": "communication"
+    },
+    {
+      "slugA": "io-github-imdinu-apple-mail-mcp",
+      "slugB": "linkedin-mcp-server",
+      "nameA": "io.github.imdinu/apple-mail-mcp",
+      "nameB": "Linkedin Mcp Server",
+      "category": "communication"
+    },
+    {
+      "slugA": "imap-mcp-server",
+      "slugB": "linkedin-mcp-server",
+      "nameA": "Imap Mcp Server",
+      "nameB": "Linkedin Mcp Server",
+      "category": "communication"
+    },
+    {
+      "slugA": "linkedin-mcp-server",
+      "slugB": "readwise-skills",
+      "nameA": "Linkedin Mcp Server",
+      "nameB": "Readwise Skills",
+      "category": "communication"
+    },
+    {
+      "slugA": "aspose-mcp-server",
+      "slugB": "linkedin-mcp-server",
+      "nameA": "Aspose Mcp Server",
+      "nameB": "Linkedin Mcp Server",
+      "category": "communication"
+    },
+    {
+      "slugA": "io-github-mclose-dns-mcp",
+      "slugB": "io-github-scrapercity-scrapercity-cli",
+      "nameA": "Dns MCP Server",
+      "nameB": "Scrapercity Cli MCP Server",
+      "category": "communication"
+    },
+    {
+      "slugA": "contrastapi",
+      "slugB": "io-github-scrapercity-scrapercity-cli",
+      "nameA": "Contrastapi",
+      "nameB": "Scrapercity Cli MCP Server",
+      "category": "communication"
+    },
+    {
+      "slugA": "io-github-scrapercity-scrapercity-cli",
+      "slugB": "line-bot-mcp-server",
+      "nameA": "Scrapercity Cli MCP Server",
+      "nameB": "Line Bot Mcp Server",
+      "category": "communication"
+    },
+    {
+      "slugA": "io-github-imdinu-apple-mail-mcp",
+      "slugB": "io-github-scrapercity-scrapercity-cli",
+      "nameA": "io.github.imdinu/apple-mail-mcp",
+      "nameB": "Scrapercity Cli MCP Server",
+      "category": "communication"
+    },
+    {
+      "slugA": "imap-mcp-server",
+      "slugB": "io-github-scrapercity-scrapercity-cli",
+      "nameA": "Imap Mcp Server",
+      "nameB": "Scrapercity Cli MCP Server",
+      "category": "communication"
+    },
+    {
+      "slugA": "io-github-scrapercity-scrapercity-cli",
+      "slugB": "readwise-skills",
+      "nameA": "Scrapercity Cli MCP Server",
+      "nameB": "Readwise Skills",
+      "category": "communication"
+    },
+    {
+      "slugA": "aspose-mcp-server",
+      "slugB": "io-github-scrapercity-scrapercity-cli",
+      "nameA": "Aspose Mcp Server",
+      "nameB": "Scrapercity Cli MCP Server",
+      "category": "communication"
+    },
+    {
+      "slugA": "contrastapi",
+      "slugB": "io-github-mclose-dns-mcp",
+      "nameA": "Contrastapi",
+      "nameB": "Dns MCP Server",
+      "category": "communication"
+    },
+    {
+      "slugA": "io-github-mclose-dns-mcp",
+      "slugB": "line-bot-mcp-server",
+      "nameA": "Dns MCP Server",
+      "nameB": "Line Bot Mcp Server",
+      "category": "communication"
+    },
+    {
+      "slugA": "io-github-imdinu-apple-mail-mcp",
+      "slugB": "io-github-mclose-dns-mcp",
+      "nameA": "io.github.imdinu/apple-mail-mcp",
+      "nameB": "Dns MCP Server",
+      "category": "communication"
+    },
+    {
+      "slugA": "imap-mcp-server",
+      "slugB": "io-github-mclose-dns-mcp",
+      "nameA": "Imap Mcp Server",
+      "nameB": "Dns MCP Server",
+      "category": "communication"
+    },
+    {
+      "slugA": "io-github-mclose-dns-mcp",
+      "slugB": "readwise-skills",
+      "nameA": "Dns MCP Server",
+      "nameB": "Readwise Skills",
+      "category": "communication"
+    },
+    {
+      "slugA": "aspose-mcp-server",
+      "slugB": "io-github-mclose-dns-mcp",
+      "nameA": "Aspose Mcp Server",
+      "nameB": "Dns MCP Server",
+      "category": "communication"
+    },
+    {
+      "slugA": "contrastapi",
+      "slugB": "line-bot-mcp-server",
+      "nameA": "Contrastapi",
+      "nameB": "Line Bot Mcp Server",
+      "category": "communication"
+    },
+    {
+      "slugA": "contrastapi",
+      "slugB": "io-github-imdinu-apple-mail-mcp",
+      "nameA": "Contrastapi",
+      "nameB": "io.github.imdinu/apple-mail-mcp",
+      "category": "communication"
+    },
+    {
+      "slugA": "contrastapi",
+      "slugB": "imap-mcp-server",
+      "nameA": "Contrastapi",
+      "nameB": "Imap Mcp Server",
+      "category": "communication"
+    },
+    {
+      "slugA": "contrastapi",
+      "slugB": "readwise-skills",
+      "nameA": "Contrastapi",
+      "nameB": "Readwise Skills",
+      "category": "communication"
+    },
+    {
+      "slugA": "aspose-mcp-server",
+      "slugB": "contrastapi",
+      "nameA": "Aspose Mcp Server",
+      "nameB": "Contrastapi",
+      "category": "communication"
+    },
+    {
+      "slugA": "io-github-imdinu-apple-mail-mcp",
+      "slugB": "line-bot-mcp-server",
+      "nameA": "io.github.imdinu/apple-mail-mcp",
+      "nameB": "Line Bot Mcp Server",
+      "category": "communication"
+    },
+    {
+      "slugA": "imap-mcp-server",
+      "slugB": "line-bot-mcp-server",
+      "nameA": "Imap Mcp Server",
+      "nameB": "Line Bot Mcp Server",
+      "category": "communication"
+    },
+    {
+      "slugA": "line-bot-mcp-server",
+      "slugB": "readwise-skills",
+      "nameA": "Line Bot Mcp Server",
+      "nameB": "Readwise Skills",
+      "category": "communication"
+    },
+    {
+      "slugA": "aspose-mcp-server",
+      "slugB": "line-bot-mcp-server",
+      "nameA": "Aspose Mcp Server",
+      "nameB": "Line Bot Mcp Server",
+      "category": "communication"
+    },
+    {
+      "slugA": "imap-mcp-server",
+      "slugB": "io-github-imdinu-apple-mail-mcp",
+      "nameA": "Imap Mcp Server",
+      "nameB": "io.github.imdinu/apple-mail-mcp",
+      "category": "communication"
+    },
+    {
+      "slugA": "io-github-imdinu-apple-mail-mcp",
+      "slugB": "readwise-skills",
+      "nameA": "io.github.imdinu/apple-mail-mcp",
+      "nameB": "Readwise Skills",
+      "category": "communication"
+    },
+    {
+      "slugA": "aspose-mcp-server",
+      "slugB": "io-github-imdinu-apple-mail-mcp",
+      "nameA": "Aspose Mcp Server",
+      "nameB": "io.github.imdinu/apple-mail-mcp",
+      "category": "communication"
+    },
+    {
+      "slugA": "imap-mcp-server",
+      "slugB": "readwise-skills",
+      "nameA": "Imap Mcp Server",
+      "nameB": "Readwise Skills",
+      "category": "communication"
+    },
+    {
+      "slugA": "aspose-mcp-server",
+      "slugB": "imap-mcp-server",
+      "nameA": "Aspose Mcp Server",
+      "nameB": "Imap Mcp Server",
+      "category": "communication"
+    },
+    {
+      "slugA": "aspose-mcp-server",
+      "slugB": "readwise-skills",
+      "nameA": "Aspose Mcp Server",
+      "nameB": "Readwise Skills",
+      "category": "communication"
+    },
+    {
+      "slugA": "mcp-server-kubernetes",
+      "slugB": "observability-mcp",
+      "nameA": "Mcp Server Kubernetes",
+      "nameB": "Observability Mcp",
+      "category": "cloud"
+    },
+    {
+      "slugA": "kubernetes-mcp-server",
+      "slugB": "observability-mcp",
+      "nameA": "Kubernetes Mcp Server",
+      "nameB": "Observability Mcp",
+      "category": "cloud"
+    },
+    {
+      "slugA": "observability-mcp",
+      "slugB": "pal-mcp-server",
+      "nameA": "Observability Mcp",
+      "nameB": "Pal Mcp Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-expertvagabond-mega",
+      "slugB": "observability-mcp",
+      "nameA": "io.github.ExpertVagabond/mega",
+      "nameB": "Observability Mcp",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-spronta-mcp",
+      "slugB": "observability-mcp",
+      "nameA": "io.github.spronta/mcp",
+      "nameB": "Observability Mcp",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-crunchtools-cloudflare",
+      "slugB": "observability-mcp",
+      "nameA": "Cloudflare MCP Server",
+      "nameB": "Observability Mcp",
+      "category": "cloud"
+    },
+    {
+      "slugA": "mcp-kubernetes-server",
+      "slugB": "observability-mcp",
+      "nameA": "Mcp Kubernetes Server",
+      "nameB": "Observability Mcp",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-isgudtek-mycrab-mcp",
+      "slugB": "observability-mcp",
+      "nameA": "io.github.isgudtek/mycrab-mcp",
+      "nameB": "Observability Mcp",
+      "category": "cloud"
+    },
+    {
+      "slugA": "observability-mcp",
+      "slugB": "terraform-mcp-server",
+      "nameA": "Observability Mcp",
+      "nameB": "Terraform Mcp Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "kubernetes-mcp-server",
+      "slugB": "mcp-server-kubernetes",
+      "nameA": "Kubernetes Mcp Server",
+      "nameB": "Mcp Server Kubernetes",
+      "category": "cloud"
+    },
+    {
+      "slugA": "mcp-server-kubernetes",
+      "slugB": "pal-mcp-server",
+      "nameA": "Mcp Server Kubernetes",
+      "nameB": "Pal Mcp Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-expertvagabond-mega",
+      "slugB": "mcp-server-kubernetes",
+      "nameA": "io.github.ExpertVagabond/mega",
+      "nameB": "Mcp Server Kubernetes",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-spronta-mcp",
+      "slugB": "mcp-server-kubernetes",
+      "nameA": "io.github.spronta/mcp",
+      "nameB": "Mcp Server Kubernetes",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-crunchtools-cloudflare",
+      "slugB": "mcp-server-kubernetes",
+      "nameA": "Cloudflare MCP Server",
+      "nameB": "Mcp Server Kubernetes",
+      "category": "cloud"
+    },
+    {
+      "slugA": "mcp-kubernetes-server",
+      "slugB": "mcp-server-kubernetes",
+      "nameA": "Mcp Kubernetes Server",
+      "nameB": "Mcp Server Kubernetes",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-isgudtek-mycrab-mcp",
+      "slugB": "mcp-server-kubernetes",
+      "nameA": "io.github.isgudtek/mycrab-mcp",
+      "nameB": "Mcp Server Kubernetes",
+      "category": "cloud"
+    },
+    {
+      "slugA": "mcp-server-kubernetes",
+      "slugB": "terraform-mcp-server",
+      "nameA": "Mcp Server Kubernetes",
+      "nameB": "Terraform Mcp Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "kubernetes-mcp-server",
+      "slugB": "pal-mcp-server",
+      "nameA": "Kubernetes Mcp Server",
+      "nameB": "Pal Mcp Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-expertvagabond-mega",
+      "slugB": "kubernetes-mcp-server",
+      "nameA": "io.github.ExpertVagabond/mega",
+      "nameB": "Kubernetes Mcp Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-spronta-mcp",
+      "slugB": "kubernetes-mcp-server",
+      "nameA": "io.github.spronta/mcp",
+      "nameB": "Kubernetes Mcp Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-crunchtools-cloudflare",
+      "slugB": "kubernetes-mcp-server",
+      "nameA": "Cloudflare MCP Server",
+      "nameB": "Kubernetes Mcp Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "kubernetes-mcp-server",
+      "slugB": "mcp-kubernetes-server",
+      "nameA": "Kubernetes Mcp Server",
+      "nameB": "Mcp Kubernetes Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-isgudtek-mycrab-mcp",
+      "slugB": "kubernetes-mcp-server",
+      "nameA": "io.github.isgudtek/mycrab-mcp",
+      "nameB": "Kubernetes Mcp Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "kubernetes-mcp-server",
+      "slugB": "terraform-mcp-server",
+      "nameA": "Kubernetes Mcp Server",
+      "nameB": "Terraform Mcp Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-expertvagabond-mega",
+      "slugB": "pal-mcp-server",
+      "nameA": "io.github.ExpertVagabond/mega",
+      "nameB": "Pal Mcp Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-spronta-mcp",
+      "slugB": "pal-mcp-server",
+      "nameA": "io.github.spronta/mcp",
+      "nameB": "Pal Mcp Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-crunchtools-cloudflare",
+      "slugB": "pal-mcp-server",
+      "nameA": "Cloudflare MCP Server",
+      "nameB": "Pal Mcp Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "mcp-kubernetes-server",
+      "slugB": "pal-mcp-server",
+      "nameA": "Mcp Kubernetes Server",
+      "nameB": "Pal Mcp Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-isgudtek-mycrab-mcp",
+      "slugB": "pal-mcp-server",
+      "nameA": "io.github.isgudtek/mycrab-mcp",
+      "nameB": "Pal Mcp Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "pal-mcp-server",
+      "slugB": "terraform-mcp-server",
+      "nameA": "Pal Mcp Server",
+      "nameB": "Terraform Mcp Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-expertvagabond-mega",
+      "slugB": "io-github-spronta-mcp",
+      "nameA": "io.github.ExpertVagabond/mega",
+      "nameB": "io.github.spronta/mcp",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-crunchtools-cloudflare",
+      "slugB": "io-github-expertvagabond-mega",
+      "nameA": "Cloudflare MCP Server",
+      "nameB": "io.github.ExpertVagabond/mega",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-expertvagabond-mega",
+      "slugB": "mcp-kubernetes-server",
+      "nameA": "io.github.ExpertVagabond/mega",
+      "nameB": "Mcp Kubernetes Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-expertvagabond-mega",
+      "slugB": "io-github-isgudtek-mycrab-mcp",
+      "nameA": "io.github.ExpertVagabond/mega",
+      "nameB": "io.github.isgudtek/mycrab-mcp",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-expertvagabond-mega",
+      "slugB": "terraform-mcp-server",
+      "nameA": "io.github.ExpertVagabond/mega",
+      "nameB": "Terraform Mcp Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-crunchtools-cloudflare",
+      "slugB": "io-github-spronta-mcp",
+      "nameA": "Cloudflare MCP Server",
+      "nameB": "io.github.spronta/mcp",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-spronta-mcp",
+      "slugB": "mcp-kubernetes-server",
+      "nameA": "io.github.spronta/mcp",
+      "nameB": "Mcp Kubernetes Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-isgudtek-mycrab-mcp",
+      "slugB": "io-github-spronta-mcp",
+      "nameA": "io.github.isgudtek/mycrab-mcp",
+      "nameB": "io.github.spronta/mcp",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-spronta-mcp",
+      "slugB": "terraform-mcp-server",
+      "nameA": "io.github.spronta/mcp",
+      "nameB": "Terraform Mcp Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-crunchtools-cloudflare",
+      "slugB": "mcp-kubernetes-server",
+      "nameA": "Cloudflare MCP Server",
+      "nameB": "Mcp Kubernetes Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-crunchtools-cloudflare",
+      "slugB": "io-github-isgudtek-mycrab-mcp",
+      "nameA": "Cloudflare MCP Server",
+      "nameB": "io.github.isgudtek/mycrab-mcp",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-crunchtools-cloudflare",
+      "slugB": "terraform-mcp-server",
+      "nameA": "Cloudflare MCP Server",
+      "nameB": "Terraform Mcp Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-isgudtek-mycrab-mcp",
+      "slugB": "mcp-kubernetes-server",
+      "nameA": "io.github.isgudtek/mycrab-mcp",
+      "nameB": "Mcp Kubernetes Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "mcp-kubernetes-server",
+      "slugB": "terraform-mcp-server",
+      "nameA": "Mcp Kubernetes Server",
+      "nameB": "Terraform Mcp Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-isgudtek-mycrab-mcp",
+      "slugB": "terraform-mcp-server",
+      "nameA": "io.github.isgudtek/mycrab-mcp",
+      "nameB": "Terraform Mcp Server",
+      "category": "cloud"
+    },
+    {
+      "slugA": "io-github-xkumakichi-xaip-mcp-server",
+      "slugB": "mcp-server-mcppedia",
+      "nameA": "io.github.xkumakichi/xaip-mcp-server",
+      "nameB": "MCPpedia",
+      "category": "security"
+    },
+    {
+      "slugA": "io-github-xkumakichi-xaip-mcp-server",
+      "slugB": "remnux-mcp-server",
+      "nameA": "io.github.xkumakichi/xaip-mcp-server",
+      "nameB": "Remnux Mcp Server",
+      "category": "security"
+    },
+    {
+      "slugA": "ggmcp",
+      "slugB": "io-github-xkumakichi-xaip-mcp-server",
+      "nameA": "Ggmcp",
+      "nameB": "io.github.xkumakichi/xaip-mcp-server",
+      "category": "security"
+    },
+    {
+      "slugA": "io-github-moltycel-moltrust-mcp-server",
+      "slugB": "io-github-xkumakichi-xaip-mcp-server",
+      "nameA": "Moltrust MCP Server",
+      "nameB": "io.github.xkumakichi/xaip-mcp-server",
+      "category": "security"
+    },
+    {
+      "slugA": "io-github-sparkvibe-io-guardianshield",
+      "slugB": "io-github-xkumakichi-xaip-mcp-server",
+      "nameA": "GuardianShield MCP Server",
+      "nameB": "io.github.xkumakichi/xaip-mcp-server",
+      "category": "security"
+    },
+    {
+      "slugA": "io-github-xkumakichi-xaip-mcp-server",
+      "slugB": "io-github-xplo8e-hacktricks-mcp-server",
+      "nameA": "io.github.xkumakichi/xaip-mcp-server",
+      "nameB": "Hacktricks MCP Server",
+      "category": "security"
+    },
+    {
+      "slugA": "contrastapi",
+      "slugB": "io-github-xkumakichi-xaip-mcp-server",
+      "nameA": "Contrastapi",
+      "nameB": "io.github.xkumakichi/xaip-mcp-server",
+      "category": "security"
+    },
+    {
+      "slugA": "io-github-xkumakichi-xaip-mcp-server",
+      "slugB": "todo-mcp-server",
+      "nameA": "io.github.xkumakichi/xaip-mcp-server",
+      "nameB": "Todo_mcp_server",
+      "category": "security"
+    },
+    {
+      "slugA": "io-github-jini-tw-pastemd",
+      "slugB": "io-github-xkumakichi-xaip-mcp-server",
+      "nameA": "Pastemd MCP Server",
+      "nameB": "io.github.xkumakichi/xaip-mcp-server",
+      "category": "security"
+    },
+    {
+      "slugA": "mcp-server-mcppedia",
+      "slugB": "remnux-mcp-server",
+      "nameA": "MCPpedia",
+      "nameB": "Remnux Mcp Server",
+      "category": "security"
+    },
+    {
+      "slugA": "ggmcp",
+      "slugB": "mcp-server-mcppedia",
+      "nameA": "Ggmcp",
+      "nameB": "MCPpedia",
+      "category": "security"
+    },
+    {
+      "slugA": "io-github-moltycel-moltrust-mcp-server",
+      "slugB": "mcp-server-mcppedia",
+      "nameA": "Moltrust MCP Server",
+      "nameB": "MCPpedia",
+      "category": "security"
+    },
+    {
+      "slugA": "io-github-sparkvibe-io-guardianshield",
+      "slugB": "mcp-server-mcppedia",
+      "nameA": "GuardianShield MCP Server",
+      "nameB": "MCPpedia",
+      "category": "security"
+    },
+    {
+      "slugA": "io-github-xplo8e-hacktricks-mcp-server",
+      "slugB": "mcp-server-mcppedia",
+      "nameA": "Hacktricks MCP Server",
+      "nameB": "MCPpedia",
+      "category": "security"
+    },
+    {
+      "slugA": "contrastapi",
+      "slugB": "mcp-server-mcppedia",
+      "nameA": "Contrastapi",
+      "nameB": "MCPpedia",
+      "category": "security"
+    },
+    {
+      "slugA": "mcp-server-mcppedia",
+      "slugB": "todo-mcp-server",
+      "nameA": "MCPpedia",
+      "nameB": "Todo_mcp_server",
+      "category": "security"
+    },
+    {
+      "slugA": "io-github-jini-tw-pastemd",
+      "slugB": "mcp-server-mcppedia",
+      "nameA": "Pastemd MCP Server",
+      "nameB": "MCPpedia",
+      "category": "security"
+    },
+    {
+      "slugA": "ggmcp",
+      "slugB": "remnux-mcp-server",
+      "nameA": "Ggmcp",
+      "nameB": "Remnux Mcp Server",
+      "category": "security"
+    },
+    {
+      "slugA": "io-github-moltycel-moltrust-mcp-server",
+      "slugB": "remnux-mcp-server",
+      "nameA": "Moltrust MCP Server",
+      "nameB": "Remnux Mcp Server",
+      "category": "security"
+    },
+    {
+      "slugA": "io-github-sparkvibe-io-guardianshield",
+      "slugB": "remnux-mcp-server",
+      "nameA": "GuardianShield MCP Server",
+      "nameB": "Remnux Mcp Server",
+      "category": "security"
+    },
+    {
+      "slugA": "io-github-xplo8e-hacktricks-mcp-server",
+      "slugB": "remnux-mcp-server",
+      "nameA": "Hacktricks MCP Server",
+      "nameB": "Remnux Mcp Server",
+      "category": "security"
+    },
+    {
+      "slugA": "contrastapi",
+      "slugB": "remnux-mcp-server",
+      "nameA": "Contrastapi",
+      "nameB": "Remnux Mcp Server",
+      "category": "security"
+    },
+    {
+      "slugA": "remnux-mcp-server",
+      "slugB": "todo-mcp-server",
+      "nameA": "Remnux Mcp Server",
+      "nameB": "Todo_mcp_server",
+      "category": "security"
+    },
+    {
+      "slugA": "io-github-jini-tw-pastemd",
+      "slugB": "remnux-mcp-server",
+      "nameA": "Pastemd MCP Server",
+      "nameB": "Remnux Mcp Server",
+      "category": "security"
+    },
+    {
+      "slugA": "ggmcp",
+      "slugB": "io-github-moltycel-moltrust-mcp-server",
+      "nameA": "Ggmcp",
+      "nameB": "Moltrust MCP Server",
+      "category": "security"
+    },
+    {
+      "slugA": "ggmcp",
+      "slugB": "io-github-sparkvibe-io-guardianshield",
+      "nameA": "Ggmcp",
+      "nameB": "GuardianShield MCP Server",
+      "category": "security"
+    },
+    {
+      "slugA": "ggmcp",
+      "slugB": "io-github-xplo8e-hacktricks-mcp-server",
+      "nameA": "Ggmcp",
+      "nameB": "Hacktricks MCP Server",
+      "category": "security"
+    },
+    {
+      "slugA": "contrastapi",
+      "slugB": "ggmcp",
+      "nameA": "Contrastapi",
+      "nameB": "Ggmcp",
+      "category": "security"
+    },
+    {
+      "slugA": "ggmcp",
+      "slugB": "todo-mcp-server",
+      "nameA": "Ggmcp",
+      "nameB": "Todo_mcp_server",
+      "category": "security"
+    },
+    {
+      "slugA": "ggmcp",
+      "slugB": "io-github-jini-tw-pastemd",
+      "nameA": "Ggmcp",
+      "nameB": "Pastemd MCP Server",
+      "category": "security"
+    },
+    {
+      "slugA": "io-github-moltycel-moltrust-mcp-server",
+      "slugB": "io-github-sparkvibe-io-guardianshield",
+      "nameA": "Moltrust MCP Server",
+      "nameB": "GuardianShield MCP Server",
+      "category": "security"
+    },
+    {
+      "slugA": "io-github-moltycel-moltrust-mcp-server",
+      "slugB": "io-github-xplo8e-hacktricks-mcp-server",
+      "nameA": "Moltrust MCP Server",
+      "nameB": "Hacktricks MCP Server",
+      "category": "security"
+    },
+    {
+      "slugA": "contrastapi",
+      "slugB": "io-github-moltycel-moltrust-mcp-server",
+      "nameA": "Contrastapi",
+      "nameB": "Moltrust MCP Server",
+      "category": "security"
+    },
+    {
+      "slugA": "io-github-moltycel-moltrust-mcp-server",
+      "slugB": "todo-mcp-server",
+      "nameA": "Moltrust MCP Server",
+      "nameB": "Todo_mcp_server",
+      "category": "security"
+    },
+    {
+      "slugA": "io-github-jini-tw-pastemd",
+      "slugB": "io-github-moltycel-moltrust-mcp-server",
+      "nameA": "Pastemd MCP Server",
+      "nameB": "Moltrust MCP Server",
+      "category": "security"
+    },
+    {
+      "slugA": "io-github-sparkvibe-io-guardianshield",
+      "slugB": "io-github-xplo8e-hacktricks-mcp-server",
+      "nameA": "GuardianShield MCP Server",
+      "nameB": "Hacktricks MCP Server",
+      "category": "security"
+    },
+    {
+      "slugA": "contrastapi",
+      "slugB": "io-github-sparkvibe-io-guardianshield",
+      "nameA": "Contrastapi",
+      "nameB": "GuardianShield MCP Server",
+      "category": "security"
+    },
+    {
+      "slugA": "io-github-sparkvibe-io-guardianshield",
+      "slugB": "todo-mcp-server",
+      "nameA": "GuardianShield MCP Server",
+      "nameB": "Todo_mcp_server",
+      "category": "security"
+    },
+    {
+      "slugA": "io-github-jini-tw-pastemd",
+      "slugB": "io-github-sparkvibe-io-guardianshield",
+      "nameA": "Pastemd MCP Server",
+      "nameB": "GuardianShield MCP Server",
+      "category": "security"
+    },
+    {
+      "slugA": "contrastapi",
+      "slugB": "io-github-xplo8e-hacktricks-mcp-server",
+      "nameA": "Contrastapi",
+      "nameB": "Hacktricks MCP Server",
+      "category": "security"
+    },
+    {
+      "slugA": "io-github-xplo8e-hacktricks-mcp-server",
+      "slugB": "todo-mcp-server",
+      "nameA": "Hacktricks MCP Server",
+      "nameB": "Todo_mcp_server",
+      "category": "security"
+    },
+    {
+      "slugA": "io-github-jini-tw-pastemd",
+      "slugB": "io-github-xplo8e-hacktricks-mcp-server",
+      "nameA": "Pastemd MCP Server",
+      "nameB": "Hacktricks MCP Server",
+      "category": "security"
+    },
+    {
+      "slugA": "contrastapi",
+      "slugB": "todo-mcp-server",
+      "nameA": "Contrastapi",
+      "nameB": "Todo_mcp_server",
+      "category": "security"
+    },
+    {
+      "slugA": "contrastapi",
+      "slugB": "io-github-jini-tw-pastemd",
+      "nameA": "Contrastapi",
+      "nameB": "Pastemd MCP Server",
+      "category": "security"
+    },
+    {
+      "slugA": "io-github-jini-tw-pastemd",
+      "slugB": "todo-mcp-server",
+      "nameA": "Pastemd MCP Server",
+      "nameB": "Todo_mcp_server",
+      "category": "security"
+    },
+    {
+      "slugA": "prismercloud",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "PrismerCloud",
+      "nameB": "Toolsdk Mcp Registry",
+      "category": "devops"
+    },
+    {
+      "slugA": "nitrostack",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Nitrostack",
+      "nameB": "Toolsdk Mcp Registry",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-mp-tool-komodo-mcp-server",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Komodo MCP Server",
+      "nameB": "Toolsdk Mcp Registry",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-itunified-io-tailscale",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "io.github.itunified-io/tailscale",
+      "nameB": "Toolsdk Mcp Registry",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-tsviz-actions-pulse",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Actions Pulse MCP Server",
+      "nameB": "Toolsdk Mcp Registry",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-moltycel-moltrust-mcp-server",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Moltrust MCP Server",
+      "nameB": "Toolsdk Mcp Registry",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-clarencyu-boop-sentinel",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Sentinel MCP Server",
+      "nameB": "Toolsdk Mcp Registry",
+      "category": "devops"
+    },
+    {
+      "slugA": "terraform-mcp-server",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Terraform Mcp Server",
+      "nameB": "Toolsdk Mcp Registry",
+      "category": "devops"
+    },
+    {
+      "slugA": "proxmox-mcp-enhanced",
+      "slugB": "toolsdk-mcp-registry",
+      "nameA": "Proxmox Mcp Enhanced",
+      "nameB": "Toolsdk Mcp Registry",
+      "category": "devops"
+    },
+    {
+      "slugA": "nitrostack",
+      "slugB": "prismercloud",
+      "nameA": "Nitrostack",
+      "nameB": "PrismerCloud",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-mp-tool-komodo-mcp-server",
+      "slugB": "prismercloud",
+      "nameA": "Komodo MCP Server",
+      "nameB": "PrismerCloud",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-itunified-io-tailscale",
+      "slugB": "prismercloud",
+      "nameA": "io.github.itunified-io/tailscale",
+      "nameB": "PrismerCloud",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-tsviz-actions-pulse",
+      "slugB": "prismercloud",
+      "nameA": "Actions Pulse MCP Server",
+      "nameB": "PrismerCloud",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-moltycel-moltrust-mcp-server",
+      "slugB": "prismercloud",
+      "nameA": "Moltrust MCP Server",
+      "nameB": "PrismerCloud",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-clarencyu-boop-sentinel",
+      "slugB": "prismercloud",
+      "nameA": "Sentinel MCP Server",
+      "nameB": "PrismerCloud",
+      "category": "devops"
+    },
+    {
+      "slugA": "prismercloud",
+      "slugB": "terraform-mcp-server",
+      "nameA": "PrismerCloud",
+      "nameB": "Terraform Mcp Server",
+      "category": "devops"
+    },
+    {
+      "slugA": "prismercloud",
+      "slugB": "proxmox-mcp-enhanced",
+      "nameA": "PrismerCloud",
+      "nameB": "Proxmox Mcp Enhanced",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-mp-tool-komodo-mcp-server",
+      "slugB": "nitrostack",
+      "nameA": "Komodo MCP Server",
+      "nameB": "Nitrostack",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-itunified-io-tailscale",
+      "slugB": "nitrostack",
+      "nameA": "io.github.itunified-io/tailscale",
+      "nameB": "Nitrostack",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-tsviz-actions-pulse",
+      "slugB": "nitrostack",
+      "nameA": "Actions Pulse MCP Server",
+      "nameB": "Nitrostack",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-moltycel-moltrust-mcp-server",
+      "slugB": "nitrostack",
+      "nameA": "Moltrust MCP Server",
+      "nameB": "Nitrostack",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-clarencyu-boop-sentinel",
+      "slugB": "nitrostack",
+      "nameA": "Sentinel MCP Server",
+      "nameB": "Nitrostack",
+      "category": "devops"
+    },
+    {
+      "slugA": "nitrostack",
+      "slugB": "terraform-mcp-server",
+      "nameA": "Nitrostack",
+      "nameB": "Terraform Mcp Server",
+      "category": "devops"
+    },
+    {
+      "slugA": "nitrostack",
+      "slugB": "proxmox-mcp-enhanced",
+      "nameA": "Nitrostack",
+      "nameB": "Proxmox Mcp Enhanced",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-itunified-io-tailscale",
+      "slugB": "io-github-mp-tool-komodo-mcp-server",
+      "nameA": "io.github.itunified-io/tailscale",
+      "nameB": "Komodo MCP Server",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-mp-tool-komodo-mcp-server",
+      "slugB": "io-github-tsviz-actions-pulse",
+      "nameA": "Komodo MCP Server",
+      "nameB": "Actions Pulse MCP Server",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-moltycel-moltrust-mcp-server",
+      "slugB": "io-github-mp-tool-komodo-mcp-server",
+      "nameA": "Moltrust MCP Server",
+      "nameB": "Komodo MCP Server",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-clarencyu-boop-sentinel",
+      "slugB": "io-github-mp-tool-komodo-mcp-server",
+      "nameA": "Sentinel MCP Server",
+      "nameB": "Komodo MCP Server",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-mp-tool-komodo-mcp-server",
+      "slugB": "terraform-mcp-server",
+      "nameA": "Komodo MCP Server",
+      "nameB": "Terraform Mcp Server",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-mp-tool-komodo-mcp-server",
+      "slugB": "proxmox-mcp-enhanced",
+      "nameA": "Komodo MCP Server",
+      "nameB": "Proxmox Mcp Enhanced",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-itunified-io-tailscale",
+      "slugB": "io-github-tsviz-actions-pulse",
+      "nameA": "io.github.itunified-io/tailscale",
+      "nameB": "Actions Pulse MCP Server",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-itunified-io-tailscale",
+      "slugB": "io-github-moltycel-moltrust-mcp-server",
+      "nameA": "io.github.itunified-io/tailscale",
+      "nameB": "Moltrust MCP Server",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-clarencyu-boop-sentinel",
+      "slugB": "io-github-itunified-io-tailscale",
+      "nameA": "Sentinel MCP Server",
+      "nameB": "io.github.itunified-io/tailscale",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-itunified-io-tailscale",
+      "slugB": "terraform-mcp-server",
+      "nameA": "io.github.itunified-io/tailscale",
+      "nameB": "Terraform Mcp Server",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-itunified-io-tailscale",
+      "slugB": "proxmox-mcp-enhanced",
+      "nameA": "io.github.itunified-io/tailscale",
+      "nameB": "Proxmox Mcp Enhanced",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-moltycel-moltrust-mcp-server",
+      "slugB": "io-github-tsviz-actions-pulse",
+      "nameA": "Moltrust MCP Server",
+      "nameB": "Actions Pulse MCP Server",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-clarencyu-boop-sentinel",
+      "slugB": "io-github-tsviz-actions-pulse",
+      "nameA": "Sentinel MCP Server",
+      "nameB": "Actions Pulse MCP Server",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-tsviz-actions-pulse",
+      "slugB": "terraform-mcp-server",
+      "nameA": "Actions Pulse MCP Server",
+      "nameB": "Terraform Mcp Server",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-tsviz-actions-pulse",
+      "slugB": "proxmox-mcp-enhanced",
+      "nameA": "Actions Pulse MCP Server",
+      "nameB": "Proxmox Mcp Enhanced",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-clarencyu-boop-sentinel",
+      "slugB": "io-github-moltycel-moltrust-mcp-server",
+      "nameA": "Sentinel MCP Server",
+      "nameB": "Moltrust MCP Server",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-moltycel-moltrust-mcp-server",
+      "slugB": "terraform-mcp-server",
+      "nameA": "Moltrust MCP Server",
+      "nameB": "Terraform Mcp Server",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-moltycel-moltrust-mcp-server",
+      "slugB": "proxmox-mcp-enhanced",
+      "nameA": "Moltrust MCP Server",
+      "nameB": "Proxmox Mcp Enhanced",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-clarencyu-boop-sentinel",
+      "slugB": "terraform-mcp-server",
+      "nameA": "Sentinel MCP Server",
+      "nameB": "Terraform Mcp Server",
+      "category": "devops"
+    },
+    {
+      "slugA": "io-github-clarencyu-boop-sentinel",
+      "slugB": "proxmox-mcp-enhanced",
+      "nameA": "Sentinel MCP Server",
+      "nameB": "Proxmox Mcp Enhanced",
+      "category": "devops"
+    },
+    {
+      "slugA": "proxmox-mcp-enhanced",
+      "slugB": "terraform-mcp-server",
+      "nameA": "Proxmox Mcp Enhanced",
+      "nameB": "Terraform Mcp Server",
+      "category": "devops"
+    }
+  ]
 }
