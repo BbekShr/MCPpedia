@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
+import { createHash } from 'node:crypto'
 import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { CATEGORIES, CATEGORY_LABELS } from '@/lib/constants'
 
 // Fields per action — only fetch what's needed
 const SEARCH_FIELDS = [
@@ -76,6 +78,30 @@ function getClientIp(req: Request): string {
   return req.headers.get('x-real-ip')
     || req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
     || 'unknown'
+}
+
+// Build a response with a strong ETag derived from the payload. Honors
+// If-None-Match on the inbound request — returns 304 when the client already
+// has the same payload, saving bandwidth.
+function etagJson(
+  request: Request,
+  payload: unknown,
+  cacheControl: string
+): NextResponse {
+  const body = JSON.stringify(payload)
+  const etag = `"${createHash('sha1').update(body).digest('base64url').slice(0, 20)}"`
+  const ifNoneMatch = request.headers.get('If-None-Match')
+
+  const headers: Record<string, string> = {
+    'Cache-Control': cacheControl,
+    ETag: etag,
+    'Content-Type': 'application/json',
+  }
+
+  if (ifNoneMatch === etag) {
+    return new NextResponse(null, { status: 304, headers })
+  }
+  return new NextResponse(body, { status: 200, headers })
 }
 
 export async function POST(request: Request) {
@@ -279,6 +305,65 @@ export async function POST(request: Request) {
         return NextResponse.json({ data: data || [] }, {
           headers: { 'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=1200' },
         })
+      }
+
+      case 'categories': {
+        // Aggregate server counts per category. GROUP BY on a jsonb/array
+        // column isn't expressible through the Supabase JS client, so we
+        // do it in a single scan — the table is only ~17K rows.
+        const { data, error } = await supabase
+          .from('servers')
+          .select('categories')
+          .eq('is_archived', false)
+
+        if (error) {
+          return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+        }
+
+        const counts = new Map<string, number>()
+        for (const row of data || []) {
+          for (const c of (row.categories as string[] | null) || []) {
+            counts.set(c, (counts.get(c) || 0) + 1)
+          }
+        }
+
+        const result = CATEGORIES.map((slug) => ({
+          slug,
+          name: CATEGORY_LABELS[slug],
+          count: counts.get(slug) || 0,
+        }))
+
+        return etagJson(
+          request,
+          { data: result },
+          'public, s-maxage=3600, stale-while-revalidate=7200'
+        )
+      }
+
+      case 'changes': {
+        const since = String(params.since || '')
+        if (!since || Number.isNaN(Date.parse(since))) {
+          return NextResponse.json({ error: 'Invalid since timestamp' }, { status: 400 })
+        }
+        const limit = safeInt(params.limit, 20, 1, 50)
+
+        const { data, error } = await supabase
+          .from('servers')
+          .select(SEARCH_FIELDS + ', score_computed_at')
+          .eq('is_archived', false)
+          .gt('score_computed_at', since)
+          .order('score_computed_at', { ascending: false })
+          .limit(limit)
+
+        if (error) {
+          return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+        }
+
+        return etagJson(
+          request,
+          { data: data || [] },
+          'public, s-maxage=60, stale-while-revalidate=300'
+        )
       }
 
       default:
