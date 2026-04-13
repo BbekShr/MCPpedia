@@ -10,6 +10,8 @@ import type { Metadata } from 'next'
 import fs from 'fs'
 import path from 'path'
 
+export const revalidate = 86400
+
 // ---------- Static Params (pre-generate comparison pages for SEO) ----------
 
 interface ComparisonPair {

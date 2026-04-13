@@ -9,6 +9,7 @@ import type { Server } from '@/lib/types'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
+export const runtime = 'edge'
 export const revalidate = 60
 
 export const metadata: Metadata = {

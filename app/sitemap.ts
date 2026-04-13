@@ -5,6 +5,8 @@ import type { MetadataRoute } from 'next'
 import fs from 'fs'
 import path from 'path'
 
+export const revalidate = 86400 // 24h — crawlers re-read once per day
+
 /**
  * Fetch ALL non-archived servers by paginating through Supabase
  * (default limit is 1,000 rows per query).
