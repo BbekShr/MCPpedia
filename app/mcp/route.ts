@@ -56,8 +56,61 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
+  // If a browser hits /mcp directly, show a friendly landing page instead of
+  // the JSON-RPC 406 error. Real MCP clients send text/event-stream and fall
+  // through to the transport.
+  const accept = request.headers.get('accept') || ''
+  if (accept.includes('text/html') && !accept.includes('text/event-stream')) {
+    return new Response(LANDING_HTML, {
+      status: 200,
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    })
+  }
   return handle(request)
 }
+
+const LANDING_HTML = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MCPpedia MCP endpoint</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  body { font: 15px/1.55 -apple-system, system-ui, sans-serif; max-width: 640px; margin: 60px auto; padding: 0 20px; color: #111; }
+  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  pre { background: #f4f4f5; padding: 14px 16px; border-radius: 8px; overflow-x: auto; }
+  a { color: #c2410c; }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .muted { color: #666; }
+  hr { border: none; border-top: 1px solid #e5e5e5; margin: 32px 0; }
+</style>
+</head>
+<body>
+<h1>MCPpedia MCP endpoint</h1>
+<p class="muted">You're looking at <code>/mcp</code>. This is a Model Context Protocol JSON-RPC endpoint — it's meant for AI clients, not browsers. That's why a direct visit shows <em>Not Acceptable</em>.</p>
+
+<h3>Connect an MCP client</h3>
+<p>Add MCPpedia as a remote MCP server:</p>
+<pre>{
+  "mcpServers": {
+    "mcppedia": { "url": "https://mcppedia.org/mcp" }
+  }
+}</pre>
+
+<h3>Or install locally</h3>
+<pre>npx -y mcp-server-mcppedia</pre>
+
+<h3>Other options</h3>
+<ul>
+  <li><a href="https://smithery.ai/servers/bbeksh/mcppedia">Smithery listing</a></li>
+  <li><a href="https://github.com/BbekShr/mcp-server-mcppedia/releases/latest">.mcpb bundle (Claude Desktop)</a></li>
+  <li><a href="https://www.npmjs.com/package/mcp-server-mcppedia">npm package</a></li>
+</ul>
+
+<hr>
+<p class="muted">Browse the catalog at <a href="https://mcppedia.org">mcppedia.org</a>.</p>
+</body>
+</html>`
 
 export async function DELETE(request: Request) {
   return handle(request)
