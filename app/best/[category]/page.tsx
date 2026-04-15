@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import ServerCard from '@/components/ServerCard'
 import Link from 'next/link'
 import type { Server } from '@/lib/types'
@@ -74,7 +74,7 @@ export default async function BestCategoryPage({
   const label = CATEGORY_LABELS[category as Category]
   const description = CATEGORY_DESCRIPTIONS[category as Category]
 
-  const supabase = await createClient()
+  const supabase = createPublicClient()
 
   const { data: servers } = await supabase
     .from('servers')

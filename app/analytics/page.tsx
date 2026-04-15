@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import { CATEGORY_LABELS, HEALTH_STATUSES, CLIENT_LABELS } from '@/lib/constants'
 import type { Server } from '@/lib/types'
 import type { Category, CompatibleClient } from '@/lib/constants'
@@ -69,7 +69,7 @@ function Sparkline({ data, color = 'bg-accent' }: { data: number[]; color?: stri
 }
 
 export default async function AnalyticsPage() {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
 
   // Fetch all non-archived servers in pages of 1000 (Supabase default limit)
   const fields = 'categories,health_status,author_type,api_pricing,transport,compatible_clients,score_total,score_security,score_maintenance,score_documentation,score_compatibility,score_efficiency,token_efficiency_grade,github_stars,npm_weekly_downloads,cve_count,has_authentication,tools,created_at'

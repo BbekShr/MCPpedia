@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 
 export const revalidate = 86400
 
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 }
 
 export default async function AboutPage() {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const { count: serverCount } = await supabase
     .from('servers')
     .select('*', { count: 'exact', head: true })

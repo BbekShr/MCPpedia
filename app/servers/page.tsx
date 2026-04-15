@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import ServerCard from '@/components/ServerCard'
 import SearchBar from '@/components/SearchBar'
 import FilterBar from '@/components/FilterBar'
@@ -34,7 +34,7 @@ export default async function ServersPage({
   const page = parseInt(params.page || '1', 10)
   const offset = (page - 1) * ITEMS_PER_PAGE
 
-  const supabase = await createClient()
+  const supabase = createPublicClient()
 
   let servers: Server[] = []
   let totalCount = 0

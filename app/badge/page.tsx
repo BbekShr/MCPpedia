@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { SITE_URL, SITE_NAME } from '@/lib/constants'
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import type { Metadata } from 'next'
 import BadgePreview from '@/components/BadgePreview'
 
@@ -79,7 +79,7 @@ function SecurityBadgeSVG({ secScore, cves }: { secScore: number; cves: number }
 
 export default async function BadgePage() {
   // Fetch real server count
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const { count } = await supabase
     .from('servers')
     .select('id', { count: 'exact', head: true })

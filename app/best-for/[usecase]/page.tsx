@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import ServerCard from '@/components/ServerCard'
 import Link from 'next/link'
 import type { Server } from '@/lib/types'
@@ -125,7 +125,7 @@ export default async function BestForPage({
   const uc = USE_CASES[usecase]
   if (!uc) notFound()
 
-  const supabase = await createClient()
+  const supabase = createPublicClient()
 
   // Fetch servers matching categories, sorted by MCPpedia score
   const { data: servers } = await supabase

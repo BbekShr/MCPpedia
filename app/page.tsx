@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import ServerCard from '@/components/ServerCard'
 import SearchBar from '@/components/SearchBar'
 import NewsletterSignup from '@/components/NewsletterSignup'
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 }
 
 export default async function HomePage() {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
 
   const [
     { data: topScored },

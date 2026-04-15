@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
@@ -52,7 +52,7 @@ function timeAgo(date: string): string {
 }
 
 export default async function SecurityPage() {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
 
   const [
     { data: advisories },

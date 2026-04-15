@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import Link from 'next/link'
 import type { Edit } from '@/lib/types'
 import type { Metadata } from 'next'
@@ -19,7 +19,7 @@ export default async function EditHistoryPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const supabase = await createClient()
+  const supabase = createPublicClient()
 
   const { data: server } = await supabase
     .from('servers')

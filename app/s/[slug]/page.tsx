@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { PUBLIC_SERVER_FIELDS } from '@/lib/constants'
 import HealthBadge from '@/components/HealthBadge'
@@ -52,7 +52,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const { data: server } = await supabase
     .from('servers')
     .select('name, tagline, tools, categories, score_total')
@@ -121,7 +121,7 @@ export default async function ServerDetailPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const supabase = await createClient()
+  const supabase = createPublicClient()
 
   const { data: server } = await supabase
     .from('servers')

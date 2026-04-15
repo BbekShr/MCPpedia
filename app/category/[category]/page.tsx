@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import ServerCard from '@/components/ServerCard'
 import CategoryFilters from '@/components/CategoryFilters'
 import ScoreBadge from '@/components/ScoreBadge'
@@ -62,7 +62,7 @@ export default async function CategoryPage({
   const page = parseInt(sp.page || '1', 10)
   const offset = (page - 1) * ITEMS_PER_PAGE
 
-  const supabase = await createClient()
+  const supabase = createPublicClient()
 
   let query = supabase
     .from('servers')

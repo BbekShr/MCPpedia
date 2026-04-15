@@ -1,8 +1,10 @@
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import type { Profile, Edit, Discussion } from '@/lib/types'
 import type { Metadata } from 'next'
 import Link from 'next/link'
+
+export const revalidate = 3600
 
 export async function generateMetadata({
   params,
@@ -19,7 +21,7 @@ export default async function ProfilePage({
   params: Promise<{ username: string }>
 }) {
   const { username } = await params
-  const supabase = await createClient()
+  const supabase = createPublicClient()
 
   const { data: profile } = await supabase
     .from('profiles')

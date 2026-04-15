@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import ScoreBadge from './ScoreBadge'
 import type { Server } from '@/lib/types'
 
@@ -10,7 +10,7 @@ function formatNumber(n: number): string {
 }
 
 export default async function TrendingWidget() {
-  const supabase = await createClient()
+  const supabase = createPublicClient()
 
   // "Trending" = high downloads + recently updated + high score
   // We pick servers with recent commits, high downloads, sorted by weekly downloads

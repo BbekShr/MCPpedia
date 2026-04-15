@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import ScoreCard from '@/components/ScoreCard'
 import HealthBadge from '@/components/HealthBadge'
 import Link from 'next/link'
@@ -51,7 +51,7 @@ export async function generateMetadata({
   const [slugA, slugB] = slugs.split('-vs-')
   if (!slugA || !slugB) return { title: 'Compare MCP Servers' }
 
-  const supabase = await createClient()
+  const supabase = createPublicClient()
   const [{ data: serverA }, { data: serverB }] = await Promise.all([
     supabase.from('servers').select('name, tagline, score_total').eq('slug', slugA).single(),
     supabase.from('servers').select('name, tagline, score_total').eq('slug', slugB).single(),
@@ -132,7 +132,7 @@ export default async function ComparePage({
   if (parts.length !== 2) notFound()
 
   const [slugA, slugB] = parts
-  const supabase = await createClient()
+  const supabase = createPublicClient()
 
   const [{ data: serverA }, { data: serverB }] = await Promise.all([
     supabase.from('servers').select(PUBLIC_SERVER_FIELDS).eq('slug', slugA).single(),
