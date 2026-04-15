@@ -1,0 +1,105 @@
+---
+title: "Claude Cheat Codes: The Power User Reference"
+description: "A condensed field guide to the prompt codes, XML patterns, thinking triggers, and context systems that separate casual Claude users from power users. Download the full PDF at the end."
+hook: "The biggest gap between casual and power users isn't prompt tricks — it's building systems around every interaction."
+date: "2026-04-15"
+tags: ["claude", "prompt-engineering", "claude-code", "reference"]
+category: "category-deep-dive"
+featuredServers: []
+---
+
+Most people use Claude like a search box. The users getting real leverage treat it like infrastructure — with persistent context, structured prompts, and a handful of signals that reliably change its behavior.
+
+This is a condensed tour of the techniques worth knowing. The full reference is a PDF you can grab at the bottom.
+
+---
+
+## Prompt codes that actually work
+
+A small set of shorthand codes reliably change how Claude responds. They aren't backdoors — they work because Claude was trained on conventions, and these codes signal clear intent.
+
+- **L99** — forces committed expert opinions instead of "it depends" hedging.
+- **/ghost** — strips em-dashes, closing summaries, and other AI tells.
+- **ULTRATHINK** — maximum reasoning depth; in Claude Code it triggers extended thinking.
+- **PERSONA: [specific]** — "Senior Postgres DBA at Stripe, 15 years, cynical about ORMs." Specificity earns real opinions.
+- **/skeptic** — challenges your question before answering it.
+- **/noyap** and **/punch** — brevity and sharpened prose.
+
+Stacking helps. `/ghost + /punch` for outreach. `PERSONA + L99` for technical decisions. `/skeptic + ULTRATHINK` for strategy work.
+
+<Callout type="warning">
+What does **not** work: `/nofilter`, `/unlocked`, L33T, DAN-mode prompts. Those are ChatGPT jailbreak patterns with zero effect on Claude.
+</Callout>
+
+---
+
+## XML is Claude's native language
+
+Claude was trained on XML-structured prompts. Its own system prompt uses XML tags internally. This makes structured tags the single highest-impact formatting technique you can adopt.
+
+Tags worth using: `<instructions>`, `<context>`, `<examples>` (wrapping individual `<example>` tags), `<formatting>`, `<document>` with `<source>`, and `<thinking>` / `<answer>` to separate reasoning from output.
+
+Two rules pay off disproportionately:
+
+1. **Put documents at the top, queries at the bottom.** Anthropic's own testing shows up to 30% quality improvement for inputs over 20K tokens.
+2. **Claude mirrors your register.** Conversational input produces verbose output. Direct input produces direct output. Strip the markdown and pleasantries from your own prompts if you want the same back.
+
+---
+
+## Thinking and reasoning
+
+Chain-of-thought scales from "think step by step" up to structured `<thinking>` / `<answer>` tags. But the default on Claude 4.6 is adaptive thinking — the model calibrates depth automatically. Manual budgets are no longer the recommended pattern.
+
+A few things worth knowing:
+
+- Extended thinking can **hurt performance by up to 36%** on simple or intuitive tasks. Reserve it for math, logic, architecture, and debugging.
+- Haiku 4.5 with thinking enabled gets you near-Sonnet performance at a lower price point.
+- In Claude Code, the triggers are "think," "think harder," and "ultrathink" — each step unlocks more reasoning budget.
+- Few-shot examples with 3-5 diverse samples hit ~90% format success, versus instructions alone.
+
+---
+
+## Claude Code power commands
+
+If you live in the terminal, a few commands are non-negotiable:
+
+- **/init** — auto-generates a `CLAUDE.md` from your codebase.
+- **/compact** — summarizes conversation to free context. Supports focus: `/compact Focus on API changes`.
+- **/clear** — fresh context beats a degraded session. Use it between tasks.
+- **/fork** — branch a session to try an alternative without losing the original.
+- **Shift+Tab** — cycle between Normal, Auto-Accept, and Plan modes.
+
+For `CLAUDE.md`, the rule is *point, don't dump*. Keep it under 500 lines, with 20-30 lines of essentials at the top. Reference where detail lives rather than pasting everything in — Claude only follows ~150-200 instructions reliably, and its system prompt already uses ~50 of those.
+
+---
+
+## Context engineering: the real unlock
+
+The biggest gap between casual and power users isn't single-prompt tricks. It's building persistent systems that load automatically before every interaction.
+
+The reference guide recommends five files:
+
+1. **Identity** — your role, company, priorities, decisions already made.
+2. **Voice profile** — beliefs, contrarian takes, sentence rhythm, things you find cringe.
+3. **Anti-AI writing** — banned words and banned patterns (long intros, closing summaries, rule-of-three chains).
+4. **Taste** — examples of output you love *and* output you hate.
+5. **Project context** — architecture decisions, current state, what's been tried and failed.
+
+Two high-leverage habits pair well with these:
+
+- **Socratic prompting.** Before a hard task, ask Claude what questions it needs answered to do the task well. It surfaces assumptions you didn't know you were making.
+- **Pattern detection.** Periodically ask, "What patterns do you see in how I've corrected your outputs?" Save the insights. After every correction, tell Claude to update its `CLAUDE.md` so the same mistake doesn't repeat.
+
+<Callout type="info">
+The users getting the most from Claude aren't writing better single prompts. They're building better systems around every interaction. Treat Claude as infrastructure, not a chat box.
+</Callout>
+
+---
+
+## Download the full reference
+
+The PDF version has everything — all 15 verified prompt codes, the full XML tag list, API cost optimization tactics, the anti-AI word ban list, and the complete context engineering system.
+
+<a href="/downloads/claude-cheat-codes-mcppedia.pdf" download className="download-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg><span>Download PDF</span></a>
+
+Free, no signup, MCPpedia-watermarked. Share it with anyone who could use it.
