@@ -143,6 +143,46 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* MCPpedia MCP server promotion */}
+      <section className="border-t border-border">
+        <div className="max-w-[1200px] mx-auto px-4 py-8">
+          <div className="border border-accent/20 rounded-lg p-6 bg-accent/5 flex flex-col md:flex-row gap-6 items-stretch">
+            <div className="flex-1 min-w-0">
+              <span className="inline-block text-[11px] font-semibold uppercase tracking-wider text-accent bg-accent/10 border border-accent/20 rounded-full px-2.5 py-0.5 mb-3">
+                MCPpedia MCP server
+              </span>
+              <h2 className="text-lg md:text-xl font-semibold text-text-primary mb-1.5">
+                Use MCPpedia inside your AI assistant
+              </h2>
+              <p className="text-sm text-text-muted mb-4 max-w-xl">
+                Search 18,000+ MCP servers, check security, and grab install configs — straight from Claude, Cursor, or any MCP client.
+              </p>
+              <pre className="text-[12.5px] leading-snug bg-code-bg border border-border rounded-md p-3 overflow-x-auto m-0 text-text-primary">{`{
+  "mcpServers": {
+    "mcppedia": { "url": "https://mcppedia.org/mcp" }
+  }
+}`}</pre>
+            </div>
+            <div className="flex flex-col justify-center gap-2 shrink-0 md:w-44">
+              <Link
+                href="/mcp"
+                className="px-4 py-2 text-sm font-medium rounded-md bg-accent text-white hover:bg-accent-hover transition-colors text-center"
+              >
+                Install MCPpedia →
+              </Link>
+              <a
+                href="https://www.npmjs.com/package/mcp-server-mcppedia"
+                target="_blank"
+                rel="noreferrer"
+                className="px-4 py-2 text-sm rounded-md border border-border text-text-primary hover:bg-bg-tertiary transition-colors text-center"
+              >
+                npm package
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* What makes MCPpedia different — quick visual proof */}
       <section className="max-w-[1200px] mx-auto px-4 py-10">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
