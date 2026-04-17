@@ -37,10 +37,44 @@ async function main() {
   const run = await BotRun.start('snapshot-metrics')
 
   try {
-    // 1. Fetch all servers + security data in parallel
-    const [servers, { data: allAdvisories }, { count: toolPoisoningCount }, { count: injectionRiskCount }] = await Promise.all([
+    // NOTE: don't aggregate advisories by fetching all rows — PostgREST caps
+    // SELECTs at 1000 rows, and the table is already >2x that. Counting in
+    // JS silently undercounts every metric derived from it. Use head:true
+    // count queries instead. Same bug as the /security page (fixed 2026-04-17).
+    const sevOpen = (severity: string) =>
+      supabase
+        .from('security_advisories')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'open')
+        .eq('severity', severity)
+
+    // 1. Fetch all servers + security counts in parallel
+    const [
+      servers,
+      { count: openCves },
+      { count: fixedCves },
+      { count: totalCves },
+      { count: cvesCritical },
+      { count: cvesHigh },
+      { count: cvesMedium },
+      { count: cvesLow },
+      { count: cvesUnscored },
+      { count: toolPoisoningCount },
+      { count: injectionRiskCount },
+    ] = await Promise.all([
       fetchAllServers(),
-      supabase.from('security_advisories').select('severity, status'),
+      supabase.from('security_advisories').select('*', { count: 'exact', head: true }).eq('status', 'open'),
+      supabase.from('security_advisories').select('*', { count: 'exact', head: true }).eq('status', 'fixed'),
+      supabase.from('security_advisories').select('*', { count: 'exact', head: true }),
+      sevOpen('critical'),
+      sevOpen('high'),
+      sevOpen('medium'),
+      sevOpen('low'),
+      supabase
+        .from('security_advisories')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'open')
+        .not('severity', 'in', '(critical,high,medium,low)'),
       supabase.from('servers').select('id', { count: 'exact', head: true }).eq('has_tool_poisoning', true).eq('is_archived', false),
       supabase.from('servers').select('id', { count: 'exact', head: true }).eq('has_injection_risk', true).eq('is_archived', false),
     ])
@@ -116,16 +150,12 @@ async function main() {
       tokenEfficiencyGrades[g] = (tokenEfficiencyGrades[g] || 0) + 1
     }
 
-    // 11. Security metrics from advisories
-    const advisories = (allAdvisories || []) as Array<{ severity: string; status: string }>
-    const openAdvisories = advisories.filter(a => a.status === 'open')
-
-    // 12. Servers added today
+    // 11. Servers added today
     const todayStart = new Date()
     todayStart.setUTCHours(0, 0, 0, 0)
     const serversAddedToday = all.filter(s => new Date(s.created_at as string) >= todayStart).length
 
-    // 13. Upsert the snapshot
+    // 12. Upsert the snapshot
     const snapshotDate = new Date().toISOString().slice(0, 10)
     const row = {
       snapshot_date: snapshotDate,
@@ -142,14 +172,14 @@ async function main() {
       total_tools: all.reduce((s, x) => s + ((x.tools as unknown[])?.length || 0), 0),
       servers_with_cves: all.filter(s => ((s.cve_count as number) || 0) > 0).length,
       servers_with_auth: all.filter(s => s.has_authentication === true).length,
-      open_cves: openAdvisories.length,
-      fixed_cves: advisories.filter(a => a.status === 'fixed').length,
-      total_cves: advisories.length,
-      cves_critical: openAdvisories.filter(a => a.severity === 'critical').length,
-      cves_high: openAdvisories.filter(a => a.severity === 'high').length,
-      cves_medium: openAdvisories.filter(a => a.severity === 'medium').length,
-      cves_low: openAdvisories.filter(a => a.severity === 'low').length,
-      cves_unscored: openAdvisories.filter(a => !['critical', 'high', 'medium', 'low'].includes(a.severity)).length,
+      open_cves: openCves || 0,
+      fixed_cves: fixedCves || 0,
+      total_cves: totalCves || 0,
+      cves_critical: cvesCritical || 0,
+      cves_high: cvesHigh || 0,
+      cves_medium: cvesMedium || 0,
+      cves_low: cvesLow || 0,
+      cves_unscored: cvesUnscored || 0,
       tool_poisoning_count: toolPoisoningCount || 0,
       injection_risk_count: injectionRiskCount || 0,
       score_buckets: scoreBuckets,
@@ -168,7 +198,7 @@ async function main() {
 
     if (error) throw new Error(`Upsert failed: ${error.message}`)
 
-    console.log(`[snapshot-metrics] ${snapshotDate}: ${total} servers, ${openAdvisories.length} open CVEs, ${serversAddedToday} added today`)
+    console.log(`[snapshot-metrics] ${snapshotDate}: ${total} servers, ${openCves || 0} open CVEs, ${serversAddedToday} added today`)
 
     run.addProcessed(total)
     run.addUpdated(1)
