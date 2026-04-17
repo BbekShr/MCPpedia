@@ -16,7 +16,7 @@ import { BotRun } from './lib/bot-run'
 import { searchRepos, searchReposPaginated, type GitHubRepo } from './lib/github'
 import { categorize } from './lib/categorize'
 
-const supabase = createAdminClient()
+const supabase = createAdminClient('bot-discover')
 
 function slugify(name: string): string {
   return name

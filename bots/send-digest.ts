@@ -16,7 +16,7 @@ import matter from 'gray-matter'
 import { createAdminClient } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
 
-const supabase = createAdminClient()
+const supabase = createAdminClient('bot-send-digest')
 
 function daysAgo(n: number): string {
   const d = new Date()

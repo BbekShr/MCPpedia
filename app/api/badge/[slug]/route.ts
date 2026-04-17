@@ -91,7 +91,7 @@ export async function GET(
     })
   }
 
-  const supabase = createAdminClient()
+  const supabase = createAdminClient('badge-render')
   const { data: server } = await supabase
     .from('servers')
     .select('name, score_total, score_security, cve_count')

@@ -28,7 +28,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   let grade = 'F'
 
   if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const supabase = createAdminClient()
+    const supabase = createAdminClient('og-image')
     const { data: server } = await supabase
       .from('servers')
       .select('name, tagline, score_total, score_security, score_maintenance, score_efficiency, score_documentation, score_compatibility, tools, transport, license, cve_count, has_authentication, health_status, github_stars')

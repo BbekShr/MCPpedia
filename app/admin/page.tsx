@@ -68,7 +68,20 @@ interface EditRow {
   server: { name: string; slug: string } | null
 }
 
-type Tab = 'servers' | 'users' | 'edits' | 'bots'
+interface ChangeRow {
+  id: number
+  server_id: string
+  field_name: string
+  old_value: unknown
+  new_value: unknown
+  actor_id: string | null
+  actor_label: string | null
+  changed_at: string
+  actor: { username: string } | null
+  server: { name: string; slug: string } | null
+}
+
+type Tab = 'servers' | 'users' | 'edits' | 'bots' | 'history'
 
 export default function AdminPage() {
   const supabase = createClient()
@@ -83,6 +96,8 @@ export default function AdminPage() {
   const [serverCount, setServerCount] = useState<number | null>(null)
   const [users, setUsers] = useState<ProfileRow[]>([])
   const [edits, setEdits] = useState<EditRow[]>([])
+  const [changes, setChanges] = useState<ChangeRow[]>([])
+  const [changeFilter, setChangeFilter] = useState('')
   const [bots, setBots] = useState<BotInfo[]>([])
   const [triggering, setTriggering] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -121,6 +136,13 @@ export default function AdminPage() {
     } else if (tab === 'edits') {
       const { data } = await supabase.from('edits').select('*, profile:profiles(username), server:servers(name, slug)').order('created_at', { ascending: false }).limit(50)
       setEdits((data || []) as EditRow[])
+    } else if (tab === 'history') {
+      const { data } = await supabase
+        .from('server_changes')
+        .select('*, actor:profiles!actor_id(username), server:servers(name, slug)')
+        .order('changed_at', { ascending: false })
+        .limit(100)
+      setChanges((data || []) as ChangeRow[])
     } else if (tab === 'bots') {
       const res = await fetch('/api/admin/bots')
       if (res.ok) {
@@ -290,7 +312,7 @@ export default function AdminPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 border-b border-border">
-        {(['servers', 'users', 'edits', 'bots'] as Tab[]).map(t => (
+        {(['servers', 'users', 'edits', 'bots', 'history'] as Tab[]).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -627,6 +649,79 @@ export default function AdminPage() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* History tab */}
+      {tab === 'history' && !loading && (
+        <div>
+          <div className="flex items-center gap-3 mb-4">
+            <input
+              type="text"
+              placeholder="Filter by server, field, or actor..."
+              value={changeFilter}
+              onChange={e => setChangeFilter(e.target.value)}
+              className="flex-1 max-w-sm px-3 py-1.5 text-sm border border-border rounded bg-bg text-text-primary placeholder:text-text-muted"
+            />
+            <span className="text-xs text-text-muted">{changes.length} recent change{changes.length === 1 ? '' : 's'}</span>
+          </div>
+          <div className="space-y-2">
+            {changes.length === 0 && <p className="text-text-muted text-sm">No changes logged yet.</p>}
+            {changes
+              .filter(c => {
+                if (!changeFilter.trim()) return true
+                const q = changeFilter.toLowerCase()
+                return (
+                  c.server?.slug.toLowerCase().includes(q) ||
+                  c.server?.name.toLowerCase().includes(q) ||
+                  c.field_name.toLowerCase().includes(q) ||
+                  c.actor?.username?.toLowerCase().includes(q) ||
+                  c.actor_label?.toLowerCase().includes(q)
+                )
+              })
+              .map(c => {
+                const isDelete = c.field_name === '__deleted__'
+                const actorDisplay = c.actor?.username
+                  ? `@${c.actor.username}`
+                  : c.actor_label || 'unknown'
+                return (
+                  <div key={c.id} className="border border-border rounded-md p-3 text-sm">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-text-primary font-medium truncate">{actorDisplay}</span>
+                        <span className="text-text-muted text-xs">
+                          {isDelete ? 'deleted' : 'changed'}
+                        </span>
+                        {!isDelete && (
+                          <code className="text-xs font-mono text-accent">{c.field_name}</code>
+                        )}
+                        <span className="text-text-muted text-xs">on</span>
+                        {c.server ? (
+                          <Link href={`/s/${c.server.slug}`} className="text-accent hover:text-accent-hover truncate">
+                            {c.server.name}
+                          </Link>
+                        ) : (
+                          <span className="text-text-muted italic text-xs">(deleted server)</span>
+                        )}
+                      </div>
+                      <span className="text-xs text-text-muted whitespace-nowrap ml-2">
+                        {new Date(c.changed_at).toLocaleString('en-US', { timeZone: 'America/Chicago' })}
+                      </span>
+                    </div>
+                    {!isDelete && (
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="p-1.5 bg-red/5 border border-border rounded font-mono truncate" title={JSON.stringify(c.old_value)}>
+                          {JSON.stringify(c.old_value) ?? 'null'}
+                        </div>
+                        <div className="p-1.5 bg-green/5 border border-border rounded font-mono truncate" title={JSON.stringify(c.new_value)}>
+                          {JSON.stringify(c.new_value) ?? 'null'}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+          </div>
         </div>
       )}
     </div>

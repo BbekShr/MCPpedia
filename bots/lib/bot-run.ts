@@ -13,7 +13,8 @@ import { createAdminClient } from './supabase'
 
 let _client: ReturnType<typeof createAdminClient> | null = null
 function db() {
-  if (!_client) _client = createAdminClient()
+  // Label is a no-op here — this client only touches bot_runs, which isn't audited.
+  if (!_client) _client = createAdminClient('bot-run-tracker')
   return _client
 }
 

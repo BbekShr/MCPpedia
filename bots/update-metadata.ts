@@ -10,7 +10,7 @@ import { createAdminClient } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
 import { getRepo } from './lib/github'
 
-const supabase = createAdminClient()
+const supabase = createAdminClient('bot-update-metadata')
 
 function computeHealth(pushedAt: string | null, archived: boolean): string {
   if (archived) return 'archived'

@@ -8,7 +8,7 @@ config({ path: '.env.local' })
 
 import { createAdminClient } from './lib/supabase'
 
-const supabase = createAdminClient()
+const supabase = createAdminClient('bot-detect-duplicates')
 
 async function main() {
   console.log('=== MCPpedia Duplicate Detector ===')

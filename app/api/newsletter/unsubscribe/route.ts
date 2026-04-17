@@ -6,7 +6,7 @@ export async function GET(request: Request) {
   const token = searchParams.get('token')
 
   if (token && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const supabase = createAdminClient()
+    const supabase = createAdminClient('newsletter-unsubscribe')
     await supabase
       .from('newsletter_subscribers')
       .delete()

@@ -33,7 +33,7 @@ export async function POST(request: Request) {
   const data = parsed.data
 
   // Use admin client for data operations — health_checks has no user INSERT policy
-  const admin = createAdminClient()
+  const admin = createAdminClient('health-report')
 
   const { error } = await admin.from('health_checks').insert({
     server_id: data.server_id,

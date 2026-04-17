@@ -13,7 +13,7 @@ import matter from 'gray-matter'
 import { createAdminClient } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
 
-const supabase = createAdminClient()
+const supabase = createAdminClient('bot-generate-blog')
 const blogDir = path.join(process.cwd(), 'content', 'blog')
 const metaPath = path.join(blogDir, '.meta.json')
 

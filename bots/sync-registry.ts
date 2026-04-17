@@ -11,7 +11,7 @@ import { createAdminClient } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
 import { categorize } from './lib/categorize'
 
-const supabase = createAdminClient()
+const supabase = createAdminClient('bot-sync-registry')
 
 const REGISTRY_API = 'https://registry.modelcontextprotocol.io/v0.1'
 

@@ -11,7 +11,7 @@ import fs from 'fs'
 import path from 'path'
 import { createAdminClient } from './lib/supabase'
 
-const supabase = createAdminClient()
+const supabase = createAdminClient('bot-generate-comparisons')
 const dataDir = path.join(process.cwd(), 'data')
 const outputPath = path.join(dataDir, 'comparison-pairs.json')
 

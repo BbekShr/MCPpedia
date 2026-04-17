@@ -97,7 +97,7 @@ export async function generateStaticParams() {
   }
 
   try {
-    const supabase = createAdminClient()
+    const supabase = createAdminClient('static-params')
     const { data } = await supabase
       .from('servers')
       .select('slug')

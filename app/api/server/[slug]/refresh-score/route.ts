@@ -45,7 +45,7 @@ export async function POST(
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const supabase = createAdminClient()
+  const supabase = createAdminClient('refresh-score')
 
   const { data: server, error } = await supabase
     .from('servers')

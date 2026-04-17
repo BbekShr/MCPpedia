@@ -9,7 +9,7 @@ config({ path: '.env.local' })
 import { createAdminClient } from './lib/supabase'
 import { getReadme } from './lib/github'
 
-const supabase = createAdminClient()
+const supabase = createAdminClient('bot-enrich-descriptions')
 
 function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
   const match = url.match(/github\.com\/([\w.-]+)\/([\w.-]+)/)

@@ -20,7 +20,7 @@ export async function GET() {
     return new Response('Forbidden', { status: 403 })
   }
 
-  const admin = createAdminClient()
+  const admin = createAdminClient('admin-categorize')
 
   const encoder = new TextEncoder()
   const stream = new ReadableStream({

@@ -12,7 +12,7 @@ config({ path: '.env.local' })
 import { createAdminClient } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
 
-const supabase = createAdminClient()
+const supabase = createAdminClient('bot-snapshot-metrics')
 
 async function fetchAllServers() {
   const fields = 'categories,health_status,author_type,api_pricing,transport,compatible_clients,score_total,score_security,score_maintenance,score_documentation,score_compatibility,score_efficiency,token_efficiency_grade,github_stars,npm_weekly_downloads,cve_count,has_authentication,tools,created_at'

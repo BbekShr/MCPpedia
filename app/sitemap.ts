@@ -43,7 +43,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   const { createAdminClient } = await import('@/lib/supabase/admin')
-  const supabase = createAdminClient()
+  const supabase = createAdminClient('sitemap')
 
   // Fetch ALL servers (paginated to bypass 1,000 row default)
   const servers = await getAllServers(supabase)

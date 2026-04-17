@@ -104,7 +104,7 @@ export async function POST(request: Request) {
 
   // Compute scores immediately so the server isn't listed without a score
   try {
-    const admin = createAdminClient()
+    const admin = createAdminClient('submit-post-score')
     const tools = (server.tools || []) as Tool[]
 
     const security = await scanSecurity(

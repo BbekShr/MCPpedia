@@ -7,7 +7,7 @@ config({ path: '.env.local' })
 
 import { createAdminClient } from './lib/supabase'
 
-const supabase = createAdminClient()
+const supabase = createAdminClient('bot-check-broken-links')
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN
 
 function parseGitHubUrl(url: string): { owner: string; repo: string } | null {

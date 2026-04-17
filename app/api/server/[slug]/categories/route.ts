@@ -31,7 +31,7 @@ export async function POST(
     return Response.json({ error: 'Maximum 3 categories' }, { status: 400 })
   }
 
-  const admin = createAdminClient()
+  const admin = createAdminClient('user-set-categories')
 
   const { data: server, error } = await admin
     .from('servers')

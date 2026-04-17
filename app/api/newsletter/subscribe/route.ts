@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true })
   }
 
-  const supabase = createAdminClient()
+  const supabase = createAdminClient('newsletter-subscribe')
   // Upsert — ignore if already subscribed (don't leak whether email exists)
   await supabase
     .from('newsletter_subscribers')

@@ -20,7 +20,7 @@ import {
 } from '../lib/scoring'
 import type { Tool } from '../lib/types'
 
-const supabase = createAdminClient()
+const supabase = createAdminClient('bot-compute-scores')
 
 function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
   const match = url.match(/github\.com\/([\w.-]+)\/([\w.-]+)/)

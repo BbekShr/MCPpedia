@@ -12,7 +12,7 @@ import { BotRun } from './lib/bot-run'
 import { getReadme } from './lib/github'
 import { categorize } from './lib/categorize'
 
-const supabase = createAdminClient()
+const supabase = createAdminClient('bot-extract-install-info')
 
 function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
   const match = url.match(/github\.com\/([\w.-]+)\/([\w.-]+)/)

@@ -66,7 +66,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
   }
 
-  const admin = createAdminClient()
+  const admin = createAdminClient('admin-bots-ui')
 
   // Get the latest run for each bot + last 20 runs total
   const { data: recentRuns } = await admin
