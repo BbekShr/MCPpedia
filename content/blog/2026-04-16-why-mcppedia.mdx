@@ -1,0 +1,112 @@
+---
+title: "Why MCPpedia Exists"
+description: "18,927 MCP servers. The average one scores 30/100. Only 433 clear 80. Stars don't tell you which is which — here's the case for a directory that does."
+hook: "The MCP catalog has 18,927 servers. The average scores 30 out of 100. Only 2.3% clear an 80. A directory that ranks by stars doesn't help you find the 2.3% — and that's the problem MCPpedia was built to solve."
+date: "2026-04-16"
+tags: ["mcppedia", "why", "ecosystem", "trust"]
+category: "category-deep-dive"
+featuredServers: []
+---
+
+<SectionLabel>The Problem</SectionLabel>
+
+## An Ecosystem Without A Quality Signal
+
+The Model Context Protocol was announced by Anthropic in November 2024. Seventeen months later, the catalog of servers built on top of it has crossed **18,927** and is adding close to a thousand a week.
+
+That's a healthy ecosystem. It's also a hard one to navigate — because the signal-to-noise ratio is rough. Across the catalog, the **average server scores 30 out of 100** on our scoring rubric. Only **433 servers — 2.3% of the catalog — clear an 80**.
+
+The question a developer actually needs answered before installing one is "is this safe to run, and will it work?" Nothing in a star count answers that.
+
+<StatGrid>
+  <Stat value="18,927" label="Total Servers" detail="In the catalog today" />
+  <Stat value="983" label="New Last 7 Days" detail="And accelerating" />
+  <Stat value="30" label="Average Score" detail="Out of 100" />
+  <Stat value="433" label="Score 80+" detail="2.3% of the catalog" />
+</StatGrid>
+
+---
+
+<SectionLabel>The Failure Mode</SectionLabel>
+
+## Why Stars Are The Wrong Filter
+
+Most MCP directories rank by GitHub stars. It's the easiest signal to pull, and it's wrong in a way that genuinely matters.
+
+Stars measure marketing. They measure who tweeted about what, which conference talk featured which logo, which company has the bigger launch. They do not measure:
+
+- Whether the package has an open critical CVE in its dependency tree
+- Whether the install path actually works
+- Whether the tool descriptions burn thousands of tokens before a single call
+- Whether the maintainer abandoned it months ago
+- Whether the auth model lets anyone on the internet touch your database
+- Whether a recent commit silently changed what the tools claim to do
+
+A star count tells you a server is *popular*. It does not tell you it's *safe*.
+
+<PullQuote>If your filter is GitHub stars, you're letting marketing decide what runs inside your AI assistant. That's a security model, and it's a bad one.</PullQuote>
+
+---
+
+<SectionLabel>The Trust Gap</SectionLabel>
+
+## MCP Servers Are Not Like npm Packages
+
+There's a tempting comparison: "MCP is just another package ecosystem, treat it like npm." That comparison undersells the risk.
+
+An npm package runs in your build or your server. An MCP server runs **inside the loop of an AI model that's making tool-use decisions on your behalf**. The blast radius is different. The threat model is different. Some of the questions you need to ask don't have clean analogs in traditional package security:
+
+- **Tool-description manipulation.** A server can embed instructions in its tool descriptions that the model will treat as guidance. CVE databases don't cover this.
+- **Silent schema drift.** A server's tool definitions can change between versions in ways that change what the model is being asked to do. Package managers don't flag this.
+- **Auth-by-omission.** A server can ship with no auth at all and quietly expose your filesystem, your database, your secrets.
+- **Token bloat.** A server can claim ten tools and consume 20k tokens describing them, silently eating your context budget before any real work happens.
+
+A directory that doesn't check for these is just a list of names.
+
+---
+
+<SectionLabel>What MCPpedia Actually Does</SectionLabel>
+
+## Automated Discovery, Multi-Dimensional Scoring
+
+Other MCP directories exist. The difference is approach. Most rely on human submissions and rank by stars. MCPpedia runs on bots:
+
+- **Discovery bots** crawl GitHub, npm, PyPI, and known registries on a daily cron. Anything that looks like an MCP server gets pulled in — no submission form required.
+- **Scoring bots** run against every server across five weighted dimensions: security (30 pts), maintenance (25), efficiency (20), documentation (15), compatibility (10). Security alone is broken into eight sub-checks, including live CVE queries against OSV.dev, tool-definition hashing to detect silent schema changes, pattern analysis on tool descriptions to catch manipulation attempts, and dependency health via deps.dev.
+- **Re-scan bots** treat every score as a snapshot, not a verdict. A server that was clean last month gets re-scored today. A new CVE published this morning shows up in the catalog this afternoon.
+
+The score isn't a number we made up. Every sub-check is visible on the server detail page with the evidence behind it. If a server scores low, you can see exactly which check failed and why.
+
+<Callout type="info">
+There's no editorial gatekeeping. A server from a solo maintainer with a high score ranks above a corporate-backed server with open vulnerabilities. The score is the filter — not who has the bigger logo.
+</Callout>
+
+---
+
+<SectionLabel>Who This Is For</SectionLabel>
+
+## Three Audiences, One Problem
+
+**If you're a developer**, you need to know what's production-safe before you wire it into your assistant. You don't have time to read every README, run every install path, and check every CVE database for every server you consider. MCPpedia is the pre-flight check.
+
+**If you're on a security team**, you need defensible documentation when someone asks "why did we approve this server for enterprise use?" Stars don't survive that conversation. A scored, dated, evidence-linked record does.
+
+**If you're a server author**, you need objective feedback on how your server stacks up — and a clear list of what to fix to rank higher. The score breakdown is the same one the catalog uses. There's no secret formula.
+
+---
+
+<SectionLabel>The Bigger Bet</SectionLabel>
+
+## Why The Catalog Has To Be Automated
+
+Every package ecosystem that grew this fast eventually got a registry, a quality bar, and a security layer. Most of them got it years too late, after a string of incidents that should have been preventable.
+
+MCP is on the same trajectory, but the timeline is compressed and the stakes are higher — because the servers don't just sit in your dependency tree, they sit inside the decision loop of an AI model with access to your tools, your data, and your credentials. At 983 new servers a week, a submission-form directory falls behind the same day it opens.
+
+MCPpedia is the bet that the MCP ecosystem deserves a registry that didn't wait for the first incident to start caring — and that the only way to keep up is to let the bots do the cataloging.
+
+<PullQuote>The MCP ecosystem is being built in real time. Either someone builds the map, or every developer reinvents one in their head — badly, every time, forever.</PullQuote>
+
+---
+
+*If a server is missing or a listing looks wrong, open an issue on GitHub. The catalog gets better the more eyes are on it.*
