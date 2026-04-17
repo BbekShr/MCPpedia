@@ -39,13 +39,13 @@ export default function BadgeEmbed({ slug }: BadgeEmbedProps) {
       <div className="flex gap-1 mb-3">
         <button
           onClick={() => setActiveTab('score')}
-          className={`px-2 py-0.5 text-xs rounded transition-colors ${activeTab === 'score' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary border border-border'}`}
+          className={`px-2 py-0.5 text-xs rounded transition-colors ${activeTab === 'score' ? 'bg-accent text-accent-fg' : 'text-text-muted hover:text-text-primary border border-border'}`}
         >
           Overall score
         </button>
         <button
           onClick={() => setActiveTab('security')}
-          className={`px-2 py-0.5 text-xs rounded transition-colors ${activeTab === 'security' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary border border-border'}`}
+          className={`px-2 py-0.5 text-xs rounded transition-colors ${activeTab === 'security' ? 'bg-accent text-accent-fg' : 'text-text-muted hover:text-text-primary border border-border'}`}
         >
           Security grade
         </button>

@@ -76,7 +76,7 @@ export default function BadgePreview({ popularServers }: { popularServers: Popul
                 onClick={() => selectServer(s.slug)}
                 className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
                   activeSlug === s.slug
-                    ? 'bg-accent text-white border-accent'
+                    ? 'bg-accent text-accent-fg border-accent'
                     : 'border-border text-text-muted hover:border-accent hover:text-accent'
                 }`}
               >

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useSyncExternalStore } from 'react'
 
 interface TOCItem {
   id: string
@@ -8,35 +8,61 @@ interface TOCItem {
   level: number
 }
 
-export default function TableOfContents() {
-  const [headings, setHeadings] = useState<TOCItem[]>([])
-  const [activeId, setActiveId] = useState<string>('')
+// Extract headings from the rendered blog post DOM. We use useSyncExternalStore
+// so the initial read happens during render (no cascading setState-in-effect)
+// and updates fire only when the article changes.
+function subscribeHeadings(onChange: () => void): () => void {
+  if (typeof window === 'undefined') return () => {}
+  const article = document.querySelector('.blog-content')
+  if (!article) return () => {}
+  const observer = new MutationObserver(onChange)
+  observer.observe(article, { childList: true, subtree: true, characterData: true })
+  return () => observer.disconnect()
+}
 
-  // Extract headings from the article on mount
-  useEffect(() => {
-    const article = document.querySelector('.blog-content')
-    if (!article) return
-
-    const elements = article.querySelectorAll('h2, h3')
-    const items: TOCItem[] = []
-
-    elements.forEach((el) => {
-      // Generate an ID if one doesn't exist
-      if (!el.id) {
-        el.id = el.textContent
-          ?.toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-|-$/g, '') || `heading-${items.length}`
-      }
-      items.push({
-        id: el.id,
-        text: el.textContent || '',
-        level: el.tagName === 'H2' ? 2 : 3,
-      })
+function readHeadings(): TOCItem[] {
+  if (typeof document === 'undefined') return []
+  const article = document.querySelector('.blog-content')
+  if (!article) return []
+  const elements = article.querySelectorAll('h2, h3')
+  const items: TOCItem[] = []
+  elements.forEach((el) => {
+    if (!el.id) {
+      el.id = el.textContent
+        ?.toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '') || `heading-${items.length}`
+    }
+    items.push({
+      id: el.id,
+      text: el.textContent || '',
+      level: el.tagName === 'H2' ? 2 : 3,
     })
+  })
+  return items
+}
 
-    setHeadings(items)
-  }, [])
+// Memoize the snapshot so useSyncExternalStore's reference check stays stable
+// when nothing changed. Keyed by the joined ids of the current heading set.
+let cachedHeadings: TOCItem[] = []
+let cachedKey = ''
+function getHeadingsSnapshot(): TOCItem[] {
+  const items = readHeadings()
+  const key = items.map(i => i.id).join('|')
+  if (key !== cachedKey) {
+    cachedHeadings = items
+    cachedKey = key
+  }
+  return cachedHeadings
+}
+
+function getServerSnapshot(): TOCItem[] {
+  return []
+}
+
+export default function TableOfContents() {
+  const headings = useSyncExternalStore(subscribeHeadings, getHeadingsSnapshot, getServerSnapshot)
+  const [activeId, setActiveId] = useState<string>('')
 
   // Track active heading via IntersectionObserver
   useEffect(() => {

@@ -183,8 +183,12 @@ export default function AdminPage() {
   }, [serverSearch, tab, role, fetchServers])
 
   async function toggleVerified(serverId: string, current: boolean) {
-    await supabase.from('servers').update({ verified: !current }).eq('id', serverId)
-    // Update locally instead of refetching
+    const res = await fetch('/api/admin/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ server_id: serverId, verified: !current }),
+    })
+    if (!res.ok) return
     setServers(prev => prev.map(s => s.id === serverId ? { ...s, verified: !current } : s))
   }
 
@@ -199,19 +203,22 @@ export default function AdminPage() {
   }
 
   async function changeRole(userId: string, newRole: string) {
-    const VALID_ROLES = ['contributor', 'editor', 'maintainer', 'admin']
-    if (!VALID_ROLES.includes(newRole)) return
-    await supabase.from('profiles').update({ role: newRole }).eq('id', userId)
+    const res = await fetch('/api/admin/role', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, role: newRole }),
+    })
+    if (!res.ok) return
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u))
   }
 
-  async function approveEdit(editId: string, serverId: string, fieldName: string, newValue: unknown) {
-    const ALLOWED = ['name','tagline','description','api_name','api_pricing','api_rate_limits','homepage_url','npm_package','pip_package']
-    if (!ALLOWED.includes(fieldName)) return
-    // Apply the edit
-    await supabase.from('servers').update({ [fieldName]: newValue }).eq('id', serverId)
-    // Mark as approved
-    await supabase.from('edits').update({ status: 'approved', reviewed_by: user?.id, reviewed_at: new Date().toISOString() }).eq('id', editId)
+  async function approveEdit(editId: string) {
+    const res = await fetch('/api/admin/approve-edit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ edit_id: editId }),
+    })
+    if (!res.ok) return
     setEdits(prev => prev.map(e => e.id === editId ? { ...e, status: 'approved' } : e))
   }
 
@@ -275,7 +282,12 @@ export default function AdminPage() {
   }
 
   async function rejectEdit(editId: string) {
-    await supabase.from('edits').update({ status: 'rejected', reviewed_by: user?.id, reviewed_at: new Date().toISOString() }).eq('id', editId)
+    const res = await fetch('/api/admin/approve-edit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ edit_id: editId, reject: true }),
+    })
+    if (!res.ok) return
     setEdits(prev => prev.map(e => e.id === editId ? { ...e, status: 'rejected' } : e))
   }
 
@@ -506,7 +518,7 @@ export default function AdminPage() {
               {e.status === 'pending' && (
                 <div className="flex gap-2">
                   <button
-                    onClick={() => approveEdit(e.id, e.server_id, e.field_name, e.new_value)}
+                    onClick={() => approveEdit(e.id)}
                     className="text-xs px-3 py-1 rounded bg-green text-white hover:bg-green/80"
                   >
                     Approve

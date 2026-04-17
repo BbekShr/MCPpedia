@@ -3,7 +3,7 @@ import ServerCard from '@/components/ServerCard'
 import SearchBar from '@/components/SearchBar'
 import FilterBar from '@/components/FilterBar'
 import ScoreFilterPills from '@/components/ScoreFilterPills'
-import { ITEMS_PER_PAGE, PUBLIC_SERVER_FIELDS, SITE_URL } from '@/lib/constants'
+import { ITEMS_PER_PAGE, PUBLIC_CARD_FIELDS, SITE_URL } from '@/lib/constants'
 import { JsonLdScript, generateItemListJsonLd } from '@/lib/seo'
 import type { Server } from '@/lib/types'
 import type { Metadata } from 'next'
@@ -15,7 +15,7 @@ export const revalidate = 60
 export const metadata: Metadata = {
   title: 'Browse MCP Servers',
   description: 'Search and browse MCP servers scored on security, maintenance, and efficiency. Filter by category, transport, status, and more.',
-  alternates: { canonical: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://mcppedia.org'}/servers` },
+  alternates: { canonical: `${SITE_URL}/servers` },
 }
 
 export default async function ServersPage({
@@ -67,7 +67,7 @@ export default async function ServersPage({
     // Direct query — hide archived by default
     let query = supabase
       .from('servers')
-      .select(PUBLIC_SERVER_FIELDS, { count: 'exact' })
+      .select(PUBLIC_CARD_FIELDS, { count: 'exact' })
       .eq('is_archived', false)
 
     if (category) query = query.contains('categories', [category])

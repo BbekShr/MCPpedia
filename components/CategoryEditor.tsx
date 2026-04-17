@@ -121,7 +121,7 @@ export default function CategoryEditor({
               <button
                 onClick={save}
                 disabled={saving || pending.length === 0}
-                className="text-xs px-3 py-1 rounded bg-accent text-white hover:bg-accent/90 disabled:opacity-50"
+                className="text-xs px-3 py-1 rounded bg-accent text-accent-fg hover:bg-accent/90 disabled:opacity-50"
               >
                 {saving ? 'Saving…' : 'Save'}
               </button>

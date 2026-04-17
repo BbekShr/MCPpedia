@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createHash } from 'node:crypto'
 import { createClient } from '@/lib/supabase/server'
-import { checkRateLimit } from '@/lib/rate-limit'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { CATEGORIES, CATEGORY_LABELS } from '@/lib/constants'
 
 // Fields per action — only fetch what's needed
@@ -72,14 +72,6 @@ function safeInt(val: unknown, fallback: number, min: number, max: number): numb
   return Math.min(Math.max(n, min), max)
 }
 
-// Rate limit by IP — ignore x-forwarded-for (use Vercel's own header or fallback)
-function getClientIp(req: Request): string {
-  // Vercel sets x-real-ip which can't be spoofed by the client
-  return req.headers.get('x-real-ip')
-    || req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    || 'unknown'
-}
-
 // Build a response with a strong ETag derived from the payload. Honors
 // If-None-Match on the inbound request — returns 304 when the client already
 // has the same payload, saving bandwidth.
@@ -108,7 +100,7 @@ export async function POST(request: Request) {
   const ip = getClientIp(request)
   // Everyone gets the same rate limit — no fake API key bypass
   // Future: validate real API keys against a database table
-  const rl = checkRateLimit(`mcp:${ip}`, 60, 60_000)
+  const rl = await checkRateLimit(`mcp:${ip}`, 60, 60_000)
 
   if (!rl.allowed) {
     return NextResponse.json(

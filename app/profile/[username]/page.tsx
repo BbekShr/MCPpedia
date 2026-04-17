@@ -12,7 +12,11 @@ export async function generateMetadata({
   params: Promise<{ username: string }>
 }): Promise<Metadata> {
   const { username } = await params
-  return { title: `@${username}` }
+  return {
+    title: `@${username}`,
+    description: `Contributions by @${username} on MCPpedia.`,
+    robots: { index: false, follow: true },
+  }
 }
 
 export default async function ProfilePage({

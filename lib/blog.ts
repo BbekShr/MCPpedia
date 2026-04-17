@@ -17,6 +17,7 @@ export interface BlogMeta {
   description: string
   hook: string // punchy one-liner for social sharing
   date: string
+  updated?: string // optional ISO date for last meaningful edit
   tags: string[]
   category: BlogCategory
   featuredServers: string[]
@@ -45,6 +46,7 @@ export function getAllBlogPosts(): BlogMeta[] {
         description: data.description || '',
         hook: data.hook || data.description || '',
         date: data.date || '',
+        updated: data.updated || undefined,
         tags: data.tags || [],
         category: data.category || 'weekly-roundup',
         featuredServers: data.featuredServers || [],
@@ -75,6 +77,7 @@ export function getBlogPost(slug: string): { meta: BlogMeta; content: string } |
       description: data.description || '',
       hook: data.hook || data.description || '',
       date: data.date || '',
+      updated: data.updated || undefined,
       tags: data.tags || [],
       category: data.category || 'weekly-roundup',
       featuredServers: data.featuredServers || [],

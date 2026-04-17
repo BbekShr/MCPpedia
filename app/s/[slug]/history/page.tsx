@@ -10,7 +10,10 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
-  return { title: `Edit History - ${slug}` }
+  return {
+    title: `Edit History - ${slug}`,
+    robots: { index: false, follow: false },
+  }
 }
 
 export default async function EditHistoryPage({

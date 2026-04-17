@@ -249,7 +249,7 @@ export default async function BadgePage() {
         <h2 className="text-xl font-semibold text-text-primary mb-6">How to add a badge</h2>
         <div className="space-y-6">
           <div className="flex gap-4">
-            <span className="w-8 h-8 rounded-full bg-accent text-white text-sm font-bold flex items-center justify-center shrink-0">1</span>
+            <span className="w-8 h-8 rounded-full bg-accent text-accent-fg text-sm font-bold flex items-center justify-center shrink-0">1</span>
             <div>
               <p className="text-text-primary font-medium mb-1">Find your server on MCPpedia</p>
               <p className="text-sm text-text-muted">
@@ -259,7 +259,7 @@ export default async function BadgePage() {
           </div>
 
           <div className="flex gap-4">
-            <span className="w-8 h-8 rounded-full bg-accent text-white text-sm font-bold flex items-center justify-center shrink-0">2</span>
+            <span className="w-8 h-8 rounded-full bg-accent text-accent-fg text-sm font-bold flex items-center justify-center shrink-0">2</span>
             <div>
               <p className="text-text-primary font-medium mb-1">Copy the badge snippet</p>
               <p className="text-sm text-text-muted mb-2">
@@ -269,7 +269,7 @@ export default async function BadgePage() {
           </div>
 
           <div className="flex gap-4">
-            <span className="w-8 h-8 rounded-full bg-accent text-white text-sm font-bold flex items-center justify-center shrink-0">3</span>
+            <span className="w-8 h-8 rounded-full bg-accent text-accent-fg text-sm font-bold flex items-center justify-center shrink-0">3</span>
             <div>
               <p className="text-text-primary font-medium mb-1">Paste into your README</p>
               <p className="text-sm text-text-muted mb-3">
@@ -330,7 +330,7 @@ export default async function BadgePage() {
           MCPpedia tracks {serverCount.toLocaleString()} MCP servers with daily security scanning. Find yours or add it now.
         </p>
         <div className="flex gap-3">
-          <Link href="/servers" className="px-4 py-2 text-sm rounded-md bg-accent text-white hover:bg-accent-hover transition-colors">
+          <Link href="/servers" className="px-4 py-2 text-sm rounded-md bg-accent text-accent-fg hover:bg-accent-hover transition-colors">
             Search servers
           </Link>
           <Link href="/submit" className="px-4 py-2 text-sm rounded-md border border-border text-text-primary hover:bg-bg-tertiary transition-colors">

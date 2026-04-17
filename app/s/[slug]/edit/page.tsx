@@ -1,16 +1,88 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Server } from '@/lib/types'
 import type { User } from '@supabase/supabase-js'
 import Link from 'next/link'
 import { PUBLIC_SERVER_FIELDS } from '@/lib/constants'
 
+type FormState = {
+  name: string; tagline: string; description: string
+  install_configs: string; tools: string; resources: string
+  api_name: string; api_pricing: string; api_rate_limits: string
+  homepage_url: string; npm_package: string; pip_package: string
+}
+
+type FieldType = 'text' | 'textarea' | 'json' | 'select'
+
+interface FieldProps {
+  name: keyof FormState
+  label: string
+  type?: FieldType
+  rows?: number
+  value: string
+  onChange: (v: string) => void
+  onSave: () => void
+  isAdmin: boolean
+  saved: boolean
+  saving: boolean
+}
+
+function Field({ name, label, type = 'text', rows = 1, value, onChange, onSave, isAdmin, saved, saving }: FieldProps) {
+  return (
+    <div className="border border-border rounded-md p-4">
+      <div className="flex items-center justify-between mb-2">
+        <label htmlFor={`field-${name}`} className="text-sm font-medium text-text-primary">{label}</label>
+        <div className="flex items-center gap-2">
+          {saved && <span className="text-xs text-green">{isAdmin ? 'Saved!' : 'Proposed!'}</span>}
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={saving}
+            className="px-3 py-1 text-xs rounded bg-accent text-accent-fg hover:bg-accent-hover disabled:opacity-50"
+          >
+            {isAdmin ? 'Save' : 'Propose'}
+          </button>
+        </div>
+      </div>
+
+      {type === 'select' ? (
+        <select
+          id={`field-${name}`}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          className="w-full px-3 py-2 text-sm border border-border rounded-md bg-bg text-text-primary focus:outline-none focus:border-accent"
+        >
+          <option value="free">Free</option>
+          <option value="freemium">Freemium</option>
+          <option value="paid">Paid</option>
+          <option value="unknown">Unknown</option>
+        </select>
+      ) : type === 'textarea' || type === 'json' ? (
+        <textarea
+          id={`field-${name}`}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          rows={rows}
+          className={`w-full px-3 py-2 text-sm border border-border rounded-md bg-bg text-text-primary focus:outline-none focus:border-accent resize-y ${type === 'json' ? 'font-mono text-xs' : ''}`}
+        />
+      ) : (
+        <input
+          id={`field-${name}`}
+          type="text"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          className="w-full px-3 py-2 text-sm border border-border rounded-md bg-bg text-text-primary focus:outline-none focus:border-accent"
+        />
+      )}
+    </div>
+  )
+}
+
 export default function EditServerPage() {
   const params = useParams()
-  const router = useRouter()
   const slug = params.slug as string
   const supabase = createClient()
 
@@ -18,11 +90,11 @@ export default function EditServerPage() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [server, setServer] = useState<Server | null>(null)
   const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState<string[]>([])
+  const [saved, setSaved] = useState<(keyof FormState)[]>([])
   const [error, setError] = useState('')
 
   // Form state — all editable fields
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<FormState>({
     name: '',
     tagline: '',
     description: '',
@@ -68,12 +140,12 @@ export default function EditServerPage() {
     })
   }, [slug, supabase])
 
-  async function handleSaveField(fieldName: string) {
+  async function handleSaveField(fieldName: keyof FormState) {
     if (!server || !user) return
     setSaving(true)
     setError('')
 
-    const value = form[fieldName as keyof typeof form]
+    const value = form[fieldName]
     const isJson = ['install_configs', 'tools', 'resources'].includes(fieldName)
 
     if (isAdmin) {
@@ -121,55 +193,14 @@ export default function EditServerPage() {
 
   if (!server) return <div className="max-w-3xl mx-auto px-4 py-12 text-text-muted">Loading...</div>
 
-  function Field({ name, label, type = 'text', rows = 1 }: { name: string; label: string; type?: 'text' | 'textarea' | 'json' | 'select'; rows?: number }) {
-    const fieldSaved = saved.includes(name)
-    const value = form[name as keyof typeof form]
-
-    return (
-      <div className="border border-border rounded-md p-4">
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-sm font-medium text-text-primary">{label}</label>
-          <div className="flex items-center gap-2">
-            {fieldSaved && <span className="text-xs text-green">{isAdmin ? 'Saved!' : 'Proposed!'}</span>}
-            <button
-              onClick={() => handleSaveField(name)}
-              disabled={saving}
-              className="px-3 py-1 text-xs rounded bg-accent text-white hover:bg-accent-hover disabled:opacity-50"
-            >
-              {isAdmin ? 'Save' : 'Propose'}
-            </button>
-          </div>
-        </div>
-
-        {type === 'select' ? (
-          <select
-            value={value}
-            onChange={e => setForm(f => ({ ...f, [name]: e.target.value }))}
-            className="w-full px-3 py-2 text-sm border border-border rounded-md bg-bg text-text-primary focus:outline-none focus:border-accent"
-          >
-            <option value="free">Free</option>
-            <option value="freemium">Freemium</option>
-            <option value="paid">Paid</option>
-            <option value="unknown">Unknown</option>
-          </select>
-        ) : type === 'textarea' || type === 'json' ? (
-          <textarea
-            value={value}
-            onChange={e => setForm(f => ({ ...f, [name]: e.target.value }))}
-            rows={rows}
-            className={`w-full px-3 py-2 text-sm border border-border rounded-md bg-bg text-text-primary focus:outline-none focus:border-accent resize-y ${type === 'json' ? 'font-mono text-xs' : ''}`}
-          />
-        ) : (
-          <input
-            type="text"
-            value={value}
-            onChange={e => setForm(f => ({ ...f, [name]: e.target.value }))}
-            className="w-full px-3 py-2 text-sm border border-border rounded-md bg-bg text-text-primary focus:outline-none focus:border-accent"
-          />
-        )}
-      </div>
-    )
-  }
+  const fieldProps = (name: keyof FormState, label: string, type?: FieldType, rows?: number): FieldProps => ({
+    name, label, type, rows,
+    value: form[name],
+    onChange: (v: string) => setForm(f => ({ ...f, [name]: v })),
+    onSave: () => handleSaveField(name),
+    isAdmin, saving,
+    saved: saved.includes(name),
+  })
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
@@ -191,26 +222,26 @@ export default function EditServerPage() {
 
       <div className="space-y-4">
         <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wide">Basic Info</h2>
-        <Field name="name" label="Name" />
-        <Field name="tagline" label="Tagline" />
-        <Field name="homepage_url" label="Homepage URL" />
-        <Field name="npm_package" label="npm Package" />
-        <Field name="pip_package" label="pip Package" />
+        <Field {...fieldProps('name', 'Name')} />
+        <Field {...fieldProps('tagline', 'Tagline')} />
+        <Field {...fieldProps('homepage_url', 'Homepage URL')} />
+        <Field {...fieldProps('npm_package', 'npm Package')} />
+        <Field {...fieldProps('pip_package', 'pip Package')} />
 
         <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wide pt-4">Quick Install Config</h2>
-        <Field name="install_configs" label="Install Config (JSON)" type="json" rows={12} />
+        <Field {...fieldProps('install_configs', 'Install Config (JSON)', 'json', 12)} />
 
         <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wide pt-4">About</h2>
-        <Field name="description" label="Description" type="textarea" rows={6} />
+        <Field {...fieldProps('description', 'Description', 'textarea', 6)} />
 
         <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wide pt-4">Tools & Resources</h2>
-        <Field name="tools" label="Tools (JSON array)" type="json" rows={10} />
-        <Field name="resources" label="Resources (JSON array)" type="json" rows={6} />
+        <Field {...fieldProps('tools', 'Tools (JSON array)', 'json', 10)} />
+        <Field {...fieldProps('resources', 'Resources (JSON array)', 'json', 6)} />
 
         <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wide pt-4">API Info</h2>
-        <Field name="api_name" label="API Name" />
-        <Field name="api_pricing" label="API Pricing" type="select" />
-        <Field name="api_rate_limits" label="Rate Limits" />
+        <Field {...fieldProps('api_name', 'API Name')} />
+        <Field {...fieldProps('api_pricing', 'API Pricing', 'select')} />
+        <Field {...fieldProps('api_rate_limits', 'Rate Limits')} />
       </div>
     </div>
   )

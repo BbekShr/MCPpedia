@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation'
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { createPublicClient } from '@/lib/supabase/public'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { PUBLIC_SERVER_FIELDS } from '@/lib/constants'
+import { PUBLIC_SERVER_FIELDS, PUBLIC_CARD_FIELDS } from '@/lib/constants'
 import HealthBadge from '@/components/HealthBadge'
 import ToolsList from '@/components/ToolsList'
 import InstallConfig from '@/components/InstallConfig'
@@ -25,7 +26,7 @@ import ServerCard from '@/components/ServerCard'
 import ScoreBadge from '@/components/ScoreBadge'
 import ServerReadme from '@/components/ServerReadme'
 import { SITE_NAME, SITE_URL } from '@/lib/constants'
-import { JsonLdScript, generateSoftwareApplicationJsonLd, generateServerJsonLd, generateBreadcrumbJsonLd, generateFAQJsonLd } from '@/lib/seo'
+import { JsonLdScript, generateServerJsonLd, generateBreadcrumbJsonLd, generateFAQJsonLd } from '@/lib/seo'
 import type { Server, Changelog, SecurityAdvisory } from '@/lib/types'
 import type { HealthStatus } from '@/lib/constants'
 
@@ -147,7 +148,7 @@ export default async function ServerDetailPage({
       .order('published_at', { ascending: false }),
     supabase
       .from('servers')
-      .select(PUBLIC_SERVER_FIELDS)
+      .select(PUBLIC_CARD_FIELDS)
       .overlaps('categories', s.categories || [])
       .neq('slug', slug)
       .eq('is_archived', false)
@@ -162,6 +163,7 @@ export default async function ServerDetailPage({
   const faqs = buildServerFAQs(s)
   const openCVEs = advisories?.filter((a: { status: string }) => a.status === 'open').length || 0
   const fixedCVEs = advisories?.filter((a: { status: string }) => a.status === 'fixed').length || 0
+  // eslint-disable-next-line react-hooks/purity
   const daysSinceCommit = s.github_last_commit ? Math.floor((Date.now() - new Date(s.github_last_commit).getTime()) / 86400000) : null
   const scanFailed = s.security_scan_status === 'failed'
   const packageName = s.npm_package || s.pip_package
@@ -171,7 +173,6 @@ export default async function ServerDetailPage({
   return (
     <div className="max-w-[1200px] mx-auto px-4 py-6">
       <JsonLdScript data={[
-        generateSoftwareApplicationJsonLd(s as Server),
         generateServerJsonLd(s as Server),
         generateBreadcrumbJsonLd([
           { name: 'Home', url: SITE_URL },
@@ -359,8 +360,10 @@ export default async function ServerDetailPage({
             </div>
           </section>
 
-          {/* README */}
-          <ServerReadme githubUrl={s.github_url} />
+          {/* README — streamed so the rest of the page doesn't block on GitHub */}
+          <Suspense fallback={<div className="pt-8 border-t border-border text-sm text-text-muted">Loading README…</div>}>
+            <ServerReadme githubUrl={s.github_url} />
+          </Suspense>
 
           {/* Test it */}
           <section id="test" className="pt-8 border-t border-border">
@@ -443,7 +446,7 @@ export default async function ServerDetailPage({
               <p className="text-sm text-text-muted mb-3">
                 This server is missing a description.{tools.length === 0 ? ' Tools and install config are also missing.' : ''} If you&apos;ve used it, help the community.
               </p>
-              <Link href={`/s/${slug}/edit`} className="inline-block px-4 py-2 text-sm rounded-md bg-accent text-white hover:bg-accent-hover transition-colors">
+              <Link href={`/s/${slug}/edit`} className="inline-block px-4 py-2 text-sm rounded-md bg-accent text-accent-fg hover:bg-accent-hover transition-colors">
                 Add information
               </Link>
             </section>

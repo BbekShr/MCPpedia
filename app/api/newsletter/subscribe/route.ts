@@ -1,29 +1,15 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { rateLimitIp, getClientIp } from '@/lib/rate-limit'
 
 const schema = z.object({
   email: z.email(),
 })
 
-// Simple in-process rate limiter: max 3 subscriptions per IP per hour
-const rateLimitMap = new Map<string, { count: number; reset: number }>()
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const entry = rateLimitMap.get(ip)
-  if (!entry || now > entry.reset) {
-    rateLimitMap.set(ip, { count: 1, reset: now + 3600_000 })
-    return true
-  }
-  if (entry.count >= 3) return false
-  entry.count++
-  return true
-}
-
 export async function POST(request: Request) {
-  const ip = request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-  if (!checkRateLimit(ip)) {
+  const rl = await rateLimitIp(getClientIp(request), 'newsletter-subscribe', 3, 3600_000)
+  if (!rl.allowed) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 

@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { rateLimitIp } from '@/lib/rate-limit'
-import { PUBLIC_SERVER_FIELDS } from '@/lib/constants'
+import { rateLimitIp, getClientIp } from '@/lib/rate-limit'
+import { PUBLIC_CARD_FIELDS } from '@/lib/constants'
 
 export async function GET(request: Request) {
-  // Rate limit search by IP
-  const ip = request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-  const rl = rateLimitIp(ip, 'search', 30, 60_000) // 30 per minute
+  const rl = await rateLimitIp(getClientIp(request), 'search', 30, 60_000)
   if (!rl.allowed) return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
 
   const { searchParams } = new URL(request.url)
@@ -38,7 +36,7 @@ export async function GET(request: Request) {
 
   const { data } = await supabase
     .from('servers')
-    .select(PUBLIC_SERVER_FIELDS)
+    .select(PUBLIC_CARD_FIELDS)
     .order('score_total', { ascending: false })
     .limit(limit)
 

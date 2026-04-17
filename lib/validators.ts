@@ -1,6 +1,12 @@
 import { z } from 'zod'
 import { CATEGORIES, TRANSPORTS, API_PRICING_OPTIONS } from './constants'
 
+// Strip anything that could inject filter syntax into a PostgREST `.or()` string.
+// Use this for any raw user input going into `.ilike`/`.or` filters.
+export function sanitizeSearchQuery(input: string): string {
+  return input.replace(/[^a-zA-Z0-9 \-_.]/g, '').slice(0, 200)
+}
+
 export const submitServerSchema = z.object({
   github_url: z.string().url().refine(
     (url) => {

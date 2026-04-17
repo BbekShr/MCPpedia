@@ -1,13 +1,14 @@
 import { createPublicClient } from '@/lib/supabase/public'
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { SITE_URL } from '@/lib/constants'
 
 export const revalidate = 3600
 
 export const metadata: Metadata = {
   title: 'Security Advisories',
   description: 'Latest security vulnerabilities found in MCP servers. CVE tracking powered by OSV.dev. Updated daily.',
-  alternates: { canonical: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://mcppedia.org'}/security` },
+  alternates: { canonical: `${SITE_URL}/security` },
 }
 
 interface AdvisoryWithServer {
@@ -215,7 +216,7 @@ export default async function SecurityPage() {
             <div>
               <div className="text-xl font-bold text-text-primary">{injectionRiskCount ?? 0}</div>
               <div className="text-xs font-medium text-text-primary">Injection risk</div>
-              <div className="text-xs text-text-muted mt-0.5">Prompt injection patterns like "ignore previous instructions"</div>
+              <div className="text-xs text-text-muted mt-0.5">Prompt injection patterns like &ldquo;ignore previous instructions&rdquo;</div>
             </div>
           </div>
           <div className="flex items-start gap-3">

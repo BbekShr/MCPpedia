@@ -112,7 +112,7 @@ export default function GetStartedPage() {
         {['what', 'client', 'usecase', 'result'].map((s, i) => (
           <div key={s} className="flex items-center gap-2 flex-1">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-              step === s ? 'bg-accent text-white' :
+              step === s ? 'bg-accent text-accent-fg' :
               ['what', 'client', 'usecase', 'result'].indexOf(step) > i ? 'bg-green text-white' :
               'bg-bg-tertiary text-text-muted'
             }`}>
@@ -195,7 +195,7 @@ export default function GetStartedPage() {
 
           <button
             onClick={() => setStep('client')}
-            className="mt-8 w-full px-4 py-3 rounded-md bg-accent text-white font-medium hover:bg-accent-hover transition-colors"
+            className="mt-8 w-full px-4 py-3 rounded-md bg-accent text-accent-fg font-medium hover:bg-accent-hover transition-colors"
           >
             Got it — let&apos;s set one up
           </button>
@@ -259,7 +259,7 @@ export default function GetStartedPage() {
           <button
             onClick={() => setStep('result')}
             disabled={selectedUseCases.length === 0}
-            className="mt-6 w-full px-4 py-3 rounded-md bg-accent text-white font-medium hover:bg-accent-hover disabled:opacity-50 transition-colors"
+            className="mt-6 w-full px-4 py-3 rounded-md bg-accent text-accent-fg font-medium hover:bg-accent-hover disabled:opacity-50 transition-colors"
           >
             Show me what to install ({recommendedServers.length} server{recommendedServers.length !== 1 ? 's' : ''})
           </button>

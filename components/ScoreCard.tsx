@@ -154,6 +154,10 @@ export default function ScoreCard({ server, advisories = [] }: { server: Server;
   const tokenCost = server.total_tool_tokens || 0
   const hasTokenData = (server.total_tool_tokens || 0) > 0
   const daysSinceCommit = server.github_last_commit
+    // Commit recency is displayed informationally; Date.now() at render is
+    // acceptable in this client component because the value is re-rendered
+    // naturally on navigation and not part of any effect dependency.
+    // eslint-disable-next-line react-hooks/purity
     ? Math.floor((Date.now() - new Date(server.github_last_commit).getTime()) / 86400000)
     : null
   const grade = server.token_efficiency_grade || (hasTokenData ? efficiencyGrade(tokenCost) : 'unknown')

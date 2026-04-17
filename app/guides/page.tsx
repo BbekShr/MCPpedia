@@ -1,11 +1,12 @@
 import Link from 'next/link'
 import { getAllGuides } from '@/lib/mdx'
 import type { Metadata } from 'next'
+import { SITE_URL } from '@/lib/constants'
 
 export const metadata: Metadata = {
   title: 'Guides',
   description: 'Learn about MCP servers — what they are, how to set them up, and which ones to use.',
-  alternates: { canonical: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://mcppedia.org'}/guides` },
+  alternates: { canonical: `${SITE_URL}/guides` },
 }
 
 export default function GuidesPage() {

@@ -206,7 +206,7 @@ function StepCard({ step, index, total }: { step: Step; index: number; total: nu
     <div className="border border-border rounded-md overflow-hidden">
       <div className="bg-bg-secondary px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-accent text-white text-xs font-bold flex items-center justify-center">
+          <span className="w-6 h-6 rounded-full bg-accent text-accent-fg text-xs font-bold flex items-center justify-center">
             {index + 1}
           </span>
           <h3 className="font-medium text-text-primary text-sm">{step.title}</h3>

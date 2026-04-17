@@ -13,7 +13,7 @@ export async function POST(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return Response.json({ error: 'Sign in to suggest categories' }, { status: 401 })
 
-  const rl = rateLimitUser(user.id, 'categories', 10, 3600_000) // 10 per hour
+  const rl = await rateLimitUser(user.id, 'categories', 10, 3600_000) // 10 per hour
   if (!rl.allowed) return Response.json({ error: 'Rate limited' }, { status: 429 })
 
   const body = await request.json().catch(() => null)

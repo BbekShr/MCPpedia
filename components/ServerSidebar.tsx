@@ -67,7 +67,10 @@ export default function ServerSidebar({ server }: { server: Server }) {
   const toolCount = s.tools?.length || 0
   const transports = s.transport?.join(', ') || 'stdio'
   const grade = s.token_efficiency_grade !== 'unknown' ? s.token_efficiency_grade : null
+  // RSC: Date.now() is called once per ISR render; parent page is cached via
+  // `revalidate` so the value is stable for the cache window.
   const daysSinceCommit = s.github_last_commit
+    // eslint-disable-next-line react-hooks/purity
     ? Math.floor((Date.now() - new Date(s.github_last_commit).getTime()) / 86400000)
     : null
 
