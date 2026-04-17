@@ -1,7 +1,19 @@
 import { SITE_URL } from '@/lib/constants'
 import type { MetadataRoute } from 'next'
 
-const PRIVATE_PATHS = ['/admin', '/admin/', '/api/', '/auth/', '/login', '/my-servers', '/unsubscribed']
+const PRIVATE_PATHS = [
+  '/admin',
+  '/admin/',
+  '/api/',
+  '/auth/',
+  '/login',
+  '/my-servers',
+  '/profile',
+  '/profile/',
+  '/unsubscribed',
+  '/s/*/edit',
+  '/s/*/history',
+]
 
 const AI_CRAWLERS = [
   'GPTBot',

@@ -2,8 +2,8 @@ import { notFound } from 'next/navigation'
 import { createPublicClient } from '@/lib/supabase/public'
 import ServerCard from '@/components/ServerCard'
 import CategoryFilters from '@/components/CategoryFilters'
-import ScoreBadge from '@/components/ScoreBadge'
-import { CATEGORIES, CATEGORY_LABELS, ITEMS_PER_PAGE, SITE_URL, PUBLIC_SERVER_FIELDS } from '@/lib/constants'
+import { CATEGORIES, CATEGORY_LABELS, ITEMS_PER_PAGE, SITE_URL, PUBLIC_CARD_FIELDS } from '@/lib/constants'
+import { sanitizeSearchQuery } from '@/lib/validators'
 import { JsonLdScript, generateCollectionJsonLd, generateBreadcrumbJsonLd } from '@/lib/seo'
 import type { Server } from '@/lib/types'
 import type { Category } from '@/lib/constants'
@@ -73,7 +73,7 @@ export default async function CategoryPage({
 
   let query = supabase
     .from('servers')
-    .select(PUBLIC_SERVER_FIELDS, { count: 'exact' })
+    .select(PUBLIC_CARD_FIELDS, { count: 'exact' })
     .contains('categories', [category])
     .eq('is_archived', false)
 
@@ -82,8 +82,8 @@ export default async function CategoryPage({
   if (transport) query = query.contains('transport', [transport])
   if (minScore > 0) query = query.gte('score_total', minScore)
   if (q) {
-    // Simple text filter — matches name or tagline
-    query = query.or(`name.ilike.%${q}%,tagline.ilike.%${q}%`)
+    const safe = sanitizeSearchQuery(q)
+    if (safe) query = query.or(`name.ilike.%${safe}%,tagline.ilike.%${safe}%`)
   }
 
   // Sort

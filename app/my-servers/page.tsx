@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import ServerCard from '@/components/ServerCard'
 import ExportConfigButton from '@/components/ExportConfigButton'
-import { PUBLIC_SERVER_FIELDS } from '@/lib/constants'
+import { PUBLIC_CARD_FIELDS } from '@/lib/constants'
 import type { Server } from '@/lib/types'
 import type { Metadata } from 'next'
 import Link from 'next/link'
@@ -33,7 +33,7 @@ export default async function MyServersPage() {
   if (serverIds.length > 0) {
     const { data } = await supabase
       .from('servers')
-      .select(PUBLIC_SERVER_FIELDS)
+      .select(PUBLIC_CARD_FIELDS)
       .in('id', serverIds)
     // Preserve favorites order
     const serverMap = new Map((data as Server[] || []).map(s => [s.id, s]))
@@ -85,7 +85,7 @@ export default async function MyServersPage() {
           <p className="text-sm text-text-muted mb-6">Click the heart icon on any server card to save it here.</p>
           <Link
             href="/servers"
-            className="inline-block px-4 py-2 text-sm rounded-md bg-accent text-white hover:bg-accent-hover transition-colors"
+            className="inline-block px-4 py-2 text-sm rounded-md bg-accent text-accent-fg hover:bg-accent-hover transition-colors"
           >
             Browse servers &rarr;
           </Link>

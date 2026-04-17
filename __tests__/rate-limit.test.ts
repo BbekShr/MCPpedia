@@ -1,71 +1,107 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { checkRateLimit, rateLimitUser, rateLimitIp } from '@/lib/rate-limit'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+// The rate limiter now delegates to Supabase. We mock the admin client so the
+// unit tests can verify the JS wrapper's behavior without needing a live DB.
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(),
+}))
+
+import { checkRateLimit, rateLimitUser, rateLimitIp, getClientIp } from '@/lib/rate-limit'
+import { createAdminClient } from '@/lib/supabase/admin'
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-key'
+})
+
+function mockRpc(response: { data?: unknown; error?: unknown }) {
+  vi.mocked(createAdminClient).mockReturnValue({
+    rpc: vi.fn().mockResolvedValue(response),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any)
+}
 
 describe('checkRateLimit', () => {
-  it('allows requests within limit', () => {
-    const key = `test-allow-${Date.now()}`
-    const r1 = checkRateLimit(key, 3, 60_000)
-    expect(r1.allowed).toBe(true)
-    expect(r1.remaining).toBe(2)
-
-    const r2 = checkRateLimit(key, 3, 60_000)
-    expect(r2.allowed).toBe(true)
-    expect(r2.remaining).toBe(1)
-
-    const r3 = checkRateLimit(key, 3, 60_000)
-    expect(r3.allowed).toBe(true)
-    expect(r3.remaining).toBe(0)
-  })
-
-  it('blocks requests exceeding limit', () => {
-    const key = `test-block-${Date.now()}`
-    checkRateLimit(key, 2, 60_000)
-    checkRateLimit(key, 2, 60_000)
-    const r3 = checkRateLimit(key, 2, 60_000)
-    expect(r3.allowed).toBe(false)
-    expect(r3.remaining).toBe(0)
-    expect(r3.retryAfter).toBeGreaterThan(0)
-  })
-
-  it('uses separate windows per key', () => {
-    const key1 = `test-sep-a-${Date.now()}`
-    const key2 = `test-sep-b-${Date.now()}`
-    checkRateLimit(key1, 1, 60_000)
-    // key1 is exhausted, but key2 should be independent
-    const r = checkRateLimit(key2, 1, 60_000)
+  it('returns allowed when RPC says so', async () => {
+    mockRpc({ data: { allowed: true, remaining: 2 } })
+    const r = await checkRateLimit('k', 3, 60_000)
     expect(r.allowed).toBe(true)
+    expect(r.remaining).toBe(2)
+  })
+
+  it('returns blocked with retryAfter when RPC denies', async () => {
+    mockRpc({ data: { allowed: false, remaining: 0, retry_after: 42 } })
+    const r = await checkRateLimit('k', 3, 60_000)
+    expect(r.allowed).toBe(false)
+    expect(r.retryAfter).toBe(42)
+  })
+
+  it('falls open if RPC errors (do not take site down on DB hiccup)', async () => {
+    mockRpc({ error: { message: 'boom' } })
+    const r = await checkRateLimit('k', 3, 60_000)
+    expect(r.allowed).toBe(true)
+  })
+
+  it('falls open if service role key is missing (local dev)', async () => {
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY
+    const r = await checkRateLimit('k', 3, 60_000)
+    expect(r.allowed).toBe(true)
+    expect(createAdminClient).not.toHaveBeenCalled()
   })
 })
 
 describe('rateLimitUser', () => {
-  it('namespaces by user and action', () => {
-    const r1 = rateLimitUser('user-1', 'test-action', 1, 60_000)
-    expect(r1.allowed).toBe(true)
-
-    // Same user, same action — blocked
-    const r2 = rateLimitUser('user-1', 'test-action', 1, 60_000)
-    expect(r2.allowed).toBe(false)
-
-    // Different user, same action — allowed
-    const r3 = rateLimitUser('user-2', 'test-action', 1, 60_000)
-    expect(r3.allowed).toBe(true)
-
-    // Same user, different action — allowed
-    const r4 = rateLimitUser('user-1', 'other-action', 1, 60_000)
-    expect(r4.allowed).toBe(true)
+  it('namespaces by user and action', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: { allowed: true, remaining: 9 } })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(createAdminClient).mockReturnValue({ rpc } as any)
+    await rateLimitUser('user-1', 'vote', 10, 60_000)
+    expect(rpc).toHaveBeenCalledWith('check_rate_limit', expect.objectContaining({
+      p_key: 'user:user-1:vote',
+      p_limit: 10,
+      p_window_ms: 60_000,
+    }))
   })
 })
 
 describe('rateLimitIp', () => {
-  it('namespaces by ip and action', () => {
-    const r1 = rateLimitIp('1.2.3.4', 'test-ip-action', 1, 60_000)
-    expect(r1.allowed).toBe(true)
+  it('namespaces by ip and action', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: { allowed: true, remaining: 9 } })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(createAdminClient).mockReturnValue({ rpc } as any)
+    await rateLimitIp('1.2.3.4', 'search', 30, 60_000)
+    expect(rpc).toHaveBeenCalledWith('check_rate_limit', expect.objectContaining({
+      p_key: 'ip:1.2.3.4:search',
+      p_limit: 30,
+    }))
+  })
+})
 
-    const r2 = rateLimitIp('1.2.3.4', 'test-ip-action', 1, 60_000)
-    expect(r2.allowed).toBe(false)
+describe('getClientIp', () => {
+  function req(headers: Record<string, string>): Request {
+    return new Request('https://example.com/', { headers })
+  }
 
-    // Different IP — allowed
-    const r3 = rateLimitIp('5.6.7.8', 'test-ip-action', 1, 60_000)
-    expect(r3.allowed).toBe(true)
+  it('prefers x-vercel-forwarded-for (Vercel-signed, not spoofable)', () => {
+    expect(getClientIp(req({
+      'x-vercel-forwarded-for': '1.1.1.1',
+      'x-forwarded-for': '2.2.2.2',
+      'x-real-ip': '3.3.3.3',
+    }))).toBe('1.1.1.1')
+  })
+
+  it('falls back to x-forwarded-for if x-vercel-forwarded-for missing', () => {
+    expect(getClientIp(req({
+      'x-forwarded-for': '2.2.2.2, 10.0.0.1',
+      'x-real-ip': '3.3.3.3',
+    }))).toBe('2.2.2.2')
+  })
+
+  it('falls back to x-real-ip last (easily spoofed)', () => {
+    expect(getClientIp(req({ 'x-real-ip': '3.3.3.3' }))).toBe('3.3.3.3')
+  })
+
+  it('returns unknown when no headers present', () => {
+    expect(getClientIp(req({}))).toBe('unknown')
   })
 })

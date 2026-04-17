@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import Nav from '@/components/Nav'
@@ -9,6 +9,9 @@ import { Analytics } from '@vercel/analytics/next'
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains' })
 
+// Root opengraph-image + icon are auto-wired from the file-convention files at
+// app/opengraph-image.tsx and app/icon.svg / app/favicon.ico / app/apple-icon.tsx.
+// Don't declare them again here — it would duplicate the tags.
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
@@ -20,7 +23,6 @@ export const metadata: Metadata = {
     type: 'website',
     siteName: SITE_NAME,
     locale: 'en_US',
-    images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'MCPpedia — The Trusted Source for MCP Servers' }],
   },
   twitter: {
     card: 'summary_large_image',
@@ -31,9 +33,10 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
-  other: {
-    'theme-color': '#0277b5',
-  },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#0277b5',
 }
 
 export default function RootLayout({
@@ -44,8 +47,6 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/favicon.ico" sizes="32x32" />
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="alternate" type="application/rss+xml" title={`${SITE_NAME} Blog`} href="/blog/feed.xml" />
         <script
           dangerouslySetInnerHTML={{
@@ -54,7 +55,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen flex flex-col" suppressHydrationWarning>
-        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-accent focus:text-white focus:rounded-md">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-accent focus:text-accent-fg focus:rounded-md">
           Skip to content
         </a>
         <Nav />

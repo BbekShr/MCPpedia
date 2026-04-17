@@ -3,7 +3,7 @@ import { createPublicClient } from '@/lib/supabase/public'
 import ServerCard from '@/components/ServerCard'
 import Link from 'next/link'
 import type { Server } from '@/lib/types'
-import { CATEGORIES, CATEGORY_LABELS, SITE_URL, PUBLIC_SERVER_FIELDS } from '@/lib/constants'
+import { CATEGORIES, CATEGORY_LABELS, SITE_URL, PUBLIC_CARD_FIELDS } from '@/lib/constants'
 import { JsonLdScript, generateItemListJsonLd, generateBreadcrumbJsonLd } from '@/lib/seo'
 import type { Category } from '@/lib/constants'
 import type { Metadata } from 'next'
@@ -78,7 +78,7 @@ export default async function BestCategoryPage({
 
   const { data: servers } = await supabase
     .from('servers')
-    .select(PUBLIC_SERVER_FIELDS)
+    .select(PUBLIC_CARD_FIELDS)
     .contains('categories', [category])
     .eq('is_archived', false)
     .gt('score_total', 0)

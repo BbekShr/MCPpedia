@@ -1,15 +1,21 @@
 import HeroStack from '@/components/HeroStack'
 import Link from 'next/link'
-import { createPublicClient } from '@/lib/supabase/public'
-import ServerCard from '@/components/ServerCard'
+import { Suspense } from 'react'
 import SearchBar from '@/components/SearchBar'
 import NewsletterSignup from '@/components/NewsletterSignup'
 import TrendingWidget from '@/components/TrendingWidget'
-import { CATEGORIES, CATEGORY_LABELS, SITE_NAME, SITE_DESCRIPTION, SITE_URL, PUBLIC_SERVER_FIELDS } from '@/lib/constants'
+import { CATEGORIES, CATEGORY_LABELS, SITE_NAME, SITE_DESCRIPTION, SITE_URL } from '@/lib/constants'
 import { JsonLdScript, generateOrganizationJsonLd, generateWebSiteJsonLd } from '@/lib/seo'
-import type { Server } from '@/lib/types'
 import type { Category } from '@/lib/constants'
 import type { Metadata } from 'next'
+import HomeStats, { getHomeStats } from './_home/HomeStats'
+import {
+  TopScoredSection,
+  OfficialSection,
+  CVESection,
+  RecentSection,
+  SectionSkeleton,
+} from './_home/ServerList'
 
 export const revalidate = 86400
 
@@ -34,86 +40,18 @@ export const metadata: Metadata = {
   },
 }
 
+// CVESection needs the `with_cves` count to render its subtitle without a
+// second query. We fetch stats once at the page level (single fast RPC), pass
+// the count to CVESection, and also stream the stats strip from the same data.
 export default async function HomePage() {
-  const supabase = createPublicClient()
-
-  const [
-    { data: topScored },
-    { data: officialServers },
-    { data: recentlyAdded },
-    { count: serverCount },
-    { count: withCVEs },
-    { count: officialCount },
-    { data: serversWithCVEs },
-    { count: openCVECount },
-  ] = await Promise.all([
-    supabase
-      .from('servers')
-      .select(PUBLIC_SERVER_FIELDS)
-      .eq('is_archived', false)
-      .neq('author_type', 'official')
-      .gt('score_total', 0)
-      .order('score_total', { ascending: false })
-      .limit(6),
-    supabase
-      .from('servers')
-      .select(PUBLIC_SERVER_FIELDS)
-      .eq('author_type', 'official')
-      .eq('is_archived', false)
-      .order('score_total', { ascending: false })
-      .limit(6),
-    supabase
-      .from('servers')
-      .select(PUBLIC_SERVER_FIELDS)
-      .eq('is_archived', false)
-      .order('created_at', { ascending: false })
-      .limit(4),
-    supabase
-      .from('servers')
-      .select('id', { count: 'exact', head: true })
-      .eq('is_archived', false),
-    supabase
-      .from('servers')
-      .select('id', { count: 'exact', head: true })
-      .gt('cve_count', 0)
-      .eq('is_archived', false),
-    supabase
-      .from('servers')
-      .select('id', { count: 'exact', head: true })
-      .eq('author_type', 'official')
-      .eq('is_archived', false),
-    supabase
-      .from('servers')
-      .select(PUBLIC_SERVER_FIELDS)
-      .gt('cve_count', 0)
-      .eq('is_archived', false)
-      .order('cve_count', { ascending: false })
-      .limit(6),
-    supabase
-      .from('security_advisories')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'open'),
-  ])
-
-  // If the count query failed, throw so Next.js serves the stale cached page
-  // instead of caching a broken render with 0 values
-  if (!serverCount) {
-    throw new Error('Failed to fetch server count from Supabase')
-  }
-
-  // Deduplicate: track server IDs already shown to avoid repeats across sections
-  const shownIds = new Set<string>()
-  function dedup(list: Server[] | null): Server[] {
-    if (!list) return []
-    const filtered = (list as Server[]).filter(s => !shownIds.has(s.id))
-    filtered.forEach(s => shownIds.add(s.id))
-    return filtered
-  }
+  // One cheap RPC — needed for hero search placeholder + CVE section subtitle.
+  const stats = await getHomeStats()
 
   return (
     <div>
       <JsonLdScript data={[generateOrganizationJsonLd(), generateWebSiteJsonLd()]} />
-      {/* Hero — clear value prop */}
+
+      {/* Hero — clear value prop. Static, no data deps. */}
       <section className="border-b border-border" style={{ background: 'var(--hero-gradient)' }}>
         <div className="max-w-[1200px] mx-auto px-4 pt-14 pb-10 md:pt-20 md:pb-16">
           <div className="grid lg:grid-cols-[1fr_minmax(0,380px)] gap-10 lg:gap-16 items-center">
@@ -127,7 +65,7 @@ export default async function HomePage() {
               </p>
               <div className="max-w-xl mb-4 min-h-[48px]">
                 <SearchBar
-                  placeholder={`Search ${serverCount || 0}+ MCP servers...`}
+                  placeholder={`Search ${stats.total_servers.toLocaleString() || 0}+ MCP servers...`}
                   large
                 />
               </div>
@@ -139,31 +77,10 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Live stats — shows the site is alive and data-driven */}
-      <section className="border-b border-border bg-bg-secondary">
-        <div className="max-w-[1200px] mx-auto px-4 py-5">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-text-primary">{(serverCount || 0).toLocaleString()}</div>
-              <div className="text-xs text-text-muted">Servers tracked and counting</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-text-primary">{officialCount || 0}</div>
-              <div className="text-xs text-text-muted">Official servers</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red">{openCVECount || 0}</div>
-              <div className="text-xs text-text-muted">Open CVEs across {withCVEs || 0} servers</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green">Daily</div>
-              <div className="text-xs text-text-muted">Security scans</div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Stats strip. Uses pre-fetched stats — renders inline with the hero. */}
+      <HomeStats />
 
-      {/* MCPpedia MCP server promotion */}
+      {/* MCPpedia MCP server promotion (static) */}
       <section className="border-t border-border">
         <div className="max-w-[1200px] mx-auto px-4 py-10">
           <div className="border border-border border-l-4 border-l-accent rounded-lg p-6 bg-bg-secondary flex flex-col md:flex-row gap-6 items-stretch">
@@ -203,12 +120,12 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* What makes MCPpedia different — quick visual proof */}
+      {/* What makes MCPpedia different (static) */}
       <section className="max-w-[1200px] mx-auto px-4 py-10">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="flex gap-3">
             <div className="w-10 h-10 rounded-lg bg-red/10 flex items-center justify-center shrink-0">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             </div>
             <div>
               <p className="text-sm font-semibold text-text-primary mb-0.5">Security scanned</p>
@@ -217,7 +134,7 @@ export default async function HomePage() {
           </div>
           <div className="flex gap-3">
             <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6" rx="0.5"/><rect x="12" y="8" width="3" height="10" rx="0.5"/><rect x="17" y="4" width="3" height="14" rx="0.5"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6" rx="0.5"/><rect x="12" y="8" width="3" height="10" rx="0.5"/><rect x="17" y="4" width="3" height="14" rx="0.5"/></svg>
             </div>
             <div>
               <p className="text-sm font-semibold text-text-primary mb-0.5">Scored, not listed</p>
@@ -226,7 +143,7 @@ export default async function HomePage() {
           </div>
           <div className="flex gap-3">
             <div className="w-10 h-10 rounded-lg bg-green/10 flex items-center justify-center shrink-0">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/><path d="M9 13l2 2 4-4"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/><path d="M9 13l2 2 4-4"/></svg>
             </div>
             <div>
               <p className="text-sm font-semibold text-text-primary mb-0.5">Copy-paste install</p>
@@ -236,10 +153,12 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Trending this week */}
-      <TrendingWidget />
+      {/* Trending — streamed independently; TrendingWidget does its own fetch. */}
+      <Suspense fallback={null}>
+        <TrendingWidget />
+      </Suspense>
 
-      {/* Browse by use case — first orientation point for new visitors */}
+      {/* Browse by use case (static) */}
       <section className="border-t border-border">
         <div className="max-w-[1200px] mx-auto px-4 py-12">
           <h2 className="text-lg font-semibold text-text-primary mb-1">Find servers for...</h2>
@@ -272,71 +191,21 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Top scored servers — the best of the best */}
-      <section className="border-t border-border">
-        <div className="max-w-[1200px] mx-auto px-4 py-10">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-lg font-semibold text-text-primary">Highest rated</h2>
-              <p className="text-xs text-text-muted">Servers with the best MCPpedia scores</p>
-            </div>
-            <Link href="/servers?sort=score" className="text-sm text-accent hover:text-accent-hover">
-              View all &rarr;
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {dedup(topScored as Server[]).map(server => (
-              <ServerCard key={server.id} server={server} />
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Each server list section streams independently — the page above the
+          fold flushes before any of these queries complete. */}
+      <Suspense fallback={<SectionSkeleton title="Highest rated" subtitle="Servers with the best MCPpedia scores" viewAllHref="/servers?sort=score" />}>
+        <TopScoredSection />
+      </Suspense>
 
-      {/* Official servers */}
-      {officialServers && officialServers.length > 0 && (
-        <section className="border-t border-border">
-          <div className="max-w-[1200px] mx-auto px-4 py-10">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-lg font-semibold text-text-primary">Official servers</h2>
-                <p className="text-xs text-text-muted">Built by the companies behind the services</p>
-              </div>
-              <Link href="/servers?author=official" className="text-sm text-accent hover:text-accent-hover">
-                View all &rarr;
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {dedup(officialServers as Server[]).map(server => (
-                <ServerCard key={server.id} server={server} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      <Suspense fallback={<SectionSkeleton title="Official servers" subtitle="Built by the companies behind the services" viewAllHref="/servers?author=official" />}>
+        <OfficialSection />
+      </Suspense>
 
-      {/* Servers with CVEs — transparency */}
-      {serversWithCVEs && serversWithCVEs.length > 0 && (
-        <section className="border-t border-border">
-          <div className="max-w-[1200px] mx-auto px-4 py-10">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-lg font-semibold text-text-primary">Servers with known CVEs</h2>
-                <p className="text-xs text-text-muted">{withCVEs || 0} servers have vulnerabilities — check before you install</p>
-              </div>
-              <Link href="/security" className="text-sm text-accent hover:text-accent-hover">
-                All advisories &rarr;
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {dedup(serversWithCVEs as Server[]).map(server => (
-                <ServerCard key={server.id} server={server} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      <Suspense fallback={<SectionSkeleton title="Servers with known CVEs" subtitle="Checking vulnerabilities…" viewAllHref="/security" viewAllLabel="All advisories" />}>
+        <CVESection withCVEsCount={stats.with_cves} />
+      </Suspense>
 
-      {/* Browse by category pills */}
+      {/* Browse by category pills (static) */}
       <section className="border-t border-border">
         <div className="max-w-[1200px] mx-auto px-4 py-10">
           <h2 className="text-lg font-semibold text-text-primary mb-4">All categories</h2>
@@ -354,29 +223,11 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Recently added — shows the site is alive */}
-      {recentlyAdded && recentlyAdded.length > 0 && (
-        <section className="border-t border-border">
-          <div className="max-w-[1200px] mx-auto px-4 py-10">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-lg font-semibold text-text-primary">Just added</h2>
-                <p className="text-xs text-text-muted">New servers discovered by our bots</p>
-              </div>
-              <Link href="/servers?sort=newest" className="text-sm text-accent hover:text-accent-hover">
-                View all &rarr;
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {dedup(recentlyAdded as Server[]).map(server => (
-                <ServerCard key={server.id} server={server} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      <Suspense fallback={<SectionSkeleton title="Just added" subtitle="New servers discovered by our bots" viewAllHref="/servers?sort=newest" count={4} gridCols="grid-cols-1 md:grid-cols-2" />}>
+        <RecentSection />
+      </Suspense>
 
-      {/* Newsletter */}
+      {/* Newsletter (static) */}
       <section className="border-t border-border">
         <div className="max-w-[1200px] mx-auto px-4 py-10">
           <NewsletterSignup
@@ -386,7 +237,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* New to MCP? */}
+      {/* New to MCP? (static) */}
       <section className="border-t border-border">
         <div className="max-w-[1200px] mx-auto px-4 py-12 md:py-14">
           <div className="border border-accent/20 rounded-lg p-6 bg-accent/5 flex flex-col md:flex-row md:items-center gap-6">

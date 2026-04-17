@@ -123,7 +123,7 @@ export default function ServerTester({ server }: { server: Server }) {
           <button
             onClick={testHttpServer}
             disabled={result.status === 'testing'}
-            className="px-4 py-2 text-sm rounded-md bg-accent text-white hover:bg-accent-hover disabled:opacity-50 transition-colors"
+            className="px-4 py-2 text-sm rounded-md bg-accent text-accent-fg hover:bg-accent-hover disabled:opacity-50 transition-colors"
           >
             {result.status === 'testing' ? (
               <span className="flex items-center gap-2">

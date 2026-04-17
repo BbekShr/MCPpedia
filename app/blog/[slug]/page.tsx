@@ -60,6 +60,8 @@ export async function generateMetadata({
       description: socialDescription,
       type: 'article',
       publishedTime: meta.date,
+      modifiedTime: meta.updated || meta.date,
+      authors: ['MCPpedia Editorial'],
       tags: meta.tags,
       section: meta.category,
       siteName: SITE_NAME,
@@ -268,7 +270,7 @@ export default async function BlogPostPage({
           <p className="text-sm text-text-muted hidden sm:block">Discover the safest MCP servers for your stack</p>
           <Link
             href="/servers"
-            className="px-4 py-2 text-sm font-medium rounded-md bg-accent text-white hover:bg-accent-hover transition-colors whitespace-nowrap"
+            className="px-4 py-2 text-sm font-medium rounded-md bg-accent text-accent-fg hover:bg-accent-hover transition-colors whitespace-nowrap"
           >
             Search 17,500+ MCP servers &rarr;
           </Link>

@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
+import { SITE_URL } from '@/lib/constants'
 
 export const metadata: Metadata = {
   title: 'Scoring Methodology',
   description: 'How MCPpedia scores MCP servers. Full transparency on our security, maintenance, efficiency, documentation, and compatibility scoring.',
-  alternates: { canonical: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://mcppedia.org'}/methodology` },
+  alternates: { canonical: `${SITE_URL}/methodology` },
 }
 
 export default function MethodologyPage() {

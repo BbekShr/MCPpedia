@@ -30,6 +30,28 @@ function Stars({ count, max = 5 }: { count: number; max?: number }) {
   )
 }
 
+function RatingInput({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-sm text-text-muted w-32 shrink-0">{label}</span>
+      <div className="flex gap-1">
+        {[1, 2, 3, 4, 5].map(n => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => onChange(n)}
+            aria-label={`${n} star${n > 1 ? 's' : ''}`}
+            aria-pressed={n <= value}
+            className={`text-lg ${n <= value ? 'text-yellow' : 'text-border'} hover:text-yellow transition-colors`}
+          >
+            &#9733;
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function ReviewSection({ serverId }: { serverId: string }) {
   const [reviews, setReviews] = useState<Review[]>([])
   const [user, setUser] = useState<User | null>(null)
@@ -62,6 +84,9 @@ export default function ReviewSection({ serverId }: { serverId: string }) {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user))
+    // Initial load is a subscription-like fetch of server data — legitimate
+    // effect use even though the handler updates state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchReviews()
   }, [supabase.auth, fetchReviews])
 
@@ -89,26 +114,6 @@ export default function ReviewSection({ serverId }: { serverId: string }) {
       fetchReviews()
     }
     setSubmitting(false)
-  }
-
-  function RatingInput({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
-    return (
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-text-muted w-32 shrink-0">{label}</span>
-        <div className="flex gap-1">
-          {[1, 2, 3, 4, 5].map(n => (
-            <button
-              key={n}
-              type="button"
-              onClick={() => onChange(n)}
-              className={`text-lg ${n <= value ? 'text-yellow' : 'text-border'} hover:text-yellow transition-colors`}
-            >
-              &#9733;
-            </button>
-          ))}
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -243,7 +248,7 @@ export default function ReviewSection({ serverId }: { serverId: string }) {
               <button
                 type="submit"
                 disabled={submitting || form.rating_overall === 0 || form.body.length < 50}
-                className="px-4 py-1.5 text-sm rounded bg-accent text-white hover:bg-accent-hover disabled:opacity-50"
+                className="px-4 py-1.5 text-sm rounded bg-accent text-accent-fg hover:bg-accent-hover disabled:opacity-50"
               >
                 {submitting ? 'Posting...' : 'Submit review'}
               </button>

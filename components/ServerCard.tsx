@@ -29,15 +29,25 @@ export default function ServerCard({ server }: { server: Server }) {
   const score = server.score_total || 0
   const transports = server.transport || []
   const hasRemote = transports.includes('http') || transports.includes('sse')
+  const grade = score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 40 ? 'C' : score >= 20 ? 'D' : 'F'
+  const a11yLabel = `${server.name} — score ${score}/100, grade ${grade}, ${server.cve_count === 0 ? 'no CVEs' : `${server.cve_count} CVEs`}, ${server.health_status || 'unknown'} status`
 
+  // Overlay-link pattern: the card is <article>, a stretched invisible <Link>
+  // covers it for whole-card navigation, and interactive children sit above
+  // the overlay so they get clicks independently. No stopPropagation needed,
+  // and screen readers announce a proper article with link + buttons.
   return (
-    <Link
-      href={`/s/${server.slug}`}
-      className="block border border-border rounded-md p-4 bg-bg hover:shadow-[var(--shadow-card-hover),inset_3px_0_0_var(--accent)] hover:-translate-y-[1px] transition-all duration-150"
-      aria-label={`${server.name} — score ${score}/100, grade ${score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 40 ? 'C' : score >= 20 ? 'D' : 'F'}, ${server.cve_count === 0 ? 'no CVEs' : `${server.cve_count} CVEs`}, ${server.health_status || 'unknown'} status`}
-    >
+    <article className="group relative block border border-border rounded-md p-4 bg-bg hover:shadow-[var(--shadow-card-hover),inset_3px_0_0_var(--accent)] hover:-translate-y-[1px] transition-all duration-150 focus-within:outline focus-within:outline-2 focus-within:outline-accent">
+      <Link
+        href={`/s/${server.slug}`}
+        aria-label={a11yLabel}
+        className="absolute inset-0 z-0 rounded-md"
+      >
+        <span className="sr-only">View {server.name}</span>
+      </Link>
+
       {/* Row 1: Icon + name + favorite */}
-      <div className="flex items-start gap-2.5 mb-2">
+      <div className="relative z-10 flex items-start gap-2.5 mb-2 pointer-events-none">
         <ServerIcon
           name={server.name}
           homepageUrl={server.homepage_url}
@@ -45,11 +55,13 @@ export default function ServerCard({ server }: { server: Server }) {
           size={28}
         />
         <h3 className="flex-1 min-w-0 font-semibold text-text-primary leading-tight text-[15px] line-clamp-2 pt-0.5">{server.name}</h3>
-        <FavoriteButton serverId={server.id} className="p-1 -m-1 text-text-muted shrink-0" />
+        <div className="pointer-events-auto relative z-20">
+          <FavoriteButton serverId={server.id} className="p-1 -m-1 text-text-muted shrink-0" />
+        </div>
       </div>
 
       {/* Row 2: Badges */}
-      <div className="flex flex-wrap items-center gap-1.5 mb-2">
+      <div className="relative z-10 flex flex-wrap items-center gap-1.5 mb-2 pointer-events-none">
         {server.author_type === 'official' && (
           <span className="text-[11px] px-1.5 py-0.5 rounded bg-accent/10 text-accent font-medium">Official</span>
         )}
@@ -63,11 +75,11 @@ export default function ServerCard({ server }: { server: Server }) {
 
       {/* Row 3: Tagline */}
       {server.tagline && (
-        <p className="text-sm text-text-muted mb-2.5 line-clamp-1">{server.tagline}</p>
+        <p className="relative z-10 text-sm text-text-muted mb-2.5 line-clamp-1 pointer-events-none">{server.tagline}</p>
       )}
 
-      {/* Row 3: Key signals + copy config */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
+      {/* Row 4: Key signals + copy config */}
+      <div className="relative z-10 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted pointer-events-none">
         {toolCount > 0 && (
           <span className="flex items-center gap-1 shrink-0">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
@@ -97,11 +109,13 @@ export default function ServerCard({ server }: { server: Server }) {
           <span className="shrink-0">{timeAgo(server.github_last_commit)}</span>
         )}
         <span className="flex-1" />
-        <CopyConfigButton
-          configs={server.install_configs as Record<string, unknown>}
-          serverName={server.name}
-        />
+        <div className="pointer-events-auto relative z-20">
+          <CopyConfigButton
+            configs={server.install_configs as Record<string, unknown>}
+            serverName={server.name}
+          />
+        </div>
       </div>
-    </Link>
+    </article>
   )
 }

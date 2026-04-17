@@ -40,9 +40,13 @@ function SearchBarInner({
 
   const isOnServersPage = pathname === '/servers' || pathname === action
 
-  // Sync with URL on /servers page only
+  // Sync with URL on /servers page only. This mirrors external state
+  // (the URL) into local state so the input stays in sync with back/forward
+  // navigation and link clicks.
   useEffect(() => {
-    if (isOnServersPage) setQuery(searchParams.get('q') || '')
+    if (!isOnServersPage) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setQuery(searchParams.get('q') || '')
   }, [searchParams, isOnServersPage])
 
   // Close on outside click

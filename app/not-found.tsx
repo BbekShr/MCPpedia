@@ -1,5 +1,11 @@
 import Link from 'next/link'
 import BlinkLogo from '@/components/BlinkLogo'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Page not found — MCPpedia',
+  robots: { index: false, follow: false },
+}
 
 export default function NotFound() {
   return (
@@ -15,7 +21,7 @@ export default function NotFound() {
       <div className="flex justify-center gap-3">
         <Link
           href="/"
-          className="px-4 py-2 text-sm rounded-md bg-accent text-white hover:bg-accent-hover transition-colors"
+          className="px-4 py-2 text-sm rounded-md bg-accent text-accent-fg hover:bg-accent-hover transition-colors"
         >
           Go home
         </Link>

@@ -78,7 +78,7 @@ export async function GET(
       <text class="label" x="50" y="46">/ 100</text>
       <text class="label" x="50" y="58">Grade ${grade}</text>
       <text class="label" x="130" y="46">CVEs: <tspan class="value ${cves === 0 ? 'score' : ''}" style="fill: ${cves === 0 ? '#1a7f37' : '#cf222e'}">${cves}</tspan></text>
-      <text class="label" x="130" y="58">Status: <tspan class="value">${server.health_status || 'unknown'}</tspan></text>
+      <text class="label" x="130" y="58">Status: <tspan class="value">${escapeXml(server.health_status || 'unknown')}</tspan></text>
       <text class="powered" x="12" y="${height - 6}">Verified by MCPpedia.org</text>
     </svg>`
   } else {

@@ -25,6 +25,7 @@ export default function HealthCheckBadge({ status, checkedAt, uptime }: Props) {
 
   const timeAgo = checkedAt
     ? (() => {
+        // eslint-disable-next-line react-hooks/purity
         const mins = Math.floor((Date.now() - new Date(checkedAt).getTime()) / 60000)
         if (mins < 60) return `${mins}m ago`
         const hrs = Math.floor(mins / 60)

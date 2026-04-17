@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { sanitizeSearchQuery } from '@/lib/validators'
 
 const MAX_LIMIT = 100
 const DEFAULT_LIMIT = 20
@@ -54,7 +55,10 @@ export async function GET(request: NextRequest) {
     .eq('is_archived', false)
 
   // Filters
-  if (q) query = query.or(`name.ilike.%${q}%,tagline.ilike.%${q}%,description.ilike.%${q}%`)
+  if (q) {
+    const safe = sanitizeSearchQuery(q)
+    if (safe) query = query.or(`name.ilike.%${safe}%,tagline.ilike.%${safe}%,description.ilike.%${safe}%`)
+  }
   if (category) query = query.contains('categories', [category])
   if (status) query = query.eq('health_status', status)
   if (transport) query = query.contains('transport', [transport])

@@ -2,13 +2,14 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import BlinkLogo from '@/components/BlinkLogo'
 import { createPublicClient } from '@/lib/supabase/public'
+import { SITE_URL } from '@/lib/constants'
 
 export const revalidate = 86400
 
 export const metadata: Metadata = {
   title: 'About',
   description: 'MCPpedia is the free, open, community-driven encyclopedia for MCP servers. Every server scored on security, maintenance, and efficiency.',
-  alternates: { canonical: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://mcppedia.org'}/about` },
+  alternates: { canonical: `${SITE_URL}/about` },
 }
 
 export default async function AboutPage() {

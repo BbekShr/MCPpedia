@@ -91,6 +91,24 @@ export const SITE_NAME = 'MCPpedia'
 export const SITE_DESCRIPTION = 'Discover and compare 17,000+ MCP servers — each scored on security, maintenance, and efficiency with real CVE scanning. Find the right server before you install.'
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://mcppedia.org'
 
+// Smaller field set for list/card views (homepage, category, /servers, /best, etc.).
+// ServerCard reads ~15 columns; the full PUBLIC_SERVER_FIELDS projection includes
+// heavy JSONB (tools, resources, install_configs, description, security_evidence,
+// env_instructions) that only the detail page needs. Use this on any page that
+// renders ServerCard in a list to keep listing responses small.
+export const PUBLIC_CARD_FIELDS = [
+  'id', 'slug', 'name', 'tagline',
+  'homepage_url', 'author_github', 'author_type',
+  'transport', 'categories',
+  'install_configs',
+  'github_stars', 'github_last_commit', 'npm_weekly_downloads',
+  'health_status', 'cve_count',
+  'score_total',
+  // tools is selected so `tools.length` renders in the card; we can drop to
+  // `tool_count` once that column is backfilled. Keep for now to avoid a migration.
+  'tools',
+].join(', ')
+
 // Public fields safe to expose in API responses (excludes internal scoring details, scan internals, claimed_by, etc.)
 export const PUBLIC_SERVER_FIELDS = [
   'id', 'slug', 'name', 'tagline', 'description',

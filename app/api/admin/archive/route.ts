@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
   }
 
-  const rl = rateLimitUser(user.id, 'archive', 20, 3600_000)
+  const rl = await rateLimitUser(user.id, 'archive', 20, 3600_000)
   if (!rl.allowed) return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
 
   let body

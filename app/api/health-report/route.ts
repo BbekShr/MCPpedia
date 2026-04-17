@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { rateLimitIp, rateLimitUser } from '@/lib/rate-limit'
+import { rateLimitIp, rateLimitUser, getClientIp } from '@/lib/rate-limit'
 import { z } from 'zod'
 
 const reportSchema = z.object({
@@ -18,9 +18,8 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
 
   // Rate limit by user + IP
-  const ip = request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-  const rlIp = rateLimitIp(ip, 'health-report', 10, 3600_000)
-  const rlUser = rateLimitUser(user.id, 'health-report', 10, 3600_000)
+  const rlIp = await rateLimitIp(getClientIp(request), 'health-report', 10, 3600_000)
+  const rlUser = await rateLimitUser(user.id, 'health-report', 10, 3600_000)
   if (!rlIp.allowed || !rlUser.allowed) return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
 
   let body

@@ -2,12 +2,13 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import fs from 'fs'
 import path from 'path'
+import { SITE_URL } from '@/lib/constants'
 
 export const metadata: Metadata = {
   title: 'Compare MCP Servers — Side-by-Side Comparisons',
   description: 'Compare MCP servers side-by-side. See scores, security, tools, downloads, and compatibility for the top MCP servers.',
   alternates: {
-    canonical: 'https://mcppedia.org/compare',
+    canonical: `${SITE_URL}/compare`,
   },
 }
 

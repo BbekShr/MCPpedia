@@ -30,9 +30,6 @@ export function generateOrganizationJsonLd() {
     url: SITE_URL,
     logo: `${SITE_URL}/icon.svg`,
     description: SITE_DESCRIPTION,
-    sameAs: [
-      'https://github.com/anthropics/model-context-protocol',
-    ],
   }
 }
 
@@ -88,7 +85,7 @@ export function generateArticleJsonLd(post: BlogMeta, content?: string) {
     headline: post.title,
     description: post.description,
     datePublished: post.date,
-    dateModified: post.date,
+    dateModified: post.updated || post.date,
     wordCount,
     articleSection: post.category,
     keywords: post.tags,
@@ -133,9 +130,9 @@ export function generateCollectionJsonLd(name: string, description: string, url:
 
 // ── SoftwareApplication (Server Detail) ─────────────────────────────
 
-export function generateSoftwareApplicationJsonLd(server: Server) {
-  const score = server.score_total || 0
-
+export function generateServerJsonLd(server: Server) {
+  const reviewCount = server.review_count || 0
+  const reviewAvg = server.review_avg || 0
   return {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
@@ -148,31 +145,6 @@ export function generateSoftwareApplicationJsonLd(server: Server) {
     ...(server.pip_package && { installUrl: `https://pypi.org/project/${server.pip_package}` }),
     ...(server.license && server.license !== 'NOASSERTION' && { license: server.license }),
     ...(server.github_url && { codeRepository: server.github_url }),
-    offers: {
-      '@type': 'Offer',
-      price: '0',
-      priceCurrency: 'USD',
-    },
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: (score / 20).toFixed(1),
-      bestRating: '5',
-      worstRating: '0',
-      ratingCount: Math.max(server.review_count || 0, 1),
-    },
-  }
-}
-
-export function generateServerJsonLd(server: Server) {
-  const score = server.score_total || 0
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'SoftwareApplication',
-    name: server.name,
-    description: server.tagline || server.description || '',
-    applicationCategory: 'DeveloperApplication',
-    operatingSystem: 'Cross-platform',
-    url: `${SITE_URL}/s/${server.slug}`,
     ...(server.author_name && {
       author: {
         '@type': 'Organization',
@@ -181,17 +153,16 @@ export function generateServerJsonLd(server: Server) {
     }),
     offers: {
       '@type': 'Offer',
-      price: server.api_pricing === 'free' ? '0' : undefined,
+      price: '0',
       priceCurrency: 'USD',
     },
-    ...(server.license && server.license !== 'NOASSERTION' && { license: server.license }),
-    ...(score > 0 && {
+    ...(reviewCount > 0 && {
       aggregateRating: {
         '@type': 'AggregateRating',
-        ratingValue: (score / 20).toFixed(1),
+        ratingValue: reviewAvg.toFixed(1),
         bestRating: '5',
-        worstRating: '0',
-        ratingCount: 1,
+        worstRating: '1',
+        ratingCount: reviewCount,
       },
     }),
   }

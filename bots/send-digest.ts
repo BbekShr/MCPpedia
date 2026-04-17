@@ -215,7 +215,7 @@ function buildHtmlEmail(params: {
             <p style="margin:0;font-size:12px;color:#8b949e;">
               <a href="${siteUrl}" style="color:#8b949e;text-decoration:none;">mcppedia.org</a>
               <span style="margin:0 8px;color:#d0d7de;">&middot;</span>
-              <a href="${siteUrl}/api/newsletter/unsubscribe?token=${unsubscribeToken}" style="color:#8b949e;text-decoration:none;">Unsubscribe</a>
+              <a href="${siteUrl}/unsubscribed?token=${unsubscribeToken}" style="color:#8b949e;text-decoration:none;">Unsubscribe</a>
             </p>
           </td>
         </tr>

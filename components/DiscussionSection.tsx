@@ -113,6 +113,7 @@ export default function DiscussionSection({ serverId }: { serverId: string }) {
   }
 
   function timeAgo(date: string): string {
+    // eslint-disable-next-line react-hooks/purity
     const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000)
     if (seconds < 60) return 'just now'
     const minutes = Math.floor(seconds / 60)
@@ -133,12 +134,24 @@ export default function DiscussionSection({ serverId }: { serverId: string }) {
               <div className="flex items-start gap-3">
                 {/* Vote controls */}
                 <div className="flex flex-col items-center gap-0.5 text-text-muted">
-                  <button onClick={() => handleVote(d.id, 1)} className="hover:text-accent p-0.5" disabled={!user}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="18 15 12 9 6 15" /></svg>
+                  <button
+                    type="button"
+                    onClick={() => handleVote(d.id, 1)}
+                    className="hover:text-accent p-0.5"
+                    disabled={!user}
+                    aria-label={`Upvote comment by @${d.profile?.username || 'anonymous'}`}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><polyline points="18 15 12 9 6 15" /></svg>
                   </button>
-                  <span className="text-xs font-medium">{d.upvotes}</span>
-                  <button onClick={() => handleVote(d.id, -1)} className="hover:text-red p-0.5" disabled={!user}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
+                  <span className="text-xs font-medium" aria-live="polite">{d.upvotes}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleVote(d.id, -1)}
+                    className="hover:text-red p-0.5"
+                    disabled={!user}
+                    aria-label={`Downvote comment by @${d.profile?.username || 'anonymous'}`}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg>
                   </button>
                 </div>
 
@@ -189,7 +202,7 @@ export default function DiscussionSection({ serverId }: { serverId: string }) {
                         <button
                           onClick={() => handleReply(d.id)}
                           disabled={submitting || !replyBody.trim()}
-                          className="px-3 py-1 text-xs rounded-md bg-accent text-white hover:bg-accent-hover disabled:opacity-50"
+                          className="px-3 py-1 text-xs rounded-md bg-accent text-accent-fg hover:bg-accent-hover disabled:opacity-50"
                         >
                           Reply
                         </button>
@@ -233,7 +246,7 @@ export default function DiscussionSection({ serverId }: { serverId: string }) {
             <button
               type="submit"
               disabled={submitting || !body.trim()}
-              className="px-4 py-1.5 text-sm rounded-md bg-accent text-white hover:bg-accent-hover disabled:opacity-50 transition-colors duration-150"
+              className="px-4 py-1.5 text-sm rounded-md bg-accent text-accent-fg hover:bg-accent-hover disabled:opacity-50 transition-colors duration-150"
             >
               {submitting ? 'Posting...' : 'Post'}
             </button>

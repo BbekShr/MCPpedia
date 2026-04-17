@@ -5,7 +5,7 @@ import HealthBadge from '@/components/HealthBadge'
 import Link from 'next/link'
 import type { Server } from '@/lib/types'
 import type { HealthStatus } from '@/lib/constants'
-import { PUBLIC_SERVER_FIELDS } from '@/lib/constants'
+import { PUBLIC_SERVER_FIELDS, SITE_URL } from '@/lib/constants'
 import type { Metadata } from 'next'
 import fs from 'fs'
 import path from 'path'
@@ -69,12 +69,12 @@ export async function generateMetadata({
     title,
     description,
     alternates: {
-      canonical: `https://mcppedia.org/compare/${slugs}`,
+      canonical: `${SITE_URL}/compare/${slugs}`,
     },
     openGraph: {
       title,
       description,
-      url: `https://mcppedia.org/compare/${slugs}`,
+      url: `${SITE_URL}/compare/${slugs}`,
       type: 'website',
     },
   }
@@ -169,12 +169,12 @@ export default async function ComparePage({
     '@type': 'WebPage',
     name: `${a.name} vs ${b.name} — MCP Server Comparison`,
     description: `Side-by-side comparison of ${a.name} and ${b.name} MCP servers.`,
-    url: `https://mcppedia.org/compare/${slugs}`,
+    url: `${SITE_URL}/compare/${slugs}`,
     breadcrumb: {
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://mcppedia.org' },
-        { '@type': 'ListItem', position: 2, name: 'Servers', item: 'https://mcppedia.org/servers' },
+        { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+        { '@type': 'ListItem', position: 2, name: 'Servers', item: `${SITE_URL}/servers` },
         { '@type': 'ListItem', position: 3, name: `${a.name} vs ${b.name}` },
       ],
     },
