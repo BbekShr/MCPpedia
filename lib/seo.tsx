@@ -75,6 +75,13 @@ export function generateArticleJsonLd(post: BlogMeta, content?: string) {
   const wordCount = content
     ? content.trim().split(/\s+/).length
     : post.readingTime * 238
+  const articleUrl = `${SITE_URL}/blog/${post.slug}`
+  const image = {
+    '@type': 'ImageObject',
+    url: `${articleUrl}/opengraph-image`,
+    width: 1200,
+    height: 630,
+  }
   return {
     '@context': 'https://schema.org',
     '@type': 'Article',
@@ -85,10 +92,11 @@ export function generateArticleJsonLd(post: BlogMeta, content?: string) {
     wordCount,
     articleSection: post.category,
     keywords: post.tags,
+    image,
     author: {
-      '@type': 'Organization',
-      name: SITE_NAME,
-      url: SITE_URL,
+      '@type': 'Person',
+      name: 'MCPpedia Editorial',
+      url: `${SITE_URL}/about`,
     },
     publisher: {
       '@type': 'Organization',
@@ -101,7 +109,7 @@ export function generateArticleJsonLd(post: BlogMeta, content?: string) {
     },
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': `${SITE_URL}/blog/${post.slug}`,
+      '@id': articleUrl,
     },
   }
 }

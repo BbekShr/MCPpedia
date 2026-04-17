@@ -35,6 +35,13 @@ export async function generateMetadata({
       type: 'website',
       url: `${SITE_URL}/category/${category}`,
     },
+    twitter: {
+      card: 'summary_large_image',
+      site: '@MCPpedia',
+      creator: '@MCPpedia',
+      title: `${label} MCP Servers`,
+      description,
+    },
     alternates: {
       canonical: `${SITE_URL}/category/${category}`,
     },

@@ -22,6 +22,13 @@ export const metadata: Metadata = {
     url: SITE_URL,
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@MCPpedia',
+    creator: '@MCPpedia',
+    title: `${SITE_NAME} — Find the Right MCP Server`,
+    description: SITE_DESCRIPTION,
+  },
   alternates: {
     canonical: SITE_URL,
   },

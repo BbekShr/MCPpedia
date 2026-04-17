@@ -24,7 +24,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    site: '@mcppedia',
+    site: '@MCPpedia',
+    creator: '@MCPpedia',
   },
   robots: {
     index: true,
