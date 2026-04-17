@@ -58,12 +58,12 @@ export default function NewsletterSignup({
               onChange={e => setEmail(e.target.value)}
               placeholder="you@example.com"
               required
-              className="px-3 py-1.5 text-sm rounded-md border border-border bg-bg text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent w-48"
+              className="px-3 py-1.5 text-sm rounded-md border border-border bg-bg text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent w-full md:w-64"
             />
             <button
               type="submit"
               disabled={status === 'loading'}
-              className="px-4 py-1.5 text-sm rounded-md bg-accent text-white hover:bg-accent-hover transition-colors disabled:opacity-60 shrink-0"
+              className="px-4 py-1.5 text-sm rounded-md bg-accent text-accent-fg hover:bg-accent-hover transition-colors disabled:opacity-60 shrink-0"
             >
               {status === 'loading' ? 'Subscribing…' : 'Subscribe'}
             </button>
@@ -90,7 +90,7 @@ export default function NewsletterSignup({
         <button
           type="submit"
           disabled={status === 'loading'}
-          className="px-3 py-1.5 text-sm rounded-md bg-accent text-white hover:bg-accent-hover transition-colors disabled:opacity-60 shrink-0"
+          className="px-3 py-1.5 text-sm rounded-md bg-accent text-accent-fg hover:bg-accent-hover transition-colors disabled:opacity-60 shrink-0"
         >
           {status === 'loading' ? '…' : 'Subscribe'}
         </button>

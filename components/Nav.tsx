@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import ThemeToggle from './ThemeToggle'
+import BlinkLogo from './BlinkLogo'
 import type { User } from '@supabase/supabase-js'
 
 export default function Nav() {
@@ -43,16 +44,11 @@ export default function Nav() {
   ]
 
   return (
-    <nav className="border-b border-border sticky top-0 z-50 backdrop-blur-md bg-bg/80">
+    <nav className="border-b border-border sticky top-0 z-50 backdrop-blur-md bg-bg/90">
       <div className="max-w-[1200px] mx-auto px-4 h-14 flex items-center gap-4">
         {/* Logo */}
         <Link href="/" className="font-semibold text-lg shrink-0 flex items-center gap-1.5" aria-label="MCPpedia home">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="text-accent">
-            <rect x="3" y="3" width="18" height="18" rx="4" stroke="currentColor" strokeWidth="2"/>
-            <circle cx="8.5" cy="9.5" r="1.5" fill="currentColor"/>
-            <circle cx="15.5" cy="9.5" r="1.5" fill="currentColor"/>
-            <path d="M8 15c1 1.5 3 2.5 4 2.5s3-1 4-2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-          </svg>
+          <BlinkLogo size={22} className="text-accent" />
           <span className="text-text-primary">MCP</span>
           <span className="text-accent">pedia</span>
         </Link>
@@ -123,7 +119,7 @@ export default function Nav() {
           ) : (
             <Link
               href="/login"
-              className="text-sm px-3 py-1.5 rounded-md bg-accent text-white hover:bg-accent-hover"
+              className="text-sm px-3 py-1.5 rounded-md bg-accent text-accent-fg hover:bg-accent-hover"
             >
               Sign in
             </Link>

@@ -15,6 +15,7 @@
   --accent: #0277b5;
   --accent-hover: #0369a1;
   --accent-subtle: rgba(2, 132, 199, 0.08);
+  --accent-fg: #ffffff;
   --green: #1a7f37;
   --yellow: #9a6700;
   --red: #cf222e;
@@ -37,11 +38,12 @@
   --bg-secondary: #161b22;
   --bg-tertiary: #21262d;
   --text: #e6edf3;
-  --text-muted: #8b949e;
+  --text-muted: #a6adb6;
   --border: #30363d;
   --accent: #38bdf8;
   --accent-hover: #7dd3fc;
   --accent-subtle: rgba(56, 189, 248, 0.08);
+  --accent-fg: #0d1117;
   --green: #3fb950;
   --yellow: #d29922;
   --red: #f85149;
@@ -67,6 +69,7 @@
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-subtle: var(--accent-subtle);
+  --color-accent-fg: var(--accent-fg);
   --color-green: var(--green);
   --color-yellow: var(--yellow);
   --color-red: var(--red);

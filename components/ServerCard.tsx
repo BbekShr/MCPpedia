@@ -36,34 +36,32 @@ export default function ServerCard({ server }: { server: Server }) {
       className="block border border-border rounded-md p-4 bg-bg hover:shadow-[var(--shadow-card-hover),inset_3px_0_0_var(--accent)] hover:-translate-y-[1px] transition-all duration-150"
       aria-label={`${server.name} — score ${score}/100, grade ${score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 40 ? 'C' : score >= 20 ? 'D' : 'F'}, ${server.cve_count === 0 ? 'no CVEs' : `${server.cve_count} CVEs`}, ${server.health_status || 'unknown'} status`}
     >
-      {/* Row 1: Icon, name, badges */}
-      <div className="flex items-center justify-between gap-2 mb-1.5">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <ServerIcon
-            name={server.name}
-            homepageUrl={server.homepage_url}
-            authorGithub={server.author_github}
-            size={28}
-          />
-          <h3 className="font-semibold text-text-primary leading-tight text-[15px] truncate">{server.name}</h3>
-          {server.author_type === 'official' && (
-            <span className="text-[11px] px-1.5 py-0.5 rounded bg-accent/10 text-accent font-medium shrink-0">Official</span>
-          )}
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          {/* Security pill */}
-          {server.cve_count === 0 ? (
-            <span className="text-[11px] px-1.5 py-0.5 rounded bg-green/10 text-green font-medium">No CVEs</span>
-          ) : (
-            <span className="text-[11px] px-1.5 py-0.5 rounded bg-red/10 text-red font-medium">{server.cve_count} CVE{server.cve_count !== 1 ? 's' : ''}</span>
-          )}
-          {/* Score badge */}
-          {score > 0 && <ScoreBadge score={score} size="sm" />}
-          <FavoriteButton serverId={server.id} className="p-1 text-text-muted" />
-        </div>
+      {/* Row 1: Icon + name + favorite */}
+      <div className="flex items-start gap-2.5 mb-2">
+        <ServerIcon
+          name={server.name}
+          homepageUrl={server.homepage_url}
+          authorGithub={server.author_github}
+          size={28}
+        />
+        <h3 className="flex-1 min-w-0 font-semibold text-text-primary leading-tight text-[15px] line-clamp-2 pt-0.5">{server.name}</h3>
+        <FavoriteButton serverId={server.id} className="p-1 -m-1 text-text-muted shrink-0" />
       </div>
 
-      {/* Row 2: Tagline */}
+      {/* Row 2: Badges */}
+      <div className="flex flex-wrap items-center gap-1.5 mb-2">
+        {server.author_type === 'official' && (
+          <span className="text-[11px] px-1.5 py-0.5 rounded bg-accent/10 text-accent font-medium">Official</span>
+        )}
+        {server.cve_count === 0 ? (
+          <span className="text-[11px] px-1.5 py-0.5 rounded bg-green/10 text-green font-medium">No CVEs</span>
+        ) : (
+          <span className="text-[11px] px-1.5 py-0.5 rounded bg-red/10 text-red font-medium">{server.cve_count} CVE{server.cve_count !== 1 ? 's' : ''}</span>
+        )}
+        {score > 0 && <ScoreBadge score={score} size="sm" />}
+      </div>
+
+      {/* Row 3: Tagline */}
       {server.tagline && (
         <p className="text-sm text-text-muted mb-2.5 line-clamp-1">{server.tagline}</p>
       )}

@@ -1,3 +1,4 @@
+import HeroStack from '@/components/HeroStack'
 import Link from 'next/link'
 import { createPublicClient } from '@/lib/supabase/public'
 import ServerCard from '@/components/ServerCard'
@@ -43,6 +44,7 @@ export default async function HomePage() {
       .from('servers')
       .select(PUBLIC_SERVER_FIELDS)
       .eq('is_archived', false)
+      .neq('author_type', 'official')
       .gt('score_total', 0)
       .order('score_total', { ascending: false })
       .limit(6),
@@ -86,6 +88,12 @@ export default async function HomePage() {
       .eq('status', 'open'),
   ])
 
+  // If the count query failed, throw so Next.js serves the stale cached page
+  // instead of caching a broken render with 0 values
+  if (!serverCount) {
+    throw new Error('Failed to fetch server count from Supabase')
+  }
+
   // Deduplicate: track server IDs already shown to avoid repeats across sections
   const shownIds = new Set<string>()
   function dedup(list: Server[] | null): Server[] {
@@ -100,20 +108,25 @@ export default async function HomePage() {
       <JsonLdScript data={[generateOrganizationJsonLd(), generateWebSiteJsonLd()]} />
       {/* Hero — clear value prop */}
       <section className="border-b border-border" style={{ background: 'var(--hero-gradient)' }}>
-        <div className="max-w-[1200px] mx-auto px-4 py-16 md:py-20">
-          <div className="max-w-2xl">
-            <h1 className="text-3xl md:text-4xl font-bold text-text-primary mb-3 tracking-tight">
-              Find the right MCP server.<br />
-              <span className="text-accent">Know if it&apos;s safe before you install.</span>
-            </h1>
-            <p className="text-base text-text-muted mb-6 max-w-lg">
-              Every server scored on security, maintenance, and efficiency — backed by real CVE data, not opinions.
-            </p>
-            <div className="max-w-xl mb-4 min-h-[48px]">
-              <SearchBar
-                placeholder={`Search ${serverCount || 0}+ MCP servers...`}
-                large
-              />
+        <div className="max-w-[1200px] mx-auto px-4 pt-14 pb-10 md:pt-20 md:pb-16">
+          <div className="grid lg:grid-cols-[1fr_minmax(0,380px)] gap-10 lg:gap-16 items-center">
+            <div className="max-w-2xl">
+              <h1 className="text-4xl md:text-5xl font-bold text-text-primary mb-4 tracking-tight leading-[1.1]">
+                Find the right MCP server.<br />
+                <span className="text-accent">Know if it&apos;s safe before you install.</span>
+              </h1>
+              <p className="text-base md:text-lg text-text-muted mb-6 max-w-lg">
+                Every server scored on security, maintenance, and efficiency — backed by real CVE data, not opinions.
+              </p>
+              <div className="max-w-xl mb-4 min-h-[48px]">
+                <SearchBar
+                  placeholder={`Search ${serverCount || 0}+ MCP servers...`}
+                  large
+                />
+              </div>
+            </div>
+            <div className="hidden md:block">
+              <HeroStack className="max-w-[340px] lg:max-w-[380px] mx-auto" />
             </div>
           </div>
         </div>
@@ -121,7 +134,7 @@ export default async function HomePage() {
 
       {/* Live stats — shows the site is alive and data-driven */}
       <section className="border-b border-border bg-bg-secondary">
-        <div className="max-w-[1200px] mx-auto px-4 py-4">
+        <div className="max-w-[1200px] mx-auto px-4 py-5">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-text-primary">{(serverCount || 0).toLocaleString()}</div>
@@ -145,8 +158,8 @@ export default async function HomePage() {
 
       {/* MCPpedia MCP server promotion */}
       <section className="border-t border-border">
-        <div className="max-w-[1200px] mx-auto px-4 py-8">
-          <div className="border border-accent/20 rounded-lg p-6 bg-accent/5 flex flex-col md:flex-row gap-6 items-stretch">
+        <div className="max-w-[1200px] mx-auto px-4 py-10">
+          <div className="border border-border border-l-4 border-l-accent rounded-lg p-6 bg-bg-secondary flex flex-col md:flex-row gap-6 items-stretch">
             <div className="flex-1 min-w-0">
               <span className="inline-block text-[11px] font-semibold uppercase tracking-wider text-accent bg-accent/10 border border-accent/20 rounded-full px-2.5 py-0.5 mb-3">
                 MCPpedia MCP server
@@ -165,8 +178,8 @@ export default async function HomePage() {
             </div>
             <div className="flex flex-col justify-center gap-2 shrink-0 md:w-44">
               <Link
-                href="/mcp"
-                className="px-4 py-2 text-sm font-medium rounded-md bg-accent text-white hover:bg-accent-hover transition-colors text-center"
+                href="/s/mcp-server-mcppedia"
+                className="px-4 py-2 text-sm font-medium rounded-md bg-accent text-accent-fg hover:bg-accent-hover transition-colors text-center"
               >
                 Install MCPpedia →
               </Link>
@@ -188,7 +201,7 @@ export default async function HomePage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="flex gap-3">
             <div className="w-10 h-10 rounded-lg bg-red/10 flex items-center justify-center shrink-0">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             </div>
             <div>
               <p className="text-sm font-semibold text-text-primary mb-0.5">Security scanned</p>
@@ -197,7 +210,7 @@ export default async function HomePage() {
           </div>
           <div className="flex gap-3">
             <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6" rx="0.5"/><rect x="12" y="8" width="3" height="10" rx="0.5"/><rect x="17" y="4" width="3" height="14" rx="0.5"/></svg>
             </div>
             <div>
               <p className="text-sm font-semibold text-text-primary mb-0.5">Scored, not listed</p>
@@ -206,7 +219,7 @@ export default async function HomePage() {
           </div>
           <div className="flex gap-3">
             <div className="w-10 h-10 rounded-lg bg-green/10 flex items-center justify-center shrink-0">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2" strokeLinecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/><path d="M9 13l2 2 4-4"/></svg>
             </div>
             <div>
               <p className="text-sm font-semibold text-text-primary mb-0.5">Copy-paste install</p>
@@ -221,7 +234,7 @@ export default async function HomePage() {
 
       {/* Browse by use case — first orientation point for new visitors */}
       <section className="border-t border-border">
-        <div className="max-w-[1200px] mx-auto px-4 py-8">
+        <div className="max-w-[1200px] mx-auto px-4 py-12">
           <h2 className="text-lg font-semibold text-text-primary mb-1">Find servers for...</h2>
           <p className="text-xs text-text-muted mb-4">Browse by use case to find the right tools for your stack</p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -242,7 +255,7 @@ export default async function HomePage() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`border border-border border-l-[3px] ${item.color} rounded-md p-4 min-h-[56px] hover:shadow-[var(--shadow-md)] hover:-translate-y-[1px] transition-all`}
+                className={`border border-border border-l-[3px] ${item.color} rounded-md p-4 min-h-[80px] flex flex-col justify-center hover:shadow-[var(--shadow-md)] hover:-translate-y-[1px] transition-all`}
               >
                 <span className="font-medium text-sm text-text-primary block">{item.label}</span>
                 <span className="text-xs text-text-muted">{item.desc}</span>
@@ -254,7 +267,7 @@ export default async function HomePage() {
 
       {/* Top scored servers — the best of the best */}
       <section className="border-t border-border">
-        <div className="max-w-[1200px] mx-auto px-4 py-8">
+        <div className="max-w-[1200px] mx-auto px-4 py-10">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-lg font-semibold text-text-primary">Highest rated</h2>
@@ -275,7 +288,7 @@ export default async function HomePage() {
       {/* Official servers */}
       {officialServers && officialServers.length > 0 && (
         <section className="border-t border-border">
-          <div className="max-w-[1200px] mx-auto px-4 py-8">
+          <div className="max-w-[1200px] mx-auto px-4 py-10">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-lg font-semibold text-text-primary">Official servers</h2>
@@ -297,7 +310,7 @@ export default async function HomePage() {
       {/* Servers with CVEs — transparency */}
       {serversWithCVEs && serversWithCVEs.length > 0 && (
         <section className="border-t border-border">
-          <div className="max-w-[1200px] mx-auto px-4 py-8">
+          <div className="max-w-[1200px] mx-auto px-4 py-10">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-lg font-semibold text-text-primary">Servers with known CVEs</h2>
@@ -318,14 +331,14 @@ export default async function HomePage() {
 
       {/* Browse by category pills */}
       <section className="border-t border-border">
-        <div className="max-w-[1200px] mx-auto px-4 py-8">
+        <div className="max-w-[1200px] mx-auto px-4 py-10">
           <h2 className="text-lg font-semibold text-text-primary mb-4">All categories</h2>
           <div className="flex flex-wrap gap-2">
             {CATEGORIES.map(cat => (
               <Link
                 key={cat}
                 href={`/category/${cat}`}
-                className="px-3.5 py-2 text-sm rounded-full border border-border text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-colors min-h-[44px] flex items-center"
+                className="px-3.5 py-2 text-sm rounded-full border border-border text-text-primary hover:border-accent hover:bg-accent-subtle hover:text-accent transition-colors min-h-[44px] flex items-center"
               >
                 {CATEGORY_LABELS[cat as Category]}
               </Link>
@@ -337,7 +350,7 @@ export default async function HomePage() {
       {/* Recently added — shows the site is alive */}
       {recentlyAdded && recentlyAdded.length > 0 && (
         <section className="border-t border-border">
-          <div className="max-w-[1200px] mx-auto px-4 py-8">
+          <div className="max-w-[1200px] mx-auto px-4 py-10">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-lg font-semibold text-text-primary">Just added</h2>
@@ -358,7 +371,7 @@ export default async function HomePage() {
 
       {/* Newsletter */}
       <section className="border-t border-border">
-        <div className="max-w-[1200px] mx-auto px-4 py-8">
+        <div className="max-w-[1200px] mx-auto px-4 py-10">
           <NewsletterSignup
             variant="banner"
             context="Weekly CVE alerts, new server roundups, and MCP ecosystem insights. Free."
@@ -368,8 +381,8 @@ export default async function HomePage() {
 
       {/* New to MCP? */}
       <section className="border-t border-border">
-        <div className="max-w-[1200px] mx-auto px-4 py-10">
-          <div className="border border-accent/20 rounded-lg p-6 bg-accent/5 flex flex-col md:flex-row items-center gap-6">
+        <div className="max-w-[1200px] mx-auto px-4 py-12 md:py-14">
+          <div className="border border-accent/20 rounded-lg p-6 bg-accent/5 flex flex-col md:flex-row md:items-center gap-6">
             <div className="flex-1">
               <h2 className="text-lg font-semibold text-text-primary mb-1">New to MCP?</h2>
               <p className="text-sm text-text-muted">
@@ -378,7 +391,7 @@ export default async function HomePage() {
               </p>
             </div>
             <div className="flex gap-3 shrink-0">
-              <Link href="/get-started" className="px-4 py-2 text-sm rounded-md bg-accent text-white hover:bg-accent-hover transition-colors">
+              <Link href="/get-started" className="px-4 py-2 text-sm rounded-md bg-accent text-accent-fg hover:bg-accent-hover transition-colors">
                 What is MCP?
               </Link>
               <Link href="/setup" className="px-4 py-2 text-sm rounded-md border border-border text-text-primary hover:bg-bg-tertiary transition-colors">

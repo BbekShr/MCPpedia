@@ -27,7 +27,7 @@ export default async function TrendingWidget() {
 
   return (
     <section className="border-t border-border">
-      <div className="max-w-[1200px] mx-auto px-4 py-8">
+      <div className="max-w-[1200px] mx-auto px-4 py-10">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold text-text-primary flex items-center gap-2">
@@ -52,7 +52,17 @@ export default async function TrendingWidget() {
               className="border border-border rounded-md p-3 bg-bg hover:shadow-[var(--shadow-card-hover)] hover:-translate-y-[1px] transition-all duration-150"
             >
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-bold text-text-muted">#{i + 1}</span>
+                <span
+                  className={`text-[11px] font-bold px-1.5 py-0.5 rounded ${
+                    i === 0
+                      ? 'bg-accent text-accent-fg'
+                      : i < 3
+                      ? 'bg-accent/10 text-accent'
+                      : 'text-text-muted'
+                  }`}
+                >
+                  #{i + 1}
+                </span>
                 {server.score_total > 0 && (
                   <ScoreBadge score={server.score_total} size="sm" showGrade={false} />
                 )}
