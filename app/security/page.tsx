@@ -55,9 +55,25 @@ function timeAgo(date: string): string {
 export default async function SecurityPage() {
   const supabase = createPublicClient()
 
+  // NOTE: don't aggregate by fetching all rows — PostgREST caps SELECTs at
+  // 1000 rows by default, so filtering in JS silently undercounts once the
+  // table grows past that. Use head:true count queries instead.
+  const sevOpen = (severity: string) =>
+    supabase
+      .from('security_advisories')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'open')
+      .eq('severity', severity)
+
   const [
     { data: advisories },
-    { data: allAdvisories },
+    { count: openCount },
+    { count: fixedCount },
+    { count: criticalCount },
+    { count: highCount },
+    { count: mediumCount },
+    { count: lowCount },
+    { count: infoCount },
     { count: totalServers },
     { count: serversWithCVEs },
     { count: toolPoisoningCount },
@@ -72,7 +88,22 @@ export default async function SecurityPage() {
       .limit(100),
     supabase
       .from('security_advisories')
-      .select('severity, status'),
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'open'),
+    supabase
+      .from('security_advisories')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'fixed'),
+    sevOpen('critical'),
+    sevOpen('high'),
+    sevOpen('medium'),
+    sevOpen('low'),
+    // Anything open that isn't one of the four standard severities (e.g. 'info', null).
+    supabase
+      .from('security_advisories')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'open')
+      .not('severity', 'in', '(critical,high,medium,low)'),
     supabase
       .from('servers')
       .select('*', { count: 'exact', head: true })
@@ -106,17 +137,12 @@ export default async function SecurityPage() {
       .single(),
   ])
 
-  const all = (allAdvisories || []) as Array<{ severity: string; status: string }>
-  const totalCVEs = all.length
-  const openCount = all.filter(a => a.status === 'open').length
-  const fixedCount = all.filter(a => a.status === 'fixed').length
-  const open = all.filter(a => a.status === 'open')
   const severityCounts = {
-    critical: open.filter(s => s.severity === 'critical').length,
-    high: open.filter(s => s.severity === 'high').length,
-    medium: open.filter(s => s.severity === 'medium').length,
-    low: open.filter(s => s.severity === 'low').length,
-    info: open.filter(s => !['critical', 'high', 'medium', 'low'].includes(s.severity)).length,
+    critical: criticalCount || 0,
+    high: highCount || 0,
+    medium: mediumCount || 0,
+    low: lowCount || 0,
+    info: infoCount || 0,
   }
   const cleanServers = (totalServers || 0) - (serversWithCVEs || 0)
   const cleanPct = totalServers ? Math.floor((cleanServers / totalServers) * 1000) / 10 : 0
@@ -156,11 +182,11 @@ export default async function SecurityPage() {
             <div className="text-xs text-text-muted">Servers affected</div>
           </div>
           <div className="border border-border rounded-md p-3 text-center">
-            <div className="text-2xl font-bold text-red">{openCount}</div>
+            <div className="text-2xl font-bold text-red">{openCount || 0}</div>
             <div className="text-xs text-text-muted">Open CVEs</div>
           </div>
           <div className="border border-border rounded-md p-3 text-center">
-            <div className="text-2xl font-bold text-green">{fixedCount}</div>
+            <div className="text-2xl font-bold text-green">{fixedCount || 0}</div>
             <div className="text-xs text-text-muted">Fixed CVEs</div>
           </div>
         </div>
