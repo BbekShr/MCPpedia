@@ -8,6 +8,7 @@ import { JsonLdScript, generateItemListJsonLd } from '@/lib/seo'
 import type { Server } from '@/lib/types'
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import BlinkLogo from '@/components/BlinkLogo'
 
 export const revalidate = 60
 
@@ -152,6 +153,9 @@ export default async function ServersPage({
 
       {servers.length === 0 && (
         <div className="text-center py-12">
+          <div className="flex justify-center mb-3">
+            <BlinkLogo size={48} className="text-text-muted" />
+          </div>
           <p className="text-text-muted mb-2">No servers found.</p>
           <Link href="/submit" className="text-sm text-accent hover:text-accent-hover">
             Submit a server &rarr;

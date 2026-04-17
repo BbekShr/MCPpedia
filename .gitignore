@@ -48,3 +48,10 @@ next-env.d.ts
 
 # internal docs
 social-posts-and-outreach.md
+
+# playwright-mcp session artifacts (console logs, page snapshots, screenshots)
+.playwright-mcp/
+# ad-hoc visual polish screenshots at the repo root
+/polish-*.png
+/after-*.png
+/*-blink.png

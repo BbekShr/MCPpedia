@@ -1,11 +1,14 @@
 {
-  "lastRoundupDate": "2026-04-06",
+  "lastRoundupDate": "2026-04-16",
   "lastSpotlightSlugs": [
+    "python-sdk",
     "supabase",
     "io-github-cameroncooke-xcodebuildmcp"
   ],
   "lastCategoryDeepDive": null,
   "lastCategoryDeepDiveDate": null,
   "lastSeoTopicIndex": -1,
-  "publishedSeoTopics": ["MCP vs API what is the difference"]
+  "publishedSeoTopics": [
+    "MCP vs API what is the difference"
+  ]
 }

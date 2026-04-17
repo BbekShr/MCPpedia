@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import BlinkLogo from '@/components/BlinkLogo'
 import { createPublicClient } from '@/lib/supabase/public'
 
 export const revalidate = 86400
@@ -19,7 +20,10 @@ export default async function AboutPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-semibold text-text-primary mb-6">About MCPpedia</h1>
+      <div className="flex items-center gap-3 mb-6">
+        <BlinkLogo size={40} className="text-accent" />
+        <h1 className="text-2xl font-semibold text-text-primary">About MCPpedia</h1>
+      </div>
 
       <div className="space-y-8 text-sm text-text-primary leading-relaxed">
         <section>

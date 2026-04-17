@@ -1,8 +1,12 @@
 import Link from 'next/link'
+import BlinkLogo from '@/components/BlinkLogo'
 
 export default function NotFound() {
   return (
     <div className="max-w-lg mx-auto px-4 py-20 text-center">
+      <div className="flex justify-center mb-6">
+        <BlinkLogo size={64} className="text-accent" />
+      </div>
       <div className="text-6xl font-bold text-text-muted mb-4">404</div>
       <h1 className="text-xl font-semibold text-text-primary mb-2">Page not found</h1>
       <p className="text-text-muted mb-6">
