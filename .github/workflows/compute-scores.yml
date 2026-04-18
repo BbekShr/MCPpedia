@@ -19,3 +19,5 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GITHUB_TOKEN: ${{ secrets.BOT_GITHUB_TOKEN }}
+          SITE_URL: ${{ vars.SITE_URL || 'https://mcppedia.org' }}
+          REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}

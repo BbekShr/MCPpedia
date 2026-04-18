@@ -208,9 +208,38 @@ async function main() {
   run.setSummary({ scored: processed })
   console.log(`\nDone. Scored ${processed} servers.`)
   await run.finish()
+
+  await revalidateSiteCache()
   } catch (err) {
     await run.fail(String(err))
     throw err
+  }
+}
+
+// Poke the Next.js ISR cache so /security and / reflect today's scan on the
+// next request instead of waiting for their revalidate windows (1h and 24h)
+// to expire on organic traffic. Failure here is non-fatal — the bot's data
+// write already succeeded and the cache will self-heal eventually.
+async function revalidateSiteCache() {
+  const siteUrl = process.env.SITE_URL
+  const secret = process.env.REVALIDATE_SECRET
+  if (!siteUrl || !secret) {
+    console.log('Skipping cache revalidation — SITE_URL or REVALIDATE_SECRET not set.')
+    return
+  }
+  try {
+    const res = await fetch(`${siteUrl.replace(/\/$/, '')}/api/revalidate`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${secret}` },
+      body: JSON.stringify({ paths: ['/', '/security'] }),
+    })
+    if (!res.ok) {
+      console.warn(`Cache revalidation returned ${res.status}: ${await res.text()}`)
+      return
+    }
+    console.log(`Cache revalidation: ${await res.text()}`)
+  } catch (err) {
+    console.warn(`Cache revalidation failed: ${String(err)}`)
   }
 }
 
