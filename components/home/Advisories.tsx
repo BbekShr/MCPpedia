@@ -16,60 +16,85 @@ function severityColor(sev: string): string {
   return 'var(--text-muted)'
 }
 
+function StatusChip({ status }: { status: HomeAdvisory['status'] }) {
+  return status === 'fixed' ? (
+    <Chip tone="green" size="sm"><Icon name="check" size={10} /> Fixed</Chip>
+  ) : (
+    <Chip tone="red" size="sm"><Icon name="alert" size={10} /> Unpatched</Chip>
+  )
+}
+
 function AdvisoryRow({ a, last }: { a: HomeAdvisory; last: boolean }) {
   const color = severityColor(a.severity)
   const days = daysAgo(a.published_at)
+  const borderStyle = last ? 'none' : '1px solid var(--border-muted)'
   return (
     <Link
       href={`/s/${a.server_slug}#security`}
-      className="adv-row grid gap-4 items-center px-3.5 py-3 text-text-primary"
-      style={{
-        gridTemplateColumns: 'minmax(120px, 180px) 1fr 110px 90px',
-        borderBottom: last ? 'none' : '1px solid var(--border-muted)',
-      }}
+      className="adv-row block text-text-primary"
+      style={{ borderBottom: borderStyle }}
     >
-      <div className="flex items-center gap-2 min-w-0">
-        <span
-          className="rounded-full shrink-0"
-          style={{
-            width: 8,
-            height: 8,
-            background: color,
-            boxShadow: `0 0 0 3px color-mix(in srgb, ${color} 22%, transparent)`,
-          }}
-        />
-        <span className="font-mono text-[11.5px] text-text-muted truncate">
-          {a.cve_id || a.id.slice(0, 8)}
-        </span>
-      </div>
-      <div className="min-w-0">
-        <div className="text-[13.5px] font-medium truncate">
-          <span className="font-mono text-text-primary text-xs mr-2">{a.server_name}</span>
+      {/* Mobile layout */}
+      <div className="flex md:hidden flex-col gap-1.5 px-3.5 py-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span
+              className="rounded-full shrink-0"
+              style={{ width: 8, height: 8, background: color, boxShadow: `0 0 0 3px color-mix(in srgb, ${color} 22%, transparent)` }}
+            />
+            <span className="font-mono text-[11.5px] text-text-muted truncate">
+              {a.cve_id || a.id.slice(0, 8)}
+            </span>
+          </div>
+          <StatusChip status={a.status} />
+        </div>
+        <div className="text-[13px] font-medium line-clamp-2">
+          <span className="font-mono text-text-primary text-xs mr-1.5">{a.server_name}</span>
           <span>{a.title}</span>
         </div>
-        <div className="text-[11.5px] text-text-muted mt-0.5 flex gap-2.5">
-          <span
-            className="font-mono uppercase font-semibold"
-            style={{ color, fontSize: 10.5, letterSpacing: '0.06em' }}
-          >
-            {a.severity}
+        <div className="flex items-center justify-between">
+          <div className="text-[11.5px] text-text-muted flex gap-2.5">
+            <span className="font-mono uppercase font-semibold" style={{ color, fontSize: 10.5, letterSpacing: '0.06em' }}>
+              {a.severity}
+            </span>
+            {days !== null && <span>{days}d ago</span>}
+          </div>
+          <span className="text-accent text-[12px] inline-flex items-center gap-0.5">
+            Read <Icon name="chevronR" size={11} />
           </span>
-          {days !== null && <span>{days}d ago</span>}
         </div>
       </div>
-      <div>
-        {a.status === 'fixed' ? (
-          <Chip tone="green" size="sm">
-            <Icon name="check" size={10} /> Fixed
-          </Chip>
-        ) : (
-          <Chip tone="red" size="sm">
-            <Icon name="alert" size={10} /> Unpatched
-          </Chip>
-        )}
-      </div>
-      <div className="text-right text-accent text-[12.5px] inline-flex items-center gap-1 justify-end">
-        Read <Icon name="chevronR" size={11} />
+
+      {/* Desktop layout */}
+      <div
+        className="hidden md:grid gap-4 items-center px-3.5 py-3"
+        style={{ gridTemplateColumns: 'minmax(120px, 180px) 1fr 110px 90px' }}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <span
+            className="rounded-full shrink-0"
+            style={{ width: 8, height: 8, background: color, boxShadow: `0 0 0 3px color-mix(in srgb, ${color} 22%, transparent)` }}
+          />
+          <span className="font-mono text-[11.5px] text-text-muted truncate">
+            {a.cve_id || a.id.slice(0, 8)}
+          </span>
+        </div>
+        <div className="min-w-0">
+          <div className="text-[13.5px] font-medium truncate">
+            <span className="font-mono text-text-primary text-xs mr-2">{a.server_name}</span>
+            <span>{a.title}</span>
+          </div>
+          <div className="text-[11.5px] text-text-muted mt-0.5 flex gap-2.5">
+            <span className="font-mono uppercase font-semibold" style={{ color, fontSize: 10.5, letterSpacing: '0.06em' }}>
+              {a.severity}
+            </span>
+            {days !== null && <span>{days}d ago</span>}
+          </div>
+        </div>
+        <div><StatusChip status={a.status} /></div>
+        <div className="text-right text-accent text-[12.5px] inline-flex items-center gap-1 justify-end">
+          Read <Icon name="chevronR" size={11} />
+        </div>
       </div>
     </Link>
   )

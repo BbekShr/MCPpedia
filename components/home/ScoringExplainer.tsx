@@ -112,7 +112,7 @@ export default function ScoringExplainer() {
           </div>
         </div>
 
-        <div className="mt-3.5 text-xs text-text-muted flex flex-wrap justify-between gap-2">
+        <div className="mt-3.5 text-xs text-text-muted flex flex-col sm:flex-row sm:flex-wrap sm:justify-between gap-1 sm:gap-2">
           <span>
             Grades:{' '}
             <b style={{ color: 'var(--green)' }}>A (≥80)</b> ·{' '}
@@ -120,7 +120,7 @@ export default function ScoringExplainer() {
             <b style={{ color: 'var(--yellow)' }}>C (40–59)</b> ·{' '}
             <b style={{ color: 'var(--red)' }}>D/F (&lt;40)</b>
           </span>
-          <span>Scoring is open-source and versioned — the rubric file is in the repo.</span>
+          <span className="hidden sm:inline">Scoring is open-source and versioned — the rubric file is in the repo.</span>
         </div>
       </div>
     </section>

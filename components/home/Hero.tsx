@@ -48,23 +48,21 @@ function TrustTicker({ stats }: { stats: HeroStats }) {
         background: 'color-mix(in srgb, var(--bg-secondary) 70%, transparent)',
       }}
     >
-      <div
-        className="max-w-[1200px] mx-auto px-4 md:px-6 py-3 grid gap-3"
-        style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}
-      >
+      <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-3 grid grid-cols-2 md:grid-cols-4 gap-y-3">
         {items.map((it, i) => (
           <div
             key={it.label}
-            className="flex items-baseline gap-2.5 px-1.5 min-w-0"
-            style={{ borderLeft: i === 0 ? 'none' : '1px solid var(--border-muted)' }}
+            className={`flex flex-col gap-0.5 px-3 min-w-0 ${
+              i % 2 !== 0 ? 'border-l border-border-muted' : ''
+            }${i === 2 ? ' md:border-l md:border-border-muted' : ''}`}
           >
             <div
-              className="text-2xl font-bold"
+              className="text-xl md:text-2xl font-bold tabular-nums"
               style={{ color: it.alert ? 'var(--red)' : 'var(--text)' }}
             >
               {it.value}
             </div>
-            <div className="text-xs text-text-muted truncate">{it.label}</div>
+            <div className="text-xs text-text-muted leading-tight">{it.label}</div>
           </div>
         ))}
       </div>
