@@ -88,18 +88,20 @@ export default function HeroSearch({ totalServers }: { totalServers: number }) {
             style={{ fontFamily: 'inherit' }}
           />
           {!q && (
-            <div className="absolute inset-0 flex items-center pointer-events-none text-text-muted text-base whitespace-nowrap overflow-hidden">
-              <span>Search&nbsp;</span>
-              <span className="text-text-primary opacity-55">
+            <div className="absolute inset-0 flex items-center pointer-events-none text-text-muted text-base overflow-hidden">
+              <span className="whitespace-nowrap">Search&nbsp;</span>
+              <span className="text-text-primary opacity-55 whitespace-nowrap">
                 {totalServers.toLocaleString()} servers
               </span>
-              <span>&nbsp;—&nbsp;try&nbsp;</span>
-              <RotatingHint idx={hintIdx} />
+              <span className="hidden sm:inline whitespace-nowrap">&nbsp;—&nbsp;try&nbsp;</span>
+              <span className="hidden sm:flex flex-1 min-w-0 overflow-hidden">
+                <RotatingHint idx={hintIdx} />
+              </span>
             </div>
           )}
         </div>
         <kbd
-          className="font-mono text-[11px] px-1.5 py-0.5 rounded text-text-muted bg-bg-secondary"
+          className="hidden sm:block font-mono text-[11px] px-1.5 py-0.5 rounded text-text-muted bg-bg-secondary"
           style={{ border: '1px solid var(--border)' }}
         >
           ⌘K
