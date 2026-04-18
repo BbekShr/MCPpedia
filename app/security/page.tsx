@@ -52,90 +52,63 @@ function timeAgo(date: string): string {
   return `${Math.floor(days / 365)}y ago`
 }
 
+interface HomeStats {
+  total_servers: number
+  with_cves: number
+  open_cves: number
+  fixed_cves: number
+  cves_critical_open: number
+  cves_high_open: number
+  cves_medium_open: number
+  cves_low_open: number
+  cves_unscored_open: number
+  servers_with_open_cves: number
+  tool_poisoning_count: number
+  injection_risk_count: number
+  code_execution_count: number
+  last_security_scan: string | null
+}
+
 export default async function SecurityPage() {
   const supabase = createPublicClient()
 
-  // NOTE: don't aggregate by fetching all rows — PostgREST caps SELECTs at
-  // 1000 rows by default, so filtering in JS silently undercounts once the
-  // table grows past that. Use head:true count queries instead.
-  const sevOpen = (severity: string) =>
-    supabase
-      .from('security_advisories')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'open')
-      .eq('severity', severity)
-
+  // All aggregate counts come from the home_stats() RPC. Keeping them in a
+  // single source of truth prevents drift between this page, the homepage,
+  // and blog posts — every surface that needs a site-wide count should use
+  // this RPC rather than compute its own.
   const [
     { data: advisories },
-    { count: openCount },
-    { count: fixedCount },
-    { count: criticalCount },
-    { count: highCount },
-    { count: mediumCount },
-    { count: lowCount },
-    { count: infoCount },
-    { count: totalServers },
-    { count: serversWithCVEs },
-    { count: toolPoisoningCount },
-    { count: injectionRiskCount },
-    { count: codeExecutionCount },
-    { data: lastScanData },
+    { data: statsRaw },
   ] = await Promise.all([
     supabase
       .from('security_advisories')
       .select('*, server:servers(name, slug)')
       .order('published_at', { ascending: false })
       .limit(100),
-    supabase
-      .from('security_advisories')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'open'),
-    supabase
-      .from('security_advisories')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'fixed'),
-    sevOpen('critical'),
-    sevOpen('high'),
-    sevOpen('medium'),
-    sevOpen('low'),
-    // Anything open that isn't one of the four standard severities (e.g. 'info', null).
-    supabase
-      .from('security_advisories')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'open')
-      .not('severity', 'in', '(critical,high,medium,low)'),
-    supabase
-      .from('servers')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_archived', false),
-    supabase
-      .from('servers')
-      .select('*', { count: 'exact', head: true })
-      .gt('cve_count', 0)
-      .eq('is_archived', false),
-    supabase
-      .from('servers')
-      .select('*', { count: 'exact', head: true })
-      .eq('has_tool_poisoning', true)
-      .eq('is_archived', false),
-    supabase
-      .from('servers')
-      .select('*', { count: 'exact', head: true })
-      .eq('has_injection_risk', true)
-      .eq('is_archived', false),
-    supabase
-      .from('servers')
-      .select('*', { count: 'exact', head: true })
-      .eq('has_code_execution', true)
-      .eq('is_archived', false),
-    supabase
-      .from('servers')
-      .select('last_security_scan')
-      .not('last_security_scan', 'is', null)
-      .order('last_security_scan', { ascending: false })
-      .limit(1)
-      .single(),
+    supabase.rpc('home_stats'),
   ])
+
+  const stats = (statsRaw as HomeStats | null) ?? {
+    total_servers: 0, with_cves: 0, open_cves: 0, fixed_cves: 0,
+    cves_critical_open: 0, cves_high_open: 0, cves_medium_open: 0,
+    cves_low_open: 0, cves_unscored_open: 0, servers_with_open_cves: 0,
+    tool_poisoning_count: 0, injection_risk_count: 0, code_execution_count: 0,
+    last_security_scan: null,
+  }
+
+  const openCount = stats.open_cves
+  const fixedCount = stats.fixed_cves
+  const criticalCount = stats.cves_critical_open
+  const highCount = stats.cves_high_open
+  const mediumCount = stats.cves_medium_open
+  const lowCount = stats.cves_low_open
+  const infoCount = stats.cves_unscored_open
+  const totalServers = stats.total_servers
+  const serversWithCVEs = stats.with_cves
+  const toolPoisoningCount = stats.tool_poisoning_count
+  const injectionRiskCount = stats.injection_risk_count
+  const codeExecutionCount = stats.code_execution_count
+  const lastScanData = stats.last_security_scan ? { last_security_scan: stats.last_security_scan } : null
 
   const severityCounts = {
     critical: criticalCount || 0,
