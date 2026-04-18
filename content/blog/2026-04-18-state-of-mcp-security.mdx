@@ -1,0 +1,97 @@
+---
+title: "The State of MCP Security: Zero Critical CVEs, 182 Code-Execution Servers"
+description: "A live scan of 19,150 MCP servers finds 65 open CVEs — none critical or high — but 182 active servers carrying code-execution risk in a catalog growing at 983/week."
+hook: "The MCP catalog has 19,150 servers and 65 open CVEs. None are critical. None are high severity. That's the reassuring part. The code-execution surface — 182 active servers — is the part worth watching."
+date: "2026-04-18"
+tags: ["security", "cve", "tool-poisoning", "code-execution"]
+category: "security-alert"
+featuredServers: []
+---
+
+<SectionLabel>Security Snapshot</SectionLabel>
+
+## The CVE Picture Is Cleaner Than You'd Expect
+
+The MCPpedia catalog has **19,150 MCP servers** as of today. Against that backdrop, there are **65 open CVEs** distributed across **30 distinct servers** — 0.16% of the catalog carrying open tracked vulnerabilities.
+
+More importantly: **zero open CVEs are rated critical. Zero are rated high.** Every unresolved vulnerability in the catalog today sits at medium, low, or unscored.
+
+<StatGrid>
+  <Stat value="65" label="Open CVEs" detail="Across 30 servers" />
+  <Stat value="0" label="Critical or High Open" detail="No top-tier severity unresolved" />
+  <Stat value="97.8%" label="CVE Fix Rate" detail="2,857 of 2,922 total resolved" />
+  <Stat value="182" label="Code-Execution Servers" detail="Active, unarchived" />
+</StatGrid>
+
+The fix rate tells the bigger story. Of **2,922 total CVEs** tracked across the ecosystem, **2,857 have been resolved**. That's not a community ignoring security reports. That's a community that, when CVEs get filed, mostly fixes them.
+
+---
+
+<SectionLabel>Severity Breakdown</SectionLabel>
+
+## Where the 65 Open CVEs Sit
+
+The 65 open vulnerabilities by severity:
+
+| Severity | Open Count |
+|----------|-----------|
+| Critical | 0 |
+| High | 0 |
+| Medium | 25 |
+| Low | 33 |
+| Unscored | 7 |
+
+The absence of critical and high open CVEs is meaningful. CVEs at those tiers — remote code execution without authentication, full credential exposure, exploitable without user interaction — have either been patched or marked won't-fix. The ecosystem's worst-known vulnerabilities are not sitting open.
+
+The 25 medium CVEs and 33 low CVEs are real issues, but they sit in the categories where blast radius is constrained: typically requiring local access, authenticated sessions, or specific dependency configurations to exploit.
+
+<Callout type="info">
+All 65 open CVEs are concentrated in **30 servers** out of 19,150. The remaining 19,120 servers have no open tracked CVEs.
+</Callout>
+
+---
+
+<SectionLabel>The Broader Risk Surface</SectionLabel>
+
+## Code Execution Is the Number That Matters More
+
+The formal CVE count looks clean. The behavioral risk picture is different.
+
+**182 active servers** carry the `has_code_execution` flag — their tool definitions include patterns that allow arbitrary code to run during an agent call. That's 0.95% of the catalog. Small as a percentage. Not small as an absolute number when you're thinking about what to wire into an AI assistant.
+
+Code execution isn't automatically malicious. A filesystem server that runs shell commands, a Python REPL connector, a Docker management tool — these need code execution to function. But an MCP server that executes arbitrary code inside an AI-driven tool call has a fundamentally different threat model than one that's read-only. The question isn't whether code execution is present; it's whether the scope is documented and the surface is intentional.
+
+<PullQuote>182 servers can execute code during an agent tool call. That surface deserves more scrutiny than a CVE database can provide.</PullQuote>
+
+The catalog also flags narrower but higher-intent risks:
+
+- **19 servers** carry tool-poisoning indicators — tool descriptions that appear to embed model-manipulation instructions, designed to influence what the AI does beyond the stated tool purpose
+- **15 servers** have injection-risk patterns in their schemas — inputs that could be shaped by adversarial content to redirect model behavior
+
+Both numbers are small as a share of 19,150. Neither is small as a list of things that could silently redirect what an AI does on your behalf without any CVE ever being filed.
+
+---
+
+<SectionLabel>The Growth Factor</SectionLabel>
+
+## 983 New Servers in Seven Days
+
+The catalog added **983 servers in the last seven days**. At that pace, the absolute count of code-execution and injection-risk servers will grow even if the flagging rate stays flat. Each week's arrivals include servers that haven't accumulated issue history, haven't been tested at scale, and often ship with no authentication by default.
+
+The 97.8% CVE fix rate reflects the state of servers that have been in the catalog long enough to be scanned, flagged, and patched. It says nothing about the servers arriving next week.
+
+---
+
+<SectionLabel>What This Means</SectionLabel>
+
+## Three Takeaways
+
+**The formal vulnerability picture is better than expected.** Zero critical, zero high, and a 97.8% fix rate are real signals. The MCP ecosystem is not ignoring CVE reports.
+
+**CVE status is necessary but not sufficient.** The 182 code-execution servers and 19 tool-poisoning servers mostly have no formal CVE. CVE databases weren't designed to flag "this tool description embeds model-manipulation text" or "this tool runs code that the model can't audit." Before installing any server flagged for code execution, the question should be: what specific capability requires it, and is that scope clearly documented in the README?
+
+**The open count will change.** At 983 new servers per week, new CVEs will surface in newly added dependency trees. The 65 open today will not be the count next week. The number is worth tracking, not just snapshotting once.
+
+---
+
+*All figures in this post come from live queries against the MCPpedia database run on 2026-04-18. Day-over-day trend data is not reported here — a snapshot-bot fix merged on 2026-04-17 makes prior snapshots unreliable for comparison. Individual server security evidence is available on each server's detail page.*
