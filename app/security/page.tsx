@@ -66,6 +66,7 @@ interface HomeStats {
   tool_poisoning_count: number
   injection_risk_count: number
   code_execution_count: number
+  scanned_servers: number
   last_security_scan: string | null
 }
 
@@ -93,7 +94,7 @@ export default async function SecurityPage() {
     cves_critical_open: 0, cves_high_open: 0, cves_medium_open: 0,
     cves_low_open: 0, cves_unscored_open: 0, servers_with_open_cves: 0,
     tool_poisoning_count: 0, injection_risk_count: 0, code_execution_count: 0,
-    last_security_scan: null,
+    scanned_servers: 0, last_security_scan: null,
   }
 
   const openCount = stats.open_cves
@@ -229,7 +230,11 @@ export default async function SecurityPage() {
             </div>
           </div>
         </div>
-        <p className="text-xs text-text-muted mt-3">Only covers servers where tool manifests were successfully fetched. Counts may be understated for servers without a live endpoint.</p>
+        <p className="text-xs text-text-muted mt-3">
+          Computed against the <strong className="text-text-primary tabular-nums">{stats.scanned_servers.toLocaleString()}</strong> servers
+          {totalServers ? <> ({((stats.scanned_servers / totalServers) * 100).toFixed(1)}% of the catalog)</> : null}
+          {' '}whose tool manifests were successfully fetched. Counts exclude servers without a live endpoint — the true surface is likely larger.
+        </p>
       </div>
 
       {/* Clean server highlight */}

@@ -1,7 +1,7 @@
 ---
 title: "The State of MCP Security: Zero Critical CVEs, 182 Code-Execution Servers"
-description: "A live scan of 18,855 MCP servers finds 65 open CVEs — none critical or high — but 182 active servers carrying code-execution risk in a catalog growing at 983/week."
-hook: "The MCP catalog has 18,855 servers and 65 open CVEs. None are critical. None are high severity. That's the reassuring part. The code-execution surface — 182 active servers — is the part worth watching."
+description: "65 open CVEs across 18,855 servers — none critical or high. But 11.7% of the 1,561 servers we could fully scan expose code-execution tool patterns. That's the part to watch."
+hook: "The MCP catalog has 18,855 servers and 65 open CVEs. None are critical. None are high severity. That's the reassuring part. The behavioral-risk scan only reaches 1,561 servers — and 11.7% of those expose code-execution surface."
 date: "2026-04-18"
 tags: ["security", "cve", "tool-poisoning", "code-execution"]
 category: "security-alert"
@@ -20,7 +20,7 @@ More importantly: **zero open CVEs are rated critical. Zero are rated high.** Ev
   <Stat value="65" label="Open CVEs" detail="Across 30 servers" />
   <Stat value="0" label="Critical or High Open" detail="No top-tier severity unresolved" />
   <Stat value="97.8%" label="CVE Fix Rate" detail="2,857 of 2,922 total resolved" />
-  <Stat value="182" label="Code-Execution Servers" detail="Active, unarchived" />
+  <Stat value="11.7%" label="Code-Execution Rate" detail="182 of 1,561 scanned servers" />
 </StatGrid>
 
 The fix rate tells the bigger story. Of **2,922 total CVEs** tracked across the ecosystem, **2,857 have been resolved**. That's not a community ignoring security reports. That's a community that, when CVEs get filed, mostly fixes them.
@@ -53,22 +53,34 @@ All 65 open CVEs are concentrated in **30 servers** out of 18,855. The remaining
 
 <SectionLabel>The Broader Risk Surface</SectionLabel>
 
-## Code Execution Is the Number That Matters More
+## The Denominator That Changes the Story
 
-The formal CVE count looks clean. The behavioral risk picture is different.
+The formal CVE count looks clean. The behavioral-risk picture is different — and the denominator matters.
 
-**182 active servers** carry the `has_code_execution` flag — their tool definitions include patterns that allow arbitrary code to run during an agent call. That's 0.97% of the catalog. Small as a percentage. Not small as an absolute number when you're thinking about what to wire into an AI assistant.
+MCPpedia's AI-specific checks (tool poisoning, injection risk, code execution) can only run on servers whose tool manifest has been successfully fetched. Of 18,855 active servers, **1,561 (8.3%) have extractable tool definitions today**. The remaining 17,294 can't be scanned for behavioral flags because there's no manifest to analyze — most are packages that haven't been probed for a live endpoint, or schemas the bot couldn't parse.
+
+So when you read "182 servers carry code-execution patterns," the honest framing is **182 out of the 1,561 we could actually look at — 11.7%**. Not 0.97% of the catalog.
+
+<Callout type="info">
+Every prevalence rate in this section uses <strong>1,561 scannable servers</strong> as the denominator, not 18,855. Treating the full catalog as the base understates risk by roughly an order of magnitude. The true surface is probably larger — the 17,294 unscanned servers would contribute more flagged entries if they had manifests we could analyze.
+</Callout>
+
+### Code Execution — 11.7% of Scanned Servers
+
+**182 of 1,561 scannable servers** carry the `has_code_execution` flag. Their tool definitions include patterns that allow arbitrary code to run during an agent call — shell commands, `eval`, subprocess spawning.
 
 Code execution isn't automatically malicious. A filesystem server that runs shell commands, a Python REPL connector, a Docker management tool — these need code execution to function. But an MCP server that executes arbitrary code inside an AI-driven tool call has a fundamentally different threat model than one that's read-only. The question isn't whether code execution is present; it's whether the scope is documented and the surface is intentional.
 
-<PullQuote>182 servers can execute code during an agent tool call. That surface deserves more scrutiny than a CVE database can provide.</PullQuote>
+<PullQuote>11.7% of scannable MCP servers can execute code during an agent tool call. The catalog average isn't 1%. It's double digits, in the population where we can actually measure.</PullQuote>
 
-The catalog also flags narrower but higher-intent risks:
+### Tool Poisoning and Injection Risk
 
-- **19 servers** carry tool-poisoning indicators — tool descriptions that appear to embed model-manipulation instructions, designed to influence what the AI does beyond the stated tool purpose
-- **15 servers** have injection-risk patterns in their schemas — inputs that could be shaped by adversarial content to redirect model behavior
+Two narrower, higher-intent categories:
 
-Both numbers are small as a share of 18,855. Neither is small as a list of things that could silently redirect what an AI does on your behalf without any CVE ever being filed.
+- **19 of 1,561 (1.2%)** carry tool-poisoning indicators — tool descriptions that appear to embed model-manipulation instructions, designed to influence what the AI does beyond the stated tool purpose
+- **15 of 1,561 (1.0%)** have injection-risk patterns in their schemas — inputs that could be shaped by adversarial content to redirect model behavior
+
+Lower prevalence than code execution, but less ambiguous — these patterns are rarely accidental. A server whose tool description tries to manipulate the model is different in kind from a server that legitimately needs to spawn a subprocess.
 
 ---
 
@@ -88,10 +100,10 @@ The 97.8% CVE fix rate reflects the state of servers that have been in the catal
 
 **The formal vulnerability picture is better than expected.** Zero critical, zero high, and a 97.8% fix rate are real signals. The MCP ecosystem is not ignoring CVE reports.
 
-**CVE status is necessary but not sufficient.** The 182 code-execution servers and 19 tool-poisoning servers mostly have no formal CVE. CVE databases weren't designed to flag "this tool description embeds model-manipulation text" or "this tool runs code that the model can't audit." Before installing any server flagged for code execution, the question should be: what specific capability requires it, and is that scope clearly documented in the README?
+**Behavioral risk is what you should actually worry about.** In the 8.3% of the catalog we can fully scan, 11.7% expose code execution and 2.2% carry tool-poisoning or injection-risk patterns. These are mostly invisible to CVE databases — which weren't designed to flag "this tool description embeds model-manipulation text" or "this tool runs code the model can't audit." Before installing any server flagged for code execution, ask: what specific capability requires it, and is that scope clearly documented?
 
-**The open count will change.** At 983 new servers per week, new CVEs will surface in newly added dependency trees. The 65 open today will not be the count next week. The number is worth tracking, not just snapshotting once.
+**The denominator will keep changing.** Right now we can scan 1,561 servers. As the discovery bot fetches more live manifests, that number grows — and so will the absolute flag counts, even if prevalence rates stay flat. At 983 new servers per week, the code-execution and injection-risk tallies next month will be substantially larger than today's.
 
 ---
 
-*All figures in this post come from live queries against the MCPpedia database run on 2026-04-18. Day-over-day trend data is not reported here — a snapshot-bot fix merged on 2026-04-17 makes prior snapshots unreliable for comparison. Individual server security evidence is available on each server's detail page.*
+*All figures in this post come from live queries against the MCPpedia database run on 2026-04-18. Behavioral-flag prevalence rates use the 1,561-server scannable population (servers with extractable tool manifests) as the denominator, not the full 18,855-server catalog. Day-over-day trend data is not reported here — a snapshot-bot fix merged on 2026-04-17 makes prior snapshots unreliable for comparison. Individual server security evidence is available on each server's detail page.*
