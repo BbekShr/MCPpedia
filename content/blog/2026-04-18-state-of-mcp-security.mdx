@@ -1,7 +1,7 @@
 ---
 title: "The State of MCP Security: Zero Critical CVEs, 182 Code-Execution Servers"
-description: "A live scan of 19,150 MCP servers finds 65 open CVEs — none critical or high — but 182 active servers carrying code-execution risk in a catalog growing at 983/week."
-hook: "The MCP catalog has 19,150 servers and 65 open CVEs. None are critical. None are high severity. That's the reassuring part. The code-execution surface — 182 active servers — is the part worth watching."
+description: "A live scan of 18,855 MCP servers finds 65 open CVEs — none critical or high — but 182 active servers carrying code-execution risk in a catalog growing at 983/week."
+hook: "The MCP catalog has 18,855 servers and 65 open CVEs. None are critical. None are high severity. That's the reassuring part. The code-execution surface — 182 active servers — is the part worth watching."
 date: "2026-04-18"
 tags: ["security", "cve", "tool-poisoning", "code-execution"]
 category: "security-alert"
@@ -12,7 +12,7 @@ featuredServers: []
 
 ## The CVE Picture Is Cleaner Than You'd Expect
 
-The MCPpedia catalog has **19,150 MCP servers** as of today. Against that backdrop, there are **65 open CVEs** distributed across **30 distinct servers** — 0.16% of the catalog carrying open tracked vulnerabilities.
+The MCPpedia catalog has **18,855 MCP servers** as of today. Against that backdrop, there are **65 open CVEs** distributed across **30 distinct servers** — 0.16% of the catalog carrying open tracked vulnerabilities.
 
 More importantly: **zero open CVEs are rated critical. Zero are rated high.** Every unresolved vulnerability in the catalog today sits at medium, low, or unscored.
 
@@ -46,7 +46,7 @@ The absence of critical and high open CVEs is meaningful. CVEs at those tiers �
 The 25 medium CVEs and 33 low CVEs are real issues, but they sit in the categories where blast radius is constrained: typically requiring local access, authenticated sessions, or specific dependency configurations to exploit.
 
 <Callout type="info">
-All 65 open CVEs are concentrated in **30 servers** out of 19,150. The remaining 19,120 servers have no open tracked CVEs.
+All 65 open CVEs are concentrated in **30 servers** out of 18,855. The remaining 18,825 servers have no open tracked CVEs.
 </Callout>
 
 ---
@@ -57,7 +57,7 @@ All 65 open CVEs are concentrated in **30 servers** out of 19,150. The remaining
 
 The formal CVE count looks clean. The behavioral risk picture is different.
 
-**182 active servers** carry the `has_code_execution` flag — their tool definitions include patterns that allow arbitrary code to run during an agent call. That's 0.95% of the catalog. Small as a percentage. Not small as an absolute number when you're thinking about what to wire into an AI assistant.
+**182 active servers** carry the `has_code_execution` flag — their tool definitions include patterns that allow arbitrary code to run during an agent call. That's 0.97% of the catalog. Small as a percentage. Not small as an absolute number when you're thinking about what to wire into an AI assistant.
 
 Code execution isn't automatically malicious. A filesystem server that runs shell commands, a Python REPL connector, a Docker management tool — these need code execution to function. But an MCP server that executes arbitrary code inside an AI-driven tool call has a fundamentally different threat model than one that's read-only. The question isn't whether code execution is present; it's whether the scope is documented and the surface is intentional.
 
@@ -68,7 +68,7 @@ The catalog also flags narrower but higher-intent risks:
 - **19 servers** carry tool-poisoning indicators — tool descriptions that appear to embed model-manipulation instructions, designed to influence what the AI does beyond the stated tool purpose
 - **15 servers** have injection-risk patterns in their schemas — inputs that could be shaped by adversarial content to redirect model behavior
 
-Both numbers are small as a share of 19,150. Neither is small as a list of things that could silently redirect what an AI does on your behalf without any CVE ever being filed.
+Both numbers are small as a share of 18,855. Neither is small as a list of things that could silently redirect what an AI does on your behalf without any CVE ever being filed.
 
 ---
 
