@@ -63,7 +63,10 @@ export async function GET(request: Request) {
   if (accept.includes('text/html') && !accept.includes('text/event-stream')) {
     return new Response(LANDING_HTML, {
       status: 200,
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800',
+      },
     })
   }
   return handle(request)

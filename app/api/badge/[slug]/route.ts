@@ -87,7 +87,10 @@ export async function GET(
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     const svg = type === 'security' ? generateSecuritySVG(0, 0) : generateScoreSVG(slug, 0)
     return new NextResponse(svg, {
-      headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'no-cache' },
+      headers: {
+        'Content-Type': 'image/svg+xml',
+        'Cache-Control': 'public, max-age=300, s-maxage=300',
+      },
     })
   }
 
@@ -99,7 +102,12 @@ export async function GET(
     .single()
 
   if (!server) {
-    return new NextResponse('Not found', { status: 404 })
+    return new NextResponse('Not found', {
+      status: 404,
+      headers: {
+        'Cache-Control': 'public, max-age=300, s-maxage=3600',
+      },
+    })
   }
 
   const svg = type === 'security'
@@ -109,7 +117,7 @@ export async function GET(
   return new NextResponse(svg, {
     headers: {
       'Content-Type': 'image/svg+xml',
-      'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+      'Cache-Control': 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400',
     },
   })
 }

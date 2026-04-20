@@ -45,7 +45,10 @@ export async function GET(
       <text x="5" y="14" font-family="sans-serif" font-size="11" fill="#656d76">Server not found</text>
     </svg>`
     return new NextResponse(svg, {
-      headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=300' },
+      headers: {
+        'Content-Type': 'image/svg+xml',
+        'Cache-Control': 'public, max-age=300, s-maxage=3600',
+      },
     })
   }
 
@@ -116,7 +119,7 @@ export async function GET(
   return new NextResponse(svg, {
     headers: {
       'Content-Type': 'image/svg+xml',
-      'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+      'Cache-Control': 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400',
       'Access-Control-Allow-Origin': '*',
     },
   })
