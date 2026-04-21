@@ -12,6 +12,7 @@ export default function Nav() {
   const pathname = usePathname()
   const [user, setUser] = useState<User | null>(null)
   const [username, setUsername] = useState<string | null>(null)
+  const [karma, setKarma] = useState<number | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const supabase = createClient()
@@ -20,17 +21,22 @@ export default function Nav() {
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user)
       if (data.user) {
-        supabase.from('profiles').select('role, username').eq('id', data.user.id).single().then(({ data: p }) => {
+        supabase.from('profiles').select('role, username, karma').eq('id', data.user.id).single().then(({ data: p }) => {
           setIsAdmin(p?.role === 'admin' || p?.role === 'maintainer')
           setUsername(p?.username ?? null)
+          setKarma(typeof p?.karma === 'number' ? p.karma : null)
         })
       } else {
         setUsername(null)
+        setKarma(null)
       }
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
-      if (!session?.user) setUsername(null)
+      if (!session?.user) {
+        setUsername(null)
+        setKarma(null)
+      }
     })
     return () => subscription.unsubscribe()
   }, [supabase])
@@ -39,6 +45,7 @@ export default function Nav() {
     await supabase.auth.signOut()
     setUser(null)
     setUsername(null)
+    setKarma(null)
   }
 
   const navLinks = [
@@ -115,9 +122,14 @@ export default function Nav() {
               </Link>
               <Link
                 href={username ? `/profile/${username}` : '/login'}
-                className="text-sm text-text-muted hover:text-text-primary"
+                className="text-sm text-text-muted hover:text-text-primary inline-flex items-center gap-1.5"
               >
                 {username || 'Profile'}
+                {typeof karma === 'number' && (
+                  <span className="text-xs px-1.5 py-0.5 rounded-full bg-accent/10 text-accent font-semibold tabular-nums" title={`${karma} karma`}>
+                    {karma}
+                  </span>
+                )}
               </Link>
               <button
                 onClick={handleSignOut}

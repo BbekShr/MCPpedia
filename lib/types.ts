@@ -168,6 +168,7 @@ export interface Profile {
   servers_submitted: number
   edits_approved: number
   discussions_count: number
+  karma: number
   role: 'contributor' | 'editor' | 'maintainer' | 'admin'
   created_at: string
 }

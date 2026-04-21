@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation'
 import { createPublicClient } from '@/lib/supabase/public'
-import type { Profile, Edit, Discussion } from '@/lib/types'
+import type { Profile } from '@/lib/types'
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { getKarmaProgress } from '@/lib/karma'
 
 export const revalidate = 3600
 
@@ -19,6 +20,26 @@ export async function generateMetadata({
   }
 }
 
+interface KarmaEventRow {
+  id: number
+  action: string
+  points: number
+  created_at: string
+  server: { name: string; slug: string } | null
+}
+
+const ACTION_COPY: Record<string, { verb: string; icon: string; color: string }> = {
+  submit_server:          { verb: 'Submitted',            icon: '🚀', color: 'text-accent' },
+  edit_proposed:          { verb: 'Proposed an edit to',  icon: '✎',  color: 'text-text-muted' },
+  edit_approved:          { verb: 'Edit approved on',     icon: '✓',  color: 'text-green' },
+  edit_rejected_refund:   { verb: 'Edit rejected on',     icon: '✗',  color: 'text-red' },
+  edit_unapproved_refund: { verb: 'Edit reverted on',     icon: '↺',  color: 'text-red' },
+  submit_server_refund:   { verb: 'Server removed:',      icon: '—',  color: 'text-red' },
+  discussion_post:        { verb: 'Posted in',            icon: '💬', color: 'text-text-primary' },
+  verification:           { verb: 'Verified',             icon: '👍', color: 'text-green' },
+  verification_refund:    { verb: 'Un-verified',          icon: '↺',  color: 'text-text-muted' },
+}
+
 export default async function ProfilePage({
   params,
 }: {
@@ -29,39 +50,27 @@ export default async function ProfilePage({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, username, display_name, avatar_url, github_username, bio, servers_submitted, edits_approved, discussions_count, role, created_at')
+    .select('id, username, display_name, avatar_url, github_username, bio, servers_submitted, edits_approved, discussions_count, role, karma, created_at')
     .eq('username', username)
     .single()
 
   if (!profile) notFound()
 
-  const p = profile as Profile
+  const p = profile as Profile & { karma?: number | null }
+  const karma = p.karma ?? 0
+  const progress = getKarmaProgress(karma)
 
-  // Fetch recent activity
-  const [
-    { data: recentEdits },
-    { data: recentDiscussions },
-    { data: recentVerifications, count: verificationCount },
-  ] = await Promise.all([
+  const [{ data: events }, { count: verificationCount }] = await Promise.all([
     supabase
-      .from('edits')
-      .select('*, server:servers(name, slug)')
+      .from('karma_events')
+      .select('id, action, points, created_at, server:servers(name, slug)')
       .eq('user_id', p.id)
       .order('created_at', { ascending: false })
-      .limit(10),
-    supabase
-      .from('discussions')
-      .select('*, server:servers(name, slug)')
-      .eq('user_id', p.id)
-      .is('parent_id', null)
-      .order('created_at', { ascending: false })
-      .limit(10),
+      .limit(30),
     supabase
       .from('community_verifications')
-      .select('created_at, server:servers(name, slug)', { count: 'exact' })
-      .eq('user_id', p.id)
-      .order('created_at', { ascending: false })
-      .limit(10),
+      .select('user_id', { count: 'exact', head: true })
+      .eq('user_id', p.id),
   ])
 
   const roleColors: Record<string, string> = {
@@ -73,127 +82,142 @@ export default async function ProfilePage({
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      {/* Profile header */}
-      <div className="flex items-start gap-4 mb-8">
-        {p.avatar_url && (
-          <img
-            src={p.avatar_url}
-            alt={p.username}
-            className="w-16 h-16 rounded-full"
-          />
-        )}
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold text-text-primary">@{p.username}</h1>
-            <span className={`text-xs px-2 py-0.5 rounded font-medium ${roleColors[p.role] || ''}`}>
-              {p.role}
-            </span>
-          </div>
-          {p.display_name && (
-            <p className="text-text-muted">{p.display_name}</p>
+      {/* Header card */}
+      <div className="border border-border rounded-xl p-6 bg-bg-secondary/30 mb-6">
+        <div className="flex items-start gap-4">
+          {p.avatar_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={p.avatar_url}
+              alt={p.username}
+              className="w-20 h-20 rounded-full ring-2 ring-border"
+            />
           )}
-          {p.bio && <p className="text-sm text-text-muted mt-1">{p.bio}</p>}
-          <p className="text-xs text-text-muted mt-2">
-            Joined {new Date(p.created_at).toLocaleDateString()}
-          </p>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl font-semibold text-text-primary">@{p.username}</h1>
+              <span className={`text-xs px-2 py-0.5 rounded font-medium ${roleColors[p.role] || ''}`}>
+                {p.role}
+              </span>
+              <span className={`text-xs px-2 py-0.5 rounded font-medium ${progress.tier.badgeClass}`}>
+                {progress.tier.name}
+              </span>
+            </div>
+            {p.display_name && <p className="text-text-muted mt-0.5">{p.display_name}</p>}
+            {p.bio && <p className="text-sm text-text-muted mt-1.5">{p.bio}</p>}
+            <p className="text-xs text-text-muted mt-2">
+              Joined {new Date(p.created_at).toLocaleDateString()}
+            </p>
+          </div>
+        </div>
+
+        {/* Karma hero */}
+        <div className="mt-6 pt-6 border-t border-border">
+          <div className="flex items-baseline justify-between">
+            <div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-bold text-text-primary tabular-nums">{karma}</span>
+                <span className="text-sm text-text-muted">karma</span>
+              </div>
+              <p className="text-xs text-text-muted mt-1">{progress.tier.blurb}</p>
+            </div>
+            {progress.next && (
+              <div className="text-right">
+                <p className="text-xs text-text-muted">
+                  {progress.toNext} to <span className="font-medium text-text-primary">{progress.next.name}</span>
+                </p>
+              </div>
+            )}
+          </div>
+          {progress.next && (
+            <div className="mt-3 h-2 w-full bg-border rounded-full overflow-hidden">
+              <div
+                className={`h-full ${progress.tier.barClass} transition-all duration-500`}
+                style={{ width: `${Math.max(4, progress.pct * 100)}%` }}
+              />
+            </div>
+          )}
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-        <div className="border border-border rounded-md p-4 text-center">
-          <div className="text-2xl font-semibold text-text-primary">{p.servers_submitted}</div>
-          <div className="text-xs text-text-muted">Servers submitted</div>
-        </div>
-        <div className="border border-border rounded-md p-4 text-center">
-          <div className="text-2xl font-semibold text-text-primary">{p.edits_approved}</div>
-          <div className="text-xs text-text-muted">Edits approved</div>
-        </div>
-        <div className="border border-border rounded-md p-4 text-center">
-          <div className="text-2xl font-semibold text-text-primary">{p.discussions_count}</div>
-          <div className="text-xs text-text-muted">Discussions</div>
-        </div>
-        <div className="border border-border rounded-md p-4 text-center">
-          <div className="text-2xl font-semibold text-text-primary">{verificationCount ?? 0}</div>
-          <div className="text-xs text-text-muted">Servers verified</div>
-        </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+        <StatCard value={p.servers_submitted} label="Servers submitted" />
+        <StatCard value={p.edits_approved} label="Edits approved" />
+        <StatCard value={p.discussions_count} label="Discussions" />
+        <StatCard value={verificationCount ?? 0} label="Servers verified" />
       </div>
 
-      {/* Recent activity */}
-      <h2 className="text-lg font-semibold text-text-primary mb-4">Recent Activity</h2>
+      {/* How karma works */}
+      <details className="mb-6 text-sm">
+        <summary className="cursor-pointer text-text-muted hover:text-text-primary inline-block">
+          How karma works
+        </summary>
+        <div className="mt-3 grid sm:grid-cols-2 gap-2 text-xs text-text-muted">
+          <div>Submit a community server: <span className="text-text-primary font-medium">+15</span></div>
+          <div>Get an edit approved: <span className="text-text-primary font-medium">+5</span></div>
+          <div>Propose an edit: <span className="text-text-primary font-medium">+1</span></div>
+          <div>Post in a discussion: <span className="text-text-primary font-medium">+2</span></div>
+          <div>Verify a server works for you: <span className="text-text-primary font-medium">+1</span></div>
+        </div>
+      </details>
 
-      <ActivityFeed
-        edits={(recentEdits as (Edit & { server: { name: string; slug: string } })[]) ?? []}
-        discussions={(recentDiscussions as (Discussion & { server: { name: string; slug: string } })[]) ?? []}
-        verifications={(recentVerifications as { created_at: string; server: { name: string; slug: string } | null }[]) ?? []}
-      />
+      {/* Recent activity */}
+      <h2 className="text-lg font-semibold text-text-primary mb-3">Recent Activity</h2>
+      <ActivityFeed events={(events as KarmaEventRow[] | null) ?? []} />
     </div>
   )
 }
 
-type FeedServer = { name: string; slug: string } | null
+function StatCard({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="border border-border rounded-lg p-4 text-center bg-bg">
+      <div className="text-2xl font-semibold text-text-primary tabular-nums">{value}</div>
+      <div className="text-xs text-text-muted mt-0.5">{label}</div>
+    </div>
+  )
+}
 
-function ActivityFeed({
-  edits,
-  discussions,
-  verifications,
-}: {
-  edits: (Edit & { server: FeedServer })[]
-  discussions: (Discussion & { server: FeedServer })[]
-  verifications: { created_at: string; server: FeedServer }[]
-}) {
-  type Item =
-    | { kind: 'edit'; at: string; key: string; server: FeedServer; field: string }
-    | { kind: 'discussion'; at: string; key: string; server: FeedServer }
-    | { kind: 'verification'; at: string; key: string; server: FeedServer }
-
-  const items: Item[] = [
-    ...edits.map<Item>(e => ({ kind: 'edit', at: e.created_at, key: `e:${e.id}`, server: e.server, field: e.field_name })),
-    ...discussions.map<Item>(d => ({ kind: 'discussion', at: d.created_at, key: `d:${d.id}`, server: d.server })),
-    ...verifications.map<Item>(v => ({ kind: 'verification', at: v.created_at, key: `v:${v.server?.slug ?? ''}:${v.created_at}`, server: v.server })),
-  ].sort((a, b) => (a.at < b.at ? 1 : -1))
-
-  if (items.length === 0) {
-    return <p className="text-sm text-text-muted">No activity yet.</p>
+function ActivityFeed({ events }: { events: KarmaEventRow[] }) {
+  if (events.length === 0) {
+    return <p className="text-sm text-text-muted">No activity yet. Submit a server, propose an edit, or verify something you&apos;ve used to start earning karma.</p>
   }
 
   return (
-    <div className="space-y-3">
-      {items.map(item => (
-        <div key={item.key} className="flex items-start gap-3 text-sm">
-          <span className="text-text-muted shrink-0 w-16">
-            {new Date(item.at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-          </span>
-          <span className="text-text-primary">
-            {item.kind === 'edit' && (
-              <>
-                Proposed edit to{' '}
-                <Link href={`/s/${item.server?.slug}`} className="text-accent hover:text-accent-hover">
-                  {item.server?.name}
-                </Link>
-                {' '}({item.field})
-              </>
-            )}
-            {item.kind === 'discussion' && (
-              <>
-                Posted in{' '}
-                <Link href={`/s/${item.server?.slug}`} className="text-accent hover:text-accent-hover">
-                  {item.server?.name}
-                </Link>
-              </>
-            )}
-            {item.kind === 'verification' && (
-              <>
-                Verified{' '}
-                <Link href={`/s/${item.server?.slug}`} className="text-accent hover:text-accent-hover">
-                  {item.server?.name}
-                </Link>
-                {' '}works for them
-              </>
-            )}
-          </span>
-        </div>
-      ))}
-    </div>
+    <ol className="space-y-2">
+      {events.map(ev => {
+        const copy = ACTION_COPY[ev.action] ?? { verb: ev.action, icon: '•', color: 'text-text-muted' }
+        const isGain = ev.points > 0
+        return (
+          <li
+            key={ev.id}
+            className="flex items-center gap-3 text-sm border border-border rounded-md px-3 py-2 bg-bg hover:bg-bg-secondary/50 transition-colors"
+          >
+            <span className={`shrink-0 text-base ${copy.color}`} aria-hidden="true">{copy.icon}</span>
+            <span className="flex-1 min-w-0 truncate text-text-primary">
+              {copy.verb}
+              {ev.server && (
+                <>
+                  {' '}
+                  <Link href={`/s/${ev.server.slug}`} className="text-accent hover:text-accent-hover">
+                    {ev.server.name}
+                  </Link>
+                </>
+              )}
+            </span>
+            <span className="text-xs text-text-muted shrink-0 hidden sm:inline">
+              {new Date(ev.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            </span>
+            <span
+              className={`shrink-0 text-xs font-semibold tabular-nums px-1.5 py-0.5 rounded ${
+                isGain ? 'bg-green/10 text-green' : 'bg-red/10 text-red'
+              }`}
+            >
+              {isGain ? '+' : ''}{ev.points}
+            </span>
+          </li>
+        )
+      })}
+    </ol>
   )
 }
