@@ -51,7 +51,6 @@ social-posts-and-outreach.md
 
 # playwright-mcp session artifacts (console logs, page snapshots, screenshots)
 .playwright-mcp/
-# ad-hoc visual polish screenshots at the repo root
-/polish-*.png
-/after-*.png
-/*-blink.png
+# ad-hoc design/polish screenshots dumped at the repo root + comparison renders
+/*.png
+/comparison/
