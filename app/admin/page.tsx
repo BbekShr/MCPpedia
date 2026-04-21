@@ -101,6 +101,7 @@ export default function AdminPage() {
   const [bots, setBots] = useState<BotInfo[]>([])
   const [triggering, setTriggering] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [pendingEdits, setPendingEdits] = useState(0)
 
   // Categorize state
   const [catRunning, setCatRunning] = useState(false)
@@ -164,6 +165,20 @@ export default function AdminPage() {
     })
   }, [supabase])
 
+  const refreshPendingEdits = useCallback(async () => {
+    const { count } = await supabase
+      .from('edits')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'pending')
+    setPendingEdits(count || 0)
+  }, [supabase])
+
+  useEffect(() => {
+    if (role === 'admin' || role === 'maintainer' || role === 'editor') {
+      refreshPendingEdits()
+    }
+  }, [role, refreshPendingEdits])
+
   // Fetch non-server tabs immediately
   useEffect(() => {
     if (!(role === 'admin' || role === 'maintainer')) return
@@ -220,6 +235,7 @@ export default function AdminPage() {
     })
     if (!res.ok) return
     setEdits(prev => prev.map(e => e.id === editId ? { ...e, status: 'approved' } : e))
+    refreshPendingEdits()
   }
 
   async function runCategorize() {
@@ -289,6 +305,7 @@ export default function AdminPage() {
     })
     if (!res.ok) return
     setEdits(prev => prev.map(e => e.id === editId ? { ...e, status: 'rejected' } : e))
+    refreshPendingEdits()
   }
 
   if (!user) {
@@ -328,11 +345,16 @@ export default function AdminPage() {
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm capitalize border-b-2 -mb-px transition-colors ${
+            className={`px-4 py-2 text-sm capitalize border-b-2 -mb-px transition-colors inline-flex items-center gap-1.5 ${
               tab === t ? 'border-accent text-accent font-medium' : 'border-transparent text-text-muted hover:text-text-primary'
             }`}
           >
             {t}
+            {t === 'edits' && pendingEdits > 0 && (
+              <span className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-yellow/15 text-yellow">
+                {pendingEdits}
+              </span>
+            )}
           </button>
         ))}
       </div>
