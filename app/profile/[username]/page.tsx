@@ -50,13 +50,13 @@ export default async function ProfilePage({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, username, display_name, avatar_url, github_username, bio, servers_submitted, edits_approved, discussions_count, role, karma, created_at')
+    .select('id, username, display_name, avatar_url, github_username, bio, servers_submitted, edits_approved, discussions_count, karma, created_at')
     .eq('username', username)
     .single()
 
   if (!profile) notFound()
 
-  const p = profile as Profile & { karma?: number | null }
+  const p = profile as Omit<Profile, 'role'> & { karma?: number | null }
   const karma = p.karma ?? 0
   const progress = getKarmaProgress(karma)
 
@@ -72,13 +72,6 @@ export default async function ProfilePage({
       .select('user_id', { count: 'exact', head: true })
       .eq('user_id', p.id),
   ])
-
-  const roleColors: Record<string, string> = {
-    admin: 'bg-red/10 text-red',
-    maintainer: 'bg-accent/10 text-accent',
-    editor: 'bg-green/10 text-green',
-    contributor: 'bg-bg-tertiary text-text-muted',
-  }
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
@@ -96,9 +89,6 @@ export default async function ProfilePage({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-2xl font-semibold text-text-primary">@{p.username}</h1>
-              <span className={`text-xs px-2 py-0.5 rounded font-medium ${roleColors[p.role] || ''}`}>
-                {p.role}
-              </span>
               <span className={`text-xs px-2 py-0.5 rounded font-medium ${progress.tier.badgeClass}`}>
                 {progress.tier.name}
               </span>
