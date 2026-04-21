@@ -79,7 +79,7 @@ export default async function SecurityPage() {
   // this RPC rather than compute its own.
   const [
     { data: advisories },
-    { data: statsRaw },
+    { data: statsRaw, error: statsError },
   ] = await Promise.all([
     supabase
       .from('security_advisories')
@@ -88,6 +88,10 @@ export default async function SecurityPage() {
       .limit(100),
     supabase.rpc('home_stats'),
   ])
+
+  if (!statsRaw) {
+    console.error('[security] home_stats returned no data; rendering zero-fallback', { error: statsError })
+  }
 
   const stats = (statsRaw as HomeStats | null) ?? {
     total_servers: 0, with_cves: 0, open_cves: 0, fixed_cves: 0,
