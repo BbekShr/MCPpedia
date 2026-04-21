@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { USERNAME_MIN_LENGTH, USERNAME_MAX_LENGTH, validateUsername } from '@/lib/username'
 
@@ -25,6 +26,8 @@ function WelcomeForm() {
   const [availability, setAvailability] = useState<AvailabilityState>({ status: 'idle' })
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
+  const [step, setStep] = useState<1 | 2>(1)
+  const [finalUsername, setFinalUsername] = useState('')
   const checkSeq = useRef(0)
 
   useEffect(() => {
@@ -107,7 +110,9 @@ function WelcomeForm() {
         setSubmitting(false)
         return
       }
-      router.replace(safeNext)
+      setFinalUsername(json.username || availability.normalized)
+      setStep(2)
+      setSubmitting(false)
     } catch {
       setSubmitError('Network error. Please try again.')
       setSubmitting(false)
@@ -123,6 +128,86 @@ function WelcomeForm() {
   }
 
   const canSubmit = availability.status === 'available' && !submitting
+
+  if (step === 2) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-16">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-green/10 text-green text-2xl mb-4" aria-hidden="true">
+            🎉
+          </div>
+          <h1 className="text-2xl font-semibold text-text-primary mb-2">
+            You&apos;re in, @{finalUsername}
+          </h1>
+          <p className="text-sm text-text-muted">
+            Welcome to MCPpedia. Here&apos;s how contributions work.
+          </p>
+        </div>
+
+        {/* Karma ladder */}
+        <div className="border border-border rounded-lg p-4 mb-6 bg-bg-secondary/30">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-medium text-text-primary">Your karma</span>
+            <span className="text-sm font-semibold tabular-nums text-text-primary">0</span>
+          </div>
+          <div className="h-1.5 w-full bg-border rounded-full overflow-hidden mb-3">
+            <div className="h-full w-[4%] bg-accent rounded-full" />
+          </div>
+          <p className="text-xs text-text-muted">
+            Earn points by contributing. Climb from <span className="font-medium text-text-primary">Newcomer</span> → <span className="font-medium text-text-primary">Contributor</span> → <span className="font-medium text-text-primary">Regular</span> → <span className="font-medium text-text-primary">Core</span> → <span className="font-medium text-text-primary">Maintainer</span>.
+          </p>
+        </div>
+
+        {/* Action cards */}
+        <p className="text-sm text-text-muted mb-3">Good first steps:</p>
+        <div className="grid sm:grid-cols-3 gap-3 mb-8">
+          <Link
+            href="/submit"
+            className="border border-border rounded-lg p-4 hover:border-accent hover:bg-accent/5 transition-colors group"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xl" aria-hidden="true">🚀</span>
+              <span className="text-xs font-semibold px-1.5 py-0.5 rounded bg-accent/10 text-accent tabular-nums">+15</span>
+            </div>
+            <h3 className="text-sm font-medium text-text-primary mb-0.5">Submit a server</h3>
+            <p className="text-xs text-text-muted">Add an MCP server you know about.</p>
+          </Link>
+          <Link
+            href="/servers"
+            className="border border-border rounded-lg p-4 hover:border-accent hover:bg-accent/5 transition-colors group"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xl" aria-hidden="true">👍</span>
+              <span className="text-xs font-semibold px-1.5 py-0.5 rounded bg-accent/10 text-accent tabular-nums">+1 each</span>
+            </div>
+            <h3 className="text-sm font-medium text-text-primary mb-0.5">Verify servers</h3>
+            <p className="text-xs text-text-muted">Mark servers you&apos;ve actually used.</p>
+          </Link>
+          <Link
+            href="/get-started"
+            className="border border-border rounded-lg p-4 hover:border-accent hover:bg-accent/5 transition-colors group"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xl" aria-hidden="true">📖</span>
+              <span className="text-xs text-text-muted">Learn</span>
+            </div>
+            <h3 className="text-sm font-medium text-text-primary mb-0.5">Get started</h3>
+            <p className="text-xs text-text-muted">New to MCP? Start here.</p>
+          </Link>
+        </div>
+
+        <div className="flex items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => router.replace(safeNext)}
+            className="px-5 py-2 rounded-md bg-accent text-accent-fg font-medium hover:bg-accent-hover transition-colors"
+          >
+            Take me to MCPpedia
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-md mx-auto px-4 py-16">
