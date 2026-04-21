@@ -38,7 +38,11 @@ export default async function ProfilePage({
   const p = profile as Profile
 
   // Fetch recent activity
-  const [{ data: recentEdits }, { data: recentDiscussions }] = await Promise.all([
+  const [
+    { data: recentEdits },
+    { data: recentDiscussions },
+    { data: recentVerifications, count: verificationCount },
+  ] = await Promise.all([
     supabase
       .from('edits')
       .select('*, server:servers(name, slug)')
@@ -50,6 +54,12 @@ export default async function ProfilePage({
       .select('*, server:servers(name, slug)')
       .eq('user_id', p.id)
       .is('parent_id', null)
+      .order('created_at', { ascending: false })
+      .limit(10),
+    supabase
+      .from('community_verifications')
+      .select('created_at, server:servers(name, slug)', { count: 'exact' })
+      .eq('user_id', p.id)
       .order('created_at', { ascending: false })
       .limit(10),
   ])
@@ -90,7 +100,7 @@ export default async function ProfilePage({
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         <div className="border border-border rounded-md p-4 text-center">
           <div className="text-2xl font-semibold text-text-primary">{p.servers_submitted}</div>
           <div className="text-xs text-text-muted">Servers submitted</div>
@@ -103,43 +113,87 @@ export default async function ProfilePage({
           <div className="text-2xl font-semibold text-text-primary">{p.discussions_count}</div>
           <div className="text-xs text-text-muted">Discussions</div>
         </div>
+        <div className="border border-border rounded-md p-4 text-center">
+          <div className="text-2xl font-semibold text-text-primary">{verificationCount ?? 0}</div>
+          <div className="text-xs text-text-muted">Servers verified</div>
+        </div>
       </div>
 
       {/* Recent activity */}
       <h2 className="text-lg font-semibold text-text-primary mb-4">Recent Activity</h2>
 
-      <div className="space-y-3">
-        {(recentEdits as (Edit & { server: { name: string; slug: string } })[] || []).map(edit => (
-          <div key={edit.id} className="flex items-start gap-3 text-sm">
-            <span className="text-text-muted shrink-0 w-16">
-              {new Date(edit.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-            </span>
-            <span className="text-text-primary">
-              Proposed edit to{' '}
-              <Link href={`/s/${edit.server?.slug}`} className="text-accent hover:text-accent-hover">
-                {edit.server?.name}
-              </Link>
-              {' '}({edit.field_name})
-            </span>
-          </div>
-        ))}
-        {(recentDiscussions as (Discussion & { server: { name: string; slug: string } })[] || []).map(d => (
-          <div key={d.id} className="flex items-start gap-3 text-sm">
-            <span className="text-text-muted shrink-0 w-16">
-              {new Date(d.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-            </span>
-            <span className="text-text-primary">
-              Posted in{' '}
-              <Link href={`/s/${(d as Discussion & { server: { name: string; slug: string } }).server?.slug}`} className="text-accent hover:text-accent-hover">
-                {(d as Discussion & { server: { name: string; slug: string } }).server?.name}
-              </Link>
-            </span>
-          </div>
-        ))}
-        {(!recentEdits?.length && !recentDiscussions?.length) && (
-          <p className="text-sm text-text-muted">No activity yet.</p>
-        )}
-      </div>
+      <ActivityFeed
+        edits={(recentEdits as (Edit & { server: { name: string; slug: string } })[]) ?? []}
+        discussions={(recentDiscussions as (Discussion & { server: { name: string; slug: string } })[]) ?? []}
+        verifications={(recentVerifications as { created_at: string; server: { name: string; slug: string } | null }[]) ?? []}
+      />
+    </div>
+  )
+}
+
+type FeedServer = { name: string; slug: string } | null
+
+function ActivityFeed({
+  edits,
+  discussions,
+  verifications,
+}: {
+  edits: (Edit & { server: FeedServer })[]
+  discussions: (Discussion & { server: FeedServer })[]
+  verifications: { created_at: string; server: FeedServer }[]
+}) {
+  type Item =
+    | { kind: 'edit'; at: string; key: string; server: FeedServer; field: string }
+    | { kind: 'discussion'; at: string; key: string; server: FeedServer }
+    | { kind: 'verification'; at: string; key: string; server: FeedServer }
+
+  const items: Item[] = [
+    ...edits.map<Item>(e => ({ kind: 'edit', at: e.created_at, key: `e:${e.id}`, server: e.server, field: e.field_name })),
+    ...discussions.map<Item>(d => ({ kind: 'discussion', at: d.created_at, key: `d:${d.id}`, server: d.server })),
+    ...verifications.map<Item>(v => ({ kind: 'verification', at: v.created_at, key: `v:${v.server?.slug ?? ''}:${v.created_at}`, server: v.server })),
+  ].sort((a, b) => (a.at < b.at ? 1 : -1))
+
+  if (items.length === 0) {
+    return <p className="text-sm text-text-muted">No activity yet.</p>
+  }
+
+  return (
+    <div className="space-y-3">
+      {items.map(item => (
+        <div key={item.key} className="flex items-start gap-3 text-sm">
+          <span className="text-text-muted shrink-0 w-16">
+            {new Date(item.at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          </span>
+          <span className="text-text-primary">
+            {item.kind === 'edit' && (
+              <>
+                Proposed edit to{' '}
+                <Link href={`/s/${item.server?.slug}`} className="text-accent hover:text-accent-hover">
+                  {item.server?.name}
+                </Link>
+                {' '}({item.field})
+              </>
+            )}
+            {item.kind === 'discussion' && (
+              <>
+                Posted in{' '}
+                <Link href={`/s/${item.server?.slug}`} className="text-accent hover:text-accent-hover">
+                  {item.server?.name}
+                </Link>
+              </>
+            )}
+            {item.kind === 'verification' && (
+              <>
+                Verified{' '}
+                <Link href={`/s/${item.server?.slug}`} className="text-accent hover:text-accent-hover">
+                  {item.server?.name}
+                </Link>
+                {' '}works for them
+              </>
+            )}
+          </span>
+        </div>
+      ))}
     </div>
   )
 }
