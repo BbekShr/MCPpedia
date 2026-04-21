@@ -11,6 +11,7 @@ import type { User } from '@supabase/supabase-js'
 export default function Nav() {
   const pathname = usePathname()
   const [user, setUser] = useState<User | null>(null)
+  const [username, setUsername] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const supabase = createClient()
@@ -19,20 +20,25 @@ export default function Nav() {
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user)
       if (data.user) {
-        supabase.from('profiles').select('role').eq('id', data.user.id).single().then(({ data: p }) => {
+        supabase.from('profiles').select('role, username').eq('id', data.user.id).single().then(({ data: p }) => {
           setIsAdmin(p?.role === 'admin' || p?.role === 'maintainer')
+          setUsername(p?.username ?? null)
         })
+      } else {
+        setUsername(null)
       }
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
+      if (!session?.user) setUsername(null)
     })
     return () => subscription.unsubscribe()
-  }, [supabase.auth])
+  }, [supabase])
 
   async function handleSignOut() {
     await supabase.auth.signOut()
     setUser(null)
+    setUsername(null)
   }
 
   const navLinks = [
@@ -108,10 +114,10 @@ export default function Nav() {
                 </span>
               </Link>
               <Link
-                href={`/profile/${user.user_metadata?.user_name || 'me'}`}
+                href={username ? `/profile/${username}` : '/login'}
                 className="text-sm text-text-muted hover:text-text-primary"
               >
-                {user.user_metadata?.user_name || 'Profile'}
+                {username || 'Profile'}
               </Link>
               <button
                 onClick={handleSignOut}
@@ -183,7 +189,7 @@ export default function Nav() {
                   My Servers
                 </Link>
                 <Link
-                  href={`/profile/${user.user_metadata?.user_name || 'me'}`}
+                  href={username ? `/profile/${username}` : '/login'}
                   onClick={() => setMobileOpen(false)}
                   className="block px-3 py-2 rounded-md text-sm text-text-muted hover:text-text-primary"
                 >

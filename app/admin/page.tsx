@@ -87,6 +87,7 @@ export default function AdminPage() {
   const supabase = createClient()
   const [user, setUser] = useState<User | null>(null)
   const [role, setRole] = useState<string | null>(null)
+  const [username, setUsername] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('servers')
 
   const [servers, setServers] = useState<ServerRow[]>([])
@@ -158,8 +159,9 @@ export default function AdminPage() {
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user)
       if (data.user) {
-        supabase.from('profiles').select('role').eq('id', data.user.id).single().then(({ data: p }) => {
+        supabase.from('profiles').select('role, username').eq('id', data.user.id).single().then(({ data: p }) => {
           setRole(p?.role || null)
+          setUsername(p?.username ?? null)
         })
       }
     })
@@ -329,7 +331,7 @@ export default function AdminPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-text-primary">Admin Panel</h1>
-          <p className="text-xs text-text-muted">Signed in as @{user.user_metadata?.user_name} ({role})</p>
+          <p className="text-xs text-text-muted">Signed in as @{username || user.email} ({role})</p>
         </div>
         <Link
           href="/analytics"
