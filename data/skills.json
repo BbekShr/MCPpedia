@@ -1,0 +1,1320 @@
+[
+  {
+    "slug": "superpowers",
+    "name": "Superpowers",
+    "tagline": "Agentic skills framework and software development methodology.",
+    "description": "Superpowers bundles a complete software development methodology — brainstorm, spec, plan, TDD, subagent-driven execution, code review, merge — as a set of composable skills that auto-trigger at the right moment. Built by Jesse Vincent.",
+    "repo": "obra/superpowers",
+    "github_url": "https://github.com/obra/superpowers",
+    "homepage_url": "https://blog.fsck.com/2025/10/09/superpowers/",
+    "author": "Jesse Vincent (obra)",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 164289,
+    "last_updated": "2026-04-16",
+    "category": "development-workflow",
+    "tags": ["tdd", "planning", "code-review", "git-worktrees", "subagents", "methodology"],
+    "compatible_with": ["claude-code", "codex", "cursor", "gemini-cli", "copilot-cli", "opencode"],
+    "type": "plugin",
+    "featured": true,
+    "install": {
+      "claude_code": "/plugin install superpowers@claude-plugins-official",
+      "codex": "/plugins  → search superpowers → Install Plugin",
+      "cursor": "/add-plugin superpowers",
+      "gemini": "gemini extensions install https://github.com/obra/superpowers",
+      "manual": "See README for each agent's install flow"
+    }
+  },
+  {
+    "slug": "anthropic-skills-library",
+    "name": "Anthropic Agent Skills",
+    "tagline": "Anthropic's official open-source skills library.",
+    "description": "The official public repository for Claude Agent Skills, maintained by Anthropic. Includes canvas design, document generation (docx, pdf, pptx, xlsx), frontend design, MCP builder, skill creator, and more.",
+    "repo": "anthropics/skills",
+    "github_url": "https://github.com/anthropics/skills",
+    "author": "Anthropic",
+    "author_type": "official",
+    "license": null,
+    "stars": 122313,
+    "last_updated": "2026-04-20",
+    "category": "meta",
+    "tags": ["official", "library", "skills-collection"],
+    "compatible_with": ["claude-code", "claude-desktop"],
+    "type": "skill-collection",
+    "featured": true,
+    "install": {
+      "manual": "Clone the repo and copy individual skills into your project's .claude/skills/ directory, or install via the official Claude plugin marketplace."
+    }
+  },
+  {
+    "slug": "anthropic-canvas-design",
+    "name": "Canvas Design",
+    "tagline": "Create polished visual designs and graphics directly in Claude.",
+    "description": "Official Anthropic skill for generating SVG/canvas-based visual designs — posters, diagrams, illustrations — with consistent style and typography.",
+    "repo": "anthropics/skills",
+    "github_url": "https://github.com/anthropics/skills/tree/main/skills/canvas-design",
+    "author": "Anthropic",
+    "author_type": "official",
+    "license": null,
+    "stars": 122313,
+    "last_updated": "2026-04-20",
+    "category": "design",
+    "tags": ["svg", "graphics", "visual-design", "official"],
+    "compatible_with": ["claude-code", "claude-desktop"],
+    "type": "skill",
+    "featured": true,
+    "install": {
+      "manual": "Copy skills/canvas-design/ from anthropics/skills into your .claude/skills/ directory."
+    }
+  },
+  {
+    "slug": "anthropic-docx",
+    "name": "DOCX Generator",
+    "tagline": "Generate Microsoft Word documents with professional formatting.",
+    "description": "Official Anthropic skill for programmatically authoring .docx files — headings, tables, styles, embedded images — without needing Word installed.",
+    "repo": "anthropics/skills",
+    "github_url": "https://github.com/anthropics/skills/tree/main/skills/docx",
+    "author": "Anthropic",
+    "author_type": "official",
+    "license": null,
+    "stars": 122313,
+    "last_updated": "2026-04-20",
+    "category": "data",
+    "tags": ["docx", "word", "documents", "official"],
+    "compatible_with": ["claude-code", "claude-desktop"],
+    "type": "skill",
+    "install": {
+      "manual": "Copy skills/docx/ from anthropics/skills into your .claude/skills/ directory."
+    }
+  },
+  {
+    "slug": "anthropic-pdf",
+    "name": "PDF Generator",
+    "tagline": "Create and edit PDF documents with precise layout control.",
+    "description": "Official Anthropic skill for generating, merging, and editing PDFs with vector graphics, typography, and page layout.",
+    "repo": "anthropics/skills",
+    "github_url": "https://github.com/anthropics/skills/tree/main/skills/pdf",
+    "author": "Anthropic",
+    "author_type": "official",
+    "license": null,
+    "stars": 122313,
+    "last_updated": "2026-04-20",
+    "category": "data",
+    "tags": ["pdf", "documents", "reports", "official"],
+    "compatible_with": ["claude-code", "claude-desktop"],
+    "type": "skill",
+    "install": {
+      "manual": "Copy skills/pdf/ from anthropics/skills into your .claude/skills/ directory."
+    }
+  },
+  {
+    "slug": "anthropic-pptx",
+    "name": "PPTX Generator",
+    "tagline": "Build PowerPoint presentations from structured content.",
+    "description": "Official Anthropic skill for generating .pptx presentations — slides, layouts, speaker notes, charts, embedded media — from a structured outline.",
+    "repo": "anthropics/skills",
+    "github_url": "https://github.com/anthropics/skills/tree/main/skills/pptx",
+    "author": "Anthropic",
+    "author_type": "official",
+    "license": null,
+    "stars": 122313,
+    "last_updated": "2026-04-20",
+    "category": "data",
+    "tags": ["pptx", "powerpoint", "presentations", "official"],
+    "compatible_with": ["claude-code", "claude-desktop"],
+    "type": "skill",
+    "install": {
+      "manual": "Copy skills/pptx/ from anthropics/skills into your .claude/skills/ directory."
+    }
+  },
+  {
+    "slug": "anthropic-xlsx",
+    "name": "XLSX Generator",
+    "tagline": "Generate Excel spreadsheets with formulas, formatting, and charts.",
+    "description": "Official Anthropic skill for generating .xlsx files programmatically — multi-sheet workbooks, formulas, conditional formatting, charts.",
+    "repo": "anthropics/skills",
+    "github_url": "https://github.com/anthropics/skills/tree/main/skills/xlsx",
+    "author": "Anthropic",
+    "author_type": "official",
+    "license": null,
+    "stars": 122313,
+    "last_updated": "2026-04-20",
+    "category": "data",
+    "tags": ["xlsx", "excel", "spreadsheets", "official"],
+    "compatible_with": ["claude-code", "claude-desktop"],
+    "type": "skill",
+    "install": {
+      "manual": "Copy skills/xlsx/ from anthropics/skills into your .claude/skills/ directory."
+    }
+  },
+  {
+    "slug": "anthropic-frontend-design",
+    "name": "Frontend Design",
+    "tagline": "Build polished, opinionated frontends with strong design sense.",
+    "description": "Official Anthropic skill that guides Claude through frontend generation — spacing, typography, color, accessibility — so output looks intentional rather than generic.",
+    "repo": "anthropics/skills",
+    "github_url": "https://github.com/anthropics/skills/tree/main/skills/frontend-design",
+    "author": "Anthropic",
+    "author_type": "official",
+    "license": null,
+    "stars": 122313,
+    "last_updated": "2026-04-20",
+    "category": "design",
+    "tags": ["frontend", "ui", "design-system", "official"],
+    "compatible_with": ["claude-code", "claude-desktop"],
+    "type": "skill",
+    "featured": true,
+    "install": {
+      "manual": "Copy skills/frontend-design/ from anthropics/skills into your .claude/skills/ directory."
+    }
+  },
+  {
+    "slug": "anthropic-mcp-builder",
+    "name": "MCP Builder",
+    "tagline": "Scaffold and build Model Context Protocol servers.",
+    "description": "Official Anthropic skill that guides end-to-end creation of MCP servers — transport choice, tool schema design, validation, packaging.",
+    "repo": "anthropics/skills",
+    "github_url": "https://github.com/anthropics/skills/tree/main/skills/mcp-builder",
+    "author": "Anthropic",
+    "author_type": "official",
+    "license": null,
+    "stars": 122313,
+    "last_updated": "2026-04-20",
+    "category": "development-workflow",
+    "tags": ["mcp", "server", "scaffolding", "official"],
+    "compatible_with": ["claude-code", "claude-desktop"],
+    "type": "skill",
+    "featured": true,
+    "install": {
+      "manual": "Copy skills/mcp-builder/ from anthropics/skills into your .claude/skills/ directory."
+    }
+  },
+  {
+    "slug": "anthropic-webapp-testing",
+    "name": "Webapp Testing",
+    "tagline": "Write, run, and debug browser tests with Playwright.",
+    "description": "Official Anthropic skill for authoring browser-based integration tests — Playwright setup, reliable selectors, network waiting, visual regression.",
+    "repo": "anthropics/skills",
+    "github_url": "https://github.com/anthropics/skills/tree/main/skills/webapp-testing",
+    "author": "Anthropic",
+    "author_type": "official",
+    "license": null,
+    "stars": 122313,
+    "last_updated": "2026-04-20",
+    "category": "testing",
+    "tags": ["testing", "playwright", "e2e", "official"],
+    "compatible_with": ["claude-code", "claude-desktop"],
+    "type": "skill",
+    "install": {
+      "manual": "Copy skills/webapp-testing/ from anthropics/skills into your .claude/skills/ directory."
+    }
+  },
+  {
+    "slug": "anthropic-skill-creator",
+    "name": "Skill Creator",
+    "tagline": "Create new Claude Agent Skills following best practices.",
+    "description": "Official Anthropic skill that scaffolds a new skill — trigger description, tool usage, examples, anti-patterns — with built-in testing guidance.",
+    "repo": "anthropics/skills",
+    "github_url": "https://github.com/anthropics/skills/tree/main/skills/skill-creator",
+    "author": "Anthropic",
+    "author_type": "official",
+    "license": null,
+    "stars": 122313,
+    "last_updated": "2026-04-20",
+    "category": "meta",
+    "tags": ["meta", "skill-authoring", "official"],
+    "compatible_with": ["claude-code", "claude-desktop"],
+    "type": "skill",
+    "install": {
+      "manual": "Copy skills/skill-creator/ from anthropics/skills into your .claude/skills/ directory."
+    }
+  },
+  {
+    "slug": "anthropic-claude-api",
+    "name": "Claude API Skill",
+    "tagline": "Build Claude API / Anthropic SDK apps with best-practice caching and tool use.",
+    "description": "Official skill that guides building apps on the Anthropic SDK — prompt caching, thinking, tool use, batch, files, citations — including model migration.",
+    "repo": "anthropics/skills",
+    "github_url": "https://github.com/anthropics/skills/tree/main/skills/claude-api",
+    "author": "Anthropic",
+    "author_type": "official",
+    "license": null,
+    "stars": 122313,
+    "last_updated": "2026-04-20",
+    "category": "development-workflow",
+    "tags": ["anthropic-sdk", "api", "caching", "tool-use", "official"],
+    "compatible_with": ["claude-code", "claude-desktop"],
+    "type": "skill",
+    "install": {
+      "manual": "Copy skills/claude-api/ from anthropics/skills into your .claude/skills/ directory."
+    }
+  },
+  {
+    "slug": "anthropic-brand-guidelines",
+    "name": "Brand Guidelines",
+    "tagline": "Keep designs on-brand with consistent color, type, and voice.",
+    "description": "Official Anthropic skill that loads and enforces brand guidelines across design outputs — color palettes, typography scale, voice and tone.",
+    "repo": "anthropics/skills",
+    "github_url": "https://github.com/anthropics/skills/tree/main/skills/brand-guidelines",
+    "author": "Anthropic",
+    "author_type": "official",
+    "license": null,
+    "stars": 122313,
+    "last_updated": "2026-04-20",
+    "category": "design",
+    "tags": ["branding", "design-system", "official"],
+    "compatible_with": ["claude-code", "claude-desktop"],
+    "type": "skill",
+    "install": {
+      "manual": "Copy skills/brand-guidelines/ from anthropics/skills into your .claude/skills/ directory."
+    }
+  },
+  {
+    "slug": "anthropic-algorithmic-art",
+    "name": "Algorithmic Art",
+    "tagline": "Generate creative coding / generative-art sketches.",
+    "description": "Official Anthropic skill for producing generative-art pieces — code + canvas — with algorithmic structure and aesthetic sensibility.",
+    "repo": "anthropics/skills",
+    "github_url": "https://github.com/anthropics/skills/tree/main/skills/algorithmic-art",
+    "author": "Anthropic",
+    "author_type": "official",
+    "license": null,
+    "stars": 122313,
+    "last_updated": "2026-04-20",
+    "category": "design",
+    "tags": ["generative", "creative-coding", "canvas", "official"],
+    "compatible_with": ["claude-code", "claude-desktop"],
+    "type": "skill",
+    "install": {
+      "manual": "Copy skills/algorithmic-art/ from anthropics/skills into your .claude/skills/ directory."
+    }
+  },
+  {
+    "slug": "anthropic-web-artifacts-builder",
+    "name": "Web Artifacts Builder",
+    "tagline": "Compose interactive web artifacts (HTML/JS/CSS) from specs.",
+    "description": "Official Anthropic skill for producing self-contained interactive web artifacts — mini-apps, visualizations, demos — that run in-browser with no build step.",
+    "repo": "anthropics/skills",
+    "github_url": "https://github.com/anthropics/skills/tree/main/skills/web-artifacts-builder",
+    "author": "Anthropic",
+    "author_type": "official",
+    "license": null,
+    "stars": 122313,
+    "last_updated": "2026-04-20",
+    "category": "development-workflow",
+    "tags": ["artifacts", "html", "prototyping", "official"],
+    "compatible_with": ["claude-code", "claude-desktop"],
+    "type": "skill",
+    "install": {
+      "manual": "Copy skills/web-artifacts-builder/ from anthropics/skills into your .claude/skills/ directory."
+    }
+  },
+  {
+    "slug": "ui-ux-pro-max",
+    "name": "UI UX Pro Max",
+    "tagline": "Design intelligence for building professional UI/UX across multiple platforms.",
+    "description": "An AI skill that provides design intelligence — 161 reasoning rules, 67 UI styles, and a design-system generator — for building professional UI/UX across Claude Code, Cursor, Windsurf, and more. Includes a CLI (uipro-cli) for cross-agent install.",
+    "repo": "nextlevelbuilder/ui-ux-pro-max-skill",
+    "github_url": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill",
+    "homepage_url": "https://www.uupm.cc/",
+    "author": "NextLevelBuilder",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 69251,
+    "last_updated": "2026-04-03",
+    "category": "design",
+    "tags": ["ui", "ux", "design-system", "frontend", "reasoning-rules"],
+    "compatible_with": ["claude-code", "cursor"],
+    "type": "plugin",
+    "featured": true,
+    "install": {
+      "claude_code": "/plugin marketplace add nextlevelbuilder/ui-ux-pro-max-skill\n/plugin install ui-ux-pro-max@ui-ux-pro-max-skill",
+      "cursor": "npm install -g uipro-cli\nuipro init --ai cursor",
+      "manual": "npm install -g uipro-cli\nuipro init --ai claude        # or --ai cursor | --ai windsurf\nuipro init --ai claude --global  # install globally to ~/.claude/skills/"
+    }
+  },
+  {
+    "slug": "awesome-agent-skills",
+    "name": "Awesome Agent Skills",
+    "tagline": "Curated collection of 1000+ agent skills from official dev teams and the community.",
+    "description": "A massive, well-organized index of agent skills compatible with Claude Code, Codex, Gemini CLI, Cursor, and more. Good jumping-off point when you don't know what's out there.",
+    "repo": "VoltAgent/awesome-agent-skills",
+    "github_url": "https://github.com/VoltAgent/awesome-agent-skills",
+    "author": "VoltAgent",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 17451,
+    "last_updated": "2026-04-20",
+    "category": "meta",
+    "tags": ["awesome-list", "curated", "index"],
+    "compatible_with": ["claude-code", "codex", "cursor", "gemini-cli", "copilot-cli"],
+    "type": "marketplace",
+    "featured": true,
+    "install": {
+      "manual": "Browse https://github.com/VoltAgent/awesome-agent-skills and install individual skills."
+    }
+  },
+  {
+    "slug": "planning-with-files",
+    "name": "Planning With Files",
+    "tagline": "Manus-style persistent markdown planning for long-horizon work.",
+    "description": "Claude Code skill that mirrors the persistent file-based planning pattern behind Manus. Plans live as markdown on disk, survive across sessions, and stay in sync with code.",
+    "repo": "OthmanAdi/planning-with-files",
+    "github_url": "https://github.com/OthmanAdi/planning-with-files",
+    "author": "Othman Adi",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 19361,
+    "last_updated": "2026-04-21",
+    "category": "product",
+    "tags": ["planning", "markdown", "long-running"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "featured": true,
+    "install": {
+      "manual": "Clone the repo and follow the README to register the skill with Claude Code."
+    }
+  },
+  {
+    "slug": "claude-mem",
+    "name": "claude-mem",
+    "tagline": "Auto-captures session context, compresses it, and re-injects it into future sessions.",
+    "description": "A Claude Code plugin that records what Claude does in each session, summarizes it via the Agent SDK, and feeds relevant context back into future sessions so the agent 'remembers' across days.",
+    "repo": "thedotmack/claude-mem",
+    "github_url": "https://github.com/thedotmack/claude-mem",
+    "author": "Alex Newman (thedotmack)",
+    "author_type": "community",
+    "license": "NOASSERTION",
+    "stars": 65772,
+    "last_updated": "2026-04-22",
+    "category": "development-workflow",
+    "tags": ["memory", "context", "compression", "sessions"],
+    "compatible_with": ["claude-code"],
+    "type": "plugin",
+    "featured": true,
+    "install": {
+      "manual": "See the repo README for installation and configuration."
+    }
+  },
+  {
+    "slug": "wshobson-agents",
+    "name": "Agents",
+    "tagline": "Intelligent automation and multi-agent orchestration for Claude Code.",
+    "description": "A large, battle-tested set of agent orchestration patterns and sub-agent roles for Claude Code. Popular base for teams building multi-agent workflows.",
+    "repo": "wshobson/agents",
+    "github_url": "https://github.com/wshobson/agents",
+    "author": "wshobson",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 34112,
+    "last_updated": "2026-04-18",
+    "category": "development-workflow",
+    "tags": ["subagents", "orchestration", "multi-agent"],
+    "compatible_with": ["claude-code"],
+    "type": "skill-collection",
+    "install": {
+      "manual": "Clone and copy agents into your .claude/agents/ directory."
+    }
+  },
+  {
+    "slug": "web-quality-skills",
+    "name": "Web Quality Skills",
+    "tagline": "Agent skills for optimizing Lighthouse and Core Web Vitals.",
+    "description": "A focused set of skills from Addy Osmani for improving Core Web Vitals — LCP, INP, CLS — with Lighthouse-backed audits and concrete fixes.",
+    "repo": "addyosmani/web-quality-skills",
+    "github_url": "https://github.com/addyosmani/web-quality-skills",
+    "author": "Addy Osmani",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 1789,
+    "last_updated": "2026-03-13",
+    "category": "development-workflow",
+    "tags": ["web-vitals", "lighthouse", "performance"],
+    "compatible_with": ["claude-code"],
+    "type": "skill-collection",
+    "featured": true,
+    "install": {
+      "manual": "Clone the repo and install skills per the README."
+    }
+  },
+  {
+    "slug": "playwright-skill",
+    "name": "Playwright Skill",
+    "tagline": "Claude Code skill for browser automation with Playwright.",
+    "description": "Model-invoked browser automation — Claude autonomously writes and executes custom Playwright scripts for testing and validation.",
+    "repo": "lackeyjb/playwright-skill",
+    "github_url": "https://github.com/lackeyjb/playwright-skill",
+    "author": "Jordan Lackey",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 2479,
+    "last_updated": "2025-12-19",
+    "category": "testing",
+    "tags": ["playwright", "browser", "automation", "testing"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone and register the skill with Claude Code per the README."
+    }
+  },
+  {
+    "slug": "ai-research-skills",
+    "name": "AI Research Skills",
+    "tagline": "Open-source library of AI research and engineering skills.",
+    "description": "Package this library and your Claude Code / Codex / Gemini agent becomes a full-horsepower AI research agent. Maintained by Orchestra Research.",
+    "repo": "Orchestra-Research/AI-Research-SKILLs",
+    "github_url": "https://github.com/Orchestra-Research/AI-Research-SKILLs",
+    "author": "Orchestra Research",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 7260,
+    "last_updated": "2026-04-13",
+    "category": "research",
+    "tags": ["research", "ai", "agents"],
+    "compatible_with": ["claude-code", "codex", "gemini-cli"],
+    "type": "skill-collection",
+    "install": {
+      "manual": "Clone the repo and follow the setup instructions in README."
+    }
+  },
+  {
+    "slug": "scientific-agent-skills",
+    "name": "Scientific Agent Skills",
+    "tagline": "Ready-to-use skills for research, science, engineering, analysis, finance, and writing.",
+    "description": "A broad cross-domain skill set by K-Dense-AI that spans scientific workflows — literature review, data analysis, technical writing.",
+    "repo": "K-Dense-AI/scientific-agent-skills",
+    "github_url": "https://github.com/K-Dense-AI/scientific-agent-skills",
+    "author": "K-Dense AI",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 19197,
+    "last_updated": "2026-04-20",
+    "category": "research",
+    "tags": ["science", "research", "finance", "writing"],
+    "compatible_with": ["claude-code", "codex"],
+    "type": "skill-collection",
+    "install": {
+      "manual": "Clone the repo and copy individual skills into your agent's skills directory."
+    }
+  },
+  {
+    "slug": "jeffallan-claude-skills",
+    "name": "66 Full-Stack Dev Skills",
+    "tagline": "66 specialized skills turning Claude Code into an expert pair programmer.",
+    "description": "A curated full-stack developer skill pack — backend, frontend, DB, infra, testing — by Jeff Allan.",
+    "repo": "Jeffallan/claude-skills",
+    "github_url": "https://github.com/Jeffallan/claude-skills",
+    "author": "Jeff Allan",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 8471,
+    "last_updated": "2026-04-21",
+    "category": "development-workflow",
+    "tags": ["full-stack", "pair-programming", "collection"],
+    "compatible_with": ["claude-code"],
+    "type": "skill-collection",
+    "install": {
+      "manual": "Clone the repo and follow the README."
+    }
+  },
+  {
+    "slug": "product-manager-skills",
+    "name": "Product Manager Skills",
+    "tagline": "Battle-tested PM methods packaged as agent skills.",
+    "description": "Product Management skills framework — discovery, spec writing, prioritization — for Claude Code, Cowork, Codex, and AI agents. Maintained by Dean Peters.",
+    "repo": "deanpeters/Product-Manager-Skills",
+    "github_url": "https://github.com/deanpeters/Product-Manager-Skills",
+    "author": "Dean Peters",
+    "author_type": "community",
+    "license": "NOASSERTION",
+    "stars": 3662,
+    "last_updated": "2026-04-02",
+    "category": "product",
+    "tags": ["product-management", "discovery", "specs"],
+    "compatible_with": ["claude-code", "codex"],
+    "type": "skill-collection",
+    "install": {
+      "manual": "Clone the repo and follow the README to register skills with your agent."
+    }
+  },
+  {
+    "slug": "continuous-claude",
+    "name": "Continuous Claude v3",
+    "tagline": "Context management for Claude Code via hooks, ledgers, and handoffs.",
+    "description": "Maintains state through ledgers and handoffs, runs MCP tools without polluting the main context window, and orchestrates agents with isolated context windows.",
+    "repo": "parcadei/Continuous-Claude-v3",
+    "github_url": "https://github.com/parcadei/Continuous-Claude-v3",
+    "author": "parcadei",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 3728,
+    "last_updated": "2026-01-26",
+    "category": "development-workflow",
+    "tags": ["context", "hooks", "orchestration"],
+    "compatible_with": ["claude-code"],
+    "type": "plugin",
+    "install": {
+      "manual": "See repo README — installs via hooks config and setup scripts."
+    }
+  },
+  {
+    "slug": "pg-aiguide",
+    "name": "Postgres AI Guide",
+    "tagline": "MCP server and Claude plugin for PostgreSQL skills and documentation.",
+    "description": "Helps AI coding tools generate better PostgreSQL code by loading authoritative Postgres guidance into the agent's working context. By Timescale.",
+    "repo": "timescale/pg-aiguide",
+    "github_url": "https://github.com/timescale/pg-aiguide",
+    "author": "Timescale",
+    "author_type": "community",
+    "license": "Apache-2.0",
+    "stars": 1697,
+    "last_updated": "2026-04-22",
+    "category": "data",
+    "tags": ["postgres", "database", "sql"],
+    "compatible_with": ["claude-code"],
+    "type": "plugin",
+    "install": {
+      "manual": "Follow the README for MCP server setup and plugin registration."
+    }
+  },
+  {
+    "slug": "prompt-master",
+    "name": "Prompt Master",
+    "tagline": "A Claude skill that writes accurate prompts for any AI tool.",
+    "description": "Authoring skill focused on prompt engineering — tight specs, role framing, evaluation hooks — with full context and memory retention.",
+    "repo": "nidhinjs/prompt-master",
+    "github_url": "https://github.com/nidhinjs/prompt-master",
+    "author": "Nidhin",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 5506,
+    "last_updated": "2026-03-31",
+    "category": "writing",
+    "tags": ["prompt-engineering", "meta-prompting"],
+    "compatible_with": ["claude-code", "claude-desktop"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone the repo and follow the README to register the skill."
+    }
+  },
+  {
+    "slug": "skill-seekers",
+    "name": "Skill Seekers",
+    "tagline": "Convert documentation, GitHub repos, and PDFs into Claude Skills.",
+    "description": "Ingests external knowledge sources and produces skill-ready markdown, with automatic conflict detection across overlapping sources. By Yusuf Karaaslan.",
+    "repo": "yusufkaraaslan/Skill_Seekers",
+    "github_url": "https://github.com/yusufkaraaslan/Skill_Seekers",
+    "author": "Yusuf Karaaslan",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 13025,
+    "last_updated": "2026-04-12",
+    "category": "meta",
+    "tags": ["skill-generation", "ingestion", "knowledge"],
+    "compatible_with": ["claude-code"],
+    "type": "plugin",
+    "install": {
+      "manual": "Clone the repo and follow README for setup."
+    }
+  },
+  {
+    "slug": "pilot-shell",
+    "name": "Pilot Shell",
+    "tagline": "Make Claude Code production-ready with spec-driven plans and quality gates.",
+    "description": "Spec-driven planning, enforced quality gates, persistent knowledge — a pre-packaged opinionated setup for shipping production code with Claude Code.",
+    "repo": "maxritter/pilot-shell",
+    "github_url": "https://github.com/maxritter/pilot-shell",
+    "author": "Max Ritter",
+    "author_type": "community",
+    "license": "NOASSERTION",
+    "stars": 1661,
+    "last_updated": "2026-04-21",
+    "category": "development-workflow",
+    "tags": ["specs", "quality-gates", "production"],
+    "compatible_with": ["claude-code"],
+    "type": "plugin",
+    "install": {
+      "manual": "Clone the repo and follow README."
+    }
+  },
+  {
+    "slug": "pro-workflow",
+    "name": "Pro Workflow",
+    "tagline": "Self-correcting memory and 17 battle-tested skills for Claude Code.",
+    "description": "Claude Code learns from your corrections: memory that compounds over 50+ sessions, context engineering, parallel worktrees, and agent teams.",
+    "repo": "rohitg00/pro-workflow",
+    "github_url": "https://github.com/rohitg00/pro-workflow",
+    "author": "Rohit Ghumare",
+    "author_type": "community",
+    "license": null,
+    "stars": 1994,
+    "last_updated": "2026-04-20",
+    "category": "development-workflow",
+    "tags": ["memory", "worktrees", "team-of-agents"],
+    "compatible_with": ["claude-code"],
+    "type": "skill-collection",
+    "install": {
+      "manual": "See repo README for setup."
+    }
+  },
+  {
+    "slug": "alirezarezvani-claude-skills",
+    "name": "232+ Claude Code Skills",
+    "tagline": "Broad engineering, marketing, product, compliance, and advisory skill pack.",
+    "description": "A cross-functional skill pack — 232+ skills — spanning engineering, marketing, product, compliance, and C-level advisory across 9 coding agents.",
+    "repo": "alirezarezvani/claude-skills",
+    "github_url": "https://github.com/alirezarezvani/claude-skills",
+    "author": "Alireza Rezvani",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 12348,
+    "last_updated": "2026-04-20",
+    "category": "meta",
+    "tags": ["collection", "cross-functional"],
+    "compatible_with": ["claude-code", "codex", "cursor", "gemini-cli", "copilot-cli", "opencode"],
+    "type": "skill-collection",
+    "install": {
+      "manual": "Clone the repo and browse the skills/ directory."
+    }
+  },
+  {
+    "slug": "awesome-claude-skills",
+    "name": "Awesome Claude Skills",
+    "tagline": "Curated list of Claude Skills, resources, and tools — especially for Claude Code.",
+    "description": "A community 'awesome list' of Claude Skills — a reliable index of what's out there and what's worth trying.",
+    "repo": "travisvn/awesome-claude-skills",
+    "github_url": "https://github.com/travisvn/awesome-claude-skills",
+    "author": "Travis VN",
+    "author_type": "community",
+    "license": null,
+    "stars": 11626,
+    "last_updated": "2026-03-16",
+    "category": "meta",
+    "tags": ["awesome-list", "curated"],
+    "compatible_with": ["claude-code"],
+    "type": "marketplace",
+    "install": {
+      "manual": "Browse https://github.com/travisvn/awesome-claude-skills"
+    }
+  },
+  {
+    "slug": "buildwithclaude",
+    "name": "Build with Claude",
+    "tagline": "Single hub for Claude Skills, Agents, Commands, Hooks, and Plugins.",
+    "description": "Discovery site and index for extensions across Claude Code, Claude Desktop, the Agent SDK, and OpenClaw — skills, agents, commands, hooks, plugins, marketplaces.",
+    "repo": "davepoon/buildwithclaude",
+    "github_url": "https://github.com/davepoon/buildwithclaude",
+    "author": "Dave Poon",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 2790,
+    "last_updated": "2026-04-20",
+    "category": "meta",
+    "tags": ["discovery", "hub", "index"],
+    "compatible_with": ["claude-code", "claude-desktop"],
+    "type": "marketplace",
+    "install": {
+      "manual": "Visit the project site or GitHub repo."
+    }
+  },
+  {
+    "slug": "seo-geo-claude-skills",
+    "name": "SEO & GEO Claude Skills",
+    "tagline": "20 SEO and Generative Engine Optimization skills for AI coding agents.",
+    "description": "20 production-ready SEO and GEO (Generative Engine Optimization) skills covering keyword research, content writing, technical audits, rank tracking, schema markup, and AI-citation optimization. Uses the CORE-EEAT and CITE frameworks. Works across Claude Code, Cursor, Codex, and 35+ agents.",
+    "repo": "aaron-he-zhu/seo-geo-claude-skills",
+    "github_url": "https://github.com/aaron-he-zhu/seo-geo-claude-skills",
+    "author": "Aaron He Zhu",
+    "author_type": "community",
+    "license": "Apache-2.0",
+    "stars": 1130,
+    "last_updated": "2026-04-22",
+    "category": "marketing",
+    "tags": ["seo", "geo", "content", "keyword-research", "audits", "schema"],
+    "compatible_with": ["claude-code", "cursor", "codex", "gemini-cli", "copilot-cli"],
+    "type": "skill-collection",
+    "install": {
+      "manual": "Clone the repo and copy individual skill folders into your agent's skills directory — see README."
+    }
+  },
+  {
+    "slug": "agentic-seo-skill",
+    "name": "Agentic SEO Skill",
+    "tagline": "LLM-first SEO analysis with 16 sub-skills, 10 specialist agents, and 33 utility scripts.",
+    "description": "An LLM-first SEO analysis skill for Antigravity, Codex, and Claude. Ships 16 specialized sub-skills, 10 specialist agents, and 33 optional utility scripts used as evidence collectors for audits, technical SEO, content analysis, and competitive research.",
+    "repo": "Bhanunamikaze/Agentic-SEO-Skill",
+    "github_url": "https://github.com/Bhanunamikaze/Agentic-SEO-Skill",
+    "author": "Bhanunamikaze",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 412,
+    "last_updated": "2026-04-22",
+    "category": "marketing",
+    "tags": ["seo", "audit", "subagents", "evidence", "technical-seo"],
+    "compatible_with": ["claude-code", "codex"],
+    "type": "skill-collection",
+    "install": {
+      "manual": "Clone the repo and install skills per the README instructions."
+    }
+  },
+  {
+    "slug": "ai-marketing-claude-code-skills",
+    "name": "AI Marketing Skills",
+    "tagline": "Marketing frameworks your AI actually executes — not just recommends.",
+    "description": "A skill pack of practical marketing frameworks — positioning, messaging, launch plans, lifecycle, attribution — designed for Claude Code to execute, not just advise. Portable to other agent harnesses like OpenClaw.",
+    "repo": "BrianRWagner/ai-marketing-claude-code-skills",
+    "github_url": "https://github.com/BrianRWagner/ai-marketing-claude-code-skills",
+    "author": "Brian R. Wagner",
+    "author_type": "community",
+    "license": null,
+    "stars": 246,
+    "last_updated": "2026-04-22",
+    "category": "marketing",
+    "tags": ["marketing", "positioning", "messaging", "launch", "gtm"],
+    "compatible_with": ["claude-code"],
+    "type": "skill-collection",
+    "install": {
+      "manual": "Clone the repo and copy skills into .claude/skills — see README."
+    }
+  },
+  {
+    "slug": "feiskyer-claude-code-settings",
+    "name": "Claude Code Settings (feiskyer)",
+    "tagline": "Battle-tested Claude Code settings, commands, and agents for vibe coding.",
+    "description": "A curated set of Claude Code settings, slash commands, and subagents for day-to-day development — covers refactoring, review, testing, and general vibe-coding workflows.",
+    "repo": "feiskyer/claude-code-settings",
+    "github_url": "https://github.com/feiskyer/claude-code-settings",
+    "author": "feiskyer",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 1454,
+    "last_updated": "2026-04-22",
+    "category": "development-workflow",
+    "tags": ["settings", "slash-commands", "subagents", "dotfiles"],
+    "compatible_with": ["claude-code"],
+    "type": "skill-collection",
+    "install": {
+      "manual": "Clone and symlink or copy into ~/.claude — see README."
+    }
+  },
+  {
+    "slug": "claude-codex-settings",
+    "name": "Claude + Codex Settings",
+    "tagline": "Personal Claude Code and OpenAI Codex setup with daily-driver skills and hooks.",
+    "description": "A maintained dotfiles-style collection of settings, skills, plugins, hooks, and agents for both Claude Code and OpenAI Codex — useful as a reference for building your own setup.",
+    "repo": "fcakyon/claude-codex-settings",
+    "github_url": "https://github.com/fcakyon/claude-codex-settings",
+    "author": "Fatih C. Akyon",
+    "author_type": "community",
+    "license": "Apache-2.0",
+    "stars": 631,
+    "last_updated": "2026-04-22",
+    "category": "development-workflow",
+    "tags": ["settings", "hooks", "plugins", "codex", "dotfiles"],
+    "compatible_with": ["claude-code", "codex"],
+    "type": "skill-collection",
+    "install": {
+      "manual": "Clone and follow the README to merge into your agent config."
+    }
+  },
+  {
+    "slug": "claude-skills-marketplace",
+    "name": "Claude Skills Marketplace",
+    "tagline": "Software engineering skills — git automation, testing, and code review.",
+    "description": "A focused marketplace of Claude Code skills for core software engineering workflows: git automation, testing, and code review. Installable one-at-a-time or as a collection.",
+    "repo": "mhattingpete/claude-skills-marketplace",
+    "github_url": "https://github.com/mhattingpete/claude-skills-marketplace",
+    "author": "Martin Hattingpete",
+    "author_type": "community",
+    "license": "Apache-2.0",
+    "stars": 557,
+    "last_updated": "2026-04-22",
+    "category": "development-workflow",
+    "tags": ["git", "testing", "code-review", "marketplace"],
+    "compatible_with": ["claude-code"],
+    "type": "marketplace",
+    "install": {
+      "claude_code": "/plugin marketplace add mhattingpete/claude-skills-marketplace"
+    }
+  },
+  {
+    "slug": "cursor-rules-java",
+    "name": "Cursor Rules: Java",
+    "tagline": "Opinionated skills and agents for modern Java Enterprise SDLC.",
+    "description": "A curated, opinionated collection of skills and agents for modern software delivery lifecycle workflows in Java Enterprise — architecture, coding standards, testing, reviews. Works with your favorite AI agent harness.",
+    "repo": "jabrena/cursor-rules-java",
+    "github_url": "https://github.com/jabrena/cursor-rules-java",
+    "author": "Juan Antonio Breña Moral",
+    "author_type": "community",
+    "license": "Apache-2.0",
+    "stars": 360,
+    "last_updated": "2026-04-22",
+    "category": "development-workflow",
+    "tags": ["java", "enterprise", "sdlc", "cursor-rules"],
+    "compatible_with": ["cursor", "claude-code", "codex"],
+    "type": "skill-collection",
+    "install": {
+      "manual": "Clone the repo and drop rules/skills into your agent config — see README."
+    }
+  },
+  {
+    "slug": "modularity",
+    "name": "Modularity",
+    "tagline": "Design modular systems and audit existing codebases using the Balanced Coupling model.",
+    "description": "Claude Code plugin for designing modular systems from functional requirements and reviewing existing codebases for modularity problems — with actionable improvement recommendations based on the Balanced Coupling model.",
+    "repo": "vladikk/modularity",
+    "github_url": "https://github.com/vladikk/modularity",
+    "author": "Vlad Khononov",
+    "author_type": "community",
+    "license": null,
+    "stars": 331,
+    "last_updated": "2026-04-22",
+    "category": "development-workflow",
+    "tags": ["modularity", "architecture", "ddd", "balanced-coupling", "review"],
+    "compatible_with": ["claude-code"],
+    "type": "plugin",
+    "install": {
+      "manual": "Install as a Claude Code plugin — see repo README."
+    }
+  },
+  {
+    "slug": "claude-night-market",
+    "name": "Claude Night Market",
+    "tagline": "19 production-ready Claude Code plugins for engineering teams.",
+    "description": "A marketplace of 19 production-ready Claude Code plugins covering git workflows, code review, spec-driven development, architecture patterns, resource optimization, and multi-LLM delegation.",
+    "repo": "athola/claude-night-market",
+    "github_url": "https://github.com/athola/claude-night-market",
+    "author": "Alex Athola",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 259,
+    "last_updated": "2026-04-22",
+    "category": "development-workflow",
+    "tags": ["plugins", "git", "code-review", "spec-driven", "architecture"],
+    "compatible_with": ["claude-code"],
+    "type": "marketplace",
+    "install": {
+      "claude_code": "/plugin marketplace add athola/claude-night-market"
+    }
+  },
+  {
+    "slug": "aws-agent-skills",
+    "name": "AWS Agent Skills",
+    "tagline": "A collection of AWS Skills for coding agents.",
+    "description": "AWS Skills packaged for agents — covers common service workflows, IAM, deploys, and debugging patterns for cloud development with Claude Code and other harnesses.",
+    "repo": "itsmostafa/aws-agent-skills",
+    "github_url": "https://github.com/itsmostafa/aws-agent-skills",
+    "author": "Mostafa Ibrahim",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 1075,
+    "last_updated": "2026-04-22",
+    "category": "data",
+    "tags": ["aws", "cloud", "iam", "deploy", "devops"],
+    "compatible_with": ["claude-code", "codex", "cursor"],
+    "type": "skill-collection",
+    "install": {
+      "manual": "Clone and copy skills into your agent's skills directory — see README."
+    }
+  },
+  {
+    "slug": "aws-skills",
+    "name": "AWS Skills (CDK & Bedrock)",
+    "tagline": "Claude Code plugins for AWS — CDK, serverless, cost ops, Bedrock AgentCore.",
+    "description": "Claude Code plugins and agent skills for AWS development — CDK authoring, serverless patterns, cost optimization, and Bedrock AgentCore integration.",
+    "repo": "zxkane/aws-skills",
+    "github_url": "https://github.com/zxkane/aws-skills",
+    "author": "zxkane",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 256,
+    "last_updated": "2026-04-22",
+    "category": "data",
+    "tags": ["aws", "cdk", "serverless", "bedrock", "cost"],
+    "compatible_with": ["claude-code"],
+    "type": "skill-collection",
+    "install": {
+      "manual": "Install via Claude Code plugin — see README."
+    }
+  },
+  {
+    "slug": "convexskills",
+    "name": "Convex Skills",
+    "tagline": "Production patterns for Convex — queries, mutations, crons, webhooks, migrations.",
+    "description": "AI agent skills and templates for building production-ready apps with Convex. Encodes opinionated patterns for queries, mutations, scheduled functions, webhooks, and migrations.",
+    "repo": "waynesutton/convexskills",
+    "github_url": "https://github.com/waynesutton/convexskills",
+    "author": "Wayne Sutton",
+    "author_type": "community",
+    "license": "Apache-2.0",
+    "stars": 395,
+    "last_updated": "2026-04-22",
+    "category": "data",
+    "tags": ["convex", "backend", "migrations", "webhooks", "crons"],
+    "compatible_with": ["claude-code", "cursor", "codex"],
+    "type": "skill-collection",
+    "install": {
+      "manual": "Clone and follow the install steps in the README."
+    }
+  },
+  {
+    "slug": "posit-skills",
+    "name": "Posit Skills",
+    "tagline": "Claude Skills from Posit — R, Python, Quarto, and data science workflows.",
+    "description": "A collection of Claude Skills from Posit (makers of RStudio and Quarto) for R, Python, Quarto, and Shiny workflows — authored by the team that builds the tools.",
+    "repo": "posit-dev/skills",
+    "github_url": "https://github.com/posit-dev/skills",
+    "author": "Posit PBC",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 302,
+    "last_updated": "2026-04-22",
+    "category": "data",
+    "tags": ["r", "python", "quarto", "shiny", "data-science"],
+    "compatible_with": ["claude-code"],
+    "type": "skill-collection",
+    "install": {
+      "manual": "Clone and copy skills into .claude/skills — see README."
+    }
+  },
+  {
+    "slug": "awesome-claude-plugins",
+    "name": "Awesome Claude Plugins",
+    "tagline": "Curated list of plugins extending Claude Code with commands, agents, hooks, and MCPs.",
+    "description": "A curated list of plugins that let you extend Claude Code with custom commands, agents, hooks, and MCP servers through the plugin system. Useful as a discovery starting point.",
+    "repo": "ComposioHQ/awesome-claude-plugins",
+    "github_url": "https://github.com/ComposioHQ/awesome-claude-plugins",
+    "author": "Composio",
+    "author_type": "community",
+    "license": null,
+    "stars": 1436,
+    "last_updated": "2026-04-22",
+    "category": "meta",
+    "tags": ["awesome-list", "plugins", "discovery", "mcp"],
+    "compatible_with": ["claude-code"],
+    "type": "marketplace",
+    "install": {
+      "manual": "Browse the README and install individual plugins from the list."
+    }
+  },
+  {
+    "slug": "awesome-llm-skills",
+    "name": "Awesome LLM Skills",
+    "tagline": "Curated list of LLM and AI agent skills across Claude Code, Codex, Gemini CLI, and more.",
+    "description": "A curated list of awesome LLM and AI agent skills, resources, and tools for customizing workflows across Claude Code, Codex, Gemini CLI, and custom agents.",
+    "repo": "Prat011/awesome-llm-skills",
+    "github_url": "https://github.com/Prat011/awesome-llm-skills",
+    "author": "Pratik Bhavsar",
+    "author_type": "community",
+    "license": null,
+    "stars": 1150,
+    "last_updated": "2026-04-22",
+    "category": "meta",
+    "tags": ["awesome-list", "discovery", "llm", "multi-agent"],
+    "compatible_with": ["claude-code", "codex", "gemini-cli"],
+    "type": "marketplace",
+    "install": {
+      "manual": "Browse the README and follow links to individual skills."
+    }
+  },
+  {
+    "slug": "claude-reflect",
+    "name": "Claude Reflect",
+    "tagline": "Self-learning system — captures corrections and syncs them to CLAUDE.md and AGENTS.md.",
+    "description": "A self-learning system for Claude Code that captures corrections, positive feedback, and user preferences during sessions, then syncs the distilled lessons into CLAUDE.md and AGENTS.md automatically.",
+    "repo": "BayramAnnakov/claude-reflect",
+    "github_url": "https://github.com/BayramAnnakov/claude-reflect",
+    "author": "Bayram Annakov",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 986,
+    "last_updated": "2026-04-22",
+    "category": "meta",
+    "tags": ["memory", "self-learning", "claude-md", "agents-md"],
+    "compatible_with": ["claude-code"],
+    "type": "plugin",
+    "install": {
+      "manual": "Install per the repo README."
+    }
+  },
+  {
+    "slug": "claude-brain",
+    "name": "Claude Brain",
+    "tagline": "Photographic memory for Claude Code in a single portable file.",
+    "description": "Give Claude Code photographic memory in one portable .mv2 file. No database, no SQLite, no ChromaDB — just a file you can git-commit, scp, or share. Native Rust core with sub-millisecond operations.",
+    "repo": "memvid/claude-brain",
+    "github_url": "https://github.com/memvid/claude-brain",
+    "author": "Memvid",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 461,
+    "last_updated": "2026-04-22",
+    "category": "meta",
+    "tags": ["memory", "rag", "rust", "portable", "local-first"],
+    "compatible_with": ["claude-code"],
+    "type": "plugin",
+    "install": {
+      "manual": "Install the CLI and plugin per the repo README."
+    }
+  },
+  {
+    "slug": "babysitter",
+    "name": "Babysitter",
+    "tagline": "Deterministic orchestration that keeps agentic workforces on task.",
+    "description": "Babysitter enforces obedience on agentic workforces and enables them to manage extremely complex tasks and workflows through deterministic, hallucination-free self-orchestration.",
+    "repo": "a5c-ai/babysitter",
+    "github_url": "https://github.com/a5c-ai/babysitter",
+    "author": "a5c.ai",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 606,
+    "last_updated": "2026-04-22",
+    "category": "meta",
+    "tags": ["orchestration", "multi-agent", "determinism", "workflow"],
+    "compatible_with": ["claude-code", "codex"],
+    "type": "plugin",
+    "install": {
+      "manual": "Install per the repo README."
+    }
+  },
+  {
+    "slug": "skillforge",
+    "name": "SkillForge",
+    "tagline": "Intelligent skill router and creator for Claude Code and Codex.",
+    "description": "Analyzes any input to recommend existing skills, improve them, or create new ones from scratch — a meta-skill for building and maintaining your skill library.",
+    "repo": "tripleyak/SkillForge",
+    "github_url": "https://github.com/tripleyak/SkillForge",
+    "author": "tripleyak",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 594,
+    "last_updated": "2026-04-22",
+    "category": "meta",
+    "tags": ["skill-creation", "meta-skill", "router"],
+    "compatible_with": ["claude-code", "codex"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone and copy the skill folder into .claude/skills — see README."
+    }
+  },
+  {
+    "slug": "claude-code-skill-factory",
+    "name": "Claude Code Skill Factory",
+    "tagline": "Toolkit for building and deploying production-ready Claude Skills at scale.",
+    "description": "An open-source toolkit for building and deploying production-ready Claude Skills, Code Agents, custom Slash Commands, and LLM prompts. Generates structured skill templates and automates workflow integration.",
+    "repo": "alirezarezvani/claude-code-skill-factory",
+    "github_url": "https://github.com/alirezarezvani/claude-code-skill-factory",
+    "author": "Alireza Rezvani",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 717,
+    "last_updated": "2026-04-22",
+    "category": "meta",
+    "tags": ["skill-creation", "templates", "automation", "factory"],
+    "compatible_with": ["claude-code"],
+    "type": "skill-collection",
+    "install": {
+      "manual": "Clone and follow the README for scaffolding commands."
+    }
+  },
+  {
+    "slug": "ios-simulator-skill",
+    "name": "iOS Simulator Skill",
+    "tagline": "xcodebuild wrapper that lets Claude build, run, and interact with iOS apps.",
+    "description": "A Claude Code skill focused on the iOS Simulator — wraps xcodebuild and simctl so Claude can build, run, and interact with your iOS apps with minimal context overhead.",
+    "repo": "conorluddy/ios-simulator-skill",
+    "github_url": "https://github.com/conorluddy/ios-simulator-skill",
+    "author": "Conor Luddy",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 826,
+    "last_updated": "2026-04-22",
+    "category": "testing",
+    "tags": ["ios", "simulator", "xcodebuild", "simctl", "mobile"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Copy the skill folder into .claude/skills — see README."
+    }
+  },
+  {
+    "slug": "md2wechat-skill",
+    "name": "md2wechat",
+    "tagline": "Turn Markdown into beautifully formatted WeChat Official Account drafts.",
+    "description": "Write WeChat Official Account articles in Markdown, then one-click convert them to styled drafts with AI-driven themes and batch publish support.",
+    "repo": "geekjourneyx/md2wechat-skill",
+    "github_url": "https://github.com/geekjourneyx/md2wechat-skill",
+    "author": "geekjourneyx",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 1514,
+    "last_updated": "2026-04-22",
+    "category": "writing",
+    "tags": ["wechat", "markdown", "publishing", "chinese"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone and copy into .claude/skills — see README."
+    }
+  },
+  {
+    "slug": "tutor-skills",
+    "name": "Tutor Skills",
+    "tagline": "Turn PDFs, docs, and codebases into Obsidian study vaults.",
+    "description": "A Claude Code skill that ingests PDFs, documents, and codebases and turns them into structured Obsidian study vaults — notes, cross-links, and review questions.",
+    "repo": "bevibing/tutor-skills",
+    "github_url": "https://github.com/bevibing/tutor-skills",
+    "author": "bevibing",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 776,
+    "last_updated": "2026-04-22",
+    "category": "writing",
+    "tags": ["obsidian", "notes", "pdf", "learning", "study"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone and copy into .claude/skills — see README."
+    }
+  },
+  {
+    "slug": "video-podcast-maker",
+    "name": "Video Podcast Maker",
+    "tagline": "AI video podcast creation — Bilibili & YouTube, 6 TTS engines, 4K Remotion rendering.",
+    "description": "An AI-powered video podcast creation skill for coding agents. Supports Bilibili and YouTube output, zh-CN and en-US voices, six TTS engines (Edge, Azure, ElevenLabs, OpenAI, Doubao, CosyVoice), and 4K Remotion rendering.",
+    "repo": "Agents365-ai/video-podcast-maker",
+    "github_url": "https://github.com/Agents365-ai/video-podcast-maker",
+    "author": "Agents365 AI",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 522,
+    "last_updated": "2026-04-22",
+    "category": "writing",
+    "tags": ["video", "podcast", "tts", "remotion", "youtube", "bilibili"],
+    "compatible_with": ["claude-code", "codex"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone and follow the install steps in the README."
+    }
+  },
+  {
+    "slug": "smart-illustrator",
+    "name": "Smart Illustrator",
+    "tagline": "AI article illustrations with intelligent position detection and cover learning.",
+    "description": "A Claude Code skill that generates article illustrations with intelligent placement detection and a cover-learning system that adapts to your publication's visual style.",
+    "repo": "axtonliu/smart-illustrator",
+    "github_url": "https://github.com/axtonliu/smart-illustrator",
+    "author": "Axton Liu",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 453,
+    "last_updated": "2026-04-22",
+    "category": "design",
+    "tags": ["illustrations", "images", "publishing", "cover"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone and copy into .claude/skills — see README."
+    }
+  },
+  {
+    "slug": "design-dna",
+    "name": "Design DNA",
+    "tagline": "Turn reference UIs into a Design DNA JSON — then generate matching UI from your content.",
+    "description": "Ingests reference UIs (images, screenshots, URLs) and outputs a quantified Design DNA JSON with tokens, qualitative style, and visual effects. Uses the DNA to generate matching UI tailored to your content.",
+    "repo": "zanwei/design-dna",
+    "github_url": "https://github.com/zanwei/design-dna",
+    "author": "Zanwei",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 622,
+    "last_updated": "2026-04-22",
+    "category": "design",
+    "tags": ["design-tokens", "ui", "style-transfer", "design-system"],
+    "compatible_with": ["claude-code", "cursor"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone and copy into .claude/skills — see README."
+    }
+  },
+  {
+    "slug": "nanoresearch",
+    "name": "NanoResearch",
+    "tagline": "An autonomous AI research assistant packaged as an agent skill.",
+    "description": "An autonomous AI research assistant — plans searches, reads sources, and writes a literature-style summary. Packaged as an installable skill for Claude Code.",
+    "repo": "OpenRaiser/NanoResearch",
+    "github_url": "https://github.com/OpenRaiser/NanoResearch",
+    "author": "OpenRaiser",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 613,
+    "last_updated": "2026-04-22",
+    "category": "research",
+    "tags": ["research", "autonomous", "literature-review"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone and copy into .claude/skills — see README."
+    }
+  },
+  {
+    "slug": "startup-skill",
+    "name": "Startup Skill",
+    "tagline": "Skills for startup validation, competitive intelligence, and planning.",
+    "description": "A focused set of AI agent skills for founders — market validation interviews, competitive intelligence gathering, and structured planning.",
+    "repo": "ferdinandobons/startup-skill",
+    "github_url": "https://github.com/ferdinandobons/startup-skill",
+    "author": "Ferdinando Bons",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 244,
+    "last_updated": "2026-04-22",
+    "category": "product",
+    "tags": ["startup", "validation", "competitive-intel", "planning"],
+    "compatible_with": ["claude-code"],
+    "type": "skill-collection",
+    "install": {
+      "manual": "Clone and copy into .claude/skills — see README."
+    }
+  },
+  {
+    "slug": "jezweb-claude-skills",
+    "name": "Jezweb Claude Skills",
+    "tagline": "Full-stack skills — Cloudflare, React, Tailwind v4, and AI integrations.",
+    "description": "A hands-on collection of Claude Code skills for full-stack developers: Cloudflare Workers and R2, React, Tailwind v4, and common AI integrations.",
+    "repo": "jezweb/claude-skills",
+    "github_url": "https://github.com/jezweb/claude-skills",
+    "author": "Jezweb",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 744,
+    "last_updated": "2026-04-22",
+    "category": "development-workflow",
+    "tags": ["cloudflare", "react", "tailwind", "full-stack"],
+    "compatible_with": ["claude-code"],
+    "type": "skill-collection",
+    "install": {
+      "manual": "Clone and copy the individual skill folders into .claude/skills — see README."
+    }
+  },
+  {
+    "slug": "soul-md",
+    "name": "soul.md",
+    "tagline": "Build a persistent personality for your agent from your own data.",
+    "description": "A skill for giving agents a coherent personality. Claude Code or OpenClaw ingests your data (notes, writing, preferences) and distills it into a reusable \"soul\" definition.",
+    "repo": "aaronjmars/soul.md",
+    "github_url": "https://github.com/aaronjmars/soul.md",
+    "author": "Aaron J. Mars",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 377,
+    "last_updated": "2026-04-22",
+    "category": "other",
+    "tags": ["personality", "persona", "memory", "identity"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone and copy into .claude/skills — see README."
+    }
+  }
+]

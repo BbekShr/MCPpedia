@@ -1,6 +1,7 @@
 import { CATEGORIES, SITE_URL } from '@/lib/constants'
 import { getAllBlogPosts } from '@/lib/blog'
 import { getAllGuides } from '@/lib/mdx'
+import { getAllSkills } from '@/lib/skills'
 import type { MetadataRoute } from 'next'
 import fs from 'fs'
 import path from 'path'
@@ -91,7 +92,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/security`, changeFrequency: 'weekly', priority: 0.6 },
     { url: `${SITE_URL}/get-started`, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${SITE_URL}/compare`, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${SITE_URL}/skills`, changeFrequency: 'weekly', priority: 0.7 },
   ]
+
+  const skillEntries: MetadataRoute.Sitemap = getAllSkills().map(s => ({
+    url: `${SITE_URL}/skills/${s.slug}`,
+    lastModified: s.last_updated ? new Date(s.last_updated) : undefined,
+    changeFrequency: 'weekly',
+    priority: 0.7,
+  }))
 
   const blogEntries: MetadataRoute.Sitemap = getAllBlogPosts().map(post => ({
     url: `${SITE_URL}/blog/${post.slug}`,
@@ -123,5 +132,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...bestForEntries,
     ...blogEntries,
     ...comparisonEntries,
+    ...skillEntries,
   ]
 }

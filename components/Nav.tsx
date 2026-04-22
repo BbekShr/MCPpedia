@@ -50,6 +50,7 @@ export default function Nav() {
 
   const navLinks = [
     { href: '/servers', label: 'Servers' },
+    { href: '/skills', label: 'Skills' },
     { href: '/get-started', label: 'Get Started' },
     { href: '/security', label: 'Security' },
     { href: '/blog', label: 'Blog' },
