@@ -89,17 +89,18 @@ export default async function SecurityPage() {
     supabase.rpc('home_stats'),
   ])
 
+  // If the RPC fails, throw rather than rendering a zero-state fallback.
+  // With `revalidate = 3600`, a silent fallback pins "0 servers / 0 CVEs"
+  // into the ISR cache for a full hour. Throwing tells Next.js to keep
+  // serving the last successfully generated page and retry on the next
+  // request — see guides/incremental-static-regeneration.md, "Handling
+  // uncaught exceptions".
   if (!statsRaw) {
-    console.error('[security] home_stats returned no data; rendering zero-fallback', { error: statsError })
+    console.error('[security] home_stats returned no data', { error: statsError })
+    throw new Error('home_stats RPC returned no data')
   }
 
-  const stats = (statsRaw as HomeStats | null) ?? {
-    total_servers: 0, with_cves: 0, open_cves: 0, fixed_cves: 0,
-    cves_critical_open: 0, cves_high_open: 0, cves_medium_open: 0,
-    cves_low_open: 0, cves_unscored_open: 0, servers_with_open_cves: 0,
-    tool_poisoning_count: 0, injection_risk_count: 0, code_execution_count: 0,
-    scanned_servers: 0, last_security_scan: null,
-  }
+  const stats = statsRaw as HomeStats
 
   const openCount = stats.open_cves
   const fixedCount = stats.fixed_cves
