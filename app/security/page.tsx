@@ -89,48 +89,51 @@ export default async function SecurityPage() {
     supabase.rpc('home_stats'),
   ])
 
-  if (!statsRaw) {
-    console.error('[security] home_stats returned no data; rendering zero-fallback', { error: statsError })
-  }
-
-  const stats = (statsRaw as HomeStats | null) ?? {
-    total_servers: 0, with_cves: 0, open_cves: 0, fixed_cves: 0,
-    cves_critical_open: 0, cves_high_open: 0, cves_medium_open: 0,
-    cves_low_open: 0, cves_unscored_open: 0, servers_with_open_cves: 0,
-    tool_poisoning_count: 0, injection_risk_count: 0, code_execution_count: 0,
-    scanned_servers: 0, last_security_scan: null,
+  // Refuse to render a broken snapshot. With `revalidate = 3600`, any page we
+  // return here is pinned into the ISR cache for a full hour — so if the RPC
+  // fails OR returns an obviously-wrong response (zero servers, zero scanned,
+  // no scan timestamp), throw. Next.js then keeps serving the last successful
+  // render and retries on the next request, rather than caching a zero-state.
+  // See guides/incremental-static-regeneration.md, "Handling uncaught exceptions".
+  const stats = statsRaw as HomeStats | null
+  const healthy =
+    stats != null &&
+    stats.total_servers > 0 &&
+    stats.scanned_servers > 0 &&
+    stats.last_security_scan != null
+  if (!healthy) {
+    console.error('[security] home_stats returned empty/zero snapshot', {
+      error: statsError,
+      total_servers: stats?.total_servers,
+      scanned_servers: stats?.scanned_servers,
+      last_security_scan: stats?.last_security_scan,
+    })
+    throw new Error('home_stats RPC returned empty or zero snapshot')
   }
 
   const openCount = stats.open_cves
   const fixedCount = stats.fixed_cves
-  const criticalCount = stats.cves_critical_open
-  const highCount = stats.cves_high_open
-  const mediumCount = stats.cves_medium_open
-  const lowCount = stats.cves_low_open
-  const infoCount = stats.cves_unscored_open
   const totalServers = stats.total_servers
   const serversWithCVEs = stats.with_cves
   const toolPoisoningCount = stats.tool_poisoning_count
   const injectionRiskCount = stats.injection_risk_count
   const codeExecutionCount = stats.code_execution_count
-  const lastScanData = stats.last_security_scan ? { last_security_scan: stats.last_security_scan } : null
 
   const severityCounts = {
-    critical: criticalCount || 0,
-    high: highCount || 0,
-    medium: mediumCount || 0,
-    low: lowCount || 0,
-    info: infoCount || 0,
+    critical: stats.cves_critical_open,
+    high: stats.cves_high_open,
+    medium: stats.cves_medium_open,
+    low: stats.cves_low_open,
+    info: stats.cves_unscored_open,
   }
-  const cleanServers = (totalServers || 0) - (serversWithCVEs || 0)
-  const cleanPct = totalServers ? Math.floor((cleanServers / totalServers) * 1000) / 10 : 0
-  const lastScan = (lastScanData as { last_security_scan: string } | null)?.last_security_scan
-  const lastScanFormatted = lastScan
-    ? new Date(lastScan).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })
-    : null
+  const cleanServers = totalServers - serversWithCVEs
+  const cleanPct = Math.floor((cleanServers / totalServers) * 1000) / 10
+  const lastScanFormatted = new Date(stats.last_security_scan!).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short',
+  })
 
   const SEVERITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, info: 4 }
-  const advList = ((advisories as AdvisoryWithServer[]) || []).sort((a, b) => {
+  const advList = ((advisories as AdvisoryWithServer[] | null) ?? []).sort((a, b) => {
     const sevDiff = (SEVERITY_ORDER[a.severity] ?? 5) - (SEVERITY_ORDER[b.severity] ?? 5)
     if (sevDiff !== 0) return sevDiff
     return new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime()
@@ -146,9 +149,7 @@ export default async function SecurityPage() {
           Scanned daily. Scoring methodology is{' '}
           <Link href="/methodology" className="text-accent hover:text-accent-hover">open source</Link>.
         </p>
-        {lastScanFormatted && (
-          <p className="text-xs text-text-muted mt-1">Last scan: {lastScanFormatted}</p>
-        )}
+        <p className="text-xs text-text-muted mt-1">Last scan: {lastScanFormatted}</p>
       </div>
 
       {/* Dashboard stats */}
@@ -156,15 +157,15 @@ export default async function SecurityPage() {
         {/* Overview row */}
         <div className="grid grid-cols-3 gap-3">
           <div className="border border-border rounded-md p-3 text-center">
-            <div className="text-2xl font-bold text-red">{serversWithCVEs || 0}</div>
+            <div className="text-2xl font-bold text-red">{serversWithCVEs}</div>
             <div className="text-xs text-text-muted">Servers affected</div>
           </div>
           <div className="border border-border rounded-md p-3 text-center">
-            <div className="text-2xl font-bold text-red">{openCount || 0}</div>
+            <div className="text-2xl font-bold text-red">{openCount}</div>
             <div className="text-xs text-text-muted">Open CVEs</div>
           </div>
           <div className="border border-border rounded-md p-3 text-center">
-            <div className="text-2xl font-bold text-green">{fixedCount || 0}</div>
+            <div className="text-2xl font-bold text-green">{fixedCount}</div>
             <div className="text-xs text-text-muted">Fixed CVEs</div>
           </div>
         </div>
@@ -208,7 +209,7 @@ export default async function SecurityPage() {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </div>
             <div>
-              <div className="text-xl font-bold text-text-primary">{toolPoisoningCount ?? 0}</div>
+              <div className="text-xl font-bold text-text-primary">{toolPoisoningCount}</div>
               <div className="text-xs font-medium text-text-primary">Tool poisoning</div>
               <div className="text-xs text-text-muted mt-0.5">Hidden instructions in tool descriptions that manipulate the AI</div>
             </div>
@@ -218,7 +219,7 @@ export default async function SecurityPage() {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             </div>
             <div>
-              <div className="text-xl font-bold text-text-primary">{injectionRiskCount ?? 0}</div>
+              <div className="text-xl font-bold text-text-primary">{injectionRiskCount}</div>
               <div className="text-xs font-medium text-text-primary">Injection risk</div>
               <div className="text-xs text-text-muted mt-0.5">Prompt injection patterns like &ldquo;ignore previous instructions&rdquo;</div>
             </div>
@@ -228,7 +229,7 @@ export default async function SecurityPage() {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
             </div>
             <div>
-              <div className="text-xl font-bold text-text-primary">{codeExecutionCount ?? 0}</div>
+              <div className="text-xl font-bold text-text-primary">{codeExecutionCount}</div>
               <div className="text-xs font-medium text-text-primary">Code execution</div>
               <div className="text-xs text-text-muted mt-0.5">Servers with shell, eval, or subprocess tool patterns</div>
             </div>
@@ -236,7 +237,7 @@ export default async function SecurityPage() {
         </div>
         <p className="text-xs text-text-muted mt-3">
           Computed against the <strong className="text-text-primary tabular-nums">{stats.scanned_servers.toLocaleString()}</strong> servers
-          {totalServers ? <> ({((stats.scanned_servers / totalServers) * 100).toFixed(1)}% of the catalog)</> : null}
+          {' '}({((stats.scanned_servers / totalServers) * 100).toFixed(1)}% of the catalog)
           {' '}whose tool manifests were successfully fetched. Counts exclude servers without a live endpoint — the true surface is likely larger.
         </p>
       </div>
@@ -249,7 +250,7 @@ export default async function SecurityPage() {
             {cleanPct}% of servers have no open CVEs
           </p>
           <p className="text-xs text-text-muted">
-            {cleanServers.toLocaleString()} of {(totalServers || 0).toLocaleString()} tracked servers are clean.
+            {cleanServers.toLocaleString()} of {totalServers.toLocaleString()} tracked servers are clean.
             {serversWithCVEs ? ` ${serversWithCVEs} server${serversWithCVEs !== 1 ? 's' : ''} have open vulnerabilities.` : ''}
           </p>
         </div>
