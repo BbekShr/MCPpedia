@@ -1,0 +1,127 @@
+---
+title: "MCP Ecosystem Hits 19,469 Servers: Week's Best New Arrivals"
+description: "900 new MCP servers this week. Here's what actually matters: AI music control, French tax compliance, encrypted agent chat, and a 95% token compressor."
+hook: "900 new MCP servers dropped this week — including one that compresses tokens by 95% and another that lets Claude play a synthesizer. The ecosystem at 19,469 servers is no longer a dev playground. It's infrastructure."
+date: "2026-04-23"
+tags: ["weekly","ecosystem","new-servers"]
+category: "weekly-roundup"
+featuredServers: ["hermes-paperclip-adapter","mcph","io-github-cmendezs-mcp-facture-electronique-fr","https-github-com-containers-kubernetes-mcp-server","io-github-neptun2000-heor-agent","vex","io-github-alexkirienko-safebot-chat","live-coding-music-mcp","claude-code-mcp-server","squeez"]
+---
+<thinking>
+Let me write a compelling weekly roundup article about the MCP ecosystem. I need to cover:
+1. Ecosystem stats (19,469 total servers, 900 new this week)
+2. Highlight 3-5 interesting new servers
+3. Cover trending servers
+4. Use the custom components appropriately
+5. Keep paragraphs short and punchy
+
+Let me identify the most interesting new servers:
+1. **Squeez** - token compressor with up to 95% bash compression, 91 stars - fascinating utility
+2. **Live Coding Music MCP** - 194 stars, gives Claude control over Strudel.cc for music generation - creative/unusual
+3. **Claude Code MCP Server** - 15 dev tools, 10 stars
+4. **io.github.cmendezs/mcp-facture-electronique-fr** - French e-invoicing compliance - niche but interesting
+5. **io.github.alexkirienko/safebot-chat** - End-to-end encrypted multi-agent chat, zero chat logs - interesting privacy angle
+6. **Hermes Paperclip Adapter** - complex adapter story
+7. **mcph** - cloud-managed MCP servers
+
+For trending:
+1. **TrendRadar** - massive 945 star gain, 54,719 total stars
+2. **labelhead-artist-momentum** - 57,529 stars, 467 gain
+3. **Scrapling** - 234 star gain
+4. **N8n** - always a powerhouse
+5. **Chrome DevTools MCP** - consistent performer
+6. **Gemini CLI** - 102,175 stars, 117 gain
+
+Let me write the article now.
+</thinking>
+
+<SectionLabel>Week in Review</SectionLabel>
+
+**900 new MCP servers in a single week.** The catalog now sits at **19,469 total servers**, and the pace isn't slowing — it's accelerating. Whatever you think the MCP ecosystem is, it's already bigger.
+
+This week's batch was a genuinely eclectic mix: French tax compliance tooling, AI-controlled live music, encrypted multi-agent chat rooms, and a token compressor that claims up to 95% reduction. Let's get into it.
+
+---
+
+<StatGrid>
+  <Stat value="19,469" label="Total MCP Servers" detail="In the catalog" />
+  <Stat value="900" label="New This Week" detail="Added in 7 days" />
+  <Stat value="945" label="Star Gain" detail="TrendRadar, top trending" />
+  <Stat value="194" label="Stars" detail="Live Coding Music MCP, top new arrival" />
+</StatGrid>
+
+---
+
+## The New Arrivals Worth Your Attention
+
+### 1. Squeez — Token Compression as a First-Class Tool
+
+[Squeez](/s/squeez) is the kind of server that makes you stop and reconsider what "MCP utility" even means. It's a hook-based token compressor that plugs into five AI CLI hosts — Claude Code, Copilot CLI, OpenCode, Gemini CLI, and Codex CLI — and claims **up to 95% bash output compression**.
+
+That's not a rounding error. That's a genuine order-of-magnitude improvement for anyone running agents over large shell outputs.
+
+With a signature mode for code reads, cross-call deduplication, and a self-teaching protocol — all with zero runtime dependencies — this has the bones of something that quietly becomes essential. It's already pulled in **91 GitHub stars** despite being brand new.
+
+<Callout type="fire">95% compression for bash output is the kind of claim that sounds absurd until you run it. Squeez (score: 64) is one to watch — especially as context window costs stay painful.</Callout>
+
+### 2. Live Coding Music MCP — Claude Picks Up a Synthesizer
+
+[Live Coding Music MCP](/s/live-coding-music-mcp) gives Claude direct control over **Strudel.cc**, a browser-based live coding music environment. The model generates patterns, the music plays. It's weird. It's wonderful. It has **194 GitHub stars** — more than anything else in this week's new cohort.
+
+The entertainment category is historically thin in the MCP world. This is a genuine outlier — and a proof of concept that AI-controlled creative tools have an audience far beyond developer productivity.
+
+<PullQuote>194 stars in a week for an AI-controlled synthesizer. The "MCP is only for devs" narrative is officially dead.</PullQuote>
+
+### 3. French E-Invoicing Compliance — Boring Name, Serious Problem
+
+[io.github.cmendezs/mcp-facture-electronique-fr](/s/io-github-cmendezs-mcp-facture-electronique-fr) targets French electronic invoicing under the **XP Z12-013 standard** — managing invoices, validation, and regulatory compliance. It scored **87 on the quality index** with zero stars.
+
+Nobody's starring regulatory compliance tools. But someone absolutely needs them. France is rolling out mandatory e-invoicing for B2B transactions in phases through 2026, and the compliance tooling gap is real. This is what "boring but necessary infrastructure" looks like in MCP form.
+
+### 4. SafeBot Chat — Encrypted Multi-Agent Rooms
+
+[io.github.alexkirienko/safebot-chat](/s/io-github-alexkirienko-safebot-chat) is doing something architecturally interesting: **end-to-end encrypted multi-agent chat rooms** with client-side cryptography and zero chat logs stored server-side.
+
+As agents start talking to each other more — not just to humans — the question of secure inter-agent communication becomes non-trivial. This is an early, rough attempt at an answer. Worth watching as the agentic patterns mature.
+
+### 5. mcp.hosting — Cloud-Managed MCP Servers
+
+[Mcph](/s/mcph) takes a different angle: "one install, all your MCP servers, managed from the cloud." It scored **87** and is making a bet that MCP server management is itself a product category.
+
+<Callout type="info">The infrastructure layer of the MCP ecosystem is quietly taking shape. Managed hosting, configuration management, and orchestration tools are appearing weekly now — not just servers that do things, but servers that manage other servers.</Callout>
+
+---
+
+<SectionLabel>Trending This Week</SectionLabel>
+
+## What the Community Is Actually Starring
+
+The trending data this week tells a clear story: **intelligence tools and developer infrastructure** are where the gravity is.
+
+**[TrendRadar](/s/trendradar)** absolutely dominated with a **+945 star gain** this week — landing at 54,719 total. It's an AI-driven public opinion monitor with multi-platform aggregation, RSS, and smart push alerts across WeChat, Feishu, DingTalk, Telegram, Slack, and more. The Chinese-language positioning and the sheer breadth of integrations suggest this is serving a large, real user base. A score of 48 means there's room to grow on quality, but the market has clearly spoken.
+
+**[Scrapling](/s/io-github-d4vinci-scrapling)** picked up **+234 stars** — stealth HTTP, real browser support, and Cloudflare bypass via CSS selectors. Web scraping remains one of those perennial developer needs that never goes away, and Scrapling's approach is aggressive about actually working in the wild.
+
+**[N8n](/s/n8n)** and **[Chrome DevTools MCP](/s/chrome-devtools-mcp)** each added **+139 stars**, continuing their steady ascent. n8n at 185,221 total stars is in a category of its own — but the Chrome DevTools MCP at 36,781 is quietly becoming essential for any team running browser-based coding agents.
+
+**[Gemini CLI](/s/gemini-cli)** hit **102,175 total stars** with a +117 gain — one of only a handful of MCP-adjacent projects that's cracked six figures. Google's open-source terminal agent continues to pull serious attention.
+
+<PullQuote>TrendRadar gained 945 stars in a single week. The market for AI-powered information monitoring is not a niche — it's a wave.</PullQuote>
+
+---
+
+<SectionLabel>The Bottom Line</SectionLabel>
+
+## What This Week Actually Means
+
+The MCP ecosystem at nearly **20,000 servers** is no longer a collection of demos and experiments. This week you had enterprise compliance infrastructure, encrypted multi-agent communication, creative AI tooling, and a managed hosting platform all land in the same seven-day window.
+
+The breadth is the point.
+
+<Callout type="tip">If you're building MCP integrations, the whitespace isn't in developer tools anymore — it's in regulated industries (finance, legal, healthcare) and in the infrastructure layer itself. That's where this week's most interesting bets are being placed.</Callout>
+
+The gap between "interesting project" and "production-grade tool" is still wide for most of these servers. But 900 new attempts a week means the hit rate doesn't need to be high. Some of these will matter enormously six months from now — and this week's batch has a few genuine candidates.
+
+Pick your horses accordingly.
+
+---

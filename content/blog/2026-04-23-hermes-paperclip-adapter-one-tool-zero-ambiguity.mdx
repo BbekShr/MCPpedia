@@ -1,0 +1,113 @@
+---
+title: "Hermes Paperclip Adapter: One Tool, Zero Ambiguity"
+description: "MarketIntelLabs' production Hermes fork replaces curl-in-prompt with structured, enum-constrained tool calls — scoring 91/100 with only 2 stars."
+hook: "This MCP server has 2 GitHub stars and a 91/100 quality score. It replaces curl-in-prompt with schema-enforced tool calls — and MarketIntelLabs runs it in production. Popularity is not a proxy for quality."
+date: "2026-04-23"
+tags: ["spotlight","review"]
+category: "server-spotlight"
+featuredServers: ["hermes-paperclip-adapter"]
+---
+<SectionLabel>Server Spotlight</SectionLabel>
+
+## The Adapter That Actually Owns Its State
+
+Most MCP servers are passive. They answer calls, return data, and wait. **Hermes Paperclip Adapter** does something more interesting — it takes ownership of status transitions, enforcing scope so your agent can't accidentally flip an issue into the wrong state with a careless prompt.
+
+That's a small design decision with enormous practical consequences.
+
+---
+
+<SectionLabel>What It Is</SectionLabel>
+
+## A Fork With Opinions
+
+[Hermes Paperclip Adapter](/s/hermes-paperclip-adapter) is a **MarketIntelLabs fork** of the upstream `hermes-paperclip-adapter` originally built by Nous Research. Published to npm as `@marketintellabs/hermes-paperclip-adapter`, this is the version that MarketIntelLabs runs in production — not the upstream, not a prototype.
+
+That distinction matters. When a company eats its own cooking, you get a different kind of software. Edge cases get filed. Bugs get fixed. The API stabilizes around what actually works.
+
+<PullQuote>When a company runs its own fork in production, the fork becomes the real product — not a curiosity.</PullQuote>
+
+The core premise: replace **curl-in-prompt** — the janky practice of embedding raw HTTP calls inside agent prompts — with structured, schema-validated tool calls via an in-process MCP tool server called `paperclip-mcp`. If you've ever watched an LLM hallucinate a curl flag and take down a workflow, you understand exactly why this matters.
+
+---
+
+<SectionLabel>The Tools</SectionLabel>
+
+## One Tool, Done Right
+
+The server exposes a single tool — and that restraint is intentional.
+
+**`update_issue_status`** transitions an issue to one of three terminal states:
+
+- `done`
+- `blocked`
+- `cancelled`
+
+That's it. No freeform string. No status soup. The schema enforces an enum, which means the model cannot invent a fourth state like `"kinda done"` or `"pending-ish"`. Scope enforcement is baked into the call signature itself.
+
+<Callout type="tip">The enum-constrained `status` field is doing real security work here — it's not just validation, it's a hard boundary on what the agent is allowed to express.</Callout>
+
+This is the right way to design agent-facing tools when the downstream consequence is a persistent state change. Structured > freeform. Always.
+
+---
+
+<SectionLabel>The Prompt Layer</SectionLabel>
+
+## Heartbeats and Habits
+
+Beyond the tool itself, the adapter ships a **built-in prompt template**: `builtin:mil-heartbeat-v3`. This prompt explicitly steers the agent toward using `update_issue_status` rather than falling back to the old RESULT marker pattern for issue status transitions.
+
+This is a subtle but important feature. You can expose a tool all you want — but if the agent's prompt incentivizes an older pattern, you'll get the old pattern. MIL's heartbeat prompt closes that gap by encoding the preference directly into the agent's context.
+
+It's prompt engineering as configuration management. The tool and the prompt ship together, which means you're not left wiring them up yourself and hoping the seams hold.
+
+---
+
+<SectionLabel>Score Breakdown</SectionLabel>
+
+## By the Numbers
+
+The server holds a **composite score of 91/100** — strong across the board, with a few nuanced gaps worth understanding.
+
+<ScoreBreakdown>
+  <ScoreRow label="Security" points="30" description="Perfect score. Enum constraints on status transitions prevent out-of-scope agent actions." />
+  <ScoreRow label="Efficiency" points="20" description="Full marks. In-process MCP server eliminates curl-in-prompt overhead entirely." />
+  <ScoreRow label="Documentation" points="15" description="Solid. Includes UPSTREAM.md detailing fork divergence and credit to Nous Research." />
+  <ScoreRow label="Maintenance" points="16" description="Actively maintained by MarketIntelLabs with production deploys confirming real usage." />
+  <ScoreRow label="Compatibility" points="10" description="Available via both npm (@marketintellabs/hermes-paperclip-adapter) and pip (hermes-agent)." />
+</ScoreBreakdown>
+
+The **security score of 30** is the headline here. Structured tool calls with enforced enums instead of free-text agent output is a meaningful security posture — not security theater.
+
+<Callout type="fire">A 91/100 composite on an early-stage fork with only 2 GitHub stars suggests the scoring methodology rewards design quality over popularity. That's a good sign for the methodology and for this server.</Callout>
+
+---
+
+<SectionLabel>Who Should Use This</SectionLabel>
+
+## The Right Audience
+
+This adapter is **not for everyone** — and it's honest about that. It's purpose-built for teams running Hermes-based agent workflows who want to move away from brittle curl-in-prompt patterns without rebuilding their entire stack.
+
+Specifically, you'll get the most out of [Hermes Paperclip Adapter](/s/hermes-paperclip-adapter) if you:
+
+- **Already use Nous Research's Hermes agents** and want a battle-tested fork with production provenance
+- **Need deterministic state transitions** — no hallucinated statuses, no ambiguous agent output
+- **Want prompt and tool to ship together** rather than managing their alignment yourself
+- **Deploy via npm or pip** — dual-ecosystem support means you're not locked into one runtime
+
+If you're running a different agent framework, the value proposition narrows considerably. This is tightly scoped software with a clear job.
+
+---
+
+<SectionLabel>Verdict</SectionLabel>
+
+## Small Star Count, Serious Engineering
+
+Two GitHub stars. Ninety-one points. That gap tells you something about how the open-source discovery problem distorts signal.
+
+**MarketIntelLabs built this to solve a real production problem** — brittle agent prompts that fail when the LLM gets creative about HTTP. They solved it the right way: structured calls, schema enforcement, and a prompt layer that reinforces the behavior you want. Then they published it.
+
+If you're running Hermes in production and still embedding curl in prompts, this fork is the upgrade you didn't know existed.
+
+---
