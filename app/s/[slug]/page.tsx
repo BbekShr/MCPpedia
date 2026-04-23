@@ -34,7 +34,7 @@ import {
 import type { Server, Changelog, SecurityAdvisory } from '@/lib/types'
 import type { Metadata } from 'next'
 
-export const revalidate = 86400
+export const revalidate = 604800 // 7d; on-demand revalidate triggers on approved edits
 
 function stripHtml(html: string): string {
   return html

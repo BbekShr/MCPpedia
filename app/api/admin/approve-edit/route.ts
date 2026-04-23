@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { rateLimitUser } from '@/lib/rate-limit'
+import { revalidateServer, revalidateProfile } from '@/lib/revalidate'
 
 // Allowed editable fields must match EDITABLE_FIELDS in lib/validators.ts
 const ALLOWED_FIELDS = [
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
 
   const { data: edit, error: fetchErr } = await supabase
     .from('edits')
-    .select('id, server_id, field_name, new_value, status')
+    .select('id, server_id, user_id, field_name, new_value, status')
     .eq('id', edit_id)
     .single()
 
@@ -64,6 +65,13 @@ export async function POST(request: Request) {
         reviewed_at: new Date().toISOString(),
       })
       .eq('id', edit_id)
+    // Rejection triggers a karma refund for the proposer — refresh their profile.
+    const { data: author } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('id', edit.user_id)
+      .single()
+    if (author?.username) revalidateProfile(author.username)
     return NextResponse.json({ ok: true, action: 'rejected' })
   }
 
@@ -89,6 +97,16 @@ export async function POST(request: Request) {
       reviewed_at: new Date().toISOString(),
     })
     .eq('id', edit_id)
+
+  // Refresh the affected server page (plus /compare pages containing it)
+  // and the proposer's profile, so the approval is visible immediately
+  // instead of waiting for the 7-day TTL.
+  const [{ data: server }, { data: author }] = await Promise.all([
+    supabase.from('servers').select('slug').eq('id', edit.server_id).single(),
+    supabase.from('profiles').select('username').eq('id', edit.user_id).single(),
+  ])
+  if (server?.slug) revalidateServer(server.slug)
+  if (author?.username) revalidateProfile(author.username)
 
   return NextResponse.json({ ok: true, action: 'approved' })
 }

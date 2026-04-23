@@ -1,6 +1,6 @@
 import { CATEGORIES, CATEGORY_LABELS, SITE_URL } from '@/lib/constants'
 
-export const revalidate = 86400 // 24h
+export const revalidate = 604800 // 7d
 
 const BODY = `# MCPpedia
 

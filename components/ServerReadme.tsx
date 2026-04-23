@@ -34,7 +34,7 @@ export default async function ServerReadme({ githubUrl }: { githubUrl: string | 
     const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
       headers: { 'Accept': 'application/vnd.github.v3.raw' },
       signal: controller.signal,
-      next: { revalidate: 86400 }, // cache for 24h
+      next: { revalidate: 604800 }, // 7d; matches /s/[slug] page revalidate
     })
     clearTimeout(timeout)
     if (res.ok) {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { discussionSchema } from '@/lib/validators'
+import { revalidateProfile } from '@/lib/revalidate'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -83,6 +84,14 @@ export async function POST(request: Request) {
   } catch {
     // Non-critical — rate limiting uses real-time count, not this field
   }
+
+  // DB trigger awards karma for the post; surface it on the profile.
+  const { data: poster } = await supabase
+    .from('profiles')
+    .select('username')
+    .eq('id', user.id)
+    .single()
+  if (poster?.username) revalidateProfile(poster.username)
 
   return NextResponse.json({ discussion }, { status: 201 })
 }

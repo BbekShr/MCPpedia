@@ -6,7 +6,7 @@ import type { MetadataRoute } from 'next'
 import fs from 'fs'
 import path from 'path'
 
-export const revalidate = 86400 // 24h — crawlers re-read once per day
+export const revalidate = 604800 // 7d — crawlers re-read weekly
 
 /**
  * Fetch ALL non-archived servers by paginating through Supabase

@@ -11,6 +11,7 @@ import {
   scoreCompatibility,
   scoreMaintenance,
 } from '@/lib/scoring'
+import { revalidateServer, revalidateProfile } from '@/lib/revalidate'
 import type { Tool } from '@/lib/types'
 
 export async function POST(request: Request) {
@@ -217,6 +218,16 @@ export async function POST(request: Request) {
     console.error('submit scoring error:', (e as Error).message)
     // Scoring failure doesn't block the submission
   }
+
+  // Make the new server and the submitter's profile visible immediately
+  // (karma is awarded by a DB trigger on the servers insert above).
+  revalidateServer(slug)
+  const { data: submitter } = await supabase
+    .from('profiles')
+    .select('username')
+    .eq('id', user.id)
+    .single()
+  if (submitter?.username) revalidateProfile(submitter.username)
 
   return NextResponse.json({ server }, { status: 201 })
 }

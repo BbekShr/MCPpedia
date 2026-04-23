@@ -1,6 +1,6 @@
 # MCPpedia
 
-The encyclopedia for MCP servers. Browse, compare, and evaluate 17,800+ Model Context Protocol servers with transparent, automated scoring.
+The encyclopedia for MCP servers. Browse, compare, and evaluate 19,000+ Model Context Protocol servers with transparent, automated scoring.
 
 **Live at [mcppedia.org](https://mcppedia.org)**
 
@@ -17,10 +17,13 @@ The encyclopedia for MCP servers. Browse, compare, and evaluate 17,800+ Model Co
 - **Server comparison** — side-by-side comparison of any two servers
 - **Server README rendering** — rendered markdown README directly on server detail pages
 - **Popular searches** — quick-access search suggestions shown on focus
-- **Community reviews and discussion** — user reviews with star ratings
+- **Community reviews and discussion** — user reviews with star ratings, plus "works for me" verifications from real users
+- **Karma and contributor profiles** — earn points for submitting servers, proposing edits, posting in discussions, and verifying servers; progress tiers on public `/profile/[username]` pages
+- **Sign in with GitHub or Google** — OAuth via Supabase with a one-time `/welcome` step to pick a username
 - **Blog** — auto-generated and editorial articles about MCP servers and the ecosystem, with sticky table of contents on wide screens
 - **Newsletter** — weekly digest of new and trending servers
 - **Best-of lists** — curated lists of top servers by use case (developers, AI agents, databases, security, monitoring, and more)
+- **Skills directory** — curated catalog of Claude Code skills and plugins at `/skills`, browsable by category and compatible agent
 - **Embeddable badges** — SVG score badges via `/api/widget/[slug]` in flat and detailed styles
 - **Public API** — `GET /api/v1/servers` with full filtering, sorting, pagination, and CORS headers
 - **MCP server** — an MCP server for querying MCPpedia data programmatically (`mcppedia-server/`)
@@ -92,21 +95,22 @@ Automated bots run via GitHub Actions to keep data fresh:
 
 | Bot | Schedule | What it does |
 |-----|----------|-------------|
-| `sync-registry` | Daily 1am UTC | Syncs servers from the official MCP Registry |
-| `discover` | Daily 2am UTC | Discovers new MCP servers from GitHub and npm |
-| `update-metadata` | Daily 3am UTC | Refreshes GitHub stars, commits, issues, npm downloads |
-| `extract-install-info` | Daily 4am UTC | Extracts install configs and categories |
-| `enrich-descriptions` | Daily 4:30am UTC | Enriches server descriptions using Claude |
-| `compute-scores` | Daily 5am UTC | Computes all scores (security, efficiency, docs, etc.) |
-| `snapshot-metrics` | Daily 5:30am UTC | Snapshots ecosystem metrics for historical tracking |
-| `extract-schemas` | Daily 5am UTC | Extracts tool schemas from server packages using Claude |
-| `track-trending` | Daily 6:30am UTC | Tracks trending servers |
-| `blog-security-alerts` | Daily 7am UTC | Generates blog posts for security alerts |
-| `generate-blog` | Mon & Thu 10am UTC | Auto-generates blog articles |
+| `sync-registry` | Daily 4am UTC | Syncs servers from the official MCP Registry |
+| `discover` | Daily 5am UTC | Discovers new MCP servers from GitHub and npm |
+| `update-metadata` | Daily 6am UTC | Refreshes GitHub stars, commits, issues, npm downloads |
+| `extract-install-info` | Daily 7am UTC | Extracts install configs and categories |
+| `enrich-descriptions` | Daily 7:30am UTC | Enriches server descriptions using Claude |
+| `compute-scores` | Daily 8am UTC | Computes all scores (security, efficiency, docs, etc.) |
+| `extract-schemas` | Daily 8am UTC | Extracts tool schemas from server packages using Claude |
+| `snapshot-metrics` | Daily 8:30am UTC | Snapshots ecosystem metrics for historical tracking |
+| `track-trending` | Daily 9:30am UTC | Tracks trending servers |
+| `blog-security-alerts` | Daily 9:30am UTC | Generates blog posts for security alerts |
 | `publish-scheduled-blog` | Daily 12pm UTC | Publishes scheduled blog posts |
-| `send-digest` | Friday 10am UTC | Sends the weekly newsletter digest |
-| `check-broken-links` | Weekly (Sun 6am UTC) | Checks for broken links across the site |
-| `detect-duplicates` | Weekly (Mon 6am UTC) | Detects duplicate server entries |
+| `generate-blog` | Tue & Thu 9am UTC | Auto-generates blog articles |
+| `send-digest` | Tuesday 3pm UTC | Sends the weekly newsletter digest |
+| `generate-comparisons` | Sunday 9am UTC | Pre-generates head-to-head server comparison pages |
+| `check-broken-links` | Sunday 9am UTC | Checks for broken links across the site |
+| `detect-duplicates` | Monday 9am UTC | Detects duplicate server entries |
 
 Run any bot locally:
 

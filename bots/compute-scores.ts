@@ -7,6 +7,8 @@
 import { config } from 'dotenv'
 config({ path: '.env.local' })
 
+import fs from 'fs'
+import path from 'path'
 import { createAdminClient } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
 import { getReadme } from './lib/github'
@@ -63,6 +65,10 @@ async function main() {
   console.log(`Computing scores for ${servers.length} servers...\n`)
 
   let processed = 0
+  // Slugs whose total score shifted ≥ 2 points this run. Used after the loop
+  // to revalidate /compare/... pages containing them (score-driven freshness
+  // for compare pages; individual /s/{slug} pages accept up to 7-day lag).
+  const movedSlugs = new Set<string>()
 
   for (const server of servers) {
     console.log(`[${processed + 1}/${servers.length}] ${server.slug}`)
@@ -127,6 +133,11 @@ async function main() {
 
     const total = Math.min(100, security.score + efficiency.score + docs.score + compat.score + maint.score)
     console.log(`  TOTAL: ${total}/100\n`)
+
+    const oldTotal = server.score_total ?? 0
+    if (Math.abs(total - oldTotal) >= 2) {
+      movedSlugs.add(server.slug)
+    }
 
     // Update server record
     const { error: updateError } = await supabase
@@ -210,6 +221,7 @@ async function main() {
   await run.finish()
 
   await revalidateSiteCache()
+  await revalidateComparePages(movedSlugs)
   } catch (err) {
     await run.fail(String(err))
     throw err
@@ -240,6 +252,63 @@ async function revalidateSiteCache() {
     console.log(`Cache revalidation: ${await res.text()}`)
   } catch (err) {
     console.warn(`Cache revalidation failed: ${String(err)}`)
+  }
+}
+
+// For each slug whose score shifted materially, find every /compare/a-vs-b
+// page containing it and refresh those pages on-demand. Compare pages are
+// set to a 7-day TTL to cut ISR writes; this call keeps them accurate when
+// scores actually move. Batched to respect /api/revalidate's 200-path cap.
+async function revalidateComparePages(movedSlugs: Set<string>) {
+  if (movedSlugs.size === 0) {
+    console.log('No score deltas ≥ 2 — skipping compare-page revalidation.')
+    return
+  }
+  const siteUrl = process.env.SITE_URL
+  const secret = process.env.REVALIDATE_SECRET
+  if (!siteUrl || !secret) {
+    console.log('Skipping compare-page revalidation — SITE_URL or REVALIDATE_SECRET not set.')
+    return
+  }
+
+  interface Pair { slugA: string; slugB: string }
+  let pairs: Pair[] = []
+  try {
+    const raw = fs.readFileSync(path.join(process.cwd(), 'data', 'comparison-pairs.json'), 'utf-8')
+    pairs = JSON.parse(raw).pairs ?? []
+  } catch (err) {
+    console.warn(`Could not read comparison-pairs.json: ${String(err)}`)
+    return
+  }
+
+  const paths = new Set<string>()
+  for (const p of pairs) {
+    if (movedSlugs.has(p.slugA) || movedSlugs.has(p.slugB)) {
+      paths.add(`/compare/${p.slugA}-vs-${p.slugB}`)
+    }
+  }
+  if (paths.size === 0) {
+    console.log(`${movedSlugs.size} slugs moved, but none appear in comparison-pairs.json.`)
+    return
+  }
+
+  const all = Array.from(paths)
+  const endpoint = `${siteUrl.replace(/\/$/, '')}/api/revalidate`
+  console.log(`Revalidating ${all.length} compare page(s) for ${movedSlugs.size} moved slug(s)...`)
+  for (let i = 0; i < all.length; i += 200) {
+    const batch = all.slice(i, i + 200)
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${secret}` },
+        body: JSON.stringify({ paths: batch }),
+      })
+      if (!res.ok) {
+        console.warn(`Compare revalidation batch returned ${res.status}: ${await res.text()}`)
+      }
+    } catch (err) {
+      console.warn(`Compare revalidation batch failed: ${String(err)}`)
+    }
   }
 }
 

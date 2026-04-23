@@ -7,7 +7,7 @@ import { SITE_URL, PUBLIC_CARD_FIELDS } from '@/lib/constants'
 import { JsonLdScript, generateItemListJsonLd, generateBreadcrumbJsonLd } from '@/lib/seo'
 import type { Metadata } from 'next'
 
-export const revalidate = 86400
+export const revalidate = 604800 // 7d
 
 const USE_CASES: Record<string, {
   title: string

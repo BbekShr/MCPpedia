@@ -19,7 +19,7 @@ import { z } from 'zod'
 const DEFAULT_PATHS = ['/', '/security'] as const
 
 const schema = z.object({
-  paths: z.array(z.string().startsWith('/').max(1024)).max(20).optional(),
+  paths: z.array(z.string().startsWith('/').max(1024)).max(200).optional(),
 })
 
 function authorized(request: Request): boolean {

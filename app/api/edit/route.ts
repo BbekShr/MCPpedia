@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { editProposalSchema } from '@/lib/validators'
 import { rateLimitUser } from '@/lib/rate-limit'
+import { revalidateProfile } from '@/lib/revalidate'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -49,6 +50,14 @@ export async function POST(request: Request) {
     console.error('edit insert error:', error.message)
     return NextResponse.json({ error: 'Failed to submit edit' }, { status: 500 })
   }
+
+  // DB trigger awards karma for the proposal; surface it on the profile.
+  const { data: proposer } = await supabase
+    .from('profiles')
+    .select('username')
+    .eq('id', user.id)
+    .single()
+  if (proposer?.username) revalidateProfile(proposer.username)
 
   return NextResponse.json({ edit }, { status: 201 })
 }

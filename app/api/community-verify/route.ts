@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { rateLimitUser } from '@/lib/rate-limit'
+import { revalidateProfile } from '@/lib/revalidate'
 
 const THRESHOLD = 3 // verifications needed for "Community Verified" badge
 
@@ -30,6 +31,14 @@ export async function POST(request: Request) {
     console.error('community-verify error:', error.message)
     return NextResponse.json({ error: 'Failed to update verification' }, { status: 500 })
   }
+
+  // DB trigger awards/refunds karma; surface the change on the profile.
+  const { data: verifier } = await supabase
+    .from('profiles')
+    .select('username')
+    .eq('id', user.id)
+    .single()
+  if (verifier?.username) revalidateProfile(verifier.username)
 
   return NextResponse.json(data)
 }

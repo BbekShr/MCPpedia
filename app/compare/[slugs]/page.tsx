@@ -10,7 +10,7 @@ import type { Metadata } from 'next'
 import fs from 'fs'
 import path from 'path'
 
-export const revalidate = 86400
+export const revalidate = 604800 // 7d; on-demand revalidate triggers on edits and score deltas
 
 // ---------- Static Params (pre-generate comparison pages for SEO) ----------
 

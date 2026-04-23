@@ -64,7 +64,7 @@ export default function Footer() {
             no affiliate fees.
           </p>
           <div className="mt-3.5 font-mono text-[11px] text-text-muted">
-            Scanning daily · Updated every few hours
+            Scanning daily · Edits go live instantly
           </div>
         </div>
 

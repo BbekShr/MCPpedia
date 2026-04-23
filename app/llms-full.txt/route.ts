@@ -2,7 +2,7 @@ import { CATEGORIES, CATEGORY_LABELS, SITE_URL } from '@/lib/constants'
 import { getAllBlogPosts } from '@/lib/blog'
 import { getAllGuides } from '@/lib/mdx'
 
-export const revalidate = 86400 // 24h
+export const revalidate = 604800 // 7d
 
 const TOP_SERVER_LIMIT = 150
 

@@ -5,7 +5,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getKarmaProgress } from '@/lib/karma'
 
-export const revalidate = 3600
+export const revalidate = 86400 // 24h; on-demand revalidate triggers on karma writes
 
 export async function generateMetadata({
   params,
