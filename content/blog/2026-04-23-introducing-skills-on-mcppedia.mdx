@@ -1,0 +1,63 @@
+---
+title: "Introducing Skills on MCPpedia"
+description: "A hand-curated directory of 65 Claude Code skills, plugins, and marketplaces — browsable alongside the 17,000 MCP servers already on the site."
+hook: "MCPpedia isn't just MCP servers anymore. We've added a curated directory of Claude Code skills — the other half of what actually makes an agent useful."
+date: "2026-04-23"
+tags: ["skills", "claude-code", "announcement", "mcppedia"]
+category: "category-deep-dive"
+featuredServers: []
+---
+
+MCP servers give an agent tools. Skills tell it how to use them.
+
+For a while now, the interesting work in the Claude Code ecosystem hasn't only been new servers — it's been the growing library of skills and plugins that change how an agent plans, writes, tests, and ships. We kept getting asked where to find them. So we built a page.
+
+[/skills](/skills) is live today: **65 hand-picked Claude Code skills, plugins, and marketplaces across 10 categories**, searchable and filterable, with install instructions for every agent we could verify.
+
+---
+
+## What's in the directory
+
+The day-one lineup includes the skills most people have already heard of and several that deserve more attention:
+
+- **Superpowers** — Jesse Vincent's agentic development methodology: brainstorm → spec → plan → TDD → subagent execution → review → merge, wired up as auto-triggering skills.
+- **Anthropic Agent Skills** — Anthropic's official open-source library (canvas design, DOCX/PDF/PPTX/XLSX generators, frontend design, MCP builder, skill creator, and more).
+- **UI UX Pro Max** — high-end interface design workflows for Claude Code.
+- **Awesome Agent Skills** — the community-maintained index, re-surfaced inside MCPpedia.
+- **MCP Builder**, **Skill Creator**, **Webapp Testing**, **Playwright Skill**, **claude-mem**, **Continuous Claude v3**, **Planning With Files**, and dozens more.
+
+Categories cover the full range of what skills are actually being built for: development workflow (18), meta/collections (14), data (9), design (7), writing, research, testing, product, marketing, and a catch-all for the genuinely weird.
+
+---
+
+## What we filtered out
+
+GitHub's `topic:claude-skills` tag is noisier than it looks. A lot of repos slap the tag on for visibility without shipping an actual skill. The starting filter was `topic:claude-skills stars:>50`, and then we went through the list by hand and cut anything that wasn't a real, installable skill.
+
+The number we cared about wasn't coverage. It was signal-to-noise on the first page.
+
+<Callout type="info">
+The directory is **curated, not crawled**. Unlike MCP servers — where bots continuously ingest everything they can find — skills are added by hand. That's deliberate for launch. If the section earns traffic, we'll graduate it to the same automated pipeline the server catalog runs on.
+</Callout>
+
+---
+
+## Install paths for every agent we could verify
+
+Each skill page shows the install command for whichever agents it supports — Claude Code, Codex, Cursor, Gemini CLI, Copilot CLI, OpenCode. Where the install is manual, we say so and link the README instead of pretending there's a one-liner.
+
+A skill's detail page also surfaces its author, license (where declared), GitHub stars, last-updated date, and related skills in the same category. Everything is linkable and SEO-indexed — `SoftwareApplication` JSON-LD on each skill, `CollectionPage` + `ItemList` on the index.
+
+---
+
+## What's next
+
+The shortlist of follow-ups:
+
+1. **Submissions.** Right now, additions happen via PR against `data/skills.json`. A proper submission form is next.
+2. **Scoring.** MCP servers get an 8-check safety/quality score. Skills probably need a different rubric — install cleanliness, skill metadata quality, README signal — but the principle (show the evidence, not just the number) carries over.
+3. **Automation.** Once the submission flow exists, the bots can help keep stars, last-updated dates, and broken links fresh.
+
+If you maintain a skill that should be on the list, or if you spot something miscategorized, [open an issue](https://github.com/bbekshr/mcppedia/issues). Coverage is the goal — but only for things that are actually skills.
+
+Start browsing: **[mcppedia.com/skills](/skills)**.
