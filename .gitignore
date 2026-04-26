@@ -54,3 +54,7 @@ social-posts-and-outreach.md
 # ad-hoc design/polish screenshots dumped at the repo root + comparison renders
 /*.png
 /comparison/
+
+# recategorization batch dumps and decisions (keep dir, ignore contents)
+/data/recat/*
+!/data/recat/.gitkeep
