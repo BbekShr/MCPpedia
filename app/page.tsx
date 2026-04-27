@@ -9,7 +9,13 @@ import {
   SITE_URL,
 } from '@/lib/constants'
 import type { Category } from '@/lib/constants'
-import { JsonLdScript, generateOrganizationJsonLd, generateWebSiteJsonLd } from '@/lib/seo'
+import {
+  JsonLdScript,
+  generateOrganizationJsonLd,
+  generateWebSiteJsonLd,
+  generateDatasetJsonLd,
+  generateFAQJsonLd,
+} from '@/lib/seo'
 import type { Metadata } from 'next'
 import Hero from '@/components/home/Hero'
 import Featured, { type FeaturedServer } from '@/components/home/Featured'
@@ -210,9 +216,43 @@ async function getHomeData() {
 export default async function HomePage() {
   const { stats, featured, trending, useCaseTiles, advisories, categoryTiles } = await getHomeData()
 
+  const homepageFaqs = [
+    {
+      question: 'What is an MCP server?',
+      answer: 'An MCP (Model Context Protocol) server is a small program that exposes tools, data, or actions to AI assistants like Claude Desktop, Claude Code, Cursor, and Windsurf. Servers can read files, query databases, call APIs, search the web, or trigger workflows — the AI agent calls them just like a function.',
+    },
+    {
+      question: 'How does MCPpedia score MCP servers?',
+      answer: 'Every server gets a 0–100 score across five axes: Security (CVE scanning, tool-poisoning detection, auth requirements, license), Maintenance (commit recency, GitHub stars, open issues, weekly downloads), Documentation (README quality, setup steps, examples, schema coverage), Compatibility (transports and confirmed clients), and Efficiency (total tool tokens, tokens per call). Methodology is fully public.',
+    },
+    {
+      question: 'Which MCP server should I install first?',
+      answer: 'Start with the use-case tile that matches your work: developers usually want filesystem, GitHub, and a database server (Postgres or Supabase); productivity users want Slack, Notion, or Google Drive; AI-agent builders want web-search and memory servers. Filter by score, then check CVEs and last-commit recency before installing.',
+    },
+    {
+      question: 'Is MCPpedia free? Who runs it?',
+      answer: `MCPpedia is free, has no paywall, and accepts community submissions. It tracks ${stats.total_servers.toLocaleString()}+ servers, scoring each one independently. Listings are not pay-to-play; vendors can claim and verify their servers but cannot pay for ranking.`,
+    },
+    {
+      question: 'How often is the data updated?',
+      answer: 'GitHub metadata, npm/PyPI downloads, and health checks refresh on a daily cadence. CVE feeds and security advisories sync hourly. Scoring recomputes whenever the underlying signals change. Last-modified dates are exposed in the sitemap so search engines and answer engines see freshness.',
+    },
+  ]
+
   return (
     <div>
-      <JsonLdScript data={[generateOrganizationJsonLd(), generateWebSiteJsonLd()]} />
+      <JsonLdScript
+        data={[
+          generateOrganizationJsonLd(),
+          generateWebSiteJsonLd(),
+          generateDatasetJsonLd({
+            totalServers: stats.total_servers,
+            officialCount: stats.official_count,
+            openCves: stats.open_cves,
+          }),
+          generateFAQJsonLd(homepageFaqs),
+        ]}
+      />
 
       <Hero stats={stats} />
 
@@ -227,6 +267,26 @@ export default async function HomePage() {
       <CategoriesGrid categories={categoryTiles} />
 
       <ScoringExplainer />
+
+      <section className="border-t border-border">
+        <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-12">
+          <h2 className="text-2xl font-semibold text-text-primary mb-6">Frequently asked questions</h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            {homepageFaqs.map((faq) => (
+              <details
+                key={faq.question}
+                className="border border-border rounded-lg p-4 bg-bg-secondary group"
+              >
+                <summary className="font-medium text-text-primary cursor-pointer list-none flex justify-between items-center">
+                  <span>{faq.question}</span>
+                  <span className="text-text-muted text-xl group-open:rotate-45 transition-transform">+</span>
+                </summary>
+                <p className="mt-3 text-sm text-text-muted leading-relaxed">{faq.answer}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <section className="border-t border-border">
         <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-10">

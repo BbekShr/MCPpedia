@@ -51,6 +51,47 @@ export function generateWebSiteJsonLd() {
   }
 }
 
+// Dataset describes the catalog itself — gives answer engines (Perplexity,
+// ChatGPT, Claude, Gemini Overviews) a concrete, citable data source they can
+// attribute when summarizing "MCP server catalogs". Numbers in `keywords` and
+// `description` get extracted as facts.
+export function generateDatasetJsonLd(stats: {
+  totalServers: number
+  officialCount: number
+  openCves: number
+}) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Dataset',
+    name: `${SITE_NAME} MCP Server Catalog`,
+    description: `Independent, structured catalog of ${stats.totalServers.toLocaleString()} Model Context Protocol (MCP) servers. Each entry is scored on security (CVE scanning, tool poisoning, auth), maintenance, documentation, compatibility, and token efficiency. ${stats.officialCount.toLocaleString()} servers are vendor-official; ${stats.openCves.toLocaleString()} have open CVEs.`,
+    url: SITE_URL,
+    keywords: [
+      'MCP servers', 'Model Context Protocol', 'AI agent tools',
+      'Claude Desktop', 'Cursor', 'Claude Code', 'Windsurf',
+      'CVE scanning', 'tool poisoning detection',
+    ],
+    license: 'https://creativecommons.org/licenses/by/4.0/',
+    creator: {
+      '@type': 'Organization',
+      name: SITE_NAME,
+      url: SITE_URL,
+    },
+    distribution: [
+      {
+        '@type': 'DataDownload',
+        encodingFormat: 'application/xml',
+        contentUrl: `${SITE_URL}/sitemap.xml`,
+      },
+      {
+        '@type': 'DataDownload',
+        encodingFormat: 'text/plain',
+        contentUrl: `${SITE_URL}/llms-full.txt`,
+      },
+    ],
+  }
+}
+
 // ── Breadcrumbs ─────────────────────────────────────────────────────
 
 export function generateBreadcrumbJsonLd(items: { name: string; url: string }[]) {

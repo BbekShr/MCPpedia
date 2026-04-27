@@ -29,10 +29,11 @@ export const metadata: Metadata = {
     site: '@MCPpedia',
     creator: '@MCPpedia',
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  // No `robots` here. Next.js defaults to indexable, and explicit
+  // `index, follow` ends up duplicated next to the `noindex` meta that the
+  // streamed not-found shell injects — see the Next.js loading docs note on
+  // "soft 404s" with streaming. Pages that need to opt out (edit/history/
+  // not-found) declare their own `robots` metadata locally.
 }
 
 export const viewport: Viewport = {

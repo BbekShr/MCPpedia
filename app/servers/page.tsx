@@ -4,7 +4,12 @@ import SearchBar from '@/components/SearchBar'
 import FilterBar from '@/components/FilterBar'
 import ScoreFilterPills from '@/components/ScoreFilterPills'
 import { ITEMS_PER_PAGE, PUBLIC_CARD_FIELDS, SITE_URL } from '@/lib/constants'
-import { JsonLdScript, generateItemListJsonLd } from '@/lib/seo'
+import {
+  JsonLdScript,
+  generateItemListJsonLd,
+  generateBreadcrumbJsonLd,
+  generateCollectionJsonLd,
+} from '@/lib/seo'
 import type { Server } from '@/lib/types'
 import type { Metadata } from 'next'
 import Link from 'next/link'
@@ -107,20 +112,38 @@ export default async function ServersPage({
 
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE)
 
-  // Build ItemList schema for the first page of default (non-search) results
-  const itemListJsonLd = !q && page === 1 && servers.length > 0
-    ? generateItemListJsonLd(
-        servers.slice(0, 20).map(s => ({
-          name: `${s.name} MCP Server`,
-          url: `${SITE_URL}/s/${s.slug}`,
-          description: s.tagline || s.description || undefined,
-        }))
-      )
+  // Build full structured-data set on the canonical landing (page 1, no query).
+  // Filtered/paginated views canonicalize to /servers, so emitting schema there
+  // would just duplicate signals.
+  const isCanonicalView = !q && page === 1 && !category && !status && !pricing
+  const jsonLd = isCanonicalView
+    ? [
+        generateCollectionJsonLd(
+          'MCP Server Directory',
+          `Browse ${totalCount.toLocaleString()}+ Model Context Protocol servers, scored on security, maintenance, documentation, compatibility, and token efficiency.`,
+          `${SITE_URL}/servers`,
+        ),
+        generateBreadcrumbJsonLd([
+          { name: 'MCPpedia', url: SITE_URL },
+          { name: 'All servers', url: `${SITE_URL}/servers` },
+        ]),
+        ...(servers.length > 0
+          ? [
+              generateItemListJsonLd(
+                servers.slice(0, 20).map(s => ({
+                  name: `${s.name} MCP Server`,
+                  url: `${SITE_URL}/s/${s.slug}`,
+                  description: s.tagline || s.description || undefined,
+                })),
+              ),
+            ]
+          : []),
+      ]
     : null
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 py-6">
-      {itemListJsonLd && <JsonLdScript data={itemListJsonLd} />}
+      {jsonLd && <JsonLdScript data={jsonLd} />}
       <div className="mb-6">
         <SearchBar
           placeholder={`Search ${totalCount.toLocaleString()}+ MCP servers...`}
