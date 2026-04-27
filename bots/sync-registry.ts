@@ -9,7 +9,7 @@ config({ path: '.env.local' })
 
 import { createAdminClient } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
-import { categorize } from './lib/categorize'
+import { categorize, inferCompatibleClients, inferPricing } from './lib/categorize'
 
 const supabase = createAdminClient('bot-sync-registry')
 
@@ -188,6 +188,8 @@ async function main() {
       npm_package: npmPackage,
       pip_package: pipPackage,
       transport,
+      compatible_clients: inferCompatibleClients(),
+      api_pricing: inferPricing(null, rs.name || slug, rs.description),
       categories,
       source: 'import',
       registry_id: rs.id,

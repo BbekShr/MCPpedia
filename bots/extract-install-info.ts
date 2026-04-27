@@ -187,7 +187,10 @@ async function main() {
         if (npmPkg && (!server.npm_package || hasWrongNpm)) updates.npm_package = npmPkg
         else if (hasWrongNpm && !npmPkg) updates.npm_package = null  // clear the wrong value
         if (pipPkg && !server.pip_package) updates.pip_package = pipPkg
-        if (transport.length > 0) updates.transport = transport
+        // Only set transport if still at default ['stdio'] — don't overwrite curated values
+        const currentTransport = server.transport as string[] | null
+        const isDefaultTransport = !currentTransport || (currentTransport.length === 1 && currentTransport[0] === 'stdio')
+        if (transport.length > 0 && isDefaultTransport) updates.transport = transport
 
         // Use the best available package name for config generation
         const effectiveNpm = server.npm_package || npmPkg

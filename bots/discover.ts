@@ -14,7 +14,7 @@ config({ path: '.env.local' })
 import { createAdminClient } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
 import { searchRepos, searchReposPaginated, type GitHubRepo } from './lib/github'
-import { categorize } from './lib/categorize'
+import { categorize, inferCompatibleClients, inferPricing } from './lib/categorize'
 
 const supabase = createAdminClient('bot-discover')
 
@@ -417,6 +417,8 @@ async function insertFromGitHub(repo: GitHubRepo, source: string, existingSlugs:
     author_github: repo.owner.login,
     author_type: 'community',
     transport: ['stdio'],
+    compatible_clients: inferCompatibleClients(),
+    api_pricing: inferPricing(null, repo.full_name.split('/')[1], repo.description),
     categories,
     github_stars: repo.stargazers_count,
     github_last_commit: repo.pushed_at,
@@ -465,6 +467,8 @@ async function insertFromNpm(
     author_github: pkg.publisher?.username || null,
     author_type: 'community',
     transport: ['stdio'],
+    compatible_clients: inferCompatibleClients(),
+    api_pricing: inferPricing(null, pkg.name, pkg.description),
     categories,
     health_status: 'unknown',
     source: 'bot-npm',
@@ -503,6 +507,8 @@ async function insertFromPyPI(
     pip_package: pkg.name,
     author_type: 'community',
     transport: ['stdio'],
+    compatible_clients: inferCompatibleClients(),
+    api_pricing: inferPricing(null, pkg.name, pkg.summary),
     categories,
     health_status: 'unknown',
     source: 'bot-pypi',

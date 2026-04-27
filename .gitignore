@@ -36,6 +36,10 @@ yarn-error.log*
 # claude
 .claude/
 
+# bulk dumps and curated classifications (Stage 2 outputs)
+/data/dumps/
+/data/classifications/
+
 # mcppedia-server (separate repo: BbekShr/mcp-server-mcppedia)
 mcppedia-server/
 

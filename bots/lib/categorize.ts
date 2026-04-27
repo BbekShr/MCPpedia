@@ -191,14 +191,14 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     'figma', 'sketch app', 'design system', 'ui component',
     'image editing', 'photo editing', 'svg ', 'css framework', 'tailwind',
     'color palette', 'typography', 'icon library',
-    'screenshot', 'pdf generation', 'document layout',
+    'pdf generation', 'document layout',
     'wireframe', 'prototype', 'design token',
     // Broader design signals
     'image processing', 'image convert', 'image resize',
     'pdf tool', 'pdf extract', 'pdf merge', 'document convert',
-    'graphic', 'illustration', 'canvas',
+    'graphic design', 'illustration', 'canvas tool',
     'ui design', 'ux design', 'mockup',
-    'font ', 'logo ', 'banner',
+    'font tool', 'logo design', 'banner design',
   ],
 
   'education': [
@@ -213,15 +213,13 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
   ],
 
   'entertainment': [
-    'spotify', 'music player', 'youtube ', 'video streaming', 'media player',
+    'spotify', 'music player', 'youtube api', 'video streaming', 'media player',
     'movie database', 'imdb', 'tmdb', 'podcast',
     'gaming', 'game server', 'steam api', 'twitch',
     'comic', 'meme generator',
-    // Broader entertainment signals
-    'music', 'audio', 'video', 'media',
-    'roblox', 'minecraft', 'game ', 'play ',
-    'anime', 'manga', 'story', 'creative writing',
-    'recipe', 'cooking', 'food ', 'restaurant',
+    // Broader entertainment signals — kept specific to avoid matching analytics/marketing video tools
+    'music streaming', 'audio player', 'roblox', 'minecraft',
+    'anime', 'manga', 'recipe ', 'cooking', 'food recipe', 'restaurant menu',
   ],
 
   'health': [
@@ -264,13 +262,12 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
   'maps': [
     'google maps', 'mapbox', 'openstreetmap', 'geocoding', 'reverse geocode',
     'location search', 'nearby places', 'points of interest',
-    'routing', 'directions', 'navigation',
+    'routing', 'directions', 'turn-by-turn',
     'latitude longitude', 'coordinates', 'geospatial',
     'address lookup', 'zip code', 'postal code',
-    // Broader maps signals
-    'location', 'geographic', 'gis ', 'map service',
-    'travel', 'weather', 'climate', 'forecast',
-    'timezone', 'time zone',
+    // Broader maps signals — deliberately narrow to avoid false positives
+    'geographic information', 'gis data', 'gis tool', 'map service',
+    'geolocation api', 'place search', 'distance matrix',
   ],
 
   'ecommerce': [
@@ -285,14 +282,14 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
   ],
 
   'legal': [
-    'legal document', 'contract', 'legislation', 'statute',
-    'legal research', 'case law', 'court filing',
-    'compliance', 'gdpr', 'terms of service', 'privacy policy',
-    'patent', 'trademark', 'intellectual property',
-    'law firm', 'legal advice',
-    // Broader legal signals
-    'regulatory', 'regulation', 'governance', 'audit',
-    'license management', 'policy enforcement',
+    'legal document', 'legal research', 'legal advice', 'law firm',
+    'contract review', 'contract analysis', 'legislation', 'statute',
+    'case law', 'court filing', 'court record',
+    'gdpr compliance', 'terms of service', 'privacy policy',
+    'patent search', 'trademark', 'intellectual property',
+    // Broader legal signals — kept narrow to avoid matching devops/security "compliance"
+    'regulatory compliance', 'legal regulation', 'compliance law',
+    'legal database', 'legal api',
   ],
 }
 
@@ -327,12 +324,51 @@ export function categorize(
 
   if (sorted.length === 0) return ['other']
 
-  // Take top category, plus any others with at least 50% of the top score
+  // Take top category, plus one more if it scores ≥50% of the top (max 2)
   const threshold = sorted[0][1] * 0.5
   const result = sorted
     .filter(([, s]) => s >= threshold)
-    .slice(0, 3)
+    .slice(0, 2)
     .map(([cat]) => cat)
 
   return result
+}
+
+const FREEMIUM_PATTERNS = [
+  'stripe', 'notion', 'github', 'linear ', 'slack ', 'openai', 'anthropic',
+  'quickbooks', 'salesforce', 'hubspot', 'shopify', 'twilio', 'sendgrid',
+  'datadog', 'pagerduty', 'cloudflare', 'vercel', 'aws ', 'google cloud',
+  'azure ', 'dropbox', 'airtable', 'figma', 'monday.com', 'asana',
+  'jira ', 'zoom ', 'spotify', 'todoist', 'perplexity', 'tavily',
+  'runway', 'replicate', 'together ai',
+]
+
+const PAID_PATTERNS = [
+  'x402', 'l402', 'lightning payment', 'per-call', 'pay-per-use',
+  'usdc payment', 'bitcoin payment', 'micropayment',
+]
+
+/**
+ * Infer api_pricing from available signals. Returns 'free' | 'freemium' | 'paid' | 'unknown'.
+ * Does NOT overwrite an existing curated value — callers must check before applying.
+ */
+export function inferPricing(
+  requiresApiKey: boolean | null | undefined,
+  name: string,
+  description?: string | null,
+): string {
+  const text = [name, description || ''].join(' ').toLowerCase()
+
+  if (PAID_PATTERNS.some(p => text.includes(p))) return 'paid'
+  if (requiresApiKey === false) return 'free'
+  if (FREEMIUM_PATTERNS.some(p => text.includes(p))) return 'freemium'
+  return 'unknown'
+}
+
+/**
+ * Default compatible clients for a newly-discovered server.
+ * Always returns the standard trio; callers can narrow later via curated data.
+ */
+export function inferCompatibleClients(): string[] {
+  return ['claude-desktop', 'cursor', 'claude-code']
 }
