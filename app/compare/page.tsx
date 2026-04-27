@@ -60,8 +60,10 @@ export default function CompareIndexPage() {
       {/* Custom comparison */}
       <div className="mb-8 p-4 bg-bg-secondary border border-border rounded-lg">
         <p className="text-sm text-text-muted">
-          Compare any two servers by visiting:{' '}
-          <code className="bg-code-bg px-1 rounded text-xs">mcppedia.org/compare/server-a-vs-server-b</code>
+          Compare up to 4 servers side-by-side. Pick servers from{' '}
+          <Link href="/servers" className="text-accent hover:text-accent-hover">browse</Link>
+          {' '}with the comparison tray, or build the URL directly:{' '}
+          <code className="bg-code-bg px-1 rounded text-xs">mcppedia.org/compare/server-a-vs-server-b-vs-server-c</code>
         </p>
       </div>
 

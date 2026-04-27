@@ -12,6 +12,9 @@ import path from 'path'
 
 export const revalidate = 604800 // 7d; on-demand revalidate triggers on edits and score deltas
 
+const MIN_SERVERS = 2
+const MAX_SERVERS = 4
+
 // ---------- Static Params (pre-generate comparison pages for SEO) ----------
 
 interface ComparisonPair {
@@ -34,53 +37,23 @@ function loadComparisonPairs(): ComparisonPair[] {
 }
 
 export async function generateStaticParams() {
+  // Only pre-render the curated 2-server pairs. N≥3 routes are ISR'd on demand —
+  // generating every 3- or 4-tuple of 17k servers would explode.
   const pairs = loadComparisonPairs()
   return pairs.map(p => ({
     slugs: `${p.slugA}-vs-${p.slugB}`,
   }))
 }
 
-// ---------- Metadata ----------
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slugs: string }>
-}): Promise<Metadata> {
-  const { slugs } = await params
-  const [slugA, slugB] = slugs.split('-vs-')
-  if (!slugA || !slugB) return { title: 'Compare MCP Servers' }
-
-  const supabase = createPublicClient()
-  const [{ data: serverA }, { data: serverB }] = await Promise.all([
-    supabase.from('servers').select('name, tagline, score_total').eq('slug', slugA).single(),
-    supabase.from('servers').select('name, tagline, score_total').eq('slug', slugB).single(),
-  ])
-
-  const nameA = serverA?.name || slugA
-  const nameB = serverB?.name || slugB
-  const scoreA = serverA?.score_total || 0
-  const scoreB = serverB?.score_total || 0
-
-  const title = `${nameA} vs ${nameB} — MCP Server Comparison`
-  const description = `Compare ${nameA} (score: ${scoreA}) and ${nameB} (score: ${scoreB}) MCP servers side-by-side. See security scores, tools, maintenance, downloads, and compatibility.`
-
-  return {
-    title,
-    description,
-    alternates: {
-      canonical: `${SITE_URL}/compare/${slugs}`,
-    },
-    openGraph: {
-      title,
-      description,
-      url: `${SITE_URL}/compare/${slugs}`,
-      type: 'website',
-    },
-  }
-}
-
 // ---------- Helpers ----------
+
+function parseSlugs(slugsParam: string): string[] | null {
+  const slugs = slugsParam.split('-vs-').filter(Boolean)
+  if (slugs.length < MIN_SERVERS || slugs.length > MAX_SERVERS) return null
+  // Reject duplicates — comparing X vs X has no value and would skew the table
+  if (new Set(slugs).size !== slugs.length) return null
+  return slugs
+}
 
 function formatNumber(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
@@ -95,28 +68,84 @@ function getGrade(score: number): string {
   return 'F'
 }
 
-function CompareRow({ label, valA, valB, higherIsBetter = true }: {
-  label: string
-  valA: string | number
-  valB: string | number
-  higherIsBetter?: boolean
-}) {
-  const numA = typeof valA === 'number' ? valA : 0
-  const numB = typeof valB === 'number' ? valB : 0
-  const aWins = higherIsBetter ? numA > numB : numA < numB
-  const bWins = higherIsBetter ? numB > numA : numB < numA
+function bestIndices(values: (string | number)[], higherIsBetter: boolean): Set<number> {
+  const numeric = values
+    .map((v, i) => ({ v, i }))
+    .filter((x): x is { v: number; i: number } => typeof x.v === 'number')
+  if (numeric.length < 2) return new Set()
+  const target = higherIsBetter
+    ? Math.max(...numeric.map(x => x.v))
+    : Math.min(...numeric.map(x => x.v))
+  // Don't highlight if every value is identical — there's no winner.
+  if (numeric.every(x => x.v === target)) return new Set()
+  return new Set(numeric.filter(x => x.v === target).map(x => x.i))
+}
 
+interface CompareRowProps {
+  label: string
+  values: (string | number)[]
+  higherIsBetter?: boolean
+}
+
+function CompareRow({ label, values, higherIsBetter = true }: CompareRowProps) {
+  const winners = bestIndices(values, higherIsBetter)
   return (
     <tr className="border-b border-border">
-      <td className={`px-3 py-2 text-sm text-right ${aWins ? 'text-green font-medium' : 'text-text-primary'}`}>
-        {typeof valA === 'number' ? formatNumber(valA) : valA}
+      <td className="px-3 py-2 text-sm text-text-muted whitespace-nowrap sticky left-0 bg-bg z-10">
+        {label}
       </td>
-      <td className="px-3 py-2 text-sm text-center text-text-muted">{label}</td>
-      <td className={`px-3 py-2 text-sm ${bWins ? 'text-green font-medium' : 'text-text-primary'}`}>
-        {typeof valB === 'number' ? formatNumber(valB) : valB}
-      </td>
+      {values.map((v, i) => (
+        <td
+          key={i}
+          className={`px-3 py-2 text-sm ${winners.has(i) ? 'text-green font-medium' : 'text-text-primary'}`}
+        >
+          {typeof v === 'number' ? formatNumber(v) : v}
+        </td>
+      ))}
     </tr>
   )
+}
+
+// ---------- Metadata ----------
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slugs: string }>
+}): Promise<Metadata> {
+  const { slugs: slugsParam } = await params
+  const slugs = parseSlugs(slugsParam)
+  if (!slugs) return { title: 'Compare MCP Servers' }
+
+  const supabase = createPublicClient()
+  const results = await Promise.all(
+    slugs.map(s =>
+      supabase.from('servers').select('name, tagline, score_total').eq('slug', s).single()
+    )
+  )
+  const servers = results.map((r, i) => ({
+    name: r.data?.name || slugs[i],
+    score: r.data?.score_total || 0,
+  }))
+
+  const title = `${servers.map(s => s.name).join(' vs ')} — MCP Server Comparison`
+  const description = `Compare ${servers
+    .map(s => `${s.name} (score: ${s.score})`)
+    .join(', ')} side-by-side. See security scores, tools, maintenance, downloads, and compatibility.`
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: `${SITE_URL}/compare/${slugsParam}`,
+    },
+    openGraph: {
+      title,
+      description,
+      url: `${SITE_URL}/compare/${slugsParam}`,
+      type: 'website',
+    },
+  }
 }
 
 // ---------- Page ----------
@@ -126,56 +155,70 @@ export default async function ComparePage({
 }: {
   params: Promise<{ slugs: string }>
 }) {
-  const { slugs } = await params
-  const parts = slugs.split('-vs-')
+  const { slugs: slugsParam } = await params
+  const slugs = parseSlugs(slugsParam)
+  if (!slugs) notFound()
 
-  if (parts.length !== 2) notFound()
-
-  const [slugA, slugB] = parts
   const supabase = createPublicClient()
-
-  const [{ data: serverA }, { data: serverB }] = await Promise.all([
-    supabase.from('servers').select(PUBLIC_SERVER_FIELDS).eq('slug', slugA).single(),
-    supabase.from('servers').select(PUBLIC_SERVER_FIELDS).eq('slug', slugB).single(),
-  ])
-
-  if (!serverA || !serverB) notFound()
-
-  const a = serverA as Server
-  const b = serverB as Server
-
-  const toolsA = a.tools?.length || 0
-  const toolsB = b.tools?.length || 0
-
-  // Determine winner for verdict
-  const winner = a.score_total > b.score_total ? a : b
-  const loser = a.score_total > b.score_total ? b : a
-  const scoreDiff = Math.abs(a.score_total - b.score_total)
-  const isTie = scoreDiff < 5
-
-  // Find related comparisons from pairs data
-  const allPairs = loadComparisonPairs()
-  const relatedPairs = allPairs
-    .filter(p =>
-      (p.slugA === slugA || p.slugB === slugA || p.slugA === slugB || p.slugB === slugB) &&
-      !(p.slugA === slugA && p.slugB === slugB) &&
-      !(p.slugA === slugB && p.slugB === slugA)
+  const results = await Promise.all(
+    slugs.map(s =>
+      supabase.from('servers').select(PUBLIC_SERVER_FIELDS).eq('slug', s).single()
     )
-    .slice(0, 6)
+  )
+  if (results.some(r => !r.data)) notFound()
+
+  const servers = results.map(r => r.data as Server)
+  const n = servers.length
+
+  // Verdict: top scorer wins; tie if top two are within 5 points
+  const sortedByScore = [...servers].sort((a, b) => b.score_total - a.score_total)
+  const winner = sortedByScore[0]
+  const runnerUp = sortedByScore[1]
+  const isTie = Math.abs(winner.score_total - runnerUp.score_total) < 5
+
+  // Find related comparisons. For N=2 use the curated pairs JSON; for N≥3
+  // suggest sub-pairs (e.g. a-vs-b-vs-c → a-vs-b, b-vs-c, a-vs-c) so users can
+  // drill into 1v1 matchups.
+  const allPairs = loadComparisonPairs()
+  let relatedPairs: ComparisonPair[]
+  if (n === 2) {
+    const [slugA, slugB] = slugs
+    relatedPairs = allPairs
+      .filter(p =>
+        (p.slugA === slugA || p.slugB === slugA || p.slugA === slugB || p.slugB === slugB) &&
+        !(p.slugA === slugA && p.slugB === slugB) &&
+        !(p.slugA === slugB && p.slugB === slugA)
+      )
+      .slice(0, 6)
+  } else {
+    relatedPairs = []
+    for (let i = 0; i < servers.length; i++) {
+      for (let j = i + 1; j < servers.length; j++) {
+        relatedPairs.push({
+          slugA: servers[i].slug,
+          slugB: servers[j].slug,
+          nameA: servers[i].name,
+          nameB: servers[j].name,
+        })
+      }
+    }
+  }
+
+  const namesJoined = servers.map(s => s.name).join(' vs ')
 
   // JSON-LD structured data
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
-    name: `${a.name} vs ${b.name} — MCP Server Comparison`,
-    description: `Side-by-side comparison of ${a.name} and ${b.name} MCP servers.`,
-    url: `${SITE_URL}/compare/${slugs}`,
+    name: `${namesJoined} — MCP Server Comparison`,
+    description: `Side-by-side comparison of ${namesJoined} MCP servers.`,
+    url: `${SITE_URL}/compare/${slugsParam}`,
     breadcrumb: {
       '@type': 'BreadcrumbList',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
         { '@type': 'ListItem', position: 2, name: 'Servers', item: `${SITE_URL}/servers` },
-        { '@type': 'ListItem', position: 3, name: `${a.name} vs ${b.name}` },
+        { '@type': 'ListItem', position: 3, name: namesJoined },
       ],
     },
   }
@@ -189,83 +232,103 @@ export default async function ComparePage({
 
       {/* Breadcrumbs */}
       <nav aria-label="Breadcrumb" className="text-sm text-text-muted mb-6">
-        <ol className="flex items-center gap-1.5">
+        <ol className="flex items-center gap-1.5 flex-wrap">
           <li><Link href="/" className="hover:text-accent">Home</Link></li>
           <li aria-hidden="true">/</li>
           <li><Link href="/servers" className="hover:text-accent">Servers</Link></li>
           <li aria-hidden="true">/</li>
-          <li className="text-text-primary">{a.name} vs {b.name}</li>
+          <li className="text-text-primary">{namesJoined}</li>
         </ol>
       </nav>
 
       <h1 className="text-2xl font-semibold text-text-primary mb-2 text-center">
-        {a.name} vs {b.name}
+        {namesJoined}
       </h1>
       <p className="text-text-muted text-center mb-8">Side-by-side MCP server comparison</p>
 
-      {/* Score cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div>
-          <Link href={`/s/${a.slug}`} className="text-lg font-semibold text-accent hover:text-accent-hover block mb-3">
-            {a.name}
-          </Link>
-          <ScoreCard server={a} />
+      {/* Score cards: 2-col grid for N=2 (preserves SEO-indexed layout), horizontal scroll for N≥3 */}
+      {n === 2 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {servers.map(s => (
+            <div key={s.id}>
+              <Link href={`/s/${s.slug}`} className="text-lg font-semibold text-accent hover:text-accent-hover block mb-3">
+                {s.name}
+              </Link>
+              <ScoreCard server={s} />
+            </div>
+          ))}
         </div>
-        <div>
-          <Link href={`/s/${b.slug}`} className="text-lg font-semibold text-accent hover:text-accent-hover block mb-3">
-            {b.name}
-          </Link>
-          <ScoreCard server={b} />
+      ) : (
+        <div className="overflow-x-auto -mx-4 px-4 mb-8">
+          <div className="flex gap-4 pb-2">
+            {servers.map(s => (
+              <div key={s.id} className="min-w-[280px] flex-1">
+                <Link href={`/s/${s.slug}`} className="text-lg font-semibold text-accent hover:text-accent-hover block mb-3">
+                  {s.name}
+                </Link>
+                <ScoreCard server={s} />
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Comparison table */}
-      <div className="border border-border rounded-md overflow-hidden">
-        <table className="w-full">
+      <div className="border border-border rounded-md overflow-x-auto">
+        <table className="w-full min-w-[640px]">
           <thead>
             <tr className="bg-bg-secondary border-b border-border">
-              <th className="px-3 py-2 text-sm font-medium text-text-primary text-right w-1/3">{a.name}</th>
-              <th className="px-3 py-2 text-sm font-medium text-text-muted text-center w-1/3">Metric</th>
-              <th className="px-3 py-2 text-sm font-medium text-text-primary text-left w-1/3">{b.name}</th>
+              <th className="px-3 py-2 text-sm font-medium text-text-muted text-left whitespace-nowrap sticky left-0 bg-bg-secondary z-10">
+                Metric
+              </th>
+              {servers.map(s => (
+                <th
+                  key={s.id}
+                  className="px-3 py-2 text-sm font-medium text-text-primary text-left"
+                >
+                  {s.name}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            <CompareRow label="MCPpedia Score" valA={a.score_total} valB={b.score_total} />
-            <CompareRow label="Security Score" valA={a.score_security} valB={b.score_security} />
-            <CompareRow label="Maintenance Score" valA={a.score_maintenance} valB={b.score_maintenance} />
-            <CompareRow label="GitHub Stars" valA={a.github_stars} valB={b.github_stars} />
-            <CompareRow label="Weekly Downloads" valA={a.npm_weekly_downloads} valB={b.npm_weekly_downloads} />
-            <CompareRow label="Tools" valA={toolsA} valB={toolsB} />
-            <CompareRow label="Est. Token Cost" valA={toolsA * 150} valB={toolsB * 150} higherIsBetter={false} />
-            <CompareRow label="Open CVEs" valA={a.cve_count} valB={b.cve_count} higherIsBetter={false} />
+            <CompareRow label="MCPpedia Score" values={servers.map(s => s.score_total)} />
+            <CompareRow label="Security Score" values={servers.map(s => s.score_security)} />
+            <CompareRow label="Maintenance Score" values={servers.map(s => s.score_maintenance)} />
+            <CompareRow label="GitHub Stars" values={servers.map(s => s.github_stars)} />
+            <CompareRow label="Weekly Downloads" values={servers.map(s => s.npm_weekly_downloads)} />
+            <CompareRow label="Tools" values={servers.map(s => s.tools?.length || 0)} />
+            <CompareRow
+              label="Est. Token Cost"
+              values={servers.map(s => (s.tools?.length || 0) * 150)}
+              higherIsBetter={false}
+            />
+            <CompareRow label="Open CVEs" values={servers.map(s => s.cve_count)} higherIsBetter={false} />
             <tr className="border-b border-border">
-              <td className="px-3 py-2 text-sm text-right">
-                <HealthBadge status={a.health_status as HealthStatus} />
+              <td className="px-3 py-2 text-sm text-text-muted whitespace-nowrap sticky left-0 bg-bg z-10">
+                Health
               </td>
-              <td className="px-3 py-2 text-sm text-center text-text-muted">Health</td>
-              <td className="px-3 py-2 text-sm">
-                <HealthBadge status={b.health_status as HealthStatus} />
-              </td>
+              {servers.map(s => (
+                <td key={s.id} className="px-3 py-2 text-sm">
+                  <HealthBadge status={s.health_status as HealthStatus} />
+                </td>
+              ))}
             </tr>
             <CompareRow
               label="Auth Required"
-              valA={a.has_authentication ? 'Yes' : 'No'}
-              valB={b.has_authentication ? 'Yes' : 'No'}
+              values={servers.map(s => (s.has_authentication ? 'Yes' : 'No'))}
             />
             <CompareRow
               label="Transport"
-              valA={a.transport?.join(', ') || 'stdio'}
-              valB={b.transport?.join(', ') || 'stdio'}
+              values={servers.map(s => s.transport?.join(', ') || 'stdio')}
             />
             <CompareRow
               label="License"
-              valA={a.license || 'Unknown'}
-              valB={b.license || 'Unknown'}
+              values={servers.map(s => s.license || 'Unknown')}
             />
             <CompareRow
               label="API Pricing"
-              valA={a.api_pricing || 'unknown'}
-              valB={b.api_pricing || 'unknown'}
+              values={servers.map(s => s.api_pricing || 'unknown')}
             />
           </tbody>
         </table>
@@ -276,15 +339,15 @@ export default async function ComparePage({
         <h2 className="text-lg font-semibold text-text-primary mb-2">Verdict</h2>
         {isTie ? (
           <p className="text-sm text-text-muted">
-            <strong>{a.name}</strong> and <strong>{b.name}</strong> are closely matched with scores of {a.score_total} and {b.score_total} respectively.
-            {a.score_security !== b.score_security && ` ${a.score_security > b.score_security ? a.name : b.name} edges ahead on security.`}
+            <strong>{winner.name}</strong> and <strong>{runnerUp.name}</strong> are closely matched at the top with scores of {winner.score_total} and {runnerUp.score_total}.
+            {winner.score_security !== runnerUp.score_security && ` ${winner.score_security > runnerUp.score_security ? winner.name : runnerUp.name} edges ahead on security.`}
             {' '}Check each server&apos;s detail page to decide which fits your use case.
           </p>
         ) : (
           <p className="text-sm text-text-muted">
-            <strong>{winner.name}</strong> leads with a score of {winner.score_total} ({getGrade(winner.score_total)}) vs {loser.name}&apos;s {loser.score_total} ({getGrade(loser.score_total)}).
-            {winner.score_security > loser.score_security && ` ${winner.name} also scores higher on security (${winner.score_security} vs ${loser.score_security}).`}
-            {loser.github_stars > winner.github_stars && ` However, ${loser.name} has more community traction with ${formatNumber(loser.github_stars)} GitHub stars.`}
+            <strong>{winner.name}</strong> leads with a score of {winner.score_total} ({getGrade(winner.score_total)}), ahead of {runnerUp.name}&apos;s {runnerUp.score_total} ({getGrade(runnerUp.score_total)}).
+            {winner.score_security > runnerUp.score_security && ` ${winner.name} also scores higher on security (${winner.score_security} vs ${runnerUp.score_security}).`}
+            {runnerUp.github_stars > winner.github_stars && ` However, ${runnerUp.name} has more community traction with ${formatNumber(runnerUp.github_stars)} GitHub stars.`}
           </p>
         )}
       </div>
@@ -292,7 +355,9 @@ export default async function ComparePage({
       {/* Related comparisons */}
       {relatedPairs.length > 0 && (
         <div className="mt-8">
-          <h2 className="text-lg font-semibold text-text-primary mb-4">Related Comparisons</h2>
+          <h2 className="text-lg font-semibold text-text-primary mb-4">
+            {n === 2 ? 'Related Comparisons' : 'Drill into 1-vs-1'}
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {relatedPairs.map(pair => (
               <Link
@@ -315,19 +380,18 @@ export default async function ComparePage({
       {/* Compare CTA + internal links */}
       <div className="mt-8 text-center space-y-3">
         <p className="text-sm text-text-muted">
-          Compare any two servers:{' '}
-          <code className="bg-code-bg px-1 rounded text-xs">mcppedia.org/compare/server-a-vs-server-b</code>
+          Compare up to {MAX_SERVERS} servers:{' '}
+          <code className="bg-code-bg px-1 rounded text-xs">mcppedia.org/compare/server-a-vs-server-b-vs-server-c</code>
         </p>
-        <div className="flex items-center justify-center gap-4 text-sm">
+        <div className="flex items-center justify-center gap-x-4 gap-y-2 text-sm flex-wrap">
           <Link href="/servers" className="text-accent hover:text-accent-hover">
             Browse all servers &rarr;
           </Link>
-          <Link href={`/s/${a.slug}`} className="text-accent hover:text-accent-hover">
-            {a.name} details &rarr;
-          </Link>
-          <Link href={`/s/${b.slug}`} className="text-accent hover:text-accent-hover">
-            {b.name} details &rarr;
-          </Link>
+          {servers.map(s => (
+            <Link key={s.id} href={`/s/${s.slug}`} className="text-accent hover:text-accent-hover">
+              {s.name} details &rarr;
+            </Link>
+          ))}
         </div>
       </div>
     </div>

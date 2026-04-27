@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import CompareTray from '@/components/CompareTray'
 import { SITE_NAME, SITE_DESCRIPTION, SITE_URL } from '@/lib/constants'
 import { Analytics } from '@vercel/analytics/next'
 
@@ -62,6 +63,7 @@ export default function RootLayout({
         <Nav />
         <main id="main-content" className="flex-1">{children}</main>
         <Footer />
+        <CompareTray />
         <Analytics />
       </body>
     </html>

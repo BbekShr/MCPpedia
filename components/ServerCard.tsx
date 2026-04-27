@@ -4,6 +4,7 @@ import ServerIcon from './ServerIcon'
 import ScoreBadge from './ScoreBadge'
 import CopyConfigButton from './CopyConfigButton'
 import FavoriteButton from './FavoriteButton'
+import CompareToggleButton from './CompareToggleButton'
 
 function formatNumber(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
@@ -55,8 +56,17 @@ export default function ServerCard({ server }: { server: Server }) {
           size={28}
         />
         <h3 className="flex-1 min-w-0 font-semibold text-text-primary leading-tight text-[15px] line-clamp-2 pt-0.5">{server.name}</h3>
-        <div className="pointer-events-auto relative z-20">
-          <FavoriteButton serverId={server.id} className="p-1 -m-1 text-text-muted shrink-0" />
+        <div className="pointer-events-auto relative z-20 flex items-center gap-0.5 shrink-0">
+          <CompareToggleButton
+            item={{
+              id: server.id,
+              slug: server.slug,
+              name: server.name,
+              score_total: server.score_total || 0,
+            }}
+            className="p-1 -m-1 text-text-muted"
+          />
+          <FavoriteButton serverId={server.id} className="p-1 -m-1 text-text-muted" />
         </div>
       </div>
 
