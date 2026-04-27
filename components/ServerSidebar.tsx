@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { Server } from '@/lib/types'
+import { SCORE_WEIGHTS } from '@/lib/scoring'
 
 function safeUrl(url: string | null | undefined): string | null {
   if (!url) return null
@@ -79,7 +80,13 @@ export default function ServerSidebar({ server }: { server: Server }) {
       <div className="sticky top-20 space-y-5">
         {/* Score ring */}
         <div className="border border-border rounded-md p-4 flex justify-center">
-          <ScoreRing score={s.score_total || 0} />
+          <ScoreRing score={
+            Math.min(s.score_security || 0, SCORE_WEIGHTS.security) +
+            Math.min(s.score_maintenance || 0, SCORE_WEIGHTS.maintenance) +
+            Math.min(s.score_efficiency || 0, SCORE_WEIGHTS.efficiency) +
+            Math.min(s.score_documentation || 0, SCORE_WEIGHTS.documentation) +
+            Math.min(s.score_compatibility || 0, SCORE_WEIGHTS.compatibility)
+          } />
         </div>
 
         {/* Quick facts */}
