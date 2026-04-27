@@ -348,6 +348,17 @@ const PAID_PATTERNS = [
   'usdc payment', 'bitcoin payment', 'micropayment',
 ]
 
+// GitHub orgs known to publish official MCP servers under their own name
+const OFFICIAL_ORGS = new Set([
+  'anthropic', 'modelcontextprotocol', 'github', 'supabase', 'cloudflare',
+  'stripe', 'google', 'jetbrains', 'xeroapi', 'ahrefs', 'freepik-company',
+  'aws-samples', 'openai', 'solana-foundation', 'azure-samples', 'microsoft',
+  'cdatasoftware', 'railwayapp', 'sassoftware', 'aqara', 'shopify', 'linear',
+  'vercel', 'planetscale', 'resend', 'liveblocks', 'neon-tech', 'upstash',
+  'turso-tech', 'datastax', 'elastic', 'mongodb', 'redis', 'hashicorp',
+  'atlassian', 'notion-so', 'figma', 'asana', 'hubspot',
+])
+
 /**
  * Infer api_pricing from available signals. Returns 'free' | 'freemium' | 'paid' | 'unknown'.
  * Does NOT overwrite an existing curated value — callers must check before applying.
@@ -371,4 +382,22 @@ export function inferPricing(
  */
 export function inferCompatibleClients(): string[] {
   return ['claude-desktop', 'cursor', 'claude-code']
+}
+
+/**
+ * Infer author_type from GitHub org/user.
+ * Returns 'official' when author_github is a known vendor org AND github_url
+ * is under that same org. Returns 'community' when author info exists but isn't
+ * a known vendor. Returns 'unknown' when no author info is available.
+ */
+export function inferAuthorType(
+  authorGithub: string | null | undefined,
+  githubUrl: string | null | undefined,
+): string {
+  if (!authorGithub) return 'unknown'
+  const org = authorGithub.toLowerCase()
+  if (!OFFICIAL_ORGS.has(org)) return 'community'
+  // Confirm the repo actually lives under that org (guards against forks)
+  if (githubUrl && !githubUrl.toLowerCase().includes(`/${org}/`)) return 'community'
+  return 'official'
 }

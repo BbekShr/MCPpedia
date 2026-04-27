@@ -14,7 +14,7 @@ config({ path: '.env.local' })
 import { createAdminClient } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
 import { searchRepos, searchReposPaginated, type GitHubRepo } from './lib/github'
-import { categorize, inferCompatibleClients, inferPricing } from './lib/categorize'
+import { categorize, inferAuthorType, inferCompatibleClients, inferPricing } from './lib/categorize'
 
 const supabase = createAdminClient('bot-discover')
 
@@ -415,7 +415,7 @@ async function insertFromGitHub(repo: GitHubRepo, source: string, existingSlugs:
     github_url: repo.html_url,
     author_name: repo.owner.login,
     author_github: repo.owner.login,
-    author_type: 'community',
+    author_type: inferAuthorType(repo.owner.login, repo.html_url),
     transport: ['stdio'],
     compatible_clients: inferCompatibleClients(),
     api_pricing: inferPricing(null, repo.full_name.split('/')[1], repo.description),
@@ -465,7 +465,7 @@ async function insertFromNpm(
     npm_package: pkg.name,
     author_name: pkg.publisher?.username || null,
     author_github: pkg.publisher?.username || null,
-    author_type: 'community',
+    author_type: inferAuthorType(pkg.publisher?.username, githubUrl),
     transport: ['stdio'],
     compatible_clients: inferCompatibleClients(),
     api_pricing: inferPricing(null, pkg.name, pkg.description),
@@ -505,7 +505,7 @@ async function insertFromPyPI(
     name: sanitize(pkg.name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), 200) || slug,
     tagline: sanitize(pkg.summary || null),
     pip_package: pkg.name,
-    author_type: 'community',
+    author_type: 'unknown',
     transport: ['stdio'],
     compatible_clients: inferCompatibleClients(),
     api_pricing: inferPricing(null, pkg.name, pkg.summary),
