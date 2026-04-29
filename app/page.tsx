@@ -74,12 +74,8 @@ type UseCaseRpcEntry = {
 async function getHomeData() {
   const supabase = createPublicClient()
 
-  // Base stats RPC (existing). Plus a supplementary count for advisories_week.
-  const weekAgoIso = new Date(Date.now() - 7 * 86400000).toISOString()
-
   const [
     statsResult,
-    advisoriesWeekResult,
     mcppediaResult,
     topScoredResult,
     trendingResult,
@@ -88,10 +84,6 @@ async function getHomeData() {
     categoryCountResults,
   ] = await Promise.all([
     supabase.rpc('home_stats'),
-    supabase
-      .from('security_advisories')
-      .select('*', { count: 'exact', head: true })
-      .gte('published_at', weekAgoIso),
     supabase.from('servers').select(CARD_FIELDS).eq('slug', MCPPEDIA_SLUG).maybeSingle(),
     supabase
       .from('servers')
@@ -129,13 +121,14 @@ async function getHomeData() {
     total_servers?: number
     official_count?: number
     open_cves?: number
+    servers_with_open_cves?: number
   }
 
   const stats = {
     total_servers: statsData.total_servers ?? 0,
     official_count: statsData.official_count ?? 0,
     open_cves: statsData.open_cves ?? 0,
-    advisories_week: advisoriesWeekResult.count ?? 0,
+    servers_with_open_advisories: statsData.servers_with_open_cves ?? 0,
   }
 
   const featured: FeaturedServer[] = [
