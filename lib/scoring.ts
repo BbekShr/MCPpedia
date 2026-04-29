@@ -614,12 +614,32 @@ function checkLicense(license: string | null): SecurityEvidence {
   }
 }
 
-function checkAuth(hasAuth: boolean): SecurityEvidence {
+// Recognise auth keywords in tool metadata so we don't credit "no auth" to
+// servers that clearly require credentials (the input_schema-only path used to
+// miss servers that ship tools without schemas).
+const AUTH_KEYWORDS = /\b(oauth|bearer|api[_-]?key|access[_-]?token|refresh[_-]?token|authenticat\w*|credential|client[_-]?secret|personal[_-]?access[_-]?token)\b/i
+
+export function inferAuthFromTools(tools: Tool[]): boolean {
+  for (const tool of tools) {
+    const haystack = [tool.name, tool.description || '']
+    if (tool.input_schema) {
+      try { haystack.push(JSON.stringify(tool.input_schema)) } catch { /* ignore */ }
+    }
+    if (AUTH_KEYWORDS.test(haystack.join(' '))) return true
+  }
+  return false
+}
+
+function checkAuth(hasAuth: boolean, source: 'declared' | 'inferred' | 'none'): SecurityEvidence {
+  const detail =
+    source === 'declared' ? 'Requires authentication'
+    : source === 'inferred' ? 'Authentication inferred from tool metadata'
+    : 'No authentication detected'
   return {
     id: 'auth',
     label: 'Authentication',
     pass: hasAuth ? true : null,
-    detail: hasAuth ? 'Requires authentication' : 'No authentication required',
+    detail,
     points: hasAuth ? 2 : 0,
     max_points: 2,
   }
@@ -671,16 +691,23 @@ export async function scanSecurity(
   const poisoning = checkToolPoisoning(tools)
   const stability = checkToolDefinitionStability(tools, previousToolHash ?? null)
 
+  // Auth: trust the column if set, otherwise infer from tool metadata so we
+  // don't penalize servers whose tools lack input schemas.
+  const inferredAuth = !hasAuth && inferAuthFromTools(tools)
+  const effectiveAuth = hasAuth || inferredAuth
+  const authSource: 'declared' | 'inferred' | 'none' =
+    hasAuth ? 'declared' : inferredAuth ? 'inferred' : 'none'
+
   // Collect evidence from all checks
   const evidence: SecurityEvidence[] = [
     checkCVEs(advisories, npmPackage, pipPackage),
-    checkToolSafety(tools, hasAuth),
+    checkToolSafety(tools, effectiveAuth),
     poisoning,
     checkInjectionVectors(tools),
     stability.evidence,
     await checkDependencyHealth(npmPackage, pipPackage),
     checkLicense(license),
-    checkAuth(hasAuth),
+    checkAuth(effectiveAuth, authSource),
     checkRepoSignals(isArchived, securityVerified),
   ]
 
@@ -695,7 +722,7 @@ export async function scanSecurity(
     evidence,
     cve_count: openVulns.length,
     advisories,
-    has_authentication: hasAuth,
+    has_authentication: effectiveAuth,
     scan_status: anyFailed ? 'failed' : hasPackageToScan ? 'success' : 'pending',
     has_tool_poisoning: poisoning.flags.length >= 2,
     tool_poisoning_flags: poisoning.flags,

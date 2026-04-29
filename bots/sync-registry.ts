@@ -10,6 +10,7 @@ config({ path: '.env.local' })
 import { createAdminClient } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
 import { categorize, inferAuthorType, inferCompatibleClients, inferPricing } from './lib/categorize'
+import { normalizeGithubUrl, normalizePackageName } from '../lib/normalize'
 
 const supabase = createAdminClient('bot-sync-registry')
 
@@ -97,7 +98,11 @@ async function getExistingGithubUrls(): Promise<Set<string>> {
     .select('github_url')
     .not('github_url', 'is', null)
 
-  return new Set((data || []).map(s => s.github_url?.toLowerCase()))
+  return new Set(
+    (data || [])
+      .map(s => normalizeGithubUrl(s.github_url))
+      .filter((u): u is string => !!u)
+  )
 }
 
 async function main() {
@@ -119,11 +124,13 @@ async function main() {
   const existingUrls = await getExistingGithubUrls()
   let synced = 0
   let updated = 0
+  let duplicates = 0
+  let insertFailures = 0
 
   for (const rs of registryServers) {
-    const githubUrl = rs.repository?.url || null
-    const npmPackage = rs.packages?.find(p => p.registry_name === 'npm')?.name || null
-    const pipPackage = rs.packages?.find(p => p.registry_name === 'pypi')?.name || null
+    const githubUrl = normalizeGithubUrl(rs.repository?.url)
+    const npmPackage = normalizePackageName(rs.packages?.find(p => p.registry_name === 'npm')?.name)
+    const pipPackage = normalizePackageName(rs.packages?.find(p => p.registry_name === 'pypi')?.name)
     const transport = rs.remotes?.flatMap(r => r.transport) || ['stdio']
 
     // Check if already synced
@@ -137,17 +144,26 @@ async function main() {
       continue
     }
 
-    // Check if we already have this by GitHub URL
-    if (githubUrl && existingUrls.has(githubUrl.toLowerCase())) {
-      // Link existing server to registry
-      await supabase
+    // Check if we already have this by GitHub URL (normalized)
+    if (githubUrl && existingUrls.has(githubUrl)) {
+      // Link existing server to registry. Match against any URL form that
+      // normalizes to ours, since older rows may not be normalized yet.
+      const { data: matches } = await supabase
         .from('servers')
-        .update({
-          registry_id: rs.id,
-          registry_synced_at: new Date().toISOString(),
-          registry_verified: true,
-        })
-        .eq('github_url', githubUrl)
+        .select('id, github_url')
+        .ilike('github_url', `%${githubUrl.replace(/^https:\/\//, '')}%`)
+
+      const target = (matches || []).find(m => normalizeGithubUrl(m.github_url) === githubUrl)
+      if (target) {
+        await supabase
+          .from('servers')
+          .update({
+            registry_id: rs.id,
+            registry_synced_at: new Date().toISOString(),
+            registry_verified: true,
+          })
+          .eq('id', target.id)
+      }
       updated++
       continue
     }
@@ -200,7 +216,16 @@ async function main() {
     })
 
     if (error) {
-      console.error(`  Error inserting ${slug}: ${error.message}`)
+      // 23505 = unique_violation. With the dedup indexes, this means a parallel
+      // path raced us or our normalizer disagreed with the index expression —
+      // both are signals worth surfacing, but neither should fail the whole run.
+      if (error.code === '23505') {
+        console.warn(`  Skipped ${slug} (duplicate): ${error.message}`)
+        duplicates++
+      } else {
+        console.error(`  Error inserting ${slug}: ${error.message}`)
+        insertFailures++
+      }
     } else {
       console.log(`  New: ${slug}`)
       synced++
@@ -214,9 +239,9 @@ async function main() {
   // The SQL compute_all_scores() function uses simpler heuristics and different weights,
   // so we don't call it here to avoid overwriting accurate scores.
 
-  run.setSummary({ new: synced, updated })
+  run.setSummary({ new: synced, updated, duplicates, insertFailures })
   run.addUpdated(synced + updated)
-  console.log(`\nDone. New: ${synced}, Updated: ${updated}`)
+  console.log(`\nDone. New: ${synced}, Updated: ${updated}, Duplicates: ${duplicates}, Failures: ${insertFailures}`)
   await run.finish()
   } catch (err) {
     await run.fail(String(err))

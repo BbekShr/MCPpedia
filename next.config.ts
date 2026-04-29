@@ -10,6 +10,12 @@ const nextConfig: NextConfig = {
       { hostname: '*.githubusercontent.com' },
     ],
   },
+  async redirects() {
+    return [
+      // Merged duplicates: keep the historical URL working as a 301 to the canonical entry.
+      { source: '/s/app-thoughtspot-mcp-server', destination: '/s/thoughtspot-mcp-server', permanent: true },
+    ]
+  },
   async headers() {
     return [
       {

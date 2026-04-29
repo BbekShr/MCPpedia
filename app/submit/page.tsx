@@ -17,6 +17,7 @@ function SubmitForm() {
   const [fetching, setFetching] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [duplicate, setDuplicate] = useState<{ slug: string; name: string; url: string } | null>(null)
   const [success, setSuccess] = useState(false)
   const [step, setStep] = useState(1)
 
@@ -70,6 +71,7 @@ function SubmitForm() {
     e.preventDefault()
     setSubmitting(true)
     setError('')
+    setDuplicate(null)
 
     const res = await fetch('/api/submit', {
       method: 'POST',
@@ -96,7 +98,12 @@ function SubmitForm() {
       setTimeout(() => router.push(`/s/${data.server.slug}`), 2000)
     } else {
       const data = await res.json()
-      setError(typeof data.error === 'string' ? data.error : 'Submission failed')
+      if (res.status === 409 && data.existing?.slug) {
+        setDuplicate(data.existing)
+        setError(data.message || 'This server is already on MCPpedia.')
+      } else {
+        setError(typeof data.error === 'string' ? data.error : data.message || 'Submission failed')
+      }
     }
     setSubmitting(false)
   }
@@ -198,7 +205,14 @@ function SubmitForm() {
 
       {error && (
         <div className="mb-6 p-3 rounded-md border border-red bg-red/5 text-sm text-red">
-          {error}
+          <div>{error}</div>
+          {duplicate && (
+            <div className="mt-2 text-text-primary">
+              <Link href={duplicate.url} className="underline font-medium">
+                View {duplicate.name} on MCPpedia →
+              </Link>
+            </div>
+          )}
         </div>
       )}
 

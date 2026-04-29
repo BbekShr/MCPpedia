@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { rateLimitUser } from '@/lib/rate-limit'
 import { revalidateServer, revalidateProfile } from '@/lib/revalidate'
+import { normalizePackageName } from '@/lib/normalize'
 
 // Allowed editable fields must match EDITABLE_FIELDS in lib/validators.ts
 const ALLOWED_FIELDS = [
@@ -80,12 +81,24 @@ export async function POST(request: Request) {
   }
 
   // Apply the edit. new_value is stored as a string per validators.ts schema.
+  // Normalize package names so they collapse against the dedup index.
+  const valueToWrite =
+    edit.field_name === 'npm_package' || edit.field_name === 'pip_package'
+      ? normalizePackageName(edit.new_value)
+      : edit.new_value
+
   const { error: updErr } = await supabase
     .from('servers')
-    .update({ [edit.field_name]: edit.new_value })
+    .update({ [edit.field_name]: valueToWrite })
     .eq('id', edit.server_id)
 
   if (updErr) {
+    if (updErr.code === '23505') {
+      return NextResponse.json({
+        error: 'duplicate',
+        message: 'Cannot apply edit: another server already uses this identifier.',
+      }, { status: 409 })
+    }
     return NextResponse.json({ error: 'Failed to apply edit' }, { status: 500 })
   }
 

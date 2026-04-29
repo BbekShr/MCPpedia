@@ -12,6 +12,7 @@ import {
   scoreMaintenance,
 } from '@/lib/scoring'
 import { revalidateServer, revalidateProfile } from '@/lib/revalidate'
+import { normalizeGithubUrl, normalizePackageName } from '@/lib/normalize'
 import type { Tool } from '@/lib/types'
 
 export async function POST(request: Request) {
@@ -40,32 +41,81 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Name must contain at least one letter or number' }, { status: 400 })
   }
 
-  // Check for duplicate slug
-  const { data: existing } = await supabase
-    .from('servers')
-    .select('id')
-    .eq('slug', slug)
-    .single()
+  const normalizedGithubUrl = normalizeGithubUrl(data.github_url)
+  const normalizedNpm = normalizePackageName(data.npm_package)
+  const normalizedPip = normalizePackageName(data.pip_package)
 
-  if (existing) {
-    return NextResponse.json({ error: 'A server with this name already exists' }, { status: 409 })
+  // Check for duplicate slug
+  const { data: existingBySlug } = await supabase
+    .from('servers')
+    .select('slug, name, is_archived')
+    .eq('slug', slug)
+    .maybeSingle()
+
+  if (existingBySlug) {
+    return NextResponse.json({
+      error: 'duplicate_slug',
+      message: 'A server with this name already exists.',
+      existing: {
+        slug: existingBySlug.slug,
+        name: existingBySlug.name,
+        url: `/s/${existingBySlug.slug}`,
+        archived: existingBySlug.is_archived,
+      },
+    }, { status: 409 })
   }
 
-  // Check for duplicate GitHub URL
-  const { data: existingByUrl } = await supabase
-    .from('servers')
-    .select('id, slug')
-    .eq('github_url', data.github_url)
-    .single()
+  // Check for duplicate GitHub URL or package across active rows (normalized).
+  // Older rows may not yet be normalized in-place, so we filter the candidate
+  // set in JS rather than an exact `.eq()`.
+  const orFilters: string[] = []
+  if (normalizedGithubUrl) {
+    const fragment = normalizedGithubUrl.replace(/^https:\/\//, '')
+    orFilters.push(`github_url.ilike.%${fragment}%`)
+  }
+  if (normalizedNpm) orFilters.push(`npm_package.ilike.${normalizedNpm}`)
+  if (normalizedPip) orFilters.push(`pip_package.ilike.${normalizedPip}`)
 
-  if (existingByUrl) {
-    return NextResponse.json({ error: 'This GitHub repository is already listed' }, { status: 409 })
+  if (orFilters.length > 0) {
+    type CandidateRow = {
+      slug: string
+      name: string
+      github_url: string | null
+      npm_package: string | null
+      pip_package: string | null
+      is_archived: boolean
+    }
+
+    const { data: candidates } = await supabase
+      .from('servers')
+      .select('slug, name, github_url, npm_package, pip_package, is_archived')
+      .or(orFilters.join(','))
+      .eq('is_archived', false)
+      .limit(20)
+
+    const conflict = ((candidates as unknown as CandidateRow[]) || []).find((c: CandidateRow) =>
+      (normalizedGithubUrl !== null && normalizeGithubUrl(c.github_url) === normalizedGithubUrl) ||
+      (normalizedNpm !== null && normalizePackageName(c.npm_package) === normalizedNpm) ||
+      (normalizedPip !== null && normalizePackageName(c.pip_package) === normalizedPip)
+    )
+
+    if (conflict) {
+      return NextResponse.json({
+        error: 'duplicate',
+        message: 'This server is already on MCPpedia. Edit or claim the existing entry instead.',
+        existing: {
+          slug: conflict.slug,
+          name: conflict.name,
+          url: `/s/${conflict.slug}`,
+        },
+      }, { status: 409 })
+    }
   }
 
   // Enrich from GitHub
   let meta = null
-  if (data.github_url) {
-    meta = await fetchRepoMetadata(data.github_url)
+  if (normalizedGithubUrl) {
+    meta = await fetchRepoMetadata(normalizedGithubUrl)
   }
 
   const { data: server, error } = await supabase
@@ -74,9 +124,9 @@ export async function POST(request: Request) {
       slug,
       name: data.name,
       tagline: data.tagline || meta?.description || null,
-      github_url: data.github_url,
-      npm_package: data.npm_package || null,
-      pip_package: data.pip_package || null,
+      github_url: normalizedGithubUrl,
+      npm_package: normalizedNpm,
+      pip_package: normalizedPip,
       license: data.license || meta?.license || null,
       author_name: data.author_name || meta?.owner || null,
       author_github: data.author_github || meta?.owner || null,
@@ -99,6 +149,13 @@ export async function POST(request: Request) {
     .single()
 
   if (error) {
+    if (error.code === '23505') {
+      // Race with the pre-submit dedup check — DB index caught it.
+      return NextResponse.json({
+        error: 'duplicate',
+        message: 'This server is already on MCPpedia.',
+      }, { status: 409 })
+    }
     console.error('submit insert error:', error.message)
     return NextResponse.json({ error: 'Failed to submit server' }, { status: 500 })
   }
