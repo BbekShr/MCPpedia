@@ -4,7 +4,7 @@ interface HeroStats {
   total_servers: number
   official_count: number
   open_cves: number
-  advisories_week: number
+  servers_with_open_advisories: number
 }
 
 function HeroBackdrop() {
@@ -35,9 +35,9 @@ function TrustTicker({ stats }: { stats: HeroStats }) {
     { label: 'Open CVEs', value: stats.open_cves.toLocaleString(), alert: stats.open_cves > 0 },
     { label: 'Official publishers', value: stats.official_count.toLocaleString() },
     {
-      label: 'Advisories this week',
-      value: stats.advisories_week.toLocaleString(),
-      alert: stats.advisories_week > 0,
+      label: 'Servers with open advisories',
+      value: stats.servers_with_open_advisories.toLocaleString(),
+      alert: stats.servers_with_open_advisories > 0,
     },
   ]
   return (
