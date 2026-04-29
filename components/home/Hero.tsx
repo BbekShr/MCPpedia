@@ -73,7 +73,7 @@ function TrustTicker({ stats }: { stats: HeroStats }) {
 export default function Hero({ stats }: { stats: HeroStats }) {
   return (
     <section
-      className="relative overflow-hidden"
+      className="relative"
       style={{ background: 'var(--hero-gradient)' }}
     >
       <HeroBackdrop />
