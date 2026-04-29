@@ -66,13 +66,9 @@ const CARD_FIELDS = [
   'verified',
 ].join(', ')
 
-const USECASE_CATEGORIES: Record<string, string[]> = {
-  'developers': ['developer-tools'],
-  'data-engineering': ['data', 'analytics'],
-  'productivity': ['productivity', 'communication'],
-  'ai-agents': ['ai-ml'],
-  'cloud-infrastructure': ['cloud', 'devops'],
-  'security': ['security'],
+type UseCaseRpcEntry = {
+  count: number
+  top: { slug: string; name: string; homepage_url: string | null; author_github: string | null }[]
 }
 
 async function getHomeData() {
@@ -111,26 +107,7 @@ async function getHomeData() {
       .gt('npm_weekly_downloads', 0)
       .order('npm_weekly_downloads', { ascending: false })
       .limit(10),
-    Promise.all(
-      HOMEPAGE_USECASES.map(async uc => {
-        const cats = USECASE_CATEGORIES[uc.id] ?? []
-        const [{ data: top }, { count }] = await Promise.all([
-          supabase
-            .from('servers')
-            .select('slug, name, homepage_url, author_github')
-            .overlaps('categories', cats)
-            .eq('is_archived', false)
-            .order('score_total', { ascending: false, nullsFirst: false })
-            .limit(3),
-          supabase
-            .from('servers')
-            .select('*', { count: 'exact', head: true })
-            .overlaps('categories', cats)
-            .eq('is_archived', false),
-        ])
-        return { uc, top: top ?? [], count: count ?? 0 }
-      }),
-    ),
+    supabase.rpc('home_use_cases'),
     supabase
       .from('security_advisories')
       .select('id, cve_id, severity, title, status, published_at, server:servers!inner(name, slug)')
@@ -168,13 +145,14 @@ async function getHomeData() {
 
   const trending: TrendingRow[] = ((trendingResult.data ?? []) as unknown) as TrendingRow[]
 
-  const useCaseTiles: UseCaseTileData[] = usecaseResults.map(r => ({
-    id: r.uc.id,
-    title: r.uc.title,
-    subtitle: r.uc.subtitle,
-    accent: r.uc.accent,
-    count: r.count,
-    top: r.top,
+  const useCaseData = (usecaseResults.data ?? {}) as Record<string, UseCaseRpcEntry>
+  const useCaseTiles: UseCaseTileData[] = HOMEPAGE_USECASES.map(uc => ({
+    id: uc.id,
+    title: uc.title,
+    subtitle: uc.subtitle,
+    accent: uc.accent,
+    count: useCaseData[uc.id]?.count ?? 0,
+    top: useCaseData[uc.id]?.top ?? [],
   }))
 
   const advisories: HomeAdvisory[] = ((recentAdvisoriesResult.data ?? []) as unknown as Array<{
