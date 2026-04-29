@@ -135,11 +135,11 @@ export default async function Image({ params }: { params: Promise<{ slug: string
               const barColor = pct >= 70 ? '#1a7f37' : pct >= 40 ? '#9a6700' : '#cf222e'
               return (
                 <div key={row.label} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '120px', fontSize: '14px', color: '#656d76' }}>{row.label}</div>
+                  <div style={{ display: 'flex', width: '120px', fontSize: '14px', color: '#656d76' }}>{row.label}</div>
                   <div style={{ flex: 1, height: '14px', background: '#e8e8e8', borderRadius: '7px', overflow: 'hidden', maxWidth: '320px', display: 'flex' }}>
                     <div style={{ width: `${pct}%`, height: '100%', background: barColor, borderRadius: '7px' }} />
                   </div>
-                  <div style={{ fontSize: '13px', color: '#656d76', width: '48px', textAlign: 'right' }}>{row.value}/{row.max}</div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: '13px', color: '#656d76', width: '48px' }}>{row.value}/{row.max}</div>
                 </div>
               )
             })}
@@ -165,41 +165,35 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           </div>
         </div>
 
-        {/* Right side — score ring */}
+        {/* Right side — score ring. SVG instead of conic-gradient: satori's
+            css-to-react-native parser doesn't route conic-gradient strings to
+            the gradient handler, so `background: conic-gradient(...)` throws
+            and the ImageResponse stream errors. */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '220px' }}>
-          {/* Outer ring */}
-          <div
-            style={{
-              width: '180px',
-              height: '180px',
-              borderRadius: '90px',
-              background: `conic-gradient(${gradeColor} ${score * 3.6}deg, #e8e8e8 ${score * 3.6}deg)`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <div
-              style={{
-                width: '150px',
-                height: '150px',
-                borderRadius: '75px',
-                background: '#ffffff',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <div style={{ fontSize: '52px', fontWeight: 700, color: gradeColor, lineHeight: 1 }}>
+          <div style={{ display: 'flex', position: 'relative', width: '180px', height: '180px', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="180" height="180" viewBox="0 0 180 180" style={{ position: 'absolute', top: 0, left: 0 }}>
+              <circle cx="90" cy="90" r="80" fill="none" stroke="#e8e8e8" strokeWidth="20" />
+              <circle
+                cx="90"
+                cy="90"
+                r="80"
+                fill="none"
+                stroke={gradeColor}
+                strokeWidth="20"
+                strokeDasharray={`${(score / 100) * 502.65} 502.65`}
+                transform="rotate(-90 90 90)"
+              />
+            </svg>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ display: 'flex', fontSize: '52px', fontWeight: 700, color: gradeColor, lineHeight: 1 }}>
                 {score}
               </div>
-              <div style={{ fontSize: '20px', fontWeight: 600, color: gradeColor, marginTop: '2px' }}>
+              <div style={{ display: 'flex', fontSize: '20px', fontWeight: 600, color: gradeColor, marginTop: '2px' }}>
                 {grade}
               </div>
             </div>
           </div>
-          <div style={{ fontSize: '14px', color: '#656d76', marginTop: '12px' }}>
+          <div style={{ display: 'flex', fontSize: '14px', color: '#656d76', marginTop: '12px' }}>
             mcppedia.org
           </div>
         </div>
