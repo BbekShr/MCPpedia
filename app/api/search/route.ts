@@ -30,7 +30,7 @@ export async function GET(request: Request) {
     }
     return NextResponse.json(
       { servers: data || [] },
-      { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } }
+      { headers: { 'Cache-Control': 'public, s-maxage=900, stale-while-revalidate=1800' } }
     )
   }
 
@@ -42,6 +42,6 @@ export async function GET(request: Request) {
 
   return NextResponse.json(
     { servers: data || [] },
-    { headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' } }
+    { headers: { 'Cache-Control': 'public, s-maxage=900, stale-while-revalidate=1800' } }
   )
 }

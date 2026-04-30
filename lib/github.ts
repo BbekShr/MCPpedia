@@ -60,6 +60,7 @@ export async function fetchReadme(githubUrl: string): Promise<string | null> {
 
   const res = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/readme`, {
     headers: { ...headers(), Accept: 'application/vnd.github.raw+json' },
+    next: { revalidate: 86400 },
   })
 
   if (!res.ok) return null
