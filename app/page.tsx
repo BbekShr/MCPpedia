@@ -83,11 +83,17 @@ const getCategoryCounts = unstable_cache(
     const supabase = createPublicClient()
     return Promise.all(
       CATEGORIES.map(async cat => {
-        const { count } = await supabase
+        const { count, error } = await supabase
           .from('servers')
           .select('*', { count: 'exact', head: true })
           .contains('categories', [cat])
           .eq('is_archived', false)
+        // Throw on error so unstable_cache doesn't pin a 0-count snapshot for
+        // 24h after a transient statement timeout.
+        if (error) {
+          console.error(`[home] category count error for ${cat}:`, error)
+          throw new Error(`category count failed for ${cat}: ${error.message || JSON.stringify(error)}`)
+        }
         return { slug: cat, label: CATEGORY_LABELS[cat as Category], count: count ?? 0 }
       }),
     )
@@ -132,6 +138,27 @@ async function getHomeData() {
       .limit(5),
     getCategoryCounts(),
   ])
+
+  // ISR caches this render for 24h (revalidate = 86400). If a transient
+  // Supabase failure (statement timeout, RLS hiccup) slips through, the
+  // resulting empty-state HTML gets pinned for a full day. Throw on critical
+  // query errors so Next.js does NOT cache the bad render — on revalidation
+  // it keeps the previous good HTML; on first ever render the next request
+  // retries.
+  const criticalErrors = [
+    ['topScored', topScoredResult.error],
+    ['useCases', usecaseResults.error],
+    ['trending', trendingResult.error],
+    ['stats', statsResult.error],
+    ['advisories', recentAdvisoriesResult.error],
+  ].filter((e): e is [string, NonNullable<typeof e[1]>] => e[1] != null)
+
+  if (criticalErrors.length > 0) {
+    console.error('[home] Supabase query failures — refusing to cache empty render', criticalErrors)
+    throw new Error(
+      `Homepage data fetch failed: ${criticalErrors.map(([k, e]) => `${k}: ${e.message}`).join('; ')}`,
+    )
+  }
 
   const statsData = (statsResult.data ?? {}) as {
     total_servers?: number
