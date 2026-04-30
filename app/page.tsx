@@ -86,7 +86,7 @@ type CategoryCount = { slug: string; label: string; count: number }
 // only caches successful returns.
 const getHomeData = unstable_cache(
   fetchHomeData,
-  ['home-page-data-v1'],
+  ['home-page-data-v2'],
   { revalidate: 86400, tags: ['home-page'] },
 )
 
