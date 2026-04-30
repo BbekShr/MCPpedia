@@ -26,7 +26,11 @@ import Advisories, { type HomeAdvisory } from '@/components/home/Advisories'
 import CategoriesGrid, { type HomeCategory } from '@/components/home/CategoriesGrid'
 import ScoringExplainer from '@/components/home/ScoringExplainer'
 
-export const revalidate = 86400
+// Skip prerender at build time — home_stats can hit Postgres statement
+// timeouts (57014) under build-worker concurrency, which would fail the
+// build. Caching happens at the data layer below via unstable_cache, so
+// each request still serves a 24h-cached snapshot.
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: `${SITE_NAME} — Find the Right MCP Server`,
@@ -74,35 +78,19 @@ type UseCaseRpcEntry = {
 
 type CategoryCount = { slug: string; label: string; count: number }
 
-// 22 separate count(*) queries — one per category — collapsed into a single
-// shared 24h cache. Counts shift slowly (driven by daily discovery + scoring
-// runs), so a day-old snapshot is fine. Bust on demand with
-// `revalidateTag('home-categories')` after a discovery sweep if needed.
-const getCategoryCounts = unstable_cache(
-  async (): Promise<CategoryCount[]> => {
-    const supabase = createPublicClient()
-    return Promise.all(
-      CATEGORIES.map(async cat => {
-        const { count, error } = await supabase
-          .from('servers')
-          .select('*', { count: 'exact', head: true })
-          .contains('categories', [cat])
-          .eq('is_archived', false)
-        // Throw on error so unstable_cache doesn't pin a 0-count snapshot for
-        // 24h after a transient statement timeout.
-        if (error) {
-          console.error(`[home] category count error for ${cat}:`, error)
-          throw new Error(`category count failed for ${cat}: ${error.message || JSON.stringify(error)}`)
-        }
-        return { slug: cat, label: CATEGORY_LABELS[cat as Category], count: count ?? 0 }
-      }),
-    )
-  },
-  ['home-category-counts-v1'],
-  { revalidate: 86400, tags: ['home-categories'] },
+// Cache the homepage's six Supabase round-trips for 24h. Bot-driven data
+// (scoring, CVE feeds, npm downloads) refreshes daily, so a day-old snapshot
+// is fine. Bust on demand with `revalidateTag('home-page')`. Throwing inside
+// the cached function (see criticalErrors below) is what keeps a transient
+// Supabase blip from pinning an empty-state snapshot for 24h — unstable_cache
+// only caches successful returns.
+const getHomeData = unstable_cache(
+  fetchHomeData,
+  ['home-page-data-v1'],
+  { revalidate: 86400, tags: ['home-page'] },
 )
 
-async function getHomeData() {
+async function fetchHomeData() {
   const supabase = createPublicClient()
 
   const [
@@ -116,13 +104,17 @@ async function getHomeData() {
   ] = await Promise.all([
     supabase.rpc('home_stats'),
     supabase.from('servers').select(CARD_FIELDS).eq('slug', MCPPEDIA_SLUG).maybeSingle(),
+    // `score_total IS NOT NULL` lets Postgres use servers_score_active_idx
+    // for an Index Scan + LIMIT (~0.1ms) instead of a 2.5s seq scan + sort.
+    // Unscored servers wouldn't be in the top-2 anyway. We over-fetch to 3
+    // and drop MCPpedia in JS so the index condition stays clean.
     supabase
       .from('servers')
       .select(CARD_FIELDS)
-      .neq('slug', MCPPEDIA_SLUG)
       .eq('is_archived', false)
-      .order('score_total', { ascending: false, nullsFirst: false })
-      .limit(2),
+      .not('score_total', 'is', null)
+      .order('score_total', { ascending: false })
+      .limit(3),
     supabase
       .from('servers')
       .select(CARD_FIELDS)
@@ -136,21 +128,23 @@ async function getHomeData() {
       .select('id, cve_id, severity, title, status, published_at, server:servers!inner(name, slug)')
       .order('published_at', { ascending: false, nullsFirst: false })
       .limit(5),
-    getCategoryCounts(),
+    supabase.rpc('home_category_counts'),
   ])
 
-  // ISR caches this render for 24h (revalidate = 86400). If a transient
-  // Supabase failure (statement timeout, RLS hiccup) slips through, the
-  // resulting empty-state HTML gets pinned for a full day. Throw on critical
-  // query errors so Next.js does NOT cache the bad render — on revalidation
-  // it keeps the previous good HTML; on first ever render the next request
-  // retries.
+  // Throw on errors that would render the homepage as a hollow shell so
+  // unstable_cache refuses to pin the empty snapshot for 24h. home_stats is
+  // intentionally NOT in this list — it sometimes hits 57014 statement
+  // timeouts, but every consumer below already falls back to `?? 0`, so a
+  // partial render with zeroed hero stats is far better than a 500.
+  if (statsResult.error) {
+    console.warn('[home] home_stats failed (rendering with 0s):', statsResult.error)
+  }
   const criticalErrors = [
     ['topScored', topScoredResult.error],
     ['useCases', usecaseResults.error],
     ['trending', trendingResult.error],
-    ['stats', statsResult.error],
     ['advisories', recentAdvisoriesResult.error],
+    ['categoryCounts', categoryCountResults.error],
   ].filter((e): e is [string, NonNullable<typeof e[1]>] => e[1] != null)
 
   if (criticalErrors.length > 0) {
@@ -174,9 +168,12 @@ async function getHomeData() {
     servers_with_open_advisories: statsData.servers_with_open_cves ?? 0,
   }
 
+  const topScored = (((topScoredResult.data ?? []) as unknown) as FeaturedServer[])
+    .filter(s => s.slug !== MCPPEDIA_SLUG)
+    .slice(0, 2)
   const featured: FeaturedServer[] = [
     mcppediaResult.data as unknown as FeaturedServer | null,
-    ...(((topScoredResult.data ?? []) as unknown) as FeaturedServer[]),
+    ...topScored,
   ].filter((s): s is FeaturedServer => !!s)
 
   const trending: TrendingRow[] = ((trendingResult.data ?? []) as unknown) as TrendingRow[]
@@ -213,13 +210,23 @@ async function getHomeData() {
     }
   })
 
+  // home_category_counts() returns { [slug]: count } for every category that
+  // has >=1 non-archived server. Project onto the canonical CATEGORIES list so
+  // the grid always renders all 22 tiles (even if a category is empty).
+  const countsBySlug = (categoryCountResults.data ?? {}) as Record<string, number>
+  const categoryCounts: CategoryCount[] = CATEGORIES.map(slug => ({
+    slug,
+    label: CATEGORY_LABELS[slug as Category],
+    count: countsBySlug[slug] ?? 0,
+  }))
+
   // Mark the top 3 non-empty categories as "Hot" — gentle visual cue without
   // requiring time-series data.
-  const sortedCounts = [...categoryCountResults]
+  const sortedCounts = [...categoryCounts]
     .filter(c => c.count > 0)
     .sort((a, b) => b.count - a.count)
   const hotSet = new Set(sortedCounts.slice(0, 3).map(c => c.slug))
-  const categoryTiles: HomeCategory[] = categoryCountResults.map(c => ({
+  const categoryTiles: HomeCategory[] = categoryCounts.map(c => ({
     ...c,
     hot: hotSet.has(c.slug),
   }))
