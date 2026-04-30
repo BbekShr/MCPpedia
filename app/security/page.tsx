@@ -78,6 +78,11 @@ interface HomeStats {
 // home_stats() — single source of truth shared with the homepage and blog
 // posts. CVE data is refreshed daily by the security scan, so a day-old
 // snapshot is acceptable. Bust on demand with `revalidateTag('security-page')`.
+//
+// Throwing on home_stats error is essential — if it returns null the page
+// renders with all-zero stats, and unstable_cache would happily pin that
+// hollow snapshot for 24h. Throwing keeps the cache unpinned so the next
+// request retries.
 const getSecurityPageData = unstable_cache(
   async () => {
     const supabase = createPublicClient()
@@ -89,27 +94,21 @@ const getSecurityPageData = unstable_cache(
         .limit(100),
       supabase.rpc('home_stats'),
     ])
+    if (statsResult.error || !statsResult.data) {
+      console.error('[security] home_stats failed — refusing to cache:', statsResult.error)
+      throw new Error(`home_stats failed: ${statsResult.error?.message || 'no data'}`)
+    }
     return {
       advisories: advisoriesResult.data as AdvisoryWithServer[] | null,
-      stats: statsResult.data as Partial<HomeStats> | null,
-      statsError: statsResult.error,
+      stats: statsResult.data as Partial<HomeStats>,
     }
   },
-  ['security-page-data-v4'],
+  ['security-page-data-v5'],
   { revalidate: 86400, tags: ['security-page'] },
 )
 
 export default async function SecurityPage() {
-  const { advisories, stats, statsError } = await getSecurityPageData()
-
-  if (!stats || statsError) {
-    console.error('[security] home_stats returned empty/zero snapshot', {
-      error: statsError,
-      total_servers: stats?.total_servers,
-      scanned_servers: stats?.scanned_servers,
-      last_security_scan: stats?.last_security_scan,
-    })
-  }
+  const { advisories, stats } = await getSecurityPageData()
 
   const openCount = stats?.open_cves ?? 0
   const fixedCount = stats?.fixed_cves ?? 0
