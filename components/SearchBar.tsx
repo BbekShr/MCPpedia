@@ -95,7 +95,7 @@ function SearchBarInner({
       } catch {
         // Aborted or network error — ignore
       }
-    }, 150)
+    }, 300)
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { unstable_cache } from 'next/cache'
 import NewsletterSignup from '@/components/NewsletterSignup'
 import { createPublicClient } from '@/lib/supabase/public'
 import {
@@ -71,6 +72,30 @@ type UseCaseRpcEntry = {
   top: { slug: string; name: string; homepage_url: string | null; author_github: string | null }[]
 }
 
+type CategoryCount = { slug: string; label: string; count: number }
+
+// 22 separate count(*) queries — one per category — collapsed into a single
+// shared 24h cache. Counts shift slowly (driven by daily discovery + scoring
+// runs), so a day-old snapshot is fine. Bust on demand with
+// `revalidateTag('home-categories')` after a discovery sweep if needed.
+const getCategoryCounts = unstable_cache(
+  async (): Promise<CategoryCount[]> => {
+    const supabase = createPublicClient()
+    return Promise.all(
+      CATEGORIES.map(async cat => {
+        const { count } = await supabase
+          .from('servers')
+          .select('*', { count: 'exact', head: true })
+          .contains('categories', [cat])
+          .eq('is_archived', false)
+        return { slug: cat, label: CATEGORY_LABELS[cat as Category], count: count ?? 0 }
+      }),
+    )
+  },
+  ['home-category-counts-v1'],
+  { revalidate: 86400, tags: ['home-categories'] },
+)
+
 async function getHomeData() {
   const supabase = createPublicClient()
 
@@ -105,16 +130,7 @@ async function getHomeData() {
       .select('id, cve_id, severity, title, status, published_at, server:servers!inner(name, slug)')
       .order('published_at', { ascending: false, nullsFirst: false })
       .limit(5),
-    Promise.all(
-      CATEGORIES.map(async cat => {
-        const { count } = await supabase
-          .from('servers')
-          .select('*', { count: 'exact', head: true })
-          .contains('categories', [cat])
-          .eq('is_archived', false)
-        return { slug: cat, label: CATEGORY_LABELS[cat as Category], count: count ?? 0 }
-      }),
-    ),
+    getCategoryCounts(),
   ])
 
   const statsData = (statsResult.data ?? {}) as {

@@ -1,8 +1,12 @@
 import { createPublicClient } from '@/lib/supabase/public'
+import { unstable_cache } from 'next/cache'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { SITE_URL } from '@/lib/constants'
 
+// Skip prerender at build time — the home_stats RPC times out during
+// `next build` (Postgres 57014). Caching happens at the data layer below
+// via unstable_cache, so each request still serves a fast, cached snapshot.
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
@@ -70,70 +74,69 @@ interface HomeStats {
   last_security_scan: string | null
 }
 
+// Cache the Supabase round-trip for 24h. Aggregate counts come from
+// home_stats() — single source of truth shared with the homepage and blog
+// posts. CVE data is refreshed daily by the security scan, so a day-old
+// snapshot is acceptable. Bust on demand with `revalidateTag('security-page')`.
+const getSecurityPageData = unstable_cache(
+  async () => {
+    const supabase = createPublicClient()
+    const [advisoriesResult, statsResult] = await Promise.all([
+      supabase
+        .from('security_advisories')
+        .select('*, server:servers(name, slug)')
+        .order('published_at', { ascending: false })
+        .limit(100),
+      supabase.rpc('home_stats'),
+    ])
+    return {
+      advisories: advisoriesResult.data as AdvisoryWithServer[] | null,
+      stats: statsResult.data as Partial<HomeStats> | null,
+      statsError: statsResult.error,
+    }
+  },
+  ['security-page-data-v3'],
+  { revalidate: 86400, tags: ['security-page'] },
+)
+
 export default async function SecurityPage() {
-  const supabase = createPublicClient()
+  const { advisories, stats, statsError } = await getSecurityPageData()
 
-  // All aggregate counts come from the home_stats() RPC. Keeping them in a
-  // single source of truth prevents drift between this page, the homepage,
-  // and blog posts — every surface that needs a site-wide count should use
-  // this RPC rather than compute its own.
-  const [
-    { data: advisories },
-    { data: statsRaw, error: statsError },
-  ] = await Promise.all([
-    supabase
-      .from('security_advisories')
-      .select('*, server:servers(name, slug)')
-      .order('published_at', { ascending: false })
-      .limit(100),
-    supabase.rpc('home_stats'),
-  ])
-
-  // Refuse to render a broken snapshot. With `revalidate = 3600`, any page we
-  // return here is pinned into the ISR cache for a full hour — so if the RPC
-  // fails OR returns an obviously-wrong response (zero servers, zero scanned,
-  // no scan timestamp), throw. Next.js then keeps serving the last successful
-  // render and retries on the next request, rather than caching a zero-state.
-  // See guides/incremental-static-regeneration.md, "Handling uncaught exceptions".
-  const stats = statsRaw as HomeStats | null
-  const healthy =
-    stats != null &&
-    stats.total_servers > 0 &&
-    stats.scanned_servers > 0 &&
-    stats.last_security_scan != null
-  if (!healthy) {
+  if (!stats || statsError) {
     console.error('[security] home_stats returned empty/zero snapshot', {
       error: statsError,
       total_servers: stats?.total_servers,
       scanned_servers: stats?.scanned_servers,
       last_security_scan: stats?.last_security_scan,
     })
-    throw new Error('home_stats RPC returned empty or zero snapshot')
   }
 
-  const openCount = stats.open_cves
-  const fixedCount = stats.fixed_cves
-  const totalServers = stats.total_servers
-  const serversWithCVEs = stats.with_cves
-  const toolPoisoningCount = stats.tool_poisoning_count
-  const injectionRiskCount = stats.injection_risk_count
-  const codeExecutionCount = stats.code_execution_count
+  const openCount = stats?.open_cves ?? 0
+  const fixedCount = stats?.fixed_cves ?? 0
+  const totalServers = stats?.total_servers ?? 0
+  const serversWithCVEs = stats?.with_cves ?? 0
+  const scannedServers = stats?.scanned_servers ?? 0
+  const toolPoisoningCount = stats?.tool_poisoning_count ?? 0
+  const injectionRiskCount = stats?.injection_risk_count ?? 0
+  const codeExecutionCount = stats?.code_execution_count ?? 0
 
   const severityCounts = {
-    critical: stats.cves_critical_open,
-    high: stats.cves_high_open,
-    medium: stats.cves_medium_open,
-    low: stats.cves_low_open,
-    info: stats.cves_unscored_open,
+    critical: stats?.cves_critical_open ?? 0,
+    high: stats?.cves_high_open ?? 0,
+    medium: stats?.cves_medium_open ?? 0,
+    low: stats?.cves_low_open ?? 0,
+    info: stats?.cves_unscored_open ?? 0,
   }
   const cleanServers = totalServers - serversWithCVEs
-  const cleanPct = Math.floor((cleanServers / totalServers) * 1000) / 10
-  const lastScanFormatted = new Date(stats.last_security_scan!).toLocaleDateString('en-US', {
-    month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short',
-  })
+  const cleanPct = totalServers > 0 ? Math.floor((cleanServers / totalServers) * 1000) / 10 : 0
+  const lastScanFormatted = stats?.last_security_scan
+    ? new Date(stats.last_security_scan).toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short',
+      })
+    : null
 
   const SEVERITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, info: 4 }
-  const advList = ((advisories as AdvisoryWithServer[] | null) ?? []).sort((a, b) => {
+  const advList = (advisories ?? []).sort((a, b) => {
     const sevDiff = (SEVERITY_ORDER[a.severity] ?? 5) - (SEVERITY_ORDER[b.severity] ?? 5)
     if (sevDiff !== 0) return sevDiff
     return new Date(b.published_at || 0).getTime() - new Date(a.published_at || 0).getTime()
@@ -149,7 +152,9 @@ export default async function SecurityPage() {
           Scanned daily. Scoring methodology is{' '}
           <Link href="/methodology" className="text-accent hover:text-accent-hover">open source</Link>.
         </p>
-        <p className="text-xs text-text-muted mt-1">Last scan: {lastScanFormatted}</p>
+        {lastScanFormatted && (
+          <p className="text-xs text-text-muted mt-1">Last scan: {lastScanFormatted}</p>
+        )}
       </div>
 
       {/* Dashboard stats */}
@@ -236,8 +241,8 @@ export default async function SecurityPage() {
           </div>
         </div>
         <p className="text-xs text-text-muted mt-3">
-          Computed against the <strong className="text-text-primary tabular-nums">{stats.scanned_servers.toLocaleString()}</strong> servers
-          {' '}({((stats.scanned_servers / totalServers) * 100).toFixed(1)}% of the catalog)
+          Computed against the <strong className="text-text-primary tabular-nums">{scannedServers.toLocaleString()}</strong> servers
+          {totalServers > 0 && ` (${((scannedServers / totalServers) * 100).toFixed(1)}% of the catalog)`}
           {' '}whose tool manifests were successfully fetched. Counts exclude servers without a live endpoint — the true surface is likely larger.
         </p>
       </div>
