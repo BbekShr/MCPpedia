@@ -95,7 +95,7 @@ const getSecurityPageData = unstable_cache(
       statsError: statsResult.error,
     }
   },
-  ['security-page-data-v3'],
+  ['security-page-data-v4'],
   { revalidate: 86400, tags: ['security-page'] },
 )
 
