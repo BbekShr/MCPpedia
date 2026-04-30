@@ -1,0 +1,99 @@
+---
+title: "1,020 New MCP Servers in One Week — Here's What Actually Matters"
+description: "The MCP ecosystem hit 20,413 total servers this week. We cut through the noise to find what's actually worth your attention."
+hook: "1,020 MCP servers launched in a single week. The ecosystem now has 20,413 total — and the quality gap between the most-starred and best-built tools has never been wider."
+date: "2026-04-30"
+tags: ["weekly","ecosystem","new-servers"]
+category: "weekly-roundup"
+featuredServers: ["vitemcp","e2eval","swatchbook-mcp","tool-types","mcp-ui-angular","pyslang-mcp","korea-stock-mcp","claude-video-vision","mcp-s2s-asterisk","beever-atlas"]
+---
+<SectionLabel>Weekly Roundup</SectionLabel>
+
+## 1,020 new MCP servers in a week. Let that sink in.
+
+The MCP ecosystem crossed another milestone this week — **20,413 total servers** and counting, with **1,020 new entries** landing in just seven days. That's not a community anymore. That's a platform.
+
+But raw volume is a vanity metric. The real story is *what* people are building — and this week's crop is sharp.
+
+---
+
+<StatGrid>
+  <Stat value="20,413" label="Total Servers" detail="In the MCP ecosystem" />
+  <Stat value="1,020" label="New This Week" detail="Added in 7 days" />
+  <Stat value="78,786" label="Stars" detail="Codex Shell Tool MCP" />
+  <Stat value="92" label="Top Score" detail="Vitemcp this week" />
+</StatGrid>
+
+---
+
+<SectionLabel>New Servers Worth Watching</SectionLabel>
+
+## The best new arrivals this week
+
+### 1. Vitemcp — The Framework That Wants to Be the Standard
+
+[Vitemcp](/s/vitemcp) is the most significant new arrival this week — and the 3,068 GitHub stars it walked in with prove it's not a side project. It's a **TypeScript framework for building MCP servers**, scoring 92/100 on our quality rubric. Think of it as the Vite of the MCP world: opinionated, fast, and designed to make the developer experience feel obvious. If you're building MCP tooling in TypeScript, this deserves serious attention.
+
+### 2. E2eval — Middleware for Honest Agents
+
+[E2eval](/s/e2eval) has a killer premise: **strip source evidence from MCP tool results before the agent sees it**. This middleware-powered eval framework scores 91/100 and tackles a real problem — agents that regurgitate raw tool outputs instead of reasoning over them. It's got zero stars right now, which means either nobody knows about it yet, or the GitHub repo is private. Either way, the concept is compelling enough to track.
+
+<Callout type="tip">
+E2eval's approach to scrubbing source evidence before agent processing addresses a subtle but critical issue in agent reliability. If you're building eval pipelines for real-tool agents, this is worth a close look.
+</Callout>
+
+### 3. Pyslang MCP — Hardware Engineers Finally Get Some Love
+
+The MCP ecosystem skews heavily toward web and cloud. [Pyslang MCP](/s/pyslang-mcp) is a welcome outlier: a **read-only MCP server for Verilog and SystemVerilog analysis**, backed by the pyslang compiler. It parses HDL projects, reports diagnostics, inspects design hierarchy, and exposes structured semantic info to AI tools. Hardware engineers writing RTL deserve AI assistance too — and with a score of 84 and 10 stars already, someone clearly agrees.
+
+### 4. Claude Video Vision — Teaching Claude to Watch
+
+[Claude Video Vision](/s/claude-video-vision) (385 stars, score 77) does exactly what it sounds like: it gives Claude the ability to **watch and understand videos** via frame extraction and multimodal audio analysis. It's a Claude Code plugin, which means it's designed to drop into existing workflows rather than replace them. The star count suggests real adoption — not just curiosity.
+
+<PullQuote>Hardware engineers writing RTL deserve AI assistance too — and Pyslang MCP is the first serious attempt to give it to them.</PullQuote>
+
+### 5. Swatchbook MCP — Design Tokens Without Storybook
+
+[Swatchbook MCP](/s/swatchbook-mcp) is a niche pick but a smart one. It exposes **DTCG design token projects** — tokens, axes, diagnostics — to AI agents **without requiring Storybook to be running**. Scoring 90/100, it solves a real friction point for design systems teams. One star on GitHub, but the concept is tight.
+
+---
+
+<SectionLabel>Trending This Week</SectionLabel>
+
+## The momentum board
+
+The trending chart this week is dominated by developer tooling, with one very loud outlier at the top.
+
+**[Codex Shell Tool MCP](/s/codex-shell-tool-mcp)** gained **323 stars** in a single week — the most of any server tracked — pushing its total to 78,786. Patched Bash and Zsh binaries for Codex shell execution. It's polarizing (score of 60 suggests some rough edges), but developers are clearly hungry for tighter shell integration with OpenAI's Codex. When star velocity is that high, pay attention even if the quality signals are mixed.
+
+**[Code Review Graph](/s/code-review-graph)** gained 321 stars to reach 14,171 total, and it might be the most practically compelling tool in the trending list. The claim: **6.8× fewer tokens on code reviews, up to 49× on daily coding tasks** by building a persistent local knowledge graph of your codebase. For anyone paying Claude API bills, those numbers are not abstract.
+
+<PullQuote>6.8× fewer tokens on code reviews, up to 49× on daily tasks — Code Review Graph is making a case that context efficiency is the next frontier of AI tooling.</PullQuote>
+
+**[Claude Flow MCP Server](/s/io-github-ruvnet-claude-flow)** added 183 stars (33,944 total) — its **87 MCP tools and hive-mind swarm orchestration** continue to attract enterprise developers who want something closer to an AI operating system than a chatbot.
+
+**[Chrome DevTools MCP](/s/chrome-devtools-mcp)** and its mirror repo both gained 157 stars each, together representing a combined surge of 314 stars for Google's Chrome DevTools integration. The duplication in the registry is a minor catalog headache, but the signal is clear: **debugging agents in the browser is a hot problem**.
+
+<Callout type="info">
+N8n — the 400+ integration workflow automation platform — gained 125 stars this week to hit 186,185 total. At that scale, it's less a trending story and more a reminder that workflow automation and AI orchestration are converging fast.
+</Callout>
+
+**[Gemini CLI](/s/gemini-cli)** picked up 99 stars (102,710 total, score 95 — the highest quality score in the trending list). Google's open-source terminal agent is quietly building serious momentum. The CLI-native approach resonates with developers who live in the terminal.
+
+---
+
+<SectionLabel>The Bigger Picture</SectionLabel>
+
+## What this week actually tells us
+
+The MCP ecosystem is bifurcating — and that's healthy. On one side: **high-quality, niche infrastructure tools** like Vitemcp, E2eval, and Pyslang MCP, solving specific hard problems with care. On the other: **mass-star viral tools** like Codex Shell and Chrome DevTools, riding distribution and novelty.
+
+<Callout type="warning">
+Star count and quality score continue to diverge sharply in the trending list. Codex Shell Tool MCP has 78,786 stars and a score of 60. Gemini CLI has 102,710 stars and a score of 95. Don't let stargazing substitute for evaluation.
+</Callout>
+
+The real signal buried in this week's data: **developer tooling is eating the MCP ecosystem**. Eight of the top ten trending servers fall into developer-tools or browser categories. The enterprise workflow play is real — but so is the raw infrastructure hunger from individual developers who want faster, cheaper, smarter coding loops.
+
+1,020 servers in a week. The question isn't whether MCP is winning. The question is whether the catalog can stay useful at this velocity.
+
+---

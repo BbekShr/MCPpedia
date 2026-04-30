@@ -1,0 +1,104 @@
+---
+title: "Vitemcp: The TypeScript MCP Framework That Actually Thinks About Security"
+description: "Vitemcp scores 92/100 with a perfect 30/30 security rating — here's why it's the go-to TypeScript framework for production MCP servers."
+hook: "Most MCP frameworks treat security as an afterthought. Vitemcp scored 30/30 on security — with OAuth 2.1, mutual TLS, and 3,068 GitHub stars backing it up. This is what a production-ready MCP framework actually looks like."
+date: "2026-04-30"
+tags: ["spotlight","review"]
+category: "server-spotlight"
+featuredServers: ["vitemcp"]
+---
+<SectionLabel>Server Spotlight</SectionLabel>
+
+## The Framework That Makes Building MCP Servers Actually Enjoyable
+
+If you've tried to wire up an MCP server from scratch in TypeScript, you know the pain. Boilerplate everywhere, session management that feels like an afterthought, and documentation that assumes you already know what you're doing.
+
+[Vitemcp](/s/vitemcp) — published under the `fastmcp` npm package — exists to fix that.
+
+---
+
+## What Is Vitemcp?
+
+At its core, Vitemcp is a **TypeScript framework for building MCP servers** capable of handling real client sessions. It's the spiritual TypeScript sibling of the [Python FastMCP](https://github.com/jlowin/fastmcp) library by Jonathan Lowin — same philosophy, different runtime.
+
+The pitch is simple: define your tools, resources, and prompts with minimal ceremony, and let the framework handle the heavy lifting.
+
+<PullQuote>3,068 GitHub stars don't accumulate on a framework that doesn't solve a real problem.</PullQuote>
+
+With a total quality score of **92/100**, Vitemcp sits near the top of the MCP developer-tools category. That score isn't an accident — it reflects genuine depth across security, documentation, and maintenance.
+
+---
+
+<SectionLabel>Capabilities Breakdown</SectionLabel>
+
+## What It Actually Gives You
+
+Vitemcp's tool surface is broader than it first appears. Here's what's baked in:
+
+**Core Primitives**
+- **Tools** — expose executable functions that LLMs can invoke, complete with logging, error handling via `UserError`, and progress reporting via `reportProgress`
+- **Resources** — make arbitrary data (files, APIs, databases) available to MCP clients
+- **Prompts** — define reusable prompt templates and workflows for standardized LLM interactions
+
+**Production-Grade Features**
+- **SSL/TLS support** out of the box — `sslCert`, `sslKey`, and an optional `sslCa` for mutual TLS authentication
+- **OAuth 2.1 authentication** with pre-configured providers
+- **Session management** via `FastMCPSession`, giving you a clean abstraction over active client connections
+- **Image handling** — pass images by URL, file path, or raw buffer
+- **Cloudflare Workers deployment** — configure `wrangler.toml` and ship to the edge
+
+<Callout type="tip">The `UserError` pattern is underrated. It lets you distinguish errors meant for end users from internal failures — a distinction most frameworks ignore entirely.</Callout>
+
+That's a lot of surface area for a single framework. And crucially, it's **cohesive** — these aren't bolted-on extras. They're part of a unified API.
+
+---
+
+## Score Analysis
+
+<ScoreBreakdown>
+  <ScoreRow label="Security" points="30" description="Full marks. SSL/TLS with mutual auth, OAuth 2.1, and a deliberate approach to error exposure make this a serious choice for production workloads." />
+  <ScoreRow label="Maintenance" points="21" description="Strong. Active development with clear versioning. The npm package (fastmcp) signals ecosystem commitment." />
+  <ScoreRow label="Documentation" points="15" description="Solid. Quickstart, deployment guides, FAQ, and a showcase are all present. Room to grow on advanced topics." />
+  <ScoreRow label="Efficiency" points="16" description="Near-max. The framework's design philosophy prioritizes minimal boilerplate — you're not paying overhead you didn't ask for." />
+  <ScoreRow label="Compatibility" points="10" description="Full marks. TypeScript-first, npm-distributed, Cloudflare Workers-compatible. Works where TypeScript works." />
+</ScoreBreakdown>
+
+The **30/30 security score** is the number that stands out. Most developer-tools MCP servers treat security as an afterthought. Vitemcp ships with mutual TLS, OAuth 2.1, and a principled error model. That's the difference between a toy and a production framework.
+
+<PullQuote>A 30/30 security score in the MCP ecosystem isn't common. It means someone actually thought about what happens when this runs in front of real users.</PullQuote>
+
+---
+
+<SectionLabel>Who Should Use This</SectionLabel>
+
+## The Right Audience
+
+<StatGrid>
+  <Stat value="3,068" label="GitHub Stars" detail="Top-tier community validation" />
+  <Stat value="92" label="Quality Score" detail="Out of 100" />
+  <Stat value="30/30" label="Security Score" detail="Full marks" />
+</StatGrid>
+
+**You'll love Vitemcp if you are:**
+
+- A TypeScript developer building MCP servers who doesn't want to reinvent session management
+- A team shipping MCP tooling to production where security and reliability aren't optional
+- A developer targeting Cloudflare Workers or edge deployments
+- Anyone who's used Python's FastMCP and wants the same ergonomics in Node
+
+**You might look elsewhere if:**
+- You're working in Python (use FastMCP directly)
+- You need zero-dependency minimalism — Vitemcp is a framework, not a library
+- Your use case genuinely doesn't need sessions or auth (though you can ignore those features)
+
+<Callout type="fire">The combination of OAuth 2.1, mutual TLS, and edge deployment support makes Vitemcp one of the few MCP frameworks ready for enterprise workloads out of the box.</Callout>
+
+---
+
+## The Bottom Line
+
+The MCP ecosystem is filling up with quick hacks and proof-of-concepts. Vitemcp is neither.
+
+With 3,068 stars, a 92/100 quality score, and security primitives that would make most SaaS platforms jealous, this is a framework built by someone who's thought past the demo. If you're writing TypeScript MCP servers and you're not using [Vitemcp](/s/vitemcp), you're doing more work than you need to.
+
+**Ship faster. Sleep better. Use the framework.**
