@@ -220,11 +220,30 @@ async function main() {
   console.log(`\nDone. Scored ${processed} servers.`)
   await run.finish()
 
+  await refreshHomeStatsCache()
   await revalidateSiteCache()
   await revalidateComparePages(movedSlugs)
   } catch (err) {
     await run.fail(String(err))
     throw err
+  }
+}
+
+// Recompute the home_stats_cache row so /security and the homepage hero
+// reflect today's totals. Runs as service_role (8s timeout) so it can
+// safely scan ~20k servers + advisories — the anon-facing home_stats() RPC
+// then becomes a sub-ms single-row read. Failure is non-fatal: previous
+// cache row remains.
+async function refreshHomeStatsCache() {
+  try {
+    const { error } = await supabase.rpc('refresh_home_stats_cache')
+    if (error) {
+      console.warn(`refresh_home_stats_cache failed: ${error.message}`)
+      return
+    }
+    console.log('Refreshed home_stats_cache.')
+  } catch (err) {
+    console.warn(`refresh_home_stats_cache threw: ${String(err)}`)
   }
 }
 
