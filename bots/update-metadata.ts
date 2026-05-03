@@ -55,7 +55,7 @@ async function main() {
   while (true) {
     const { data: batch, error: batchError } = await supabase
       .from('servers')
-      .select('id, slug, github_url, npm_package')
+      .select('id, slug, github_url, npm_package, is_archived')
       .not('github_url', 'is', null)
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
@@ -105,15 +105,18 @@ async function main() {
       daysSinceCommit > 730 && repo.stargazers_count === 0 && downloads === 0
     )
 
+    // Only archive forward — never unarchive here. Otherwise we clobber
+    // manual archives (e.g. duplicate merges) whenever the upstream GitHub
+    // repo looks healthy. Admins can unarchive via /admin if needed.
     const updates: Record<string, unknown> = {
       github_stars: repo.stargazers_count,
       github_last_commit: repo.pushed_at,
       github_open_issues: repo.open_issues_count,
-      is_archived: shouldAutoArchive,
-      health_status: computeHealth(repo.pushed_at, shouldAutoArchive),
+      health_status: computeHealth(repo.pushed_at, server.is_archived || shouldAutoArchive),
       health_checked_at: new Date().toISOString(),
       npm_weekly_downloads: downloads,
     }
+    if (shouldAutoArchive) updates.is_archived = true
 
     const { error: updateError } = await supabase
       .from('servers')
