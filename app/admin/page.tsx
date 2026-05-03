@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import type { User } from '@supabase/supabase-js'
+import DiffView from '@/components/DiffView'
 
 interface BotInfo {
   id: string
@@ -524,14 +525,10 @@ export default function AdminPage() {
                 <span className="text-text-muted">Field:</span> <code className="font-mono text-text-primary">{e.field_name}</code>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 text-xs mb-2">
-                <div>
-                  <span className="text-text-muted">Old:</span>
-                  <div className="mt-1 p-2 bg-red/5 border border-border rounded font-mono truncate">{JSON.stringify(e.old_value)}</div>
-                </div>
-                <div>
-                  <span className="text-text-muted">New:</span>
-                  <div className="mt-1 p-2 bg-green/5 border border-border rounded font-mono truncate">{JSON.stringify(e.new_value)}</div>
+              <div className="text-xs mb-2">
+                <span className="text-text-muted">Diff:</span>
+                <div className="mt-1">
+                  <DiffView oldValue={e.old_value} newValue={e.new_value} />
                 </div>
               </div>
 

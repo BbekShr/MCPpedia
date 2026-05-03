@@ -96,9 +96,13 @@ export async function POST(request: Request) {
       ? normalizePackageName(edit.new_value)
       : edit.new_value
 
+  const update: Record<string, unknown> = { [edit.field_name]: valueToWrite }
+  // Mark description as human-curated so enrich-descriptions stops touching it.
+  if (edit.field_name === 'description') update.description_source = 'human'
+
   const { error: updErr } = await supabase
     .from('servers')
-    .update({ [edit.field_name]: valueToWrite })
+    .update(update)
     .eq('id', edit.server_id)
 
   if (updErr) {

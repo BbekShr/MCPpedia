@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import type { Tool } from '@/lib/types'
 import { Icon, formatNumber } from './helpers'
+import InlineMarkdown from '@/components/InlineMarkdown'
 
 export default function ToolInspector({
   tools,
@@ -83,7 +84,7 @@ export default function ToolInspector({
               </button>
               {isOpen && (
                 <div className="animate-fadeInUp pl-8 pr-3 pb-3 flex flex-col gap-2">
-                  {t.description && <p className="m-0 text-[13px] text-text-primary">{t.description}</p>}
+                  {t.description && <InlineMarkdown className="text-[13px]">{t.description}</InlineMarkdown>}
                   {hasSchema && (
                     <div>
                       <div className="font-mono text-[10.5px] uppercase tracking-wider text-text-muted mb-1">

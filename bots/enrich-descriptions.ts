@@ -76,9 +76,10 @@ async function main() {
 
   const { data: servers } = await supabase
     .from('servers')
-    .select('id, slug, github_url, description')
+    .select('id, slug, github_url, description, description_source')
     .not('github_url', 'is', null)
     .eq('is_archived', false)
+    .neq('description_source', 'human')
 
   if (!servers) { console.log('No servers'); return }
 

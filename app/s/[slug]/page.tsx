@@ -15,6 +15,7 @@ import CommunityVerify from '@/components/CommunityVerify'
 import CategoryEditor from '@/components/CategoryEditor'
 import ServerSidebar from '@/components/ServerSidebar'
 import ServerReadme from '@/components/ServerReadme'
+import InlineMarkdown from '@/components/InlineMarkdown'
 import Hero from '@/components/server/Hero'
 import SubNav from '@/components/server/SubNav'
 import InstallMatrix from '@/components/server/InstallMatrix'
@@ -159,7 +160,11 @@ export default async function ServerDetailPage({
   const resources = s.resources || []
   const prompts = s.prompts || []
   const faqs = buildServerFAQs(s)
-  const description = s.description || s.tagline ? stripHtml(s.description || s.tagline || '') : null
+  // Server description is markdown; tagline is plain text. We only render
+  // markdown when we actually have a `description` — otherwise we fall back
+  // to the tagline as plain text (no markdown features expected there).
+  const descriptionMarkdown = s.description || null
+  const taglineFallback = !s.description && s.tagline ? stripHtml(s.tagline) : null
   const hasEnvInstructions = s.env_instructions && Object.keys(s.env_instructions).length > 0
   const hasChangelog = !!(changelogs && changelogs.length > 0)
   const hasSimilar = !!(similarServers && similarServers.length > 0)
@@ -202,6 +207,12 @@ export default async function ServerDetailPage({
           </div>
         )}
 
+        <div className="flex items-center gap-3 text-xs text-text-muted mb-4">
+          <Link href={`/s/${s.slug}/edit`} className="hover:text-accent">Edit this page</Link>
+          <span aria-hidden="true">·</span>
+          <Link href={`/s/${s.slug}/history`} className="hover:text-accent">View history</Link>
+        </div>
+
         <CategoryEditor slug={s.slug} initialCategories={s.categories} />
 
         <div className="flex gap-8 mt-4">
@@ -243,8 +254,10 @@ export default async function ServerDetailPage({
             {/* About */}
             <section id="about" className="scroll-mt-[70px]">
               <SectionHeader eyebrow="Read me" title={`What ${s.name} does`} />
-              {description ? (
-                <p className="m-0 text-[15px] text-text-primary leading-[1.65] max-w-[760px]">{description}</p>
+              {descriptionMarkdown ? (
+                <InlineMarkdown className="text-[15px] max-w-[760px]">{descriptionMarkdown}</InlineMarkdown>
+              ) : taglineFallback ? (
+                <p className="m-0 text-[15px] text-text-primary leading-[1.65] max-w-[760px]">{taglineFallback}</p>
               ) : (
                 <div
                   className="p-4 rounded-md text-[13.5px] text-text-muted"
@@ -316,7 +329,7 @@ export default async function ServerDetailPage({
                     <div key={r.name} className="border border-border rounded-md p-3">
                       <code className="text-sm font-mono font-medium text-text-primary">{r.name}</code>
                       {r.description && (
-                        <p className="text-sm text-text-muted mt-0.5">{r.description}</p>
+                        <InlineMarkdown className="text-sm mt-0.5 [&]:text-text-muted">{r.description}</InlineMarkdown>
                       )}
                       {r.uri_template && (
                         <p className="text-xs text-text-muted mt-1 font-mono">{r.uri_template}</p>
@@ -336,7 +349,7 @@ export default async function ServerDetailPage({
                     <div key={p.name} className="border border-border rounded-md p-3">
                       <code className="text-sm font-mono font-medium text-text-primary">{p.name}</code>
                       {p.description && (
-                        <p className="text-sm text-text-muted mt-0.5">{p.description}</p>
+                        <InlineMarkdown className="text-sm mt-0.5 [&]:text-text-muted">{p.description}</InlineMarkdown>
                       )}
                     </div>
                   ))}

@@ -4,6 +4,10 @@ export interface Server {
   name: string
   tagline: string | null
   description: string | null
+  // Only present when explicitly selected — see comment on
+  // 20260502140000_description_source.sql. Never queried client-side; the bot
+  // (enrich-descriptions.ts) is the only reader.
+  description_source?: 'bot' | 'human'
   github_url: string | null
   npm_package: string | null
   pip_package: string | null
@@ -188,6 +192,19 @@ export interface Edit {
   // Joined
   profile?: Profile
   server?: Pick<Server, 'name' | 'slug'>
+}
+
+export interface ServerChange {
+  id: number
+  server_id: string
+  field_name: string
+  old_value: unknown
+  new_value: unknown
+  actor_id: string | null
+  actor_label: string | null
+  changed_at: string
+  // Joined when actor_id is set
+  profile?: Pick<Profile, 'id' | 'username' | 'avatar_url'> | null
 }
 
 export interface Discussion {
