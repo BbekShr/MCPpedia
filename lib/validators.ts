@@ -33,6 +33,20 @@ const EDITABLE_FIELDS = [
   'api_rate_limits', 'homepage_url', 'npm_package', 'pip_package',
 ] as const
 
+// Fields safe to auto-approve for trusted contributors. Reverting bad prose
+// is cheap; reverting a renamed slug or a swapped npm package leaves dead
+// links and broken installs in the wild. Identity / install fields are
+// deliberately excluded — those always queue.
+export const LOW_RISK_FIELDS = [
+  'tagline', 'description', 'api_name', 'api_pricing', 'api_rate_limits',
+] as const
+export type LowRiskField = (typeof LOW_RISK_FIELDS)[number]
+
+// Approved-edit count at which a contributor's low-risk edits go live
+// without moderator review. Tune by watching how often auto-approved edits
+// get reverted; raising this is cheap, lowering is harder.
+export const AUTO_APPROVE_EDITS_THRESHOLD = 3
+
 export const editProposalSchema = z.object({
   server_id: z.string().uuid(),
   field_name: z.enum(EDITABLE_FIELDS),

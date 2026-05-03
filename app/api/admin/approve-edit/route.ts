@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
 import { rateLimitUser } from '@/lib/rate-limit'
 import { revalidateServer, revalidateProfile } from '@/lib/revalidate'
@@ -100,7 +101,11 @@ export async function POST(request: Request) {
   // Mark description as human-curated so enrich-descriptions stops touching it.
   if (edit.field_name === 'description') update.description_source = 'human'
 
-  const { error: updErr } = await supabase
+  // Apply the change through the admin client carrying the proposer's user_id
+  // in `x-original-actor-id`. The audit trigger picks that up so the resulting
+  // server_changes row credits the contributor, not the moderator.
+  const admin = createAdminClient(`approved-by:${user.id}`, edit.user_id)
+  const { error: updErr } = await admin
     .from('servers')
     .update(update)
     .eq('id', edit.server_id)
