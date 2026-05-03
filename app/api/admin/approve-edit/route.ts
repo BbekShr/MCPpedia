@@ -66,6 +66,15 @@ export async function POST(request: Request) {
         reviewed_at: new Date().toISOString(),
       })
       .eq('id', edit_id)
+    if (edit.user_id && edit.user_id !== user.id) {
+      await supabase.from('notifications').insert({
+        user_id: edit.user_id,
+        type: 'edit_rejected',
+        edit_id: edit.id,
+        server_id: edit.server_id,
+        field_name: edit.field_name,
+      })
+    }
     // Rejection triggers a karma refund for the proposer — refresh their profile.
     const { data: author } = await supabase
       .from('profiles')
@@ -110,6 +119,16 @@ export async function POST(request: Request) {
       reviewed_at: new Date().toISOString(),
     })
     .eq('id', edit_id)
+
+  if (edit.user_id && edit.user_id !== user.id) {
+    await supabase.from('notifications').insert({
+      user_id: edit.user_id,
+      type: 'edit_approved',
+      edit_id: edit.id,
+      server_id: edit.server_id,
+      field_name: edit.field_name,
+    })
+  }
 
   // Refresh the affected server page (plus /compare pages containing it)
   // and the proposer's profile, so the approval is visible immediately

@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import ThemeToggle from './ThemeToggle'
 import BlinkLogo from './BlinkLogo'
+import NotificationBell from './NotificationBell'
 import type { User } from '@supabase/supabase-js'
 
 export default function Nav() {
@@ -98,6 +99,7 @@ export default function Nav() {
           <ThemeToggle />
           {user ? (
             <div className="flex items-center gap-2">
+              <NotificationBell userId={user.id} />
               {isAdmin && (
                 <Link
                   href="/admin"
@@ -151,6 +153,7 @@ export default function Nav() {
 
         {/* Mobile hamburger */}
         <div className="flex md:hidden items-center gap-2">
+          {user && <NotificationBell userId={user.id} />}
           <ThemeToggle />
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
