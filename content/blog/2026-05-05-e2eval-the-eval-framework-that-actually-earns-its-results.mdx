@@ -1,0 +1,80 @@
+---
+title: "E2eval: The Eval Framework That Actually Earns Its Results"
+description: "E2eval tests AI agents against real tasks and real tools — then scrubs the source evidence so they can't cheat their way to the right answer."
+hook: "Most agent evals are fake — synthetic tasks, sanitized inputs, no real tools. E2eval scores 91/100 by doing the opposite: real Slack threads, real APIs, and middleware that scrubs the answer before the agent can find it."
+date: "2026-05-05"
+tags: ["spotlight","review"]
+category: "server-spotlight"
+featuredServers: ["e2eval"]
+---
+## The Eval Problem Nobody Talks About
+
+Most agent evals are fake. They use synthetic tasks, curated datasets, and sanitized inputs that look nothing like the chaos of a real production environment. **E2eval** is built on a different premise entirely: if you want to know whether your agent actually works, you need to test it against the work your team is already doing.
+
+That's a genuinely sharp idea — and it's worth unpacking.
+
+<SectionLabel>What E2eval Actually Does</SectionLabel>
+
+[E2eval](/s/e2eval) is an eval framework for agents that use **real tools against real data**. Not simulated APIs. Not mock responses. The agent gets the same MCP tools it would use in production — searching Slack messages, querying service catalogs, reading internal docs, calling APIs — and it has to solve tasks that were already solved by a human.
+
+The source material is golden. Tasks come from actual work: someone traced a config problem through logs, someone debugged a production incident, someone answered a question in Slack. That interaction becomes the ground truth. The agent has to reproduce the answer from scratch.
+
+<PullQuote>If you want to know whether your agent actually works, test it against the work your team is already doing.</PullQuote>
+
+The clever part — and this is what separates E2eval from naive replay frameworks — is the **source scrubbing step**. Before the agent sees a tool result, middleware can redact the evidence that would give the answer away. You're not testing whether the agent can read the answer off the page. You're testing whether it can reason to the same conclusion the human reached.
+
+---
+
+<SectionLabel>The Two Core Building Blocks</SectionLabel>
+
+E2eval exposes two primary extension points, and they're intentionally lean.
+
+**Middleware** is a scrubber. It intercepts MCP tool results before the agent processes them, redacting source evidence that would contaminate the evaluation. Think of it as a proctor pulling the answer key off the desk before the exam starts. This is the mechanism that makes the whole framework honest.
+
+**Adapters** implement the `AgentAdapter` interface — they handle spawning the agent and parsing its output. Each adapter wraps a different agent runtime, which means E2eval isn't tied to one model or orchestration layer. If you can describe "start the agent, get the result," you can write an adapter.
+
+<Callout type="tip">E2eval is available as an npm package (`e2eval`), which makes it easy to drop into existing JavaScript/TypeScript agent toolchains without ceremony.</Callout>
+
+That's genuinely minimal. Two tools, no resources, no pre-built prompts. Whether that's elegant or incomplete depends entirely on what you bring to it.
+
+---
+
+<SectionLabel>Score Breakdown</SectionLabel>
+
+With a total score of **91/100**, E2eval lands near the top of what MCPpedia tracks. Let's look at where those points are going.
+
+<ScoreBreakdown>
+  <ScoreRow label="Security" points="30" description="Full marks. The scrubbing-first architecture is a structural security property — it limits agent exposure to raw data by design, not as an afterthought." />
+  <ScoreRow label="Maintenance" points="16" description="Strong score, though with zero GitHub stars at launch, the community signal is still absent. Watch this space." />
+  <ScoreRow label="Documentation" points="15" description="Near the ceiling for this category. The concept is well-explained, though the middleware and adapter APIs could use more worked examples." />
+  <ScoreRow label="Efficiency" points="20" description="Full marks. A lean two-tool surface area means minimal overhead and fast integration." />
+  <ScoreRow label="Compatibility" points="10" description="Full marks here too. npm packaging and the adapter pattern signal broad compatibility intentions." />
+</ScoreBreakdown>
+
+The **30/30 on security** is the standout. The scrubbing middleware isn't just a feature — it's the architectural heart of the framework. Building evidence redaction into the protocol layer rather than the evaluation harness is a genuinely principled design choice.
+
+<Callout type="fire">91/100 total score puts E2eval in the top tier of MCP servers in the developer-tools and AI/ML categories. The security score alone — a perfect 30 — is rare.</Callout>
+
+---
+
+<SectionLabel>Who Should Actually Use This</SectionLabel>
+
+E2eval is not for teams that are still asking "does our agent sort of work?" It's for teams that have already shipped something and need to know whether it regresses when they change the model, the prompt, or the underlying tools.
+
+<PullQuote>Evals built from real tasks, solved by real people, using real tools — that's the bar every serious agent team should be held to.</PullQuote>
+
+The ideal user is an **AI engineering team** running agents against internal tooling — Slack integrations, internal APIs, service catalogs, log pipelines. If your agent's job is to do the work an engineer or ops person was already doing, E2eval can turn those past sessions into a test suite.
+
+It's also a natural fit for **teams iterating on MCP tool design**. Because evals run against the actual MCP tool layer, you can catch regressions in tool behavior — not just model behavior.
+
+<Callout type="warning">Zero GitHub stars at time of writing means the community hasn't weighed in yet. The framework's quality scores are strong, but production battle-testing is still an open question. Evaluate accordingly.</Callout>
+
+What it's **not** is a general-purpose eval platform. There's no hosted dashboard, no pre-built benchmark suite, no LLM-as-judge scaffolding out of the box. This is infrastructure, not a product. You wire it in, you build your adapters, you own your test suite.
+
+---
+
+## The Bottom Line
+
+Most eval frameworks ask "did the agent get the right answer?" E2eval asks a harder question: **"did the agent earn the right answer, or did we hand it to them?"** That's a more honest test — and for any team serious about deploying agents into production workflows, it's the only test that matters.
+
+The framework is early, the star count is zero, and the adapter ecosystem is whatever you build yourself. But the core idea is sound, the architecture is clean, and the security story is stronger than most tools twice the age. [Give E2eval a look](/s/e2eval) before your next agent deployment — and before you discover your evals were lying to you.
