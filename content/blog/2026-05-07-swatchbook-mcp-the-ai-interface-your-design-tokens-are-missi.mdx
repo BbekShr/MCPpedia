@@ -1,0 +1,81 @@
+---
+title: "Swatchbook MCP: The AI Interface Your Design Tokens Are Missing"
+description: "Swatchbook MCP exposes DTCG design tokens, axes, and diagnostics to AI agents — no Storybook required. An 88/100 early-stage gem."
+hook: "Your AI assistant can't read your design tokens — but Swatchbook MCP can fix that. It scores 88/100 and requires zero Storybook to run. Here's why design system engineers should be watching this one."
+date: "2026-05-07"
+tags: ["spotlight","review"]
+category: "server-spotlight"
+featuredServers: ["swatchbook-mcp"]
+---
+## The Design Token Gap AI Never Knew It Had
+
+Design tokens are the backbone of modern design systems — but until now, AI agents had no clean way to read them. **Swatchbook MCP** changes that with a focused, opinionated server that exposes DTCG design token data directly to AI agents, no Storybook instance required.
+
+That's a bigger deal than it sounds.
+
+<SectionLabel>What Swatchbook MCP Actually Does</SectionLabel>
+
+The [Swatchbook MCP](/s/swatchbook-mcp) server acts as a bridge between your **DTCG (Design Token Community Group)** token project and any AI agent running on the Model Context Protocol. It surfaces tokens, axes, and diagnostics — the raw material of your design system — in a form that language models can actually reason about.
+
+The key insight here: you don't need Storybook running. This is a headless, agent-friendly interface to your token data. For teams already using the DTCG format (and increasingly, you should be), this is the missing connector piece.
+
+<PullQuote>You don't need Storybook running. Swatchbook MCP is a headless, agent-friendly interface to your token data.</PullQuote>
+
+Under the hood, the server parses tokens through **Terrazzo** — the battle-tested DTCG parser from the Terrazzo team. That means alias resolution, resolver evaluation, and full DTCG compliance come baked in, not bolted on. The choice of Terrazzo as a foundation is a smart one; it's not reinventing the wheel where it doesn't need to.
+
+<SectionLabel>The Toolset</SectionLabel>
+
+The current tool surface is lean but meaningful:
+
+- **Packages** — exposes the package structure of your DTCG project
+- **Development** — built on pnpm workspaces and Turborepo, Node 24, ESM throughout
+- **Credits** — transparent about its Terrazzo dependency, which is a good sign for maintainability
+- **License** — MIT, so you can use it freely without legal headaches
+
+It's worth being honest: this is an early-stage server. The tool count is small, and there are no resources or prompts registered yet. But the architecture — DTCG parsing via Terrazzo, headless operation, MCP-native design — is the right foundation to build on.
+
+<Callout type="info">
+Swatchbook MCP is available on npm as `@unpunnyfuns/swatchbook-mcp`. It uses ESM throughout and requires Node 24, so make sure your environment is current before integrating.
+</Callout>
+
+<SectionLabel>Scoring Breakdown</SectionLabel>
+
+With an overall score of **88/100**, Swatchbook MCP punches well above its 2-star GitHub count. Let's look at where those points come from — and where the gaps are.
+
+<ScoreBreakdown>
+  <ScoreRow label="Security" points="29" description="Near-full marks. For a token-parsing tool, this is the right priority — no credentials, no write access, read-only design token exposure." />
+  <ScoreRow label="Efficiency" points="20" description="Strong. The headless architecture and Turborepo build pipeline suggest a well-optimized runtime. Not bloated." />
+  <ScoreRow label="Documentation" points="15" description="Solid for an early project, though the tool descriptions in the current spec are sparse. More examples would help." />
+  <ScoreRow label="Maintenance" points="14" description="Acceptable, but this is the number to watch. With 2 GitHub stars and a small contributor base, longevity is an open question." />
+  <ScoreRow label="Compatibility" points="10" description="The lowest score here. No resources or prompts are registered, and the tool surface is narrow. Room to grow." />
+</ScoreBreakdown>
+
+The security score of **29** is the standout. For a tool operating in design system infrastructure — where tokens often encode brand decisions, semantic scales, and system architecture — read-only, diagnostics-focused access is exactly the right posture.
+
+<Callout type="warning">
+With only 2 GitHub stars and a single maintainer (unpunnyfuns), this server is early-stage. It's genuinely useful today, but teams should treat it as an emerging tool rather than production-hardened infrastructure.
+</Callout>
+
+<SectionLabel>Who Should Be Paying Attention</SectionLabel>
+
+**Design system engineers** building on DTCG tokens are the obvious first audience. If you're already running Terrazzo for token transformation, adding this MCP server to your toolchain is a low-friction win — your AI assistant can now reason about your actual token structure, not a hallucinated approximation.
+
+**AI-assisted design tooling developers** should be watching this space closely. The combination of DTCG standardization and MCP connectivity is genuinely new territory. Swatchbook is early, but the pattern it's establishing — headless token exposure for AI agents — is going to matter as design systems become more complex.
+
+<PullQuote>The pattern Swatchbook is establishing — headless token exposure for AI agents — is going to matter as design systems grow more complex.</PullQuote>
+
+**Storybook users** get an obvious benefit: they can query their design token system without spinning up a full Storybook instance. For CI environments, AI pipelines, or lightweight development setups, that's a meaningful reduction in overhead.
+
+<Callout type="tip">
+If you're evaluating AI tools for your design system workflow, start with read-only token introspection — it's lower risk and higher leverage than write-access tools. Swatchbook MCP is built for exactly that use case.
+</Callout>
+
+<SectionLabel>The Verdict</SectionLabel>
+
+Swatchbook MCP won't win a popularity contest today — 2 stars and a small toolset tell that story plainly. But the **88/100 overall score** reflects something real: a tight architectural focus, solid security posture, and a genuinely useful niche at the intersection of design systems and AI tooling.
+
+Design tokens need an AI interface. DTCG is the right standard to build on. And Terrazzo is a solid parsing foundation. [Swatchbook MCP](/s/swatchbook-mcp) has put those three pieces together before most teams even knew they needed it.
+
+Get in early, or catch up later.
+
+---

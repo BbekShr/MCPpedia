@@ -1,0 +1,123 @@
+---
+title: "780 New MCP Servers This Week — and a Clear Production Shift"
+description: "The MCP ecosystem hit 21,152 servers this week. The new additions reveal a sharp pivot: AI agent ops tooling is arriving fast."
+hook: "780 new MCP servers in one week — and the most interesting ones aren't demos. Cost tracking, security vetting with 41 detection rules, safe rollbacks. Someone is quietly building the production ops layer for AI agents."
+date: "2026-05-07"
+tags: ["weekly","ecosystem","new-servers"]
+category: "weekly-roundup"
+featuredServers: ["io-github-temurkhan13-openclaw-cost-tracker-mcp","io-github-theyahia-claude-webcache","io-github-temurkhan13-openclaw-health-mcp","io-github-retrorobai-mcp-memory-graph","io-github-mayanktalwar0-startup-finance-metrics","io-github-temurkhan13-openclaw-skill-vetter-mcp","io-github-temurkhan13-openclaw-upgrade-orchestrator-mcp","flyto-core","agent-toolkit-for-aws","io-github-alyiox-mcp-atlassian-attachments"]
+---
+<SectionLabel>MCP Ecosystem Weekly Roundup</SectionLabel>
+
+## 780 New Servers. One Very Clear Theme.
+
+The MCP ecosystem just crossed **21,152 total servers** — and this week's 780 additions weren't noise. They were signal. A cluster of new tools landed with a shared obsession: **making AI agents production-worthy**, not just demo-worthy. That means cost tracking, health monitoring, security vetting, and safe upgrades. The hobbyist era is quietly ending.
+
+Let's get into it.
+
+---
+
+<StatGrid>
+  <Stat value="21,152" label="Total Servers" detail="In the MCP catalog" />
+  <Stat value="780" label="New This Week" detail="Added in 7 days" />
+  <Stat value="2,222" label="Stars Gained" detail="By Claude Flow cluster" />
+  <Stat value="87" label="Top Score" detail="openclaw-cost-tracker-mcp" />
+</StatGrid>
+
+---
+
+<SectionLabel>New Servers Worth Your Attention</SectionLabel>
+
+## The OpenClaw Suite Is Building Something Serious
+
+Four separate servers dropped this week from the same developer, all under the OpenClaw banner — and together they form something that looks less like a toolkit and more like an **enterprise AI agent operations platform**.
+
+**[openclaw-cost-tracker-mcp](/s/io-github-temurkhan13-openclaw-cost-tracker-mcp)** is the standout, scoring an impressive 87 this week. It handles per-agent token-cost telemetry across providers, with anomaly detection and cost-based routing baked in. If you're running multi-provider agent pipelines, this is the kind of observability you didn't know you needed until your bill arrived.
+
+**[openclaw-health-mcp](/s/io-github-temurkhan13-openclaw-health-mcp)** covers deployment health — gateway status, resource metrics, error rates, disk usage, and upgrade tracking. **[openclaw-skill-vetter-mcp](/s/io-github-temurkhan13-openclaw-skill-vetter-mcp)** runs 41 detection rules against third-party agent extensions before you install them. And **[openclaw-upgrade-orchestrator-mcp](/s/io-github-temurkhan13-openclaw-upgrade-orchestrator-mcp)** manages runtime upgrades with regression catalogs, snapshot diffs, and rollback support.
+
+<PullQuote>Four servers, one vision: the infrastructure layer that AI agent teams actually need at scale.</PullQuote>
+
+<Callout type="fire">The openclaw-skill-vetter runs **41 security detection rules** against third-party agent extensions. In a world where MCP server supply chains are increasingly complex, this is the kind of tool that should be mandatory, not optional.</Callout>
+
+---
+
+### The Memory Problem Gets a Graph-Theoretic Answer
+
+**[mcp-memory-graph](/s/io-github-retrorobai-mcp-memory-graph)** tackles one of the nastiest unsolved problems in agent design: what happens when an agent's memories conflict? Most memory systems just overwrite. This one uses **authority-weighted conflict detection** — meaning it knows which memories to trust more — combined with semantic search for retrieval.
+
+It scored 71 this week with zero stars yet, which means almost nobody has found it. That's about to change.
+
+---
+
+### Claude Code Gets a Smarter Web Cache
+
+**[claude-webcache](/s/io-github-theyahia-claude-webcache)** is a cross-session WebFetch cache for Claude Code, backed by SQLite with a 7-day TTL. Simple premise, real impact: stop re-fetching the same documentation pages on every session restart.
+
+It's a small tool with a tight scope — and that's exactly what makes it useful. Not everything needs to be a platform.
+
+---
+
+### Startup Finance Metrics, Locally
+
+**[startup-finance-metrics](/s/io-github-mayanktalwar0-startup-finance-metrics)** generates financial health reports and metrics analysis locally — no data leaving your machine. For founders or analysts who want to run LLM-assisted financial modeling without feeding sensitive numbers to a cloud endpoint, this fills a real gap. Scored 70 with a clean, focused design.
+
+---
+
+<SectionLabel>Trending This Week</SectionLabel>
+
+## The Claude Flow Situation
+
+Let's address the elephant in the room. **[Ruflo](/s/ruflo)**, **[Claude Flow](/s/claude-flow)**, and the **[Claude Flow MCP Server](/s/io-github-ruvnet-claude-flow)** all gained exactly **2,222 stars this week** — every one of them sitting at 44,639 total stars. They share overlapping descriptions about swarm intelligence, hive-mind coordination, and enterprise orchestration.
+
+Whether this is coordinated star activity, a fork ecosystem, or something else entirely is unclear from the data. What is clear: **something in the Claude agent orchestration space is generating enormous attention**, and 87 MCP tools in the Claude Flow server alone means there's real substance underneath the star counts.
+
+<Callout type="warning">Three repos, same star count, same weekly gain. Treat the social proof with appropriate skepticism — but don't dismiss the underlying orchestration tooling without testing it.</Callout>
+
+---
+
+### Context Mode: Privacy-First and Gaining Fast
+
+**[Context Mode](/s/context-mode)** added **775 stars** this week to reach 13,451 total — and it holds a 95 quality score, the highest of any trending server this week. Its pitch: MCP handles tool access, Context Mode handles the **virtualization layer for context**, with a privacy-first architecture.
+
+That framing matters. As agents get access to more sensitive data, the question of *who controls the context window* becomes critical infrastructure.
+
+---
+
+### Local Deep Research Hits a Benchmark Worth Noting
+
+**[Local Deep Research](/s/local-deep-research)** gained 527 stars this week, pulling it to 5,403 total. The headline claim — **~95% on SimpleQA** tested with GPT-4.1-mini — is the kind of specific, falsifiable benchmark that earns attention. It searches across arXiv, PubMed, the open web, and private documents, all locally encrypted.
+
+In a week dominated by cloud-native orchestration platforms, this one is a quiet reminder that **local-first AI tooling still has a massive and underserved audience**.
+
+---
+
+### AWS Gets Official
+
+**[Agent Toolkit For AWS](/s/agent-toolkit-for-aws)** landed with **265 stars** out of the gate and official AWS backing. MCP-native support for building AI agents on AWS infrastructure isn't surprising — but having an officially supported toolkit matters for enterprise adoption. This is the kind of legitimacy signal that moves organizations from "evaluating" to "deploying."
+
+<PullQuote>When AWS ships an official MCP toolkit, it's not a trend anymore. It's infrastructure.</PullQuote>
+
+---
+
+### Code Review Graph: Token Efficiency as a Feature
+
+**[Code Review Graph](/s/code-review-graph)** added 182 stars (now at 15,530) with a claim that deserves serious attention: **6.8× fewer tokens on code reviews, up to 49× on daily coding tasks**. It builds a persistent local knowledge graph of your codebase so Claude reads only what's relevant.
+
+If those numbers hold up in practice, this is one of the most economically significant tools in the catalog.
+
+---
+
+<SectionLabel>The Week's Signal</SectionLabel>
+
+## What This Week Actually Means
+
+The themes this week aren't subtle. Cost telemetry. Health monitoring. Security vetting. Safe rollbacks. Token efficiency. Local privacy. The MCP ecosystem is maturing from "cool demo" to "production dependency" — and the tooling is following.
+
+780 new servers in a week is remarkable. But **the quality of intent behind this week's additions** is what actually matters. Someone is building the ops layer for AI agents. Multiple someones, actually.
+
+The question isn't whether AI agents will run in production. They already are. The question is whether your infrastructure is ready for them — and this week's new servers are a clear signal that the ecosystem is catching up fast.
+
+**If you're still treating MCP servers as a novelty, you're already behind.**
+
+---

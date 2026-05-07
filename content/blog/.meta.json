@@ -1,14 +1,14 @@
 {
-  "lastRoundupDate": "2026-04-30",
+  "lastRoundupDate": "2026-05-07",
   "lastSpotlightSlugs": [
+    "swatchbook-mcp",
     "e2eval",
     "vitemcp",
     "end-conversation-mcp-server-zh",
     "hermes-paperclip-adapter",
     "open-websearch",
     "python-sdk",
-    "supabase",
-    "io-github-cameroncooke-xcodebuildmcp"
+    "supabase"
   ],
   "lastCategoryDeepDive": null,
   "lastCategoryDeepDiveDate": null,
