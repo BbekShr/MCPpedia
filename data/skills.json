@@ -1316,5 +1316,193 @@
     "install": {
       "manual": "Clone and copy into .claude/skills — see README."
     }
+  },
+  {
+    "slug": "trailofbits-skills",
+    "name": "Trail of Bits Skills",
+    "tagline": "Security research, vulnerability detection, and audit workflows from Trail of Bits.",
+    "description": "A Claude Code plugin marketplace from Trail of Bits providing skills for AI-assisted security analysis, fuzzing, code auditing, and vulnerability research. Companion to their claude-code-config and devcontainer projects.",
+    "repo": "trailofbits/skills",
+    "github_url": "https://github.com/trailofbits/skills",
+    "author": "Trail of Bits",
+    "author_type": "official",
+    "license": "CC-BY-SA-4.0",
+    "stars": 5095,
+    "last_updated": "2026-05-09",
+    "category": "development-workflow",
+    "tags": ["security", "audit", "vulnerability", "fuzzing", "static-analysis"],
+    "compatible_with": ["claude-code"],
+    "type": "marketplace",
+    "featured": true,
+    "install": {
+      "claude_code": "/plugin marketplace add trailofbits/skills"
+    }
+  },
+  {
+    "slug": "google-labs-stitch-skills",
+    "name": "Google Labs Stitch Skills",
+    "tagline": "Official skill library for the Stitch MCP server — design, React, and design-md workflows.",
+    "description": "A library of Agent Skills from Google Labs designed to work with the Stitch MCP server. Follows the Agent Skills open standard for compatibility with Antigravity, Gemini CLI, Claude Code, and Cursor.",
+    "repo": "google-labs-code/stitch-skills",
+    "github_url": "https://github.com/google-labs-code/stitch-skills",
+    "author": "Google Labs",
+    "author_type": "official",
+    "license": "Apache-2.0",
+    "stars": 5307,
+    "last_updated": "2026-05-09",
+    "category": "design",
+    "tags": ["stitch", "react", "design", "components", "google-labs"],
+    "compatible_with": ["claude-code", "cursor", "gemini-cli"],
+    "type": "skill-collection",
+    "featured": true,
+    "install": {
+      "claude_code": "npx skills add google-labs-code/stitch-skills",
+      "manual": "List skills with `npx skills add google-labs-code/stitch-skills --list`, then install with `--skill <name> --global`"
+    }
+  },
+  {
+    "slug": "humanizer",
+    "name": "Humanizer",
+    "tagline": "Removes signs of AI-generated writing from text.",
+    "description": "A focused Claude Code skill that rewrites text to strip the tells of LLM output — repetitive cadence, hedge phrases, structural giveaways — while preserving meaning. Single SKILL.md, drop-in install.",
+    "repo": "blader/humanizer",
+    "github_url": "https://github.com/blader/humanizer",
+    "author": "blader",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 17977,
+    "last_updated": "2026-05-09",
+    "category": "writing",
+    "tags": ["writing", "editing", "anti-ai", "style"],
+    "compatible_with": ["claude-code", "opencode"],
+    "type": "skill",
+    "featured": true,
+    "install": {
+      "claude_code": "git clone https://github.com/blader/humanizer.git ~/.claude/skills/humanizer"
+    }
+  },
+  {
+    "slug": "caveman",
+    "name": "Caveman",
+    "tagline": "Cuts ~75% of output tokens by making the agent talk like caveman.",
+    "description": "A skill/plugin that compresses agent output (and optionally input) to caveman-style minimal English while preserving technical accuracy. Includes Wenyan mode, terse-commit and one-line-review variants, and a session-level compression tool.",
+    "repo": "JuliusBrussee/caveman",
+    "github_url": "https://github.com/JuliusBrussee/caveman",
+    "author": "Julius Brussee",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 57111,
+    "last_updated": "2026-05-09",
+    "category": "meta",
+    "tags": ["tokens", "compression", "output", "cost-reduction"],
+    "compatible_with": ["claude-code", "codex", "cursor", "gemini-cli", "copilot-cli", "opencode"],
+    "type": "plugin",
+    "install": {
+      "claude_code": "curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash",
+      "manual": "Windows: `irm https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.ps1 | iex` — auto-detects 30+ agents and installs for each"
+    }
+  },
+  {
+    "slug": "graphify",
+    "name": "Graphify",
+    "tagline": "Turn any folder of code, schemas, scripts, docs, or media into a queryable knowledge graph.",
+    "description": "A coding-assistant skill that ingests app code, SQL schemas, R/shell scripts, papers, images, and videos and exposes them as a unified knowledge graph the agent can query. Distributed as a Python CLI (`graphify`).",
+    "repo": "safishamsi/graphify",
+    "github_url": "https://github.com/safishamsi/graphify",
+    "author": "Safi Shamsi",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 45628,
+    "last_updated": "2026-05-09",
+    "category": "development-workflow",
+    "tags": ["knowledge-graph", "code-search", "indexing", "schemas"],
+    "compatible_with": ["claude-code", "codex", "cursor", "gemini-cli", "opencode"],
+    "type": "skill",
+    "install": {
+      "claude_code": "uv tool install graphifyy && graphify install",
+      "manual": "Or `pipx install graphifyy && graphify install` / `pip install graphifyy && graphify install`. Windows: `graphify install --platform windows`"
+    }
+  },
+  {
+    "slug": "anthropic-cybersecurity-skills",
+    "name": "Cybersecurity Skills (754)",
+    "tagline": "754 cybersecurity skills mapped to MITRE ATT&CK, NIST CSF 2.0, ATLAS, D3FEND, and AI RMF.",
+    "description": "An open-source skills library covering 26 security domains, with each skill cross-mapped to five major industry frameworks. Follows the agentskills.io open standard and works across Claude Code, Codex, Cursor, Gemini CLI, and Copilot.",
+    "repo": "mukul975/Anthropic-Cybersecurity-Skills",
+    "github_url": "https://github.com/mukul975/Anthropic-Cybersecurity-Skills",
+    "author": "mukul975",
+    "author_type": "community",
+    "license": "Apache-2.0",
+    "stars": 6144,
+    "last_updated": "2026-05-09",
+    "category": "development-workflow",
+    "tags": ["security", "cybersecurity", "mitre-attack", "nist", "compliance"],
+    "compatible_with": ["claude-code", "codex", "cursor", "gemini-cli", "copilot-cli"],
+    "type": "skill-collection",
+    "install": {
+      "claude_code": "npx skills add mukul975/Anthropic-Cybersecurity-Skills",
+      "manual": "Or `git clone https://github.com/mukul975/Anthropic-Cybersecurity-Skills.git` and point your agent at the folder"
+    }
+  },
+  {
+    "slug": "claude-code-game-studios",
+    "name": "Claude Code Game Studios",
+    "tagline": "Turn Claude Code into a full game-dev studio — 49 AI agents and 72 workflow skills.",
+    "description": "A coordinated multi-agent template that mirrors a real game-studio hierarchy: producers, designers, programmers, artists, QA. Ships hooks that re-run skill tests after edits and a structured discussion/issue workflow.",
+    "repo": "Donchitos/Claude-Code-Game-Studios",
+    "github_url": "https://github.com/Donchitos/Claude-Code-Game-Studios",
+    "author": "Donchitos",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 17894,
+    "last_updated": "2026-05-09",
+    "category": "development-workflow",
+    "tags": ["game-dev", "multi-agent", "studio", "template"],
+    "compatible_with": ["claude-code"],
+    "type": "skill-collection",
+    "install": {
+      "manual": "git clone https://github.com/Donchitos/Claude-Code-Game-Studios.git my-game (use as a project template)"
+    }
+  },
+  {
+    "slug": "open-design",
+    "name": "Open Design",
+    "tagline": "Local-first, open-source alternative to Claude Design — 19 skills, prototypes to MP4 export.",
+    "description": "A BYOK design workflow built around SKILL.md folders. Generates web/desktop/mobile prototypes, slides, images, and video; sandboxed preview with HTML/PDF/PPTX/MP4 export. Daemon scans your PATH for any installed coding agent and uses it as the design engine.",
+    "repo": "nexu-io/open-design",
+    "github_url": "https://github.com/nexu-io/open-design",
+    "homepage_url": "https://open-design.ai/",
+    "author": "Nexu",
+    "author_type": "community",
+    "license": "Apache-2.0",
+    "stars": 35351,
+    "last_updated": "2026-05-09",
+    "category": "design",
+    "tags": ["design", "prototypes", "slides", "video", "byok", "local-first"],
+    "compatible_with": ["claude-code", "codex", "cursor", "gemini-cli", "opencode"],
+    "type": "skill-collection",
+    "install": {
+      "manual": "Download the desktop app from open-design.ai, or clone and run `pnpm tools-dev` for the local daemon + web stack"
+    }
+  },
+  {
+    "slug": "antigravity-awesome-skills",
+    "name": "Antigravity Awesome Skills",
+    "tagline": "Installable library of 1,450+ agentic skills with an npx installer.",
+    "description": "A searchable, installable catalog of SKILL.md playbooks, role-based bundles, and workflows for planning, coding, debugging, security review, infra, and growth tasks. Targets Claude Code, Cursor, Codex CLI, Gemini CLI, Antigravity, Kiro, OpenCode, and Copilot.",
+    "repo": "sickn33/antigravity-awesome-skills",
+    "github_url": "https://github.com/sickn33/antigravity-awesome-skills",
+    "author": "sickn33",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 36970,
+    "last_updated": "2026-05-09",
+    "category": "meta",
+    "tags": ["collection", "library", "bundles", "workflows", "multi-platform"],
+    "compatible_with": ["claude-code", "codex", "cursor", "gemini-cli", "copilot-cli", "opencode"],
+    "type": "skill-collection",
+    "install": {
+      "claude_code": "npx antigravity-awesome-skills"
+    }
   }
 ]
