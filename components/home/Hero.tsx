@@ -1,10 +1,25 @@
+import type { Variants } from 'framer-motion'
 import HeroSearch from './HeroSearch'
+import CountUp from './CountUp'
+import { AnimatedGroup } from '@/components/ui/animated-group'
 
 interface HeroStats {
   total_servers: number
   official_count: number
   open_cves: number
   servers_with_open_advisories: number
+}
+
+const transitionVariants: { item: Variants } = {
+  item: {
+    hidden: { opacity: 0, filter: 'blur(12px)', y: 12 },
+    visible: {
+      opacity: 1,
+      filter: 'blur(0px)',
+      y: 0,
+      transition: { type: 'spring', bounce: 0.3, duration: 1.5 },
+    },
+  },
 }
 
 function HeroBackdrop() {
@@ -31,12 +46,12 @@ function HeroBackdrop() {
 
 function TrustTicker({ stats }: { stats: HeroStats }) {
   const items = [
-    { label: 'Servers indexed', value: stats.total_servers.toLocaleString() },
-    { label: 'Open CVEs', value: stats.open_cves.toLocaleString(), alert: stats.open_cves > 0 },
-    { label: 'Official publishers', value: stats.official_count.toLocaleString() },
+    { label: 'Servers indexed', value: stats.total_servers },
+    { label: 'Open CVEs', value: stats.open_cves, alert: stats.open_cves > 0 },
+    { label: 'Official publishers', value: stats.official_count },
     {
       label: 'Servers with open advisories',
-      value: stats.servers_with_open_advisories.toLocaleString(),
+      value: stats.servers_with_open_advisories,
       alert: stats.servers_with_open_advisories > 0,
     },
   ]
@@ -56,12 +71,12 @@ function TrustTicker({ stats }: { stats: HeroStats }) {
               i % 2 !== 0 ? 'border-l border-border-muted' : ''
             }${i === 2 ? ' md:border-l md:border-border-muted' : ''}`}
           >
-            <div
+            <CountUp
+              value={it.value}
+              delayMs={700 + i * 80}
               className="text-xl md:text-2xl font-bold tabular-nums"
               style={{ color: it.alert ? 'var(--red)' : 'var(--text)' }}
-            >
-              {it.value}
-            </div>
+            />
             <div className="text-xs text-text-muted leading-tight">{it.label}</div>
           </div>
         ))}
@@ -72,46 +87,71 @@ function TrustTicker({ stats }: { stats: HeroStats }) {
 
 export default function Hero({ stats }: { stats: HeroStats }) {
   return (
-    <section
-      className="relative"
-      style={{ background: 'var(--hero-gradient)' }}
-    >
+    <section className="relative" style={{ background: 'var(--hero-gradient)' }}>
       <HeroBackdrop />
       <div className="relative max-w-[960px] mx-auto px-4 md:px-6 pt-16 md:pt-[72px] pb-12 md:pb-14 text-center">
-        <div
-          className="inline-flex items-center gap-2 mb-4 px-2.5 py-1 rounded-full text-xs text-text-muted backdrop-blur"
-          style={{
-            background: 'color-mix(in srgb, var(--bg-secondary) 80%, transparent)',
-            border: '1px solid var(--border-muted)',
+        <AnimatedGroup variants={transitionVariants}>
+          <div
+            className="inline-flex items-center gap-2 mb-4 px-2.5 py-1 rounded-full text-xs text-text-muted backdrop-blur"
+            style={{
+              background: 'color-mix(in srgb, var(--bg-secondary) 80%, transparent)',
+              border: '1px solid var(--border-muted)',
+            }}
+          >
+            <span
+              className="rounded-full"
+              style={{
+                width: 6,
+                height: 6,
+                background: 'var(--green)',
+                boxShadow: '0 0 0 3px color-mix(in srgb, var(--green) 22%, transparent)',
+              }}
+            />
+            The open catalog for Model Context Protocol servers
+          </div>
+
+          <h1 className="m-0 text-4xl md:text-5xl font-bold text-text-primary tracking-tight leading-[1.1]">
+            Find an MCP server
+            <br />
+            <span className="text-accent">you can actually trust.</span>
+          </h1>
+
+          <p className="mt-4 mx-auto max-w-[560px] text-base md:text-lg text-text-muted">
+            Every server is scored on security, maintenance, token efficiency, documentation, and
+            compatibility — so you can pick one and move on.
+          </p>
+        </AnimatedGroup>
+
+        <AnimatedGroup
+          variants={{
+            container: {
+              hidden: { opacity: 0 },
+              visible: {
+                opacity: 1,
+                transition: { staggerChildren: 0.05, delayChildren: 0.5 },
+              },
+            },
+            ...transitionVariants,
           }}
         >
-          <span
-            className="rounded-full"
-            style={{
-              width: 6,
-              height: 6,
-              background: 'var(--green)',
-              boxShadow: '0 0 0 3px color-mix(in srgb, var(--green) 22%, transparent)',
-            }}
-          />
-          The open catalog for Model Context Protocol servers
-        </div>
-
-        <h1 className="m-0 text-4xl md:text-5xl font-bold text-text-primary tracking-tight leading-[1.1]">
-          Find an MCP server
-          <br />
-          <span className="text-accent">you can actually trust.</span>
-        </h1>
-
-        <p className="mt-4 mx-auto max-w-[560px] text-base md:text-lg text-text-muted">
-          Every server is scored on security, maintenance, token efficiency, documentation, and
-          compatibility — so you can pick one and move on.
-        </p>
-
-        <HeroSearch totalServers={stats.total_servers} />
+          <HeroSearch totalServers={stats.total_servers} />
+        </AnimatedGroup>
       </div>
 
-      <TrustTicker stats={stats} />
+      <AnimatedGroup
+        variants={{
+          container: {
+            hidden: { opacity: 0 },
+            visible: {
+              opacity: 1,
+              transition: { delayChildren: 0.7 },
+            },
+          },
+          ...transitionVariants,
+        }}
+      >
+        <TrustTicker stats={stats} />
+      </AnimatedGroup>
     </section>
   )
 }

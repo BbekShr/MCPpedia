@@ -19,6 +19,7 @@ import {
 } from '@/lib/seo'
 import type { Metadata } from 'next'
 import Hero from '@/components/home/Hero'
+import RevealOnScroll from '@/components/home/RevealOnScroll'
 import Featured, { type FeaturedServer } from '@/components/home/Featured'
 import Trending, { type TrendingRow } from '@/components/home/Trending'
 import UseCases, { HOMEPAGE_USECASES, type UseCaseTileData } from '@/components/home/UseCases'
@@ -277,74 +278,96 @@ export default async function HomePage() {
 
       <Hero stats={stats} />
 
-      {featured.length > 0 && <Featured servers={featured} />}
+      {featured.length > 0 && (
+        <RevealOnScroll>
+          <Featured servers={featured} />
+        </RevealOnScroll>
+      )}
 
-      {trending.length > 0 && <Trending rows={trending} />}
+      {trending.length > 0 && (
+        <RevealOnScroll>
+          <Trending rows={trending} />
+        </RevealOnScroll>
+      )}
 
-      <UseCases tiles={useCaseTiles} />
+      <RevealOnScroll>
+        <UseCases tiles={useCaseTiles} />
+      </RevealOnScroll>
 
-      <Advisories advisories={advisories} />
+      <RevealOnScroll>
+        <Advisories advisories={advisories} />
+      </RevealOnScroll>
 
-      <CategoriesGrid categories={categoryTiles} />
+      <RevealOnScroll>
+        <CategoriesGrid categories={categoryTiles} />
+      </RevealOnScroll>
 
-      <ScoringExplainer />
+      <RevealOnScroll>
+        <ScoringExplainer />
+      </RevealOnScroll>
 
-      <section className="border-t border-border">
-        <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-12">
-          <h2 className="text-2xl font-semibold text-text-primary mb-6">Frequently asked questions</h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            {homepageFaqs.map((faq) => (
-              <details
-                key={faq.question}
-                className="border border-border rounded-lg p-4 bg-bg-secondary group"
-              >
-                <summary className="font-medium text-text-primary cursor-pointer list-none flex justify-between items-center">
-                  <span>{faq.question}</span>
-                  <span className="text-text-muted text-xl group-open:rotate-45 transition-transform">+</span>
-                </summary>
-                <p className="mt-3 text-sm text-text-muted leading-relaxed">{faq.answer}</p>
-              </details>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="border-t border-border">
-        <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-10">
-          <NewsletterSignup
-            variant="banner"
-            context="Weekly CVE alerts, new server roundups, and MCP ecosystem insights. Free."
-          />
-        </div>
-      </section>
-
-      <section className="border-t border-border">
-        <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-12">
-          <div className="border border-accent/20 rounded-lg p-6 bg-accent/5 flex flex-col md:flex-row md:items-center gap-6">
-            <div className="flex-1">
-              <h2 className="text-lg font-semibold text-text-primary mb-1">New to MCP?</h2>
-              <p className="text-sm text-text-muted">
-                MCP lets your AI assistant use real tools — search Slack, manage GitHub, query
-                databases. Set up your first server in 2 minutes.
-              </p>
-            </div>
-            <div className="flex gap-3 shrink-0">
-              <Link
-                href="/get-started"
-                className="px-4 py-2 text-sm rounded-md bg-accent text-accent-fg hover:bg-accent-hover transition-colors"
-              >
-                What is MCP?
-              </Link>
-              <Link
-                href="/setup"
-                className="px-4 py-2 text-sm rounded-md border border-border text-text-primary hover:bg-bg-tertiary transition-colors"
-              >
-                Setup guide
-              </Link>
+      <RevealOnScroll>
+        <section className="border-t border-border">
+          <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-12">
+            <h2 className="text-2xl font-semibold text-text-primary mb-6">Frequently asked questions</h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              {homepageFaqs.map((faq) => (
+                <details
+                  key={faq.question}
+                  className="border border-border rounded-lg p-4 bg-bg-secondary group"
+                >
+                  <summary className="font-medium text-text-primary cursor-pointer list-none flex justify-between items-center">
+                    <span>{faq.question}</span>
+                    <span className="text-text-muted text-xl group-open:rotate-45 transition-transform">+</span>
+                  </summary>
+                  <p className="mt-3 text-sm text-text-muted leading-relaxed">{faq.answer}</p>
+                </details>
+              ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </RevealOnScroll>
+
+      <RevealOnScroll>
+        <section className="border-t border-border">
+          <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-10">
+            <NewsletterSignup
+              variant="banner"
+              context="Weekly CVE alerts, new server roundups, and MCP ecosystem insights. Free."
+            />
+          </div>
+        </section>
+      </RevealOnScroll>
+
+      <RevealOnScroll>
+        <section className="border-t border-border">
+          <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-12">
+            <div className="border border-accent/20 rounded-lg p-6 bg-accent/5 flex flex-col md:flex-row md:items-center gap-6">
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold text-text-primary mb-1">New to MCP?</h2>
+                <p className="text-sm text-text-muted">
+                  MCP lets your AI assistant use real tools — search Slack, manage GitHub, query
+                  databases. Set up your first server in 2 minutes.
+                </p>
+              </div>
+              <div className="flex gap-3 shrink-0">
+                <Link
+                  href="/get-started"
+                  className="px-4 py-2 text-sm rounded-md bg-accent text-accent-fg hover:bg-accent-hover transition-colors"
+                >
+                  What is MCP?
+                </Link>
+                <Link
+                  href="/setup"
+                  className="px-4 py-2 text-sm rounded-md border border-border text-text-primary hover:bg-bg-tertiary transition-colors"
+                >
+                  Setup guide
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+      </RevealOnScroll>
     </div>
   )
 }
