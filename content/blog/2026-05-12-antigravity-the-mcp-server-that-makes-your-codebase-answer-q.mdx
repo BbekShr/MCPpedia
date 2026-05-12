@@ -1,0 +1,76 @@
+---
+title: "Antigravity: The MCP Server That Makes Your Codebase Answer Questions"
+description: "With 1,216 stars and a 96/100 score, Antigravity turns any codebase into a queryable AI assistant — with real file paths and line numbers."
+hook: "Most AI coding tools hallucinate their way through your codebase. Antigravity Workspace Template (1,216 stars, 96/100 score) deploys a multi-agent cluster to index your code first — then answers questions with actual file paths and line numbers. Big difference."
+date: "2026-05-12"
+tags: ["spotlight","review"]
+category: "server-spotlight"
+featuredServers: ["antigravity-workspace-template"]
+---
+<PullQuote>What if your codebase could answer questions about itself — with file paths, line numbers, and actual context?</PullQuote>
+
+That's the premise behind [Antigravity Workspace Template](/s/antigravity-workspace-template), and with 1,216 GitHub stars, it's clearly struck a nerve with developers who are tired of drowning in unfamiliar code.
+
+This isn't just another MCP wrapper. It's a **multi-agent knowledge engine** that turns any codebase into a queryable AI assistant — and it works across Claude Code, Codex CLI, Cursor, and Windsurf.
+
+---
+
+<SectionLabel>What It Actually Does</SectionLabel>
+
+The core idea is elegant: deploy a cluster of agents to autonomously read your code, generate structured knowledge documents per module, and then make that knowledge available for precise, grounded Q&A.
+
+Two commands drive the whole system. `ag-refresh` kicks off the knowledge generation. `ag-ask` lets you query what was learned. The MCP tools mirror this exactly.
+
+**`refresh_project`** is the first thing you run. It deploys a multi-agent cluster that reads through your codebase and generates knowledge documents for each module — no configuration required, no arguments needed. It's a zero-friction onboarding for any new project.
+
+**`ask_project`** is where the magic pays off. You ask a question, it routes to the appropriate ModuleAgent, and returns answers **grounded in real code** — with file paths and line numbers. Not vibes. Not hallucinated summaries. Actual citations.
+
+<Callout type="fire">The `ask_project` tool returns answers with specific file paths and line numbers — making it one of the few MCP tools that produces verifiably grounded responses rather than plausible-sounding guesses.</Callout>
+
+---
+
+<SectionLabel>Score Breakdown</SectionLabel>
+
+With a total score of **96/100**, this server sits near the top of what MCPpedia catalogs. Let's look at what's driving that number.
+
+<ScoreBreakdown>
+  <ScoreRow label="Security" points="30" description="Full marks. The tool's design — read-only code analysis, no external data exfiltration, no credentials required — keeps the attack surface minimal." />
+  <ScoreRow label="Maintenance" points="21" description="Near-perfect. Active development, 1,216 stars, and a clear versioning trajectory all signal a project that won't be abandoned next month." />
+  <ScoreRow label="Documentation" points="15" description="Full marks here too. The workspace template pattern inherently demands clear setup instructions, and the project delivers them." />
+  <ScoreRow label="Efficiency" points="20" description="Near-perfect efficiency score. The multi-agent cluster design means indexing is parallelized — you're not waiting for a single process to crawl your entire repo." />
+  <ScoreRow label="Compatibility" points="10" description="Full marks on compatibility — and this is notable. Four major AI development environments supported out of the box is genuinely unusual in this space." />
+</ScoreBreakdown>
+
+A 96 is a statement score. The only real question is whether the real-world experience lives up to the numbers.
+
+---
+
+<SectionLabel>Who Should Care</SectionLabel>
+
+This tool is built for a specific kind of pain — and if you've felt it, you'll recognize it immediately.
+
+**Onboarding to a legacy codebase** is the obvious use case. Instead of spending days grepping through unfamiliar modules, you run `refresh_project` once and then ask your way to understanding. The file-path citations mean you can immediately jump to the relevant code rather than trusting the AI's summary.
+
+**Team knowledge transfer** is the underrated use case. When someone leaves a project, they take mental models with them. Antigravity can encode those models into queryable knowledge documents before the institutional knowledge walks out the door.
+
+<PullQuote>Onboarding is the obvious win. Preserving institutional knowledge before it walks out the door is the smarter one.</PullQuote>
+
+**AI-assisted code review** is a third angle worth considering. If your AI assistant can query the project's own knowledge base mid-session, the quality of suggestions improves dramatically — it's grounding completions in documented architecture, not just adjacent file context.
+
+<Callout type="tip">The template works with Claude Code, Codex CLI, Cursor, and Windsurf. If you're already using any of these tools, the integration path is essentially zero-friction — the workspace template handles the MCP server configuration automatically.</Callout>
+
+---
+
+<SectionLabel>The Sharp Edge</SectionLabel>
+
+Two tools. That's the entire surface area of this MCP server. Some people will read that as simplicity; others will read it as limitation.
+
+I'd argue it's a feature. The scope is deliberately constrained: **index the codebase, answer questions about it**. That's it. No file editing, no execution, no sprawling tool list that creates security surface area. The 30/30 security score reflects exactly this philosophy.
+
+The npm package (`gitnexus`) and pip package (`git`) suggest a mature distribution story — this isn't a project you have to clone manually and hope the setup works.
+
+---
+
+If your workflow involves regularly navigating unfamiliar codebases — and whose doesn't — [Antigravity Workspace Template](/s/antigravity-workspace-template) deserves a serious look. A 96/100 score, 1,216 stars, and a genuinely novel approach to codebase knowledge make this one of the more compelling MCP servers in the developer tools category.
+
+Two tools. One idea. Executed well enough that the stars don't lie.
