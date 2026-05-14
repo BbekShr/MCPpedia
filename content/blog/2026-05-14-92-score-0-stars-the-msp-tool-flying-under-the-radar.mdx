@@ -1,0 +1,68 @@
+---
+title: "92 Score, 0 Stars: The MSP Tool Flying Under the Radar"
+description: "Datto SaaS Protection gets an MCP server — 9 tools for M365/GWS backup management, restores, and license tracking."
+hook: "This MCP server scored 92/100 and has zero GitHub stars. It lets AI agents queue Datto restores, audit license usage, and manage M365/GWS backups across every client org at once — and almost no one knows it exists."
+date: "2026-05-14"
+tags: ["spotlight","review"]
+category: "server-spotlight"
+featuredServers: ["io-github-wyre-technology-datto-saas-protection-mcp"]
+---
+## The MSP Admin Tool Nobody Knew They Needed
+
+Managing SaaS backups across dozens of client organizations is the kind of work that quietly eats IT hours. You're clicking through dashboards, checking seat counts, chasing restore statuses — all before lunch. The [io.github.wyre-technology/datto-saas-protection-mcp](/s/io-github-wyre-technology-datto-saas-protection-mcp) server changes that calculus entirely.
+
+This is an MCP server built specifically for **Datto SaaS Protection** — the platform MSPs rely on to back up Microsoft 365 and Google Workspace data. It surfaces nine purpose-built tools that let an AI agent query clients, inspect seats, trigger restores, and monitor license compliance — all through natural language, without ever opening the Datto portal.
+
+<SectionLabel>What It Actually Does</SectionLabel>
+
+The tool set here is tightly scoped and deliberately operational. There's no fluff.
+
+At the top of the hierarchy, `datto_saas_list_clients` pulls all customer organizations — the natural starting point for any MSP workflow. From there, `datto_saas_list_domains` narrows down to the protected domains under a specific client, and `datto_saas_list_seats` enumerates the individual users within a domain, with a toggle for archived seats.
+
+Need to drill into a single user? `datto_saas_get_seat` fetches full seat detail. Want to see what backups have run? `datto_saas_list_backups` surfaces the backup history for any given seat.
+
+<PullQuote>Nine tools. Zero wasted motion. This is what purpose-built looks like.</PullQuote>
+
+The restore workflow is where things get serious. `datto_saas_queue_restore` kicks off a restore job — and the server is transparent that this is a **destructive operation requiring confirmation**. That's not a caveat buried in a README; it's in the tool description itself. `datto_saas_get_restore_status` then lets you poll restore progress without leaving your agent context.
+
+Rounding it out: `datto_saas_list_activity` pulls an org-level activity log with date-range filtering, and `datto_saas_get_license_usage` gives you seat counts versus purchased licenses — the kind of data that prevents surprise overage bills.
+
+<Callout type="tip">MSPs managing multi-tenant environments will get the most immediate value here. Ask your AI agent "which clients have seats approaching their license cap?" and let the tools do the lookup across every org at once.</Callout>
+
+---
+
+<SectionLabel>Score Breakdown</SectionLabel>
+
+With a total score of **92 out of 100**, this server sits in genuinely elite territory. Let's look at where those points come from.
+
+<ScoreBreakdown>
+  <ScoreRow label="Security" points="30" description="Full marks. The explicit 'DESTRUCTIVE — requires confirmation' flag on the restore tool signals a developer who thinks about blast radius. That's the right instinct for infrastructure tooling." />
+  <ScoreRow label="Efficiency" points="20" description="Full marks here too. The tools map cleanly to real operational workflows — client → domain → seat → backup → restore. No redundant endpoints, no overlap." />
+  <ScoreRow label="Documentation" points="15" description="Strong score. Each tool has a clear, honest description. The date-range elicitation note on the activity log tool is a small but telling detail — it tells the agent how to ask for what it needs." />
+  <ScoreRow label="Maintenance" points="17" description="Near-full marks. The npm package availability and clean repository structure suggest this is being actively tended." />
+  <ScoreRow label="Compatibility" points="10" description="Full marks on compatibility. npm packaging makes deployment straightforward for most agent environments." />
+</ScoreBreakdown>
+
+The 0 GitHub stars shouldn't spook you. This is a niche, professional tool aimed at MSP operators — not a viral utility. Its audience is small, specific, and likely to find it through word of mouth rather than trending repositories.
+
+---
+
+<SectionLabel>Who Should Be Running This</SectionLabel>
+
+The answer is narrow but clear: **managed service providers** who already use Datto SaaS Protection as part of their stack.
+
+If you're an MSP tech handling 50+ clients across M365 and Google Workspace, the manual overhead of the Datto portal adds up fast. This server lets you build workflows where an AI agent handles routine triage — flagging seats that haven't backed up recently, identifying clients close to their license limits, confirming restore job completion — while you focus on escalations.
+
+<Callout type="warning">This server requires Datto SaaS Protection API credentials to operate. It is not a standalone backup tool — it's a control plane layer over an existing Datto deployment. Make sure your API keys are scoped appropriately before connecting an AI agent to a restore-capable endpoint.</Callout>
+
+<PullQuote>Handing an AI agent the ability to queue restores is only safe if the tooling was built with that weight in mind — and this one was.</PullQuote>
+
+Individual IT administrators managing a single organization would find this less immediately useful. The multi-tenant architecture of the tools — starting with `list_clients` — is designed for the MSP model, not the internal IT team.
+
+---
+
+<SectionLabel>The Verdict</SectionLabel>
+
+A **score of 92** on a tool with zero stars is a story worth telling. This is mature, safety-aware, operationally focused tooling that just hasn't found its audience yet.
+
+If you're running an MSP on Datto SaaS Protection and you're not using this, you're still doing manually what an AI agent could do for you at 2am. That's a fixable problem.
