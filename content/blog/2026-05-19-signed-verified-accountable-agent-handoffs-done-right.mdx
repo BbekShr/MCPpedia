@@ -1,0 +1,76 @@
+---
+title: "Signed, Verified, Accountable: Agent Handoffs Done Right"
+description: "This MCP server brings cryptographic signing and HMAC attestation to agent-to-agent task delegation — scoring a perfect 30 on security."
+hook: "Your multi-agent system delegates tasks constantly. Can it prove who authorized each handoff? This MCP server scores a perfect security score by making every agent handoff cryptographically signed and auditable."
+date: "2026-05-19"
+tags: ["spotlight","review"]
+category: "server-spotlight"
+featuredServers: ["io-github-csoai-org-agent-handoff-certified-mcp"]
+---
+## The Agent Accountability Problem Nobody Wants to Talk About
+
+Multi-agent systems are everywhere. But ask most teams to prove *which agent did what, when, and why* — and you'll get silence. That's the gap [io.github.CSOAI-ORG/agent-handoff-certified-mcp](/s/io-github-csoai-org-agent-handoff-certified-mcp) is built to close.
+
+This server introduces **verifiable, cryptographically signed agent-to-agent task handoffs**. When Agent A passes work to Agent B, there's a signed provenance chain — not just a log entry, but a tamper-evident record that can be reconstructed and validated at any point.
+
+<SectionLabel>What It Does</SectionLabel>
+
+The concept is straightforward but powerful: **every handoff gets signed, every signature gets chained, every chain gets auditable.** Think of it as a notarized chain of custody for AI task delegation.
+
+This matters more than most engineers realize. In agentic pipelines where one LLM spawns or delegates to another, accountability disappears fast. Who made the decision? Was the handoff legitimate? Did the receiving agent actually verify what it was handed? Without tooling like this, those questions go unanswered.
+
+<PullQuote>Cryptographic signing isn't just a security feature here — it's the entire value proposition. Without it, agent handoffs are just logs. With it, they're evidence.</PullQuote>
+
+---
+
+<SectionLabel>The Toolkit</SectionLabel>
+
+The server ships with **5 focused tools**, each targeting a specific moment in the handoff lifecycle:
+
+- **`initiate_handoff`** — The originating agent signs and initiates a task transfer to a receiving agent. This is where the cryptographic chain begins.
+- **`accept_handoff`** — The receiving agent formally accepts, with built-in verification to confirm the handoff came from a trusted source.
+- **`verify_chain`** — Reconstructs and validates the *full* cryptographic handoff chain trace. This is your audit tool — run it when something goes wrong or when compliance demands proof.
+- **`list_handoffs`** — Surfaces all handoffs with their current verification status. Operational visibility at a glance.
+- **`sign_handoff_chain_attestation`** — Signs the handoff chain using **HMAC attestation** specifically for audit compliance. This is the tool that makes lawyers and compliance officers happy.
+
+The design philosophy is clean: one tool per responsibility. No bloat, no ambiguity about what each call does.
+
+<Callout type="info">The server is installable via pip as `agent-handoff-certified-mcp` — no npm package required. That pip availability hints at a Python-native implementation, which aligns well with most agentic frameworks in active use today.</Callout>
+
+---
+
+<SectionLabel>Score Breakdown</SectionLabel>
+
+With an **overall score of 87**, this server punches above its weight for a project with 0 GitHub stars. Let's look at where those points come from.
+
+<ScoreBreakdown>
+  <ScoreRow label="Security" points="30" description="Full marks in this category — the highest possible. Cryptographic signing, HMAC attestation, and chain verification are baked into the core design, not bolted on." />
+  <ScoreRow label="Documentation" points="15" description="Solid documentation score. The tool descriptions are clear and purposeful, though the absence of a formal description field and empty schemas suggest room to grow." />
+  <ScoreRow label="Efficiency" points="20" description="Strong efficiency score. Five tools, zero resource bloat, no prompt overhead. The server does exactly what it claims." />
+  <ScoreRow label="Maintenance" points="12" description="Respectable but not exceptional. Zero stars on GitHub means community signal is absent — it's hard to gauge active maintenance trajectory from the outside." />
+  <ScoreRow label="Compatibility" points="10" description="Mid-tier here. pip-only distribution limits reach compared to servers with npm packages. Framework compatibility data isn't explicitly surfaced." />
+</ScoreBreakdown>
+
+The **security score of 30 — a perfect score** — is the headline. Very few servers in the catalog are architecturally designed around trust and verification from the ground up. This one is.
+
+<Callout type="warning">The 0 GitHub star count is a yellow flag for production adoption. It's not a quality signal on its own, but it does mean you're early. Evaluate accordingly — test coverage, maintenance cadence, and community support are worth investigating directly on the repo before committing to a production pipeline.</Callout>
+
+---
+
+<SectionLabel>Who Should Care</SectionLabel>
+
+This server is purpose-built for a specific audience, and that audience is growing fast.
+
+**Teams building multi-agent orchestration pipelines** where task delegation happens across agent boundaries need this. If you're running supervisor-worker agent architectures — one agent routing tasks to specialized sub-agents — the absence of signed handoffs is a liability.
+
+**Compliance-heavy environments** are the obvious second use case. Financial services, healthcare, legal tech — anywhere you need to demonstrate *what happened and who authorized it* in an automated system. The `sign_handoff_chain_attestation` tool with its HMAC output is clearly designed for exactly this.
+
+**Security researchers and red teams** evaluating agentic systems for trust vulnerabilities will find the `verify_chain` tool particularly valuable. It's a mechanism for proving — or disproving — that an agent pipeline behaved as intended.
+
+<PullQuote>If your multi-agent system can't answer "prove that Agent B was legitimately handed this task by Agent A," you have an accountability gap. This server closes it.</PullQuote>
+
+---
+
+The fact that this server scores 87 overall with zero community traction is either a sign it's ahead of its time — or that it hasn't found its audience yet. Given where agentic AI is heading, the former seems more likely.
+
+**Go explore [io.github.CSOAI-ORG/agent-handoff-certified-mcp](/s/io-github-csoai-org-agent-handoff-certified-mcp) before your competitors do.**
