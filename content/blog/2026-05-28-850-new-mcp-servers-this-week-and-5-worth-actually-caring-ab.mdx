@@ -1,0 +1,95 @@
+---
+title: "850 New MCP Servers This Week — And 5 Worth Actually Caring About"
+description: "The MCP catalog hit 23,931 servers this week. Here's what's worth your attention: from Inkscape control to Rust-secured local tools."
+hook: "Pi Coding Agent gained 457 stars in a single week. The MCP ecosystem added 850 new servers. Here's what actually matters inside the noise."
+date: "2026-05-28"
+tags: ["weekly","ecosystem","new-servers"]
+category: "weekly-roundup"
+featuredServers: ["inkscape-mcp","io-github-kioie-tiny-go-mcp","paperclipai-mcp-server","server-memory","easel","io-github-rocnubie-earscribe-mcp","io-github-rocnubie-flowmusicai-mcp","io-github-chrischall-redfin-mcp","io-github-chrischall-zillow-mcp","localops-mcp-server"]
+---
+<SectionLabel>Weekly Roundup</SectionLabel>
+
+## 850 New Servers. The MCP Ecosystem Doesn't Slow Down.
+
+The catalog hit **23,931 total servers** this week — and 850 new ones landed in seven days. That's not a trickle. That's a firehose. And buried inside this week's batch are some genuinely interesting experiments worth your attention.
+
+Let's get into it.
+
+---
+
+<SectionLabel>New Servers Worth Watching</SectionLabel>
+
+<StatGrid>
+  <Stat value="23,931" label="Total Servers" detail="In the catalog" />
+  <Stat value="850" label="New This Week" detail="Added in 7 days" />
+  <Stat value="86,326" label="Stars" detail="Server Memory repo" />
+  <Stat value="71" label="Top Score" detail="Inkscape MCP" />
+</StatGrid>
+
+### 1. Inkscape MCP — Design Gets a Real Tool
+
+[Inkscape Mcp](/s/inkscape-mcp) is the most interesting new arrival this week. A FastMCP 3.1 server that **actually controls Inkscape** — the open-source SVG editor — and ships with a web app on top. Score of 71, 17 stars already.
+
+This is the kind of integration that matters. Not another "connect your LLM to a database" clone — this is an AI agent sitting inside a professional design environment, manipulating vector graphics directly. If you're building anything in the design automation space, this one deserves a close look.
+
+<Callout type="fire">Inkscape MCP scored 71 — the highest of this week's new arrivals — and represents a rare genuine creative-tool integration rather than yet another data connector.</Callout>
+
+### 2. Server Memory — The Giant Gets Cataloged
+
+[Server Memory](/s/server-memory) showed up in the new listings this week with **86,326 GitHub stars** and a knowledge-graph-based memory layer for Claude. Yes, that number is real — this is Anthropic's own memory reference server, and it's now properly cataloged.
+
+Score of 61 reflects documentation gaps more than capability gaps. The actual tool? Foundational. If you're building persistent AI agents and haven't wired up a memory layer yet, this is the canonical starting point.
+
+### 3. Redfin + Zillow MCPs — Real Estate Gets Wired
+
+Two servers dropped from the same developer this week: [Redfin MCP](/s/io-github-chrischall-redfin-mcp) and [Zillow MCP](/s/io-github-chrischall-zillow-mcp). Both scored 58. Both do exactly what they say — surface property search, market data, Zestimates, and saved searches directly into Claude.
+
+<PullQuote>Real estate data inside your AI assistant isn't a party trick — it's the beginning of a legitimate research workflow that replaces hours of tab-switching.</PullQuote>
+
+Neither server is production-hardened yet, but the concept is sharp. Imagine asking Claude to cross-reference Redfin market reports against Zillow Zestimates for a neighborhood — in a single conversation. That's the promise here.
+
+### 4. Easel — A Live Output Window for Claude Code
+
+[Easel](/s/easel) is a quiet but clever idea: a persistent browser tab that receives **HTML card outputs from Claude Code sessions** via a push MCP tool. Score of 60, zero stars yet.
+
+Think of it as a live dashboard for your AI coding sessions — a scrolling feed of structured output you keep open in split-screen while Claude works. No more digging through terminal output. It's a workflow enhancement, not a feature — and those are often the tools that stick.
+
+<Callout type="tip">Easel is zero-star today but solves a real friction point: the lack of a visual output layer for Claude Code sessions. Watch this one.</Callout>
+
+### 5. LocalOps MCP Server — Rust, Security, and Actual Discipline
+
+[Localops_mcp_server](/s/localops-mcp-server) is built in Rust, exposes local machine capabilities — file I/O, shell execution, system stats, macOS notifications — and ships with **path traversal guards, strict command validation, and symlink protection**.
+
+One star so far, score of 56. But the engineering discipline here is conspicuous. Most "local machine" MCP servers are security nightmares waiting to happen. This one read the threat model first.
+
+---
+
+<SectionLabel>Trending This Week</SectionLabel>
+
+The trending list this week tells a clear story: **developer tools and automation are running hot**.
+
+[Pi Coding Agent](/s/pi-coding-agent) topped the chart with **457 stars gained** in a single week — a CLI coding agent with read, bash, edit, and write tools plus session management. Score of 87. It's pulling away from the field. If you're evaluating coding agents, this is the one to benchmark against right now.
+
+[N8n](/s/n8n) added 295 stars, pushing past **189,919 total**. Workflow automation with 400+ integrations and native AI capabilities — the momentum here is structural, not hype-driven. N8n is becoming the connective tissue of the MCP world.
+
+[Chrome DevTools MCP](/s/io-github-chromedevtools-chrome-devtools-mcp) gained 290 stars, sitting at 41,936 total. Browser automation and debugging through MCP is clearly a category with genuine demand — and Chrome's official DevTools integration gives it a credibility floor that third-party alternatives don't have.
+
+<PullQuote>Pi Coding Agent added 457 stars in a week. That's not a spike — that's a community making a decision about which coding agent wins.</PullQuote>
+
+[Playwright](/s/playwright) added 222 stars (89,602 total), reinforcing that web testing automation is one of the stickiest MCP use cases. Meanwhile, the finance category showed up in force — [QuantDinger](/s/quantdinger) (+225 stars) and [Vibe Trading](/s/vibe-trading) (+199 stars) signal real appetite for AI-assisted trading workflows, even if the category remains high-risk territory.
+
+<Callout type="warning">AI trading platforms are surging in the MCP ecosystem. QuantDinger and Vibe Trading both trended hard this week. Compelling tooling — but if you're using either for live trading, understand what you're doing. Backtesting ≠ profit.</Callout>
+
+One outlier worth calling out: [LabelHead Artist Momentum](/s/io-github-incorporatedpartners-labelhead-artist-momentum) — a hip-hop artist momentum scoring server — pulled 330 stars against a score of just 39. High stars, low quality score. The gap suggests it's riding attention from a larger project rather than standing on its own. Worth watching, but temper expectations.
+
+---
+
+<SectionLabel>The Bottom Line</SectionLabel>
+
+This week's ecosystem snapshot looks like a maturing market making sharper bets. **Design tool integrations, memory layers, real estate data, and security-conscious local tooling** — these aren't toy demos. The category is growing up.
+
+Pi Coding Agent's 457-star week is the number that matters most. When a CLI coding agent pulls that kind of gravity, it means developers are actively evaluating and choosing sides. The coding agent wars inside the MCP ecosystem are heating up — and the winner will shape how the whole stack gets used.
+
+**23,931 servers and counting. Come back next week — we'll tell you what mattered.**
+
+---
