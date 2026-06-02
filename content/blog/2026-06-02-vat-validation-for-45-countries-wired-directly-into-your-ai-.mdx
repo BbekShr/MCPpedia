@@ -1,0 +1,95 @@
+---
+title: "VAT Validation for 45 Countries, Wired Directly Into Your AI Agent"
+description: "vatnode-mcp brings EU VIES validation, offline format checks, and full rate data for 45 countries into one 89-score MCP server."
+hook: "Building anything that touches EU commerce? There are 27 different VAT rule sets waiting to break your invoices. This MCP server handles all of them — live VIES validation, offline format checks, and an audit-ready consultation number — in 5 clean tools."
+date: "2026-06-02"
+tags: ["spotlight","review"]
+category: "server-spotlight"
+featuredServers: ["io-github-vatnode-vatnode-mcp"]
+---
+<Callout type="fire">EU VAT compliance is a mess of 27 different rule sets, format quirks, and a live validation API that half the internet gets wrong. This server tackles all of it in one place.</Callout>
+
+If you're building anything that touches European commerce — invoicing, B2B SaaS, marketplace payouts — VAT validation is the unglamorous tax you pay for operating in the EU. [io.github.vatnode/vatnode-mcp](/s/io-github-vatnode-vatnode-mcp) is here to make that tax cheaper.
+
+---
+
+<SectionLabel>What It Does</SectionLabel>
+
+## The Problem It Solves
+
+VAT in Europe isn't one thing. It's **27 member states** with individual rates, reduced categories, special parking rates, and format rules that differ country to country. Northern Ireland gets its own XI prefix post-Brexit. Getting any of this wrong means invalid invoices, failed transactions, or worse — a compliance audit you weren't ready for.
+
+This server wraps the EU's VIES (VAT Information Exchange System) into a clean MCP interface, adds offline format checking, and layers in a full rate database. You get live lookups *and* static reference data in the same package.
+
+<PullQuote>Live VIES validation returns not just validity — but company name, address, registration date, and an optional consultation number for audit proof.</PullQuote>
+
+---
+
+<SectionLabel>The Tools</SectionLabel>
+
+## Five Tools, Zero Fluff
+
+This server ships with exactly the tools you'd need — nothing more, nothing less.
+
+**`validate_vat_number`** is the centerpiece. It hits VIES live and returns validity status, the registered company name, address, and registration date. The **optional consultation number** is a smart touch — that's your audit trail, proof that you checked a number at a specific moment in time. Tax authorities love documentation; this tool provides it.
+
+**`check_vat_format`** is the offline counterpart. Before you burn a network call on VIES, run a syntactic check against the country's regex pattern. Catch typos, invalid prefixes, and malformed strings without touching the wire.
+
+**`get_country_vat_rates`** pulls the full rate breakdown for a single country — standard, reduced, super-reduced, and parking rates, plus the expected VAT number format. Parking rates, for the uninitiated, are transitional rates that a handful of EU states maintain for specific legacy goods.
+
+**`list_eu_vat_rates`** goes wide: all **27 EU member states plus XI for Northern Ireland** in a single call. Useful for populating dropdowns, building rate tables, or doing any kind of comparative tax analysis.
+
+**`list_supported_countries`** rounds it out. The server covers **45 countries total** — beyond just EU members — and this tool tells you which ones support full VIES validation versus format-only checks.
+
+<Callout type="tip">Run `check_vat_format` before `validate_vat_number` to avoid unnecessary VIES calls. VIES has uptime quirks — fail fast on obviously malformed numbers.</Callout>
+
+---
+
+<SectionLabel>Quality Assessment</SectionLabel>
+
+## Scores: Strong Foundation, Room to Grow
+
+With an **89 total score**, this server lands in respectable territory. Let's break it down.
+
+<ScoreBreakdown>
+  <ScoreRow label="Security" points="30" description="Full marks. Clean input handling, no exposed credentials, and offline-first format checks that reduce unnecessary external calls." />
+  <ScoreRow label="Documentation" points="15" description="Solid. Tool descriptions are specific and useful — 'parking rates' and 'consultation number' are explained in context, not assumed knowledge." />
+  <ScoreRow label="Efficiency" points="20" description="Good. The offline/online split between format checks and live validation shows thoughtful design — don't hit the network when you don't need to." />
+  <ScoreRow label="Maintenance" points="14" description="Room to grow. Zero GitHub stars at launch, but the package is live on npm as vatnode-mcp. Community adoption will tell the story here." />
+  <ScoreRow label="Compatibility" points="10" description="Standard MCP compatibility. No resources or prompts included — pure tools, which keeps integration surface clean." />
+</ScoreBreakdown>
+
+The security score is the standout — **30 points, full marks**. For a server that interfaces with live government tax infrastructure, that matters. Sloppy VAT tools can expose API keys, leak company data from VIES responses, or fail ungracefully when the EU's infrastructure hiccups. None of those problems here.
+
+The maintenance score of 14 reflects early-stage status. **Zero GitHub stars** and a fresh npm package means this is unproven at scale. That's not disqualifying — it's just honest.
+
+---
+
+<SectionLabel>Who Should Use This</SectionLabel>
+
+## The Right Audience
+
+<StatGrid>
+  <Stat value="27" label="EU Member States" detail="All covered for VAT rates" />
+  <Stat value="45" label="Countries Supported" detail="Beyond just EU members" />
+  <Stat value="89" label="Quality Score" detail="Out of 100 total" />
+</StatGrid>
+
+This server is purpose-built for a specific set of builders:
+
+- **SaaS founders** charging EU customers who need to determine reverse-charge applicability
+- **Marketplace platforms** that need to validate seller VAT numbers before processing payouts
+- **Accounting and invoicing tools** that need both format validation *and* live business verification
+- **Tax automation workflows** where an AI agent needs to reason about VAT rates across multiple jurisdictions in a single conversation
+
+What this server is *not* is a general EU compliance toolkit. It doesn't handle OSS registration, IOSS thresholds, or country-specific invoicing rules. VAT numbers and rates — that's the lane, and it stays in it.
+
+<PullQuote>The consultation number feature alone makes this worth integrating if you operate in B2B contexts where audit readiness isn't optional.</PullQuote>
+
+---
+
+## The Verdict
+
+VAT tooling is niche, but if you need it, you *really* need it. [io.github.vatnode/vatnode-mcp](/s/io-github-vatnode-vatnode-mcp) hits the right notes: a clean tool surface, an intelligent offline/online split, full VIES integration with audit-grade output, and a security baseline that actually respects what it's touching.
+
+Zero stars today doesn't mean zero value — it means you're early. **Build with it before everyone else does.**
