@@ -1,0 +1,101 @@
+---
+title: "MCP Weekly: Memory Wars, Token Compression, and 1,128 New Servers"
+description: "The MCP ecosystem hit 24,973 servers this week. Here's what's worth your attention: browser memory sync, context compression, and vertical integrations."
+hook: "1,128 new MCP servers dropped this week — and the trending charts tell a surprising story: developers aren't building more tools, they're desperately trying to compress the ones they already have."
+date: "2026-06-04"
+tags: ["weekly","ecosystem","new-servers"]
+category: "weekly-roundup"
+featuredServers: ["io-github-vaaraio-vaara-server","io-github-beznazwiska-codetoimage-mcp-server","arcrift","io-github-avansaber-seo-monster","line-oa-mcp-ultimate","skill-creator","wundr-io-mcp-server","neo","eplan-2026-ia-mcp-scripts","atomicmemory"]
+---
+<Callout type="fire">**1,128 new MCP servers this week.** The ecosystem now sits at **24,973 total** — and it's not slowing down.</Callout>
+
+The pace of MCP adoption has crossed from "impressive" into "hard to keep up with." This week's batch of new arrivals covers everything from governance infrastructure to browser memory sync to full-stack SEO tooling. Meanwhile, the trending charts are telling a story about what developers actually care about right now: **context compression and web data.**
+
+Let's get into it.
+
+---
+
+<SectionLabel>New Servers Worth Your Attention</SectionLabel>
+
+<StatGrid>
+  <Stat value="24,973" label="Total Servers" detail="In the MCP ecosystem" />
+  <Stat value="1,128" label="New This Week" detail="Added to the catalog" />
+  <Stat value="205" label="Stars" detail="ArcRift, top new arrival" />
+  <Stat value="493" label="Stars" detail="Skill Creator, developer pick" />
+</StatGrid>
+
+### 1. ArcRift — The Browser-to-IDE Memory Bridge
+
+[ArcRift](/s/arcrift) is the most interesting new server this week, full stop. It uses a Chrome extension paired with a native MCP server to sync context and decisions from browser-based chats — Claude, ChatGPT, DeepSeek — directly into your local IDE agents like Cursor, Claude Code, and Windsurf. The persistence layer is a local SQLite knowledge graph.
+
+**205 stars at launch** is a strong signal. Developers are clearly hungry for continuity across the fragmented AI toolchain. The idea that a decision you made in a Claude.ai chat could automatically surface in your Cursor session is genuinely useful — not just clever.
+
+<PullQuote>The fragmented AI toolchain has a memory problem. ArcRift is betting that a SQLite knowledge graph and a Chrome extension can fix it.</PullQuote>
+
+### 2. Skill Creator — Any API, Instantly a CLI
+
+[Skill Creator](/s/skill-creator) does something deceptively simple: turn any MCP server, OpenAPI spec, or GraphQL endpoint into a CLI **at runtime**. No code generation step, no waiting. With **493 stars**, this is the second-most-starred new server this week — and the community reaction makes sense.
+
+If you're building AI workflows that span multiple APIs, the ability to instantly scaffold a CLI interface is a genuine productivity multiplier. This one belongs on your radar if you do any serious MCP tooling work.
+
+### 3. SEO Monster — The All-in-One Search Intelligence Stack
+
+[io.github.avansaber/seo-monster](/s/io-github-avansaber-seo-monster) connects Search Console, GA4, PageSpeed Insights, Cloudflare, IndexNow, and CrUX into a single MCP interface. That's a lot of surface area — and the fact that it pulls in Core Web Vitals data alongside traditional SEO signals makes it more sophisticated than most SEO tools in this space.
+
+Only 1 star so far, but the scope here is ambitious. Worth watching.
+
+### 4. Vaara Server — Governance Gets Its Own MCP Layer
+
+[io.github.vaaraio/vaara-server](/s/io-github-vaaraio-vaara-server) is doing something distinct from the typical "connect AI to your data" pattern. It's a **standalone governance server** with risk scoring, request interception, and hash-chained audit trails. With a score of 71 and 6 stars, it's early — but governance-as-infrastructure is a category that's going to matter a lot as MCP deployments scale into enterprise environments.
+
+<Callout type="info">Hash-chained audit trails mean tamper-evident logs — every action in sequence can be verified cryptographically. This is the kind of detail that compliance teams care about deeply.</Callout>
+
+### 5. Line OA MCP Ultimate — 27 Tools for LINE's Ecosystem
+
+[Line Oa Mcp Ultimate](/s/line-oa-mcp-ultimate) drops **27 tools** for managing LINE Official Accounts through AI — broadcasts, rich menus, Flex messages, coupons, audience management, and analytics. Zero infrastructure required, free-tier ready, and compatible with Claude Code, Cursor, and any MCP-compatible host.
+
+Southeast Asia's largest messaging platform getting serious MCP tooling is notable. This is exactly the kind of regional ecosystem integration that signals MCP going genuinely global.
+
+---
+
+<SectionLabel>Trending This Week</SectionLabel>
+
+The trending charts this week are dominated by two themes: **web data infrastructure** and **context compression**. These aren't random — they're responses to real pain points in building production AI agents.
+
+### 1. Scrapling — 1,086 Stars Gained
+
+[Scrapling](/s/scrapling) was the runaway winner this week with **+1,086 stars**, bringing its total to **59,820**. The adaptive web scraping framework handles everything from single requests to full-scale crawls. Web data remains the oxygen of AI agents, and Scrapling's momentum reflects just how competitive — and important — this category has become.
+
+### 2. Supermemory — 609 Stars
+
+[Supermemory](/s/supermemory) added **609 stars** this week, now at **24,980 total**. The pattern here is consistent with the ArcRift story above: developers are obsessed with memory and continuity right now. Fast, scalable memory APIs are becoming critical infrastructure.
+
+### 3. Firecrawl — 516 Stars
+
+[Firecrawl](/s/firecrawl) continues its ascent, adding **516 stars** this week and now sitting at **128,046 total**. At 128K stars, it's one of the most-starred projects in the entire MCP ecosystem. Clean web data for AI agents is not a niche problem.
+
+### 4. Caveman Shrink — 501 Stars
+
+Here's the trend worth unpacking. [Caveman Shrink](/s/caveman-shrink) — an MCP proxy that compresses prose fields using simple "caveman rules" to cut context tokens — gained **501 stars** this week. Its companion project [Headroom](/s/headroom) gained **457 stars** with a different approach: compressing tool outputs, logs, files, and RAG chunks by **60-95% before they hit the LLM.**
+
+<PullQuote>Two token-compression projects in the top five trending — developers are finally getting serious about context cost as a first-class engineering problem.</PullQuote>
+
+The simultaneous rise of both tools signals a maturing ecosystem. Early MCP adopters threw data at models. The next wave is thinking carefully about what actually needs to be in context — and what doesn't.
+
+<Callout type="tip">Caveman Shrink scores **93/100** and Headroom scores **65/100** on MCPpedia. If you're hitting context limits in production workflows, start with Caveman Shrink — the score gap reflects a meaningfully more polished implementation.</Callout>
+
+---
+
+<SectionLabel>The Bigger Picture</SectionLabel>
+
+Three threads run through this week's ecosystem activity.
+
+**Memory and persistence are becoming infrastructure.** ArcRift, Supermemory, and Atomicmemory ([Atomicmemory](/s/atomicmemory) — 126 stars, portable semantic memory with a TypeScript SDK) all shipped or surged this week. This isn't coincidence. Developers building real agents have hit the stateless wall.
+
+**Context cost is now an engineering discipline.** Caveman Shrink and Headroom trending simultaneously — gaining nearly 1,000 stars combined in a single week — means the "just throw it in context" era is ending. Token budgets are becoming a first-class concern.
+
+**Vertical integration is accelerating.** SEO Monster, Line OA MCP Ultimate, and the [EPLAN 2026 MCP scripts](/s/eplan-2026-ia-mcp-scripts) for industrial electrical CAD software all landed this week. MCP is reaching into specialized professional domains fast.
+
+At 24,973 servers and growing by over a thousand per week, the MCP ecosystem isn't approaching critical mass — it's past it. The question now isn't whether MCP wins. It's **which layers of the stack get commoditized first.**
+
+---

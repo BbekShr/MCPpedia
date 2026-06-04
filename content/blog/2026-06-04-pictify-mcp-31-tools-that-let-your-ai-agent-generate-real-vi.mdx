@@ -1,0 +1,74 @@
+---
+title: "Pictify MCP: 31 Tools That Let Your AI Agent Generate Real Visual Assets"
+description: "Pictify's MCP server gives AI agents 31 tools to generate images, GIFs, and PDFs — plus a full A/B testing loop for visual content."
+hook: "Your AI agent can write the copy, design the layout, and run an A/B test on the result — all without a human touching a pixel. Pictify's 31-tool MCP server makes that real today."
+date: "2026-06-04"
+tags: ["spotlight","review"]
+category: "server-spotlight"
+featuredServers: ["io-github-pictify-io-mcp"]
+---
+## An AI Agent That Can Actually *Show* Its Work
+
+Most AI agents are trapped in text. They can describe a social card, outline a PDF, or explain what a GIF would look like — but hand off the actual rendering to you. [Pictify's MCP server](/s/io-github-pictify-io-mcp) breaks that ceiling wide open.
+
+This is a **31-tool powerhouse** that lets Claude, Cursor, Windsurf, and other MCP-compatible agents generate real images, animated GIFs, and production-ready PDFs — directly from HTML, URLs, or pre-built templates. No manual handoff. No extra pipeline.
+
+<SectionLabel>What It Actually Does</SectionLabel>
+
+The server covers four distinct capability zones, each deep enough to stand alone.
+
+**Images** are the entry point. `pictify_create_image` handles HTML/CSS rendering, URL screenshots, and template-based generation. For canvas work, `pictify_create_canvas_image` takes FabricJS JSON — meaning your agent can construct complex layered designs programmatically and render them pixel-perfect.
+
+**Animated GIFs** are where things get genuinely interesting. `pictify_create_gif` turns HTML with CSS animations into animated output. But `pictify_capture_gif` goes further — it records a *live web page over time*, like a screen recorder baked into your agent workflow. That's not a trivial capability.
+
+**PDFs** cover both single-page (`pictify_render_pdf`) and multi-page (`pictify_render_multi_page_pdf`) generation from templates, with `pictify_list_pdf_presets` handling page size options. This is the kind of tooling that turns an AI agent into a real document automation engine.
+
+**Templates** get the deepest treatment — seven tools covering the full lifecycle: create, retrieve, inspect variables, render with variants, update, and delete. This matters because reusable templates are how you scale media generation without re-prompting from scratch every time.
+
+<PullQuote>A/B testing image variants, managed entirely by your AI agent — that's not a feature you find in most MCP servers.</PullQuote>
+
+<SectionLabel>The Experiment Layer</SectionLabel>
+
+The most unexpected capability here is the **experimentation system** — 10 tools dedicated to A/B testing, smart links, and scheduled content.
+
+Your agent can create experiments with weighted traffic splits, start and pause routing, track impressions and conversions, and ultimately declare a winner with `pictify_complete_experiment`. This isn't a toy. This is a full A/B testing loop for visual content, orchestrated autonomously.
+
+<Callout type="fire">The batch rendering tool supports up to 100 async render jobs at once — with status checking and cancellation built in. That's serious throughput for content pipelines.</Callout>
+
+For anyone running personalized content at scale — social media assets, OG images, email graphics — this changes the labor equation significantly.
+
+<SectionLabel>Score Breakdown</SectionLabel>
+
+<ScoreBreakdown>
+  <ScoreRow label="Security" points="30" description="Full marks — API key handling and access controls appear well-considered for a server touching external rendering infrastructure." />
+  <ScoreRow label="Documentation" points="15" description="Solid — each of the 31 tools has clear descriptions, which matters enormously for agent discoverability." />
+  <ScoreRow label="Efficiency" points="16" description="Good async design with batch jobs and status checking rather than blocking calls." />
+  <ScoreRow label="Maintenance" points="12" description="Lower score here — 0 GitHub stars at time of review. Early-stage, and the maintenance trajectory is unclear." />
+  <ScoreRow label="Compatibility" points="6" description="npm package only (@pictify/mcp-server). No Python package — Python-based agent stacks will need a workaround." />
+</ScoreBreakdown>
+
+The **79/100 total** is respectable for a specialized server this ambitious. The security score is the standout — a server that renders external URLs and handles API keys needs to get that right, and it does.
+
+The weak spots are honestly predictable for an early-stage tool. Zero GitHub stars means the community hasn't caught up yet — or the server is newer than it looks. The compatibility gap (npm-only) is a real constraint that will exclude Python-heavy ML teams unless they're comfortable bridging runtimes.
+
+<SectionLabel>Who Should Use This</SectionLabel>
+
+The ideal users are **product and marketing engineers** who are already building AI-assisted workflows and keep hitting the wall of "okay, but who generates the actual asset?"
+
+If you're building:
+- Automated social card generation from blog posts or product data
+- Dynamic OG image pipelines for content-heavy sites
+- AI-driven document generation (invoices, reports, certificates)
+- Personalized visual content with measurable performance testing
+
+...this server deserves a close look.
+
+<Callout type="tip">The template variable system is worth exploring before you write a single line of custom rendering logic. If Pictify's template engine covers your layout needs, you can skip a lot of infrastructure work.</Callout>
+
+<PullQuote>31 tools. Images, GIFs, PDFs, templates, batch rendering, and A/B experiments — all callable by your AI agent without a human in the loop.</PullQuote>
+
+The GitHub star count is the one number that gives pause. This server has serious ambition and a security-first score — but adoption tells a story, and right now that story is still being written.
+
+**Give it a run before the rest of the ecosystem catches on.**
+
+---
