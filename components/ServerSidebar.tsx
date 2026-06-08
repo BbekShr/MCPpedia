@@ -4,9 +4,10 @@ import { SCORE_WEIGHTS } from '@/lib/scoring'
 
 function safeUrl(url: string | null | undefined): string | null {
   if (!url) return null
+  const cleaned = url.replace(/^git\+/, '').replace(/\.git$/, '')
   try {
-    const p = new URL(url)
-    return p.protocol === 'https:' || p.protocol === 'http:' ? url : null
+    const p = new URL(cleaned)
+    return p.protocol === 'https:' || p.protocol === 'http:' ? cleaned : null
   } catch { return null }
 }
 

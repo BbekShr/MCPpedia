@@ -17,6 +17,20 @@ function stripHtml(html: string): string {
     .trim()
 }
 
+// Normalize package-manager style refs ("git+https://...", "ssh+git://...")
+// down to a real http(s) URL, then validate the protocol. Returns null for
+// anything we can't safely render as an href.
+function safeHttpUrl(url: string | null | undefined): string | null {
+  if (!url) return null
+  const cleaned = url.replace(/^git\+/, '').replace(/\.git$/, '')
+  try {
+    const p = new URL(cleaned)
+    return p.protocol === 'https:' || p.protocol === 'http:' ? cleaned : null
+  } catch {
+    return null
+  }
+}
+
 function Verdict({ server, advisories }: { server: Server; advisories: SecurityAdvisory[] }) {
   const openCVEs = advisories.filter(a => a.status === 'open').length
   const commitDays = daysSince(server.github_last_commit)
@@ -118,6 +132,10 @@ export default function Hero({
   const score = s.score_total || 0
   const primaryCategory = s.categories?.[0]
   const tagline = s.tagline ? stripHtml(s.tagline) : null
+  const githubHref = safeHttpUrl(s.github_url)
+  const npmPackage = s.npm_package?.trim() || null
+  const pipPackage = s.pip_package?.trim() || null
+  const toolCount = s.tools?.length ?? 0
 
   return (
     <section className="border-b border-border" style={{ background: 'var(--hero-gradient)' }}>
@@ -181,12 +199,14 @@ export default function Hero({
                   <Icon name="download" size={12} /> {formatNumber(s.npm_weekly_downloads)}/wk
                 </span>
               )}
-              <span className="inline-flex gap-1 items-center">
-                <Icon name="wrench" size={12} /> {s.tools?.length ?? 0} tool{(s.tools?.length ?? 0) !== 1 ? 's' : ''}
-              </span>
-              {s.github_url && (
+              {toolCount > 0 && (
+                <span className="inline-flex gap-1 items-center">
+                  <Icon name="wrench" size={12} /> {toolCount} tool{toolCount !== 1 ? 's' : ''}
+                </span>
+              )}
+              {githubHref && (
                 <a
-                  href={s.github_url}
+                  href={githubHref}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex gap-1 items-center hover:text-text-primary"
@@ -194,9 +214,9 @@ export default function Hero({
                   <Icon name="gitBranch" size={12} /> GitHub <Icon name="external" size={10} />
                 </a>
               )}
-              {s.npm_package && (
+              {npmPackage && (
                 <a
-                  href={`https://www.npmjs.com/package/${s.npm_package}`}
+                  href={`https://www.npmjs.com/package/${npmPackage}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex gap-1 items-center hover:text-text-primary"
@@ -204,9 +224,9 @@ export default function Hero({
                   <Icon name="package" size={12} /> npm <Icon name="external" size={10} />
                 </a>
               )}
-              {s.pip_package && (
+              {pipPackage && (
                 <a
-                  href={`https://pypi.org/project/${s.pip_package}`}
+                  href={`https://pypi.org/project/${pipPackage}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex gap-1 items-center hover:text-text-primary"
