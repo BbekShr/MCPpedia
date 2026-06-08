@@ -1,5 +1,6 @@
 import { createPublicClient } from '@/lib/supabase/public'
 import { unstable_cache } from 'next/cache'
+import { withRetry } from '@/lib/retry'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { SITE_URL } from '@/lib/constants'
@@ -83,8 +84,13 @@ interface HomeStats {
 // renders with all-zero stats, and unstable_cache would happily pin that
 // hollow snapshot for 24h. Throwing keeps the cache unpinned so the next
 // request retries.
+// withRetry absorbs a one-off transient Supabase failure (cold connection,
+// 57014 statement timeout) before it reaches the error boundary — otherwise a
+// single blip on a cache-miss request showed "Something went wrong" until the
+// user reloaded. Retries stay inside the cached function so only the final
+// successful result is cached.
 const getSecurityPageData = unstable_cache(
-  async () => {
+  () => withRetry(async () => {
     const supabase = createPublicClient()
     const [advisoriesResult, statsResult] = await Promise.all([
       supabase
@@ -102,7 +108,7 @@ const getSecurityPageData = unstable_cache(
       advisories: advisoriesResult.data as AdvisoryWithServer[] | null,
       stats: statsResult.data as Partial<HomeStats>,
     }
-  },
+  }),
   ['security-page-data-v5'],
   { revalidate: 86400, tags: ['security-page'] },
 )

@@ -109,7 +109,15 @@ export default async function CategoryPage({
 
   query = query.range(offset, offset + ITEMS_PER_PAGE - 1)
 
-  const { data: servers, count } = await query
+  // Throw on Supabase failure so the empty render never gets pinned by ISR.
+  // count: 'exact' on large categories (e.g. developer-tools, 6k+ rows) can hit
+  // anon's 3s statement timeout under build-worker concurrency; without this
+  // guard the failure surfaces as `count: null` → 0 servers, cached for 7d.
+  const { data: servers, count, error } = await query
+  if (error) {
+    console.error(`[category/${category}] Supabase query failed`, error)
+    throw new Error(`Category page query failed: ${error.message}`)
+  }
   const totalCount = count || 0
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE)
 

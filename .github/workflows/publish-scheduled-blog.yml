@@ -6,6 +6,13 @@ on:
     - cron: '0 12 * * *'
   workflow_dispatch:
 
+# Serialize every workflow that pushes to main so their push windows don't
+# overlap. Combined with the rebase-retry push below, this eliminates the
+# non-fast-forward rejections that emailed spurious "workflow failed" notices.
+concurrency:
+  group: content-push-main
+  cancel-in-progress: false
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -58,7 +65,22 @@ jobs:
             echo "No changes to commit — post was already published"
           else
             git commit -m "Publish: ${{ steps.check.outputs.title }}"
-            git push
+            # Rebase-retry: other bot workflows push to main too, so a push can
+            # be rejected (non-fast-forward) if main moved since checkout. Rebase
+            # onto the latest and retry instead of failing the job (which sent a
+            # spurious failure email even when the publish was otherwise fine).
+            for attempt in 1 2 3 4 5; do
+              if git push; then
+                echo "Pushed on attempt $attempt"
+                break
+              fi
+              echo "Push rejected (attempt $attempt) — rebasing onto origin/main"
+              git pull --rebase --autostash origin main || true
+              if [ "$attempt" = 5 ]; then
+                echo "Push still failing after 5 attempts"
+                exit 1
+              fi
+            done
           fi
 
       - name: Print HN submission link
