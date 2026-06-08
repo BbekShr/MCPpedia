@@ -65,6 +65,10 @@ export class BotRun {
   }
 
   async fail(error: string) {
+    // Signal failure FIRST. If the bot_runs write below throws (e.g. the same
+    // Supabase outage that caused the failure), we still want a non-zero exit —
+    // otherwise the process would exit 0 and the CI job would look green.
+    process.exitCode = 1
     if (!this.id) return
     const duration = Date.now() - this.startTime
     // Strip potential secrets from error messages before persisting
@@ -83,6 +87,5 @@ export class BotRun {
       error_message: sanitized,
       summary: this.summary,
     }).eq('id', this.id)
-    process.exitCode = 1
   }
 }

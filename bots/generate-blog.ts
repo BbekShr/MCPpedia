@@ -38,6 +38,10 @@ interface Meta {
   lastCategoryDeepDiveDate: string | null
   lastSeoTopicIndex: number
   publishedSeoTopics: string[]
+  // CVE/advisory keys we've already written a security-alert post about, so the
+  // daily --security-only run doesn't regenerate a near-duplicate article every
+  // day a CVE stays inside the 7-day lookback window. Bounded in main().
+  publishedCveIds: string[]
 }
 
 // ---------- SEO Keyword Targets ----------
@@ -152,6 +156,7 @@ function loadMeta(): Meta {
     lastCategoryDeepDiveDate: null,
     lastSeoTopicIndex: -1,
     publishedSeoTopics: [],
+    publishedCveIds: [],
   }
   if (!fs.existsSync(metaPath)) return defaults
   try {
@@ -195,7 +200,23 @@ function daysAgo(n: number): string {
   return d.toISOString()
 }
 
-async function callClaude(systemPrompt: string, userPrompt: string): Promise<string> {
+// Model tiering keeps quality where it matters while cutting cost. Evergreen,
+// SEO-bearing articles (roundups, spotlights, SEO guides, category deep dives)
+// stay on Sonnet; ephemeral/templated posts (security alerts, trending) run on
+// Haiku 4.5 — ~3x cheaper ($1/$5 vs $3/$15 per 1M tokens) and plenty capable
+// for these short, data-driven formats.
+const DEFAULT_MODEL = 'claude-sonnet-4-6'
+const HAIKU_MODEL = 'claude-haiku-4-5'
+
+function modelForType(type: ArticlePlan['type']): string {
+  return type === 'security-alert' || type === 'trending' ? HAIKU_MODEL : DEFAULT_MODEL
+}
+
+async function callClaude(
+  systemPrompt: string,
+  userPrompt: string,
+  model: string = DEFAULT_MODEL,
+): Promise<string> {
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
   if (!ANTHROPIC_API_KEY) throw new Error('Missing ANTHROPIC_API_KEY')
 
@@ -207,7 +228,7 @@ async function callClaude(systemPrompt: string, userPrompt: string): Promise<str
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      model,
       max_tokens: 4096,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
@@ -269,6 +290,11 @@ async function getSecurityAlerts() {
   return data || []
 }
 
+/** Stable key for an advisory: prefer the CVE id, fall back to the row id. */
+function alertKey(a: { id: string; cve_id?: string | null }): string {
+  return a.cve_id || a.id
+}
+
 async function getTopServersInCategory(category: string) {
   const { data } = await supabase
     .from('servers')
@@ -319,13 +345,17 @@ async function planArticles(meta: Meta): Promise<ArticlePlan[]> {
   const today = todayStr()
   const existingDates = getExistingPostDates()
 
-  // Priority 1: Security alerts (always checked, even in security-only mode)
+  // Priority 1: Security alerts (always checked, even in security-only mode).
+  // Dedup against advisories we've already covered, so the daily --security-only
+  // run doesn't republish the same CVE every day it sits in the 7-day lookback
+  // window — that was both a cost sink and a source of near-duplicate posts.
   const alerts = await getSecurityAlerts()
-  if (alerts.length > 0) {
+  const newAlerts = alerts.filter(a => !meta.publishedCveIds.includes(alertKey(a)))
+  if (newAlerts.length > 0) {
     plans.push({
       type: 'security-alert',
-      data: { alerts },
-      prompt: buildSecurityAlertPrompt(alerts),
+      data: { alerts: newAlerts },
+      prompt: buildSecurityAlertPrompt(newAlerts),
     })
   }
 
@@ -562,9 +592,10 @@ Write the article now.`
 // ---------- Article Generation ----------
 
 async function generateArticle(plan: ArticlePlan): Promise<{ slug: string; content: string; featuredServers: string[] } | null> {
-  console.log(`  Generating ${plan.type} article...`)
+  const model = modelForType(plan.type)
+  console.log(`  Generating ${plan.type} article (${model})...`)
 
-  const response = await callClaude(SYSTEM_PROMPT, plan.prompt)
+  const response = await callClaude(SYSTEM_PROMPT, plan.prompt, model)
 
   // Extract title/description JSON from the end
   const jsonMatch = response.match(/```json\s*\n?(\{[\s\S]*?\})\s*\n?```/)
@@ -672,33 +703,54 @@ async function main() {
     console.log(`Planning ${plans.length} article(s): ${plans.map(p => p.type).join(', ')}`)
     run.addProcessed(plans.length)
 
+    let written = 0
+    const errors: string[] = []
+
     for (const plan of plans) {
-      const result = await generateArticle(plan)
-      if (!result) continue
+      try {
+        const result = await generateArticle(plan)
+        if (!result) continue
 
-      const filePath = path.join(blogDir, `${result.slug}.mdx`)
-      fs.writeFileSync(filePath, result.content)
-      console.log(`  Written: ${result.slug}.mdx`)
-      run.addUpdated(1)
+        const filePath = path.join(blogDir, `${result.slug}.mdx`)
+        fs.writeFileSync(filePath, result.content)
+        console.log(`  Written: ${result.slug}.mdx`)
+        run.addUpdated(1)
+        written++
 
-      // Update meta
-      if (plan.type === 'weekly-roundup') {
-        meta.lastRoundupDate = todayStr()
-      }
-      if (plan.type === 'server-spotlight' && result.featuredServers.length > 0) {
-        meta.lastSpotlightSlugs = [
-          ...result.featuredServers.slice(0, 3),
-          ...meta.lastSpotlightSlugs.slice(0, 7),
-        ]
-      }
-      if (plan.type === 'category-deep-dive') {
-        meta.lastCategoryDeepDive = (plan.data.category as string) || null
-        meta.lastCategoryDeepDiveDate = todayStr()
-      }
-      if (plan.type === 'seo-guide' && plan.data.topic) {
-        const topic = plan.data.topic as typeof SEO_TOPICS[number]
-        meta.publishedSeoTopics = [...(meta.publishedSeoTopics || []), topic.keyword]
-        meta.lastSeoTopicIndex = SEO_TOPICS.findIndex(t => t.keyword === topic.keyword)
+        // Update meta — only after a successful write, so a failed article
+        // doesn't mark its topic/CVEs as "published".
+        if (plan.type === 'weekly-roundup') {
+          meta.lastRoundupDate = todayStr()
+        }
+        if (plan.type === 'server-spotlight' && result.featuredServers.length > 0) {
+          meta.lastSpotlightSlugs = [
+            ...result.featuredServers.slice(0, 3),
+            ...meta.lastSpotlightSlugs.slice(0, 7),
+          ]
+        }
+        if (plan.type === 'category-deep-dive') {
+          meta.lastCategoryDeepDive = (plan.data.category as string) || null
+          meta.lastCategoryDeepDiveDate = todayStr()
+        }
+        if (plan.type === 'seo-guide' && plan.data.topic) {
+          const topic = plan.data.topic as typeof SEO_TOPICS[number]
+          meta.publishedSeoTopics = [...(meta.publishedSeoTopics || []), topic.keyword]
+          meta.lastSeoTopicIndex = SEO_TOPICS.findIndex(t => t.keyword === topic.keyword)
+        }
+        if (plan.type === 'security-alert') {
+          const covered = (plan.data.alerts as Array<{ id: string; cve_id?: string | null }>) || []
+          // Keep the most recent ~200 keys — enough to cover the 7-day window
+          // many times over without growing .meta.json unbounded.
+          meta.publishedCveIds = [...covered.map(alertKey), ...meta.publishedCveIds].slice(0, 200)
+        }
+      } catch (err) {
+        // One article failing (e.g. a 529 overload on the 2nd of 2) must NOT
+        // sink the whole run — the articles that DID write should still be
+        // committed and published. Log it and move on; the run is only marked
+        // failed below if nothing at all was produced.
+        const msg = err instanceof Error ? err.message : String(err)
+        console.error(`  Article (${plan.type}) failed: ${msg}`)
+        errors.push(`${plan.type}: ${msg}`)
       }
 
       // Rate limit between articles
@@ -706,9 +758,19 @@ async function main() {
     }
 
     saveMeta(meta)
-    run.setSummary({ articles: plans.map(p => p.type) })
+
+    if (written === 0 && errors.length > 0) {
+      // Produced nothing and hit real errors — surface it as a failure. No files
+      // were written, so the workflow's commit step finds nothing to push: a
+      // genuine failure, not the old "emails failed but the post is live" case.
+      run.setSummary({ written, errors })
+      await run.fail(`All ${errors.length} planned article(s) failed: ${errors.join('; ')}`)
+      return
+    }
+
+    run.setSummary({ articles: plans.map(p => p.type), written, errors })
     await run.finish()
-    console.log('\nDone.')
+    console.log(`\nDone. ${written}/${plans.length} article(s) written${errors.length ? `, ${errors.length} failed (non-fatal)` : ''}.`)
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error('Failed:', msg)

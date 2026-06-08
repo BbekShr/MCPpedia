@@ -6,6 +6,13 @@ on:
     - cron: '0 9 * * 4'  # Thursday 9am UTC / 4am CST
   workflow_dispatch:
 
+# Serialize every workflow that pushes to main so their push windows don't
+# overlap. Combined with the rebase-retry push below, this eliminates the
+# non-fast-forward rejections that emailed spurious "workflow failed" notices.
+concurrency:
+  group: content-push-main
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
@@ -35,4 +42,17 @@ jobs:
           git add content/blog/
           git diff --cached --quiet && echo "No new posts generated" && exit 0
           git commit -m "blog: auto-generate articles [bot]"
-          git push
+          # Rebase-retry: other bot workflows push to main too, so a push can be
+          # rejected (non-fast-forward) if main moved since checkout. Rebase onto
+          # the latest and retry instead of failing the job — the old plain
+          # `git push` emailed a spurious failure even when the content was fine.
+          for attempt in 1 2 3 4 5; do
+            if git push; then
+              echo "Pushed on attempt $attempt"
+              exit 0
+            fi
+            echo "Push rejected (attempt $attempt) — rebasing onto origin/main"
+            git pull --rebase --autostash origin main || true
+          done
+          echo "Push still failing after 5 attempts"
+          exit 1

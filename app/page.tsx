@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { unstable_cache } from 'next/cache'
 import NewsletterSignup from '@/components/NewsletterSignup'
 import { createPublicClient } from '@/lib/supabase/public'
+import { withRetry } from '@/lib/retry'
 import {
   CATEGORIES,
   CATEGORY_LABELS,
@@ -85,8 +86,14 @@ type CategoryCount = { slug: string; label: string; count: number }
 // the cached function (see criticalErrors below) is what keeps a transient
 // Supabase blip from pinning an empty-state snapshot for 24h — unstable_cache
 // only caches successful returns.
+//
+// withRetry wraps the fetch so a one-off transient failure (cold connection,
+// statement timeout) is retried a few times before it bubbles to the error
+// boundary. Without this, a single blip on a cache-miss request showed the user
+// "Something went wrong" until they reloaded. Retries live inside the cached
+// function so only the final successful result is cached.
 const getHomeData = unstable_cache(
-  fetchHomeData,
+  () => withRetry(fetchHomeData),
   ['home-page-data-v2'],
   { revalidate: 86400, tags: ['home-page'] },
 )
