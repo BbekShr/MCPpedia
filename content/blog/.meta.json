@@ -1,19 +1,20 @@
 {
   "lastRoundupDate": "2026-06-04",
   "lastSpotlightSlugs": [
+    "derekhuynen-mcp-server",
     "io-github-pictify-io-mcp",
     "io-github-vatnode-vatnode-mcp",
     "actors-mcp-server",
     "io-github-csoai-org-agent-handoff-certified-mcp",
     "io-github-wyre-technology-datto-saas-protection-mcp",
     "antigravity-workspace-template",
-    "swatchbook-mcp",
-    "e2eval"
+    "swatchbook-mcp"
   ],
   "lastCategoryDeepDive": null,
   "lastCategoryDeepDiveDate": null,
   "lastSeoTopicIndex": -1,
   "publishedSeoTopics": [
     "MCP vs API what is the difference"
-  ]
+  ],
+  "publishedCveIds": []
 }

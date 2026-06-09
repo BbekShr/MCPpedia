@@ -1,0 +1,78 @@
+---
+title: "The MCP Reference Server You Should Have Been Building From"
+description: "A 90/100-scoring TypeScript MCP server with dual transports, 42 tests, Docker, and CI — built to be cloned and templated."
+hook: "Most MCP servers solve a problem. This one solves the harder problem: how to build one correctly. 90/100 quality score, 42 tests, dual transports — and 0 GitHub stars. That's a timing issue, not a quality issue."
+date: "2026-06-09"
+tags: ["spotlight","review"]
+category: "server-spotlight"
+featuredServers: ["derekhuynen-mcp-server"]
+---
+## The MCP Server That Teaches by Example
+
+Most MCP servers solve a problem. This one *is* the solution — to the harder problem of figuring out how to build one correctly.
+
+The [Derekhuynen MCP Server](/s/derekhuynen-mcp-server) is a production-grade reference implementation in TypeScript, designed not just to run, but to be **read, cloned, and templated**. It's the kind of project that shows up in your bookmarks the moment you start wondering why your own MCP server keeps falling apart at the edges.
+
+<SectionLabel>What It Actually Does</SectionLabel>
+
+On the surface, this is a personal portfolio server — an AI-queryable interface into one developer's professional identity. That sounds narrow. It isn't.
+
+The server exposes **6 tools** covering every layer of a professional profile: identity, contact, skills, projects, experience, and keyword search. The `get_experience` tool alone supports three optional filters — `skill`, `employer`, and `recentOnly` — making it genuinely useful for targeted queries, not just data dumps.
+
+<Callout type="info">
+The `search_experience` tool accepts a freeform keyword `query` and searches across both roles and projects — making it possible for an LLM to do meaningful resume exploration without knowing the data structure in advance.
+</Callout>
+
+Then there are the **2 resources**: `profile://summary` and `profile://resume` — URI-addressable blobs that let MCP clients pull structured profile data directly. And one **prompt**: `recruiter_pitch`, which generates a recruiter-facing pitch for a given role. That last one is a small detail that signals a lot — this server was built to be *used*, not just demonstrated.
+
+---
+
+<SectionLabel>The Architecture Is the Point</SectionLabel>
+
+Here's what separates this from the typical "I made an MCP server for my side project" repo: the author built it with **two transports** — stdio and Streamable HTTP — sharing a single core logic layer. That's a legitimate architectural decision that most tutorial projects skip entirely.
+
+<PullQuote>"One core, two transports" — that's the sentence that should make any MCP developer stop and pay attention.</PullQuote>
+
+Strict TypeScript types throughout. **42 tests.** Docker support. CI pipeline. These aren't features you add to a reference project as an afterthought — they're the whole point. When you're templating a new server, you want to start from something that already passes a CI run, not something that "works on my machine."
+
+<Callout type="fire">
+42 tests, Docker, and a full CI pipeline on a reference MCP server. Most production codebases ship with less discipline than this.
+</Callout>
+
+---
+
+<SectionLabel>Score Breakdown</SectionLabel>
+
+The server scores **90/100** on MCPpedia's quality rubric — an unusually high mark. Here's where those points come from:
+
+<ScoreBreakdown>
+  <ScoreRow label="Security" points="30" description="Full 30 points — the maximum. Strict types and disciplined input handling contribute here." />
+  <ScoreRow label="Efficiency" points="20" description="Lean tool design with optional filters rather than bloated parameter lists." />
+  <ScoreRow label="Maintenance" points="15" description="42 tests plus CI mean regressions get caught before they ship." />
+  <ScoreRow label="Documentation" points="15" description="The tagline alone is more informative than most READMEs. Clear, opinionated, actionable." />
+  <ScoreRow label="Compatibility" points="10" description="Dual-transport support (stdio + Streamable HTTP) maximizes client compatibility." />
+</ScoreBreakdown>
+
+The **30/30 on security** is worth calling out specifically. That's a ceiling score, and it reflects the kind of server you'd actually trust to handle queries in a real deployment — not a demo that skips input validation because "it's just a portfolio."
+
+---
+
+<SectionLabel>Who Should Clone This Right Now</SectionLabel>
+
+Let's be direct about the audience here.
+
+**If you're building your first MCP server**, this is the most instructive starting point available. You can diff your implementation against it and immediately see what you're missing.
+
+**If you're a developer who wants an AI-queryable version of your resume**, fork it, swap out the profile data, and you have something genuinely useful — an LLM can now navigate your career history better than most keyword-matching ATS systems.
+
+**If you're on a team standardizing how you build MCP servers**, this is the template to argue for. It covers the decisions that matter: transport layer, typing discipline, test coverage, containerization.
+
+<Callout type="tip">
+The `recruiter_pitch` prompt is a sleeper feature. Point an LLM at this server during a job search and you have an AI that can draft role-specific pitches grounded in your actual experience — not hallucinated bullet points.
+</Callout>
+
+<PullQuote>The zero-star GitHub count is a timing artifact. The 90/100 quality score is not.</PullQuote>
+
+The [Derekhuynen MCP Server](/s/derekhuynen-mcp-server) currently sits at 0 GitHub stars — which tells you something about how recently it landed, not about its quality. A score of 90/100, dual transports, 42 tests, and a clean architecture are not things you stumble into.
+
+Clone it before you build your next MCP server from scratch. You'll spend less time debugging transport edge cases and more time shipping the thing that actually matters.
