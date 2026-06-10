@@ -74,6 +74,15 @@ export function buildStaticEntries(): SitemapEntry[] {
     priority: 0.6,
   }))
 
+  const bestEntries: SitemapEntry[] = [
+    { url: `${SITE_URL}/best`, changeFrequency: 'weekly', priority: 0.8 },
+    ...CATEGORIES.map(c => ({
+      url: `${SITE_URL}/best/${c}`,
+      changeFrequency: 'weekly' as const,
+      priority: 0.75,
+    })),
+  ]
+
   const bestForEntries: SitemapEntry[] = [
     'developers', 'data-engineering', 'productivity',
     'ai-agents', 'cloud-infrastructure', 'security',
@@ -94,7 +103,7 @@ export function buildStaticEntries(): SitemapEntry[] {
 
   const blogEntries: SitemapEntry[] = getAllBlogPosts().map(post => ({
     url: `${SITE_URL}/blog/${post.slug}`,
-    lastModified: new Date(post.date),
+    lastModified: new Date(post.updated || post.date),
     changeFrequency: 'weekly',
     priority: 0.7,
   }))
@@ -123,6 +132,7 @@ export function buildStaticEntries(): SitemapEntry[] {
   return [
     ...staticPages,
     ...categoryEntries,
+    ...bestEntries,
     ...bestForEntries,
     ...guideEntries,
     ...blogEntries,

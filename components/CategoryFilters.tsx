@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { Suspense } from 'react'
+import { Suspense, useState, useEffect, useRef } from 'react'
 
 const SORT_OPTIONS = [
   { value: 'score', label: 'Top Score' },
@@ -43,7 +43,15 @@ function CategoryFiltersInner() {
   const status = searchParams.get('status') || ''
   const transport = searchParams.get('transport') || ''
   const minScore = searchParams.get('min_score') || ''
-  const q = searchParams.get('q') || ''
+
+  // Keep the search query in local state to avoid lost keystrokes while the
+  // URL navigation is still in-flight. Debounce URL updates to 300ms.
+  const [localQ, setLocalQ] = useState(searchParams.get('q') || '')
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Sync local state if URL changes from outside (e.g., back/forward, clear button)
+  const urlQ = searchParams.get('q') || ''
+  useEffect(() => { setLocalQ(urlQ) }, [urlQ])
 
   function updateParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString())
@@ -55,7 +63,12 @@ function CategoryFiltersInner() {
     params.delete('page') // Reset to page 1 on filter change
     const url = `${pathname}?${params.toString()}`
     router.replace(url)
-    router.refresh()
+  }
+
+  function handleSearchChange(value: string) {
+    setLocalQ(value)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => updateParam('q', value), 300)
   }
 
   return (
@@ -73,8 +86,8 @@ function CategoryFiltersInner() {
         </svg>
         <input
           type="text"
-          value={q}
-          onChange={(e) => updateParam('q', e.target.value)}
+          value={localQ}
+          onChange={(e) => handleSearchChange(e.target.value)}
           placeholder="Filter servers in this category..."
           className="w-full pl-9 pr-4 py-2 text-sm border border-border rounded-md bg-bg text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors"
           aria-label="Filter servers in this category"

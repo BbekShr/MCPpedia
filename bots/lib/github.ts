@@ -1,8 +1,27 @@
 function headers() {
   const h: Record<string, string> = { Accept: 'application/vnd.github.v3+json' }
-  const token = process.env.GITHUB_TOKEN
+  const token = process.env.GITHUB_TOKEN || process.env.BOT_GITHUB_TOKEN
   if (token) h.Authorization = `Bearer ${token}`
   return h
+}
+
+/** Sleep until the GitHub rate-limit resets, then return true; returns false
+ *  if the response was not a rate-limit error so the caller can handle it. */
+async function handleRateLimit(res: Response): Promise<boolean> {
+  if (res.status !== 403 && res.status !== 429) return false
+  const reset = res.headers.get('x-ratelimit-reset')
+  const remaining = res.headers.get('x-ratelimit-remaining')
+  if (remaining !== '0' && res.status === 403) return false // different 403
+  if (reset) {
+    const sleepMs = Math.max(0, parseInt(reset, 10) * 1000 - Date.now()) + 2000
+    console.warn(`GitHub rate limit hit. Sleeping ${Math.round(sleepMs / 1000)}s until reset…`)
+    await new Promise(r => setTimeout(r, sleepMs))
+    return true
+  }
+  // No reset header — wait 60s as a safe default
+  console.warn('GitHub rate limit hit (no reset header). Sleeping 60s…')
+  await new Promise(r => setTimeout(r, 60_000))
+  return true
 }
 
 export interface GitHubRepo {
@@ -61,7 +80,15 @@ export async function getRepo(owner: string, repo: string): Promise<GitHubRepo |
   const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
     headers: headers(),
   })
-  if (!res.ok) return null
+  if (!res.ok) {
+    if (await handleRateLimit(res)) {
+      // Retry once after sleeping
+      const retry = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers: headers() })
+      if (!retry.ok) return null
+      return retry.json()
+    }
+    return null
+  }
   return res.json()
 }
 
@@ -69,7 +96,16 @@ export async function getReadme(owner: string, repo: string): Promise<string | n
   const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
     headers: { ...headers(), Accept: 'application/vnd.github.raw+json' },
   })
-  if (!res.ok) return null
+  if (!res.ok) {
+    if (await handleRateLimit(res)) {
+      const retry = await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
+        headers: { ...headers(), Accept: 'application/vnd.github.raw+json' },
+      })
+      if (!retry.ok) return null
+      return retry.text()
+    }
+    return null
+  }
   return res.text()
 }
 
@@ -77,6 +113,13 @@ export async function getReleases(owner: string, repo: string): Promise<Array<{ 
   const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases?per_page=5`, {
     headers: headers(),
   })
-  if (!res.ok) return []
+  if (!res.ok) {
+    if (await handleRateLimit(res)) {
+      const retry = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases?per_page=5`, { headers: headers() })
+      if (!retry.ok) return []
+      return retry.json()
+    }
+    return []
+  }
   return res.json()
 }

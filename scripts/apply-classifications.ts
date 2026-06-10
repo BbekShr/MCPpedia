@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, prefer-const */
 /**
  * Apply curated classifications back to Supabase. See plan:
  *   .claude/plans/we-need-the-dump-serialized-fog.md

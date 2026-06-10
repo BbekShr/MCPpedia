@@ -280,13 +280,14 @@ async function getTrendingServers() {
 }
 
 async function getSecurityAlerts() {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('security_advisories')
-    .select('id, cve_id, severity, summary, published_at, server_id, servers(slug, name)')
+    .select('id, cve_id, severity, title, description, published_at, server_id, servers(slug, name)')
     .gte('published_at', daysAgo(7))
     .in('severity', ['critical', 'high'])
     .order('published_at', { ascending: false })
     .limit(10)
+  if (error) console.error('getSecurityAlerts error:', error.message)
   return data || []
 }
 

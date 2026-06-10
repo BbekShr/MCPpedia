@@ -7,7 +7,7 @@
 import { config } from 'dotenv'
 config({ path: '.env.local' })
 
-import { createAdminClient } from './lib/supabase'
+import { createAdminClient, fetchAllRows } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
 import { categorize, inferAuthorType, inferCompatibleClients, inferPricing } from './lib/categorize'
 import { normalizeGithubUrl, normalizePackageName } from '../lib/normalize'
@@ -84,22 +84,18 @@ async function fetchRegistryServers(): Promise<RegistryServer[]> {
 }
 
 async function getExistingRegistryIds(): Promise<Set<string>> {
-  const { data } = await supabase
-    .from('servers')
-    .select('registry_id')
-    .not('registry_id', 'is', null)
-
-  return new Set((data || []).map(s => s.registry_id))
+  const rows = await fetchAllRows<{ registry_id: string }>(
+    supabase.from('servers').select('registry_id').not('registry_id', 'is', null)
+  )
+  return new Set(rows.map(s => s.registry_id))
 }
 
 async function getExistingGithubUrls(): Promise<Set<string>> {
-  const { data } = await supabase
-    .from('servers')
-    .select('github_url')
-    .not('github_url', 'is', null)
-
+  const rows = await fetchAllRows<{ github_url: string }>(
+    supabase.from('servers').select('github_url').not('github_url', 'is', null)
+  )
   return new Set(
-    (data || [])
+    rows
       .map(s => normalizeGithubUrl(s.github_url))
       .filter((u): u is string => !!u)
   )

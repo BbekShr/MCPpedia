@@ -6,7 +6,7 @@
 import { config } from 'dotenv'
 config({ path: '.env.local' })
 
-import { createAdminClient } from './lib/supabase'
+import { createAdminClient, fetchAllRows } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
 import { normalizeGithubUrl } from '../lib/normalize'
 
@@ -77,14 +77,14 @@ async function main() {
     console.log('=== MCPpedia Duplicate Detector ===')
     console.log(new Date().toISOString())
 
-    const { data: servers } = await supabase
-      .from('servers')
-      .select('id, slug, name, github_url, data_quality, score_total')
-      .not('github_url', 'is', null)
-      .eq('is_archived', false)
-      .order('data_quality', { ascending: false, nullsFirst: false })
-
-    if (!servers) { console.log('No servers'); await run.finish(); return }
+    const servers = await fetchAllRows<{ id: string; slug: string; name: string; github_url: string; data_quality: number | null; score_total: number | null }>(
+      supabase
+        .from('servers')
+        .select('id, slug, name, github_url, data_quality, score_total')
+        .not('github_url', 'is', null)
+        .eq('is_archived', false)
+        .order('data_quality', { ascending: false, nullsFirst: false })
+    )
     run.addProcessed(servers.length)
 
     // Known monorepos that contain multiple distinct MCP servers — skip these

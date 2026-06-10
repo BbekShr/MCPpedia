@@ -63,20 +63,71 @@ export async function queryOSV(packageName: string, ecosystem: 'npm' | 'PyPI'): 
   }
 }
 
+// CVSS v3 base score calculation from vector string.
+// OSV severity.score is always the full vector (e.g. "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"),
+// never a pre-computed numeric score, so we must compute it ourselves.
+function computeCVSS3BaseScore(vector: string): number | null {
+  const parts: Record<string, string> = {}
+  const metrics = vector.replace(/^CVSS:\d+\.\d+\//, '').split('/')
+  for (const m of metrics) {
+    const [k, v] = m.split(':')
+    if (k && v) parts[k] = v
+  }
+
+  const AV: Record<string, number> = { N: 0.85, A: 0.62, L: 0.55, P: 0.20 }
+  const AC: Record<string, number> = { L: 0.77, H: 0.44 }
+  const UI: Record<string, number> = { N: 0.85, R: 0.62 }
+  const CIA: Record<string, number> = { N: 0.00, L: 0.22, H: 0.56 }
+  const PR_U: Record<string, number> = { N: 0.85, L: 0.62, H: 0.27 }
+  const PR_C: Record<string, number> = { N: 0.85, L: 0.68, H: 0.50 }
+
+  const av = AV[parts['AV']] ?? null
+  const ac = AC[parts['AC']] ?? null
+  const ui = UI[parts['UI']] ?? null
+  const c  = CIA[parts['C']]  ?? null
+  const i  = CIA[parts['I']]  ?? null
+  const a  = CIA[parts['A']]  ?? null
+  const scope = parts['S']
+  const pr = scope === 'C' ? (PR_C[parts['PR']] ?? null) : (PR_U[parts['PR']] ?? null)
+
+  if (av === null || ac === null || pr === null || ui === null || c === null || i === null || a === null || !scope) return null
+
+  const iscBase = 1 - (1 - c) * (1 - i) * (1 - a)
+  const exploitability = 8.22 * av * ac * pr * ui
+
+  let impact: number
+  if (scope === 'U') {
+    impact = 6.42 * iscBase
+  } else {
+    impact = 7.52 * (iscBase - 0.029) - 3.25 * Math.pow(iscBase - 0.02, 15)
+  }
+
+  if (impact <= 0) return 0.0
+
+  const raw = scope === 'U'
+    ? Math.min(impact + exploitability, 10)
+    : Math.min(1.08 * (impact + exploitability), 10)
+
+  // Roundup: smallest 0.1 multiple >= raw
+  return Math.ceil(raw * 10) / 10
+}
+
 export function parseCVSSScore(severityArr?: Array<{ type: string; score: string }>): number | null {
   if (!severityArr?.length) return null
   const cvss = severityArr.find(s => s.type === 'CVSS_V3' || s.type === 'CVSS_V4')
   if (!cvss?.score) return null
 
-  // Extract base score from CVSS vector string
-  const match = cvss.score.match(/CVSS:\d\.\d\/.*/)
-  if (!match) return parseFloat(cvss.score) || null
+  // If it's already a plain numeric score (some OSV records omit the vector)
+  if (/^\d+\.?\d*$/.test(cvss.score.trim())) {
+    return parseFloat(cvss.score) || null
+  }
 
-  // Parse AV:N/AC:L/... format — we need the actual numeric score
-  // OSV sometimes has just the vector, sometimes the score
-  // Try to find a number
-  const numMatch = cvss.score.match(/(\d+\.?\d*)/)
-  return numMatch ? parseFloat(numMatch[1]) : null
+  // Otherwise it's a CVSS vector string — compute the base score from it
+  if (cvss.score.startsWith('CVSS:')) {
+    return computeCVSS3BaseScore(cvss.score)
+  }
+
+  return null
 }
 
 export function cvssToSeverity(score: number | null): 'critical' | 'high' | 'medium' | 'low' | 'info' {
