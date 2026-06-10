@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Dump servers + security_advisories into trimmed, batched JSON files for
  * autonomous in-chat classification. See plan:

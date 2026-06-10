@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 
 // Generic editor for arrays of objects with a known field shape. Used for
 // `tools` ({name, description, input_schema?}) and `resources`
@@ -26,8 +26,14 @@ function parseValue(json: string): { items: Item[]; parseError: string | null } 
   }
 }
 
+function stripRawKeys(item: Item): Item {
+  return Object.fromEntries(
+    Object.entries(item).filter(([k]) => !k.startsWith('__raw_'))
+  )
+}
+
 function serialize(items: Item[]): string {
-  return JSON.stringify(items, null, 2)
+  return JSON.stringify(items.map(stripRawKeys), null, 2)
 }
 
 export default function ListEditor({
@@ -48,17 +54,26 @@ export default function ListEditor({
   const [items, setItems] = useState<Item[]>([])
   const [parseError, setParseError] = useState<string | null>(null)
   const [showRaw, setShowRaw] = useState(false)
+  // Track the last value we emitted so we don't re-hydrate our own commits.
+  const lastEmitted = useRef<string | null>(null)
 
   useEffect(() => {
+    if (value === lastEmitted.current) return
     const result = parseValue(value)
-    setItems(result.items)
-    setParseError(result.parseError)
+    // Use setTimeout to avoid synchronous setState-in-effect (deferred, not blocking render)
+    const t = setTimeout(() => {
+      setItems(result.items)
+      setParseError(result.parseError)
+    }, 0)
+    return () => clearTimeout(t)
   }, [value])
 
   const commit = useCallback(
     (next: Item[]) => {
       setItems(next)
-      onChange(serialize(next))
+      const serialized = serialize(next)
+      lastEmitted.current = serialized
+      onChange(serialized)
     },
     [onChange],
   )
@@ -110,6 +125,7 @@ export default function ListEditor({
         const parsed = raw.trim() === '' ? undefined : JSON.parse(raw)
         const item = { ...next[idx], [key]: parsed }
         if (parsed === undefined) delete (item as Record<string, unknown>)[key]
+        delete (item as Record<string, unknown>)[`__raw_${key}`]
         next[idx] = item
         commit(next)
       } catch {

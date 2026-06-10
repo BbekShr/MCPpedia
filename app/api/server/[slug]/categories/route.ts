@@ -16,6 +16,17 @@ export async function POST(
   const rl = await rateLimitUser(user.id, 'categories', 10, 3600_000) // 10 per hour
   if (!rl.allowed) return Response.json({ error: 'Rate limited' }, { status: 429 })
 
+  // Require maintainer or admin role — categories are a trust signal
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile || !['maintainer', 'admin'].includes(profile.role)) {
+    return Response.json({ error: 'Only maintainers can set categories' }, { status: 403 })
+  }
+
   const body = await request.json().catch(() => null)
   if (!body || !Array.isArray(body.categories)) {
     return Response.json({ error: 'categories must be an array' }, { status: 400 })

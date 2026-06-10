@@ -18,6 +18,7 @@ export async function GET() {
     { loc: `${SITE_URL}/sitemap-static.xml`, lastmod: now },
     { loc: `${SITE_URL}/sitemap-servers-1.xml`, lastmod: now },
     { loc: `${SITE_URL}/sitemap-servers-2.xml`, lastmod: now },
+    { loc: `${SITE_URL}/sitemap-servers-3.xml`, lastmod: now },
   ]
   return new Response(renderSitemapIndex(sitemaps), { headers: SITEMAP_HEADERS })
 }

@@ -60,8 +60,8 @@ async function main() {
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
     if (batchError) {
-      console.error('Failed to fetch servers:', batchError.message)
-      return
+      await run.fail(`Failed to fetch servers: ${batchError.message}`)
+      throw new Error(batchError.message)
     }
     if (!batch || batch.length === 0) break
     servers.push(...batch)
@@ -70,8 +70,8 @@ async function main() {
   }
 
   if (servers.length === 0) {
-    console.error('No servers found')
-    return
+    await run.fail('No servers found')
+    throw new Error('No servers found')
   }
 
   console.log(`Updating metadata for ${servers.length} servers...`)

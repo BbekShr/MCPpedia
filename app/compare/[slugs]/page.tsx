@@ -9,6 +9,7 @@ import { PUBLIC_SERVER_FIELDS, SITE_URL } from '@/lib/constants'
 import type { Metadata } from 'next'
 import fs from 'fs'
 import path from 'path'
+import { JsonLdScript } from '@/lib/seo'
 
 export const revalidate = 604800 // 7d; on-demand revalidate triggers on edits and score deltas
 
@@ -225,10 +226,7 @@ export default async function ComparePage({
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 py-8">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLdScript data={jsonLd} />
 
       {/* Breadcrumbs */}
       <nav aria-label="Breadcrumb" className="text-sm text-text-muted mb-6">

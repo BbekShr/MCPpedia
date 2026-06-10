@@ -86,8 +86,8 @@ function WelcomeForm() {
   useEffect(() => {
     if (!authed || loading) return
     if (!username) {
-      setAvailability({ status: 'idle' })
-      return
+      const t = setTimeout(() => setAvailability({ status: 'idle' }), 0)
+      return () => clearTimeout(t)
     }
     const timer = setTimeout(() => runCheck(username), 300)
     return () => clearTimeout(timer)

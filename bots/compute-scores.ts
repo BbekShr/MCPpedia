@@ -48,8 +48,8 @@ async function main() {
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
     if (batchError) {
-      console.error('Failed to fetch servers:', batchError.message)
-      return
+      await run.fail(`Failed to fetch servers: ${batchError.message}`)
+      throw new Error(batchError.message)
     }
     if (!batch || batch.length === 0) break
     servers.push(...batch)
@@ -58,8 +58,8 @@ async function main() {
   }
 
   if (servers.length === 0) {
-    console.error('No servers found')
-    return
+    await run.fail('No servers found')
+    throw new Error('No servers found')
   }
 
   console.log(`Computing scores for ${servers.length} servers...\n`)
@@ -139,23 +139,29 @@ async function main() {
       movedSlugs.add(server.slug)
     }
 
+    // OSV scan failed — skip CVE-derived columns to avoid overwriting good data
+    // with an inflated "no CVEs found" result from a transient API outage.
+    const osvFailed = security.scan_status === 'failed'
+
     // Update server record
     const { error: updateError } = await supabase
       .from('servers')
       .update({
-        score_total: total,
-        score_security: security.score,
+        score_total: osvFailed ? total - security.score + (server.score_security ?? 0) : total,
+        score_security: osvFailed ? (server.score_security ?? security.score) : security.score,
         score_maintenance: maint.score,
         score_documentation: docs.score,
         score_compatibility: compat.score,
         score_efficiency: efficiency.score,
         score_computed_at: new Date().toISOString(),
-        // Security fields
+        // Security fields — always write non-CVE ones; skip CVE-derived when scan failed
         has_authentication: security.has_authentication,
-        cve_count: security.cve_count,
+        ...(osvFailed ? {} : {
+          cve_count: security.cve_count,
+          security_evidence: security.evidence,
+        }),
         security_scan_status: security.scan_status,
         last_security_scan: new Date().toISOString(),
-        security_evidence: security.evidence,
         has_code_execution: security.evidence.some(e => e.id === 'tool-safety' && e.pass === false),
         has_injection_risk: security.evidence.some(e => e.id === 'injection' && e.pass === false),
         dangerous_pattern_count: security.evidence.find(e => e.id === 'tool-safety')?.points !== undefined

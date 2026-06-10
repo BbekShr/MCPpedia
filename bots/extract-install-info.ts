@@ -7,7 +7,7 @@
 import { config } from 'dotenv'
 config({ path: '.env.local' })
 
-import { createAdminClient } from './lib/supabase'
+import { createAdminClient, fetchAllRows } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
 import { getReadme } from './lib/github'
 import { categorize } from './lib/categorize'
@@ -132,15 +132,12 @@ async function main() {
   console.log(new Date().toISOString())
 
   // Get all servers with a GitHub URL
-  const { data: servers } = await supabase
-    .from('servers')
-    .select('id, slug, name, tagline, github_url, npm_package, pip_package, install_configs, transport, categories')
-    .not('github_url', 'is', null)
-
-  if (!servers) {
-    console.log('No servers found.')
-    return
-  }
+  const servers = await fetchAllRows<{ id: string; slug: string; name: string; tagline: string | null; github_url: string; npm_package: string | null; pip_package: string | null; install_configs: Record<string, unknown> | null; transport: string[] | null; categories: string[] | null }>(
+    supabase
+      .from('servers')
+      .select('id, slug, name, tagline, github_url, npm_package, pip_package, install_configs, transport, categories')
+      .not('github_url', 'is', null)
+  )
 
   // Process servers that need install info OR have no categories
   const needsUpdate = servers.filter(s =>

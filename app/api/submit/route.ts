@@ -68,13 +68,21 @@ export async function POST(request: Request) {
   // Check for duplicate GitHub URL or package across active rows (normalized).
   // Older rows may not yet be normalized in-place, so we filter the candidate
   // set in JS rather than an exact `.eq()`.
+  // Sanitize values going into the .or() string to prevent PostgREST filter injection.
   const orFilters: string[] = []
   if (normalizedGithubUrl) {
-    const fragment = normalizedGithubUrl.replace(/^https:\/\//, '')
-    orFilters.push(`github_url.ilike.%${fragment}%`)
+    const rawFragment = normalizedGithubUrl.replace(/^https:\/\//, '')
+    const safeFragment = rawFragment.replace(/[,()]/g, '')
+    orFilters.push(`github_url.ilike.%${safeFragment}%`)
   }
-  if (normalizedNpm) orFilters.push(`npm_package.ilike.${normalizedNpm}`)
-  if (normalizedPip) orFilters.push(`pip_package.ilike.${normalizedPip}`)
+  if (normalizedNpm) {
+    const safeNpm = normalizedNpm.replace(/[,()]/g, '')
+    orFilters.push(`npm_package.ilike.${safeNpm}`)
+  }
+  if (normalizedPip) {
+    const safePip = normalizedPip.replace(/[,()]/g, '')
+    orFilters.push(`pip_package.ilike.${safePip}`)
+  }
 
   if (orFilters.length > 0) {
     type CandidateRow = {
