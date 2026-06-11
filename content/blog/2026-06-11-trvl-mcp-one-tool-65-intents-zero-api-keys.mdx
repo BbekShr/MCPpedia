@@ -1,0 +1,81 @@
+---
+title: "Trvl Mcp: One Tool, 65 Intents, Zero API Keys"
+description: "Trvl Mcp routes flights, hotels, trains, and more through a single MCP tool with 65 aliases — no API keys required."
+hook: "Most travel APIs require 5 different accounts before you can search a single flight. This MCP server does flights, hotels, trains, ferries, award sweet spots, and lounges with zero API keys and one tool."
+date: "2026-06-11"
+tags: ["spotlight","review"]
+category: "server-spotlight"
+featuredServers: ["trvl-mcp"]
+---
+## One Tool to Route Them All
+
+Most travel MCP servers drown you in endpoints. [Trvl Mcp](/s/trvl-mcp) takes the opposite approach — one smart tool, 65 ways to use it, and zero API keys standing between you and real travel data.
+
+That's not a limitation. That's a design philosophy.
+
+<SectionLabel>What It Does</SectionLabel>
+
+The entire server is built around a single tool: `travel`. You pass it an `intent` — a string that can be one of 65 aliases — and it routes your request to the right data source automatically.
+
+**Flights? Hotels? Trains? Ferries? Lounges?** It's all handled by the same interface. Under the hood, `trvl-mcp` queries Google Flights, Google Hotels, Trivago, Airbnb, Booking.com, Hostelworld, Ferryhopper, and European ground transport networks — all without you ever touching an API key.
+
+<Callout type="fire">No API keys required. Free, API-first access to Google Flights, Google Hotels, Trivago, Airbnb, Booking.com, and more — out of the box.</Callout>
+
+The intent aliases cover an impressively wide surface area:
+
+- **Air travel**: flights, price alerts, award sweet spots, baggage rules, lounges
+- **Accommodation**: hotels, Airbnb, hostels via Hostelworld, Booking.com properties
+- **Ground transport**: rental cars, trains, buses, ferries across European networks
+- **Trip intelligence**: destination intel, weather, and more
+
+<PullQuote>65 aliases, one routing layer — this is what a well-abstracted travel agent looks like.</PullQuote>
+
+The `award_sweet_spots` intent alone is worth the install for frequent flyers. Finding where your miles stretch furthest is notoriously painful — having an AI agent that can surface that data on demand, mid-conversation, is genuinely useful.
+
+---
+
+<SectionLabel>Score Breakdown</SectionLabel>
+
+At a total score of **88/100**, `trvl-mcp` punches above its weight for a server with only 33 GitHub stars. Let's look at where those points come from.
+
+<ScoreBreakdown>
+  <ScoreRow label="Security" points="30" description="Full marks here. No API key requirements means no credential exposure risk. The attack surface is minimal by design." />
+  <ScoreRow label="Documentation" points="15" description="Solid. The tagline alone communicates the value prop clearly, and the 65 intent aliases are well-enumerated." />
+  <ScoreRow label="Efficiency" points="20" description="A single-tool architecture is inherently efficient. One schema, one required field, broad routing logic." />
+  <ScoreRow label="Maintenance" points="13" description="Respectable, though with only 33 stars the project is still building community momentum." />
+  <ScoreRow label="Compatibility" points="10" description="Available as an npm package (trvl-mcp), which keeps the install path clean across environments." />
+</ScoreBreakdown>
+
+The **security score is a full 30** — the ceiling. That's not an accident. By abstracting away credentials entirely, the project sidesteps a whole class of problems that plague other data-fetching MCP servers. You don't need to manage tokens, rotate keys, or worry about leaking credentials through your AI client's context window.
+
+<Callout type="tip">Install via npm: `npx trvl-mcp` gets you running immediately. No accounts, no setup, no friction.</Callout>
+
+---
+
+<SectionLabel>The Design Bet</SectionLabel>
+
+There's a real architectural opinion embedded in this server. Most MCP tools give you granular, separate tools for each action — one for flights, one for hotels, one for weather. That's orthodox MCP design.
+
+`trvl-mcp` bets that **intent routing** is actually better for AI agents. Instead of the model deciding which tool to call, it just describes what it wants and the server figures out the rest. 65 aliases act as compatibility shims for natural language variations — `flights`, `flight`, `find_flights`, `search_flights` all resolve to the same behavior.
+
+<PullQuote>This is opinionated software. The 65 aliases aren't bloat — they're a compatibility layer for the messy, unpredictable way AI models actually phrase requests.</PullQuote>
+
+That bet has tradeoffs. You get less granular control per-intent, and debugging a routing failure is harder when there's only one tool to inspect. But for the use case — an AI travel agent that just *works* — the simplicity wins.
+
+---
+
+<SectionLabel>Who Should Use This</SectionLabel>
+
+**Travelers building personal AI assistants** will get the most mileage here. If you're running Claude or another LLM locally and want it to actually help with trip planning — not just hallucinate flight options — this gives it real data to work with.
+
+**Developers prototyping travel features** benefit enormously from the zero-credential setup. You can test the full stack — flights, hotels, ground transport — without a single API account.
+
+**Frequent flyers and points optimizers** should pay special attention to the `award_sweet_spots` intent. It's a niche feature that signals the server was built by someone who actually travels.
+
+<Callout type="info">The server covers European ground transport specifically — trains, buses, and ferries via Ferryhopper. If your use case skews EU travel, this is a strong fit.</Callout>
+
+The 33 GitHub stars suggest this is still early. But the 88/100 score reflects that the fundamentals are solid — clean architecture, zero credential friction, and a broad data source network that most travel tools can't match without significant setup.
+
+---
+
+If you've been waiting for an MCP travel agent that doesn't require you to become a developer before you can search for flights — **this is the one to install**.

@@ -1,0 +1,133 @@
+---
+title: "MCP Weekly: 1,130 New Servers, Wearables, and a Trust Layer for AI Tools"
+description: "This week's MCP ecosystem roundup: 25,966 total servers, dbx gains 253 stars, and a server that scores other MCP servers for trustworthiness."
+hook: "The MCP ecosystem added 1,130 servers in 7 days — and one of them exists to tell you whether to trust the other 25,965. This week's roundup gets into the details."
+date: "2026-06-11"
+tags: ["weekly","ecosystem","new-servers"]
+category: "weekly-roundup"
+featuredServers: ["io-mcpskills-server","apple-mail-fast-mcp","io-github-briangaoo-totem","io-github-fulcrai-skb-mcp","io-github-aissablk1-mcp-roadmapsh","transport-stdio","io-github-friendlygeorge-posthog-mcp-server","io-github-3121n-nve-mcp","tiny-stdio-mcp-server","io-github-friendlygeorge-resend-mcp-server"]
+---
+<thinking>
+Let me write a compelling weekly roundup article about the MCP ecosystem based on the data provided. I'll highlight interesting new servers and trending projects, use the custom components, and maintain the sharp editorial voice requested.
+
+Key stats:
+- 25,966 total servers
+- 1,130 new this week
+
+Interesting new servers to highlight:
+1. io.mcpskills/server - Trust scoring with 15 signals + safety scanning (score: 71)
+2. Apple Mail Fast MCP - 83 stars, email management with AI (score: 69)
+3. io.github.briangaoo/totem - Whoop wearables with 48 tools (68 stars, score: 67)
+4. io.github.fulcrai/skb-mcp - Skincare Q&A (interesting niche)
+5. Transport Stdio - 196 stars, infrastructure
+
+Trending:
+1. io.github.t8y2/dbx - 4,911 stars, +253 gain
+2. FunASR - 17,709 stars, +178 gain
+3. N8n - 191,896 stars, +172 gain
+4. Claude Flow / Cli Core - ~58,900 stars, +169 gain
+5. Vibe Trading - 11,527 stars, +152 gain
+6. Headroom - 21,279 stars, +138 gain
+7. LiteLLM - 50,034 stars, +137 gain
+
+Let me write the article now.
+</thinking>
+
+<SectionLabel>Week in Review</SectionLabel>
+
+## 1,130 New Servers. The MCP Ecosystem Doesn't Slow Down.
+
+**25,966 servers and counting.** The MCP catalog added 1,130 new entries this week — roughly 161 per day — and the range of what people are building has never been more eclectic. From skincare advice to Norwegian flood data, from wearable fitness APIs to AI trust scoring, the protocol is quietly becoming infrastructure for everything.
+
+Let's get into it.
+
+---
+
+<StatGrid>
+  <Stat value="25,966" label="Total Servers" detail="In the MCP catalog" />
+  <Stat value="1,130" label="New This Week" detail="~161 per day" />
+  <Stat value="253" label="Top Star Gain" detail="dbx this week" />
+  <Stat value="191,896" label="N8n Stars" detail="Highest in trending" />
+</StatGrid>
+
+---
+
+<SectionLabel>New Servers Worth Knowing</SectionLabel>
+
+## The Most Interesting Arrivals This Week
+
+### 1. A Trust Layer for MCP Itself
+
+[io.mcpskills/server](/s/io-mcpskills-server) is doing something genuinely meta: **scoring the trustworthiness of other MCP servers**. It runs 15 signals plus safety scanning across MCP servers, AI skills, and npm packages — and it earned a 71 quality score despite having zero GitHub stars yet.
+
+The MCP ecosystem is growing fast enough that curation and trust are now real problems. A server designed to solve that problem from within the protocol is exactly the kind infrastructure play that matters long-term.
+
+<Callout type="fire">Trust scoring for AI tooling is an emerging category. As MCP servers proliferate past 25K, knowing *which ones to trust* becomes as important as knowing they exist.</Callout>
+
+### 2. Apple Mail Finally Gets a Native MCP Bridge
+
+[Apple Mail Fast Mcp](/s/apple-mail-fast-mcp) landed with **83 stars out of the gate** — a strong debut signal. It connects Claude Desktop directly to Apple Mail, enabling natural language search, send, and organization without leaving your AI workflow.
+
+It's not a glamorous integration. But email is where most knowledge work actually lives. A server that makes mail first-class in an AI context is more useful day-to-day than most flashier projects.
+
+### 3. Talk to Your Whoop
+
+[io.github.briangaoo/totem](/s/io-github-briangaoo-totem) pulled in **68 stars** and delivers something I didn't expect to see: **48 tools for full Whoop API access**. Query your recovery scores, strain data, sleep metrics — all via AI.
+
+The tagline is "talk to your wearables with AI" and it means it. This is the first serious wearable integration I've seen in the catalog, and 48 tools is not a toy implementation.
+
+<PullQuote>48 tools for a single wearable API. Totem isn't dabbling in fitness data — it's going all in.</PullQuote>
+
+### 4. The Niche No One Expected: Skincare
+
+[io.github.fulcrai/skb-mcp](/s/io-github-fulcrai-skb-mcp) is a skincare Q&A server with **cited products, ingredients, sources, and comparison context**. It scored 67 and has exactly zero stars — but that's beside the point.
+
+This is the kind of server that signals where MCP is going: **deeply vertical, deeply specific**. Not a general-purpose assistant wrapper. A skincare knowledge engine with sourced answers.
+
+### 5. Infrastructure Quietly Earns Stars
+
+[Transport Stdio](/s/transport-stdio) — a transport layer for TMCP using STDIO — racked up **196 stars** with a terse, unglamorous description. No flashy features. No demo GIFs. Just plumbing that developers apparently need.
+
+The strong star count on a utilities play is worth noting. Foundational tooling often gets underappreciated in weekly roundups. Not this week.
+
+---
+
+<SectionLabel>Trending This Week</SectionLabel>
+
+## What the Community Is Staring At
+
+The trending list this week tells a clear story: **infrastructure, orchestration, and financial tooling are dominating attention**.
+
+[io.github.t8y2/dbx](/s/io-github-t8y2-dbx) was the week's biggest mover — **+253 stars** on a database query server that now sits at 4,911 total. The pitch is simple: query databases from AI agents using preconfigured connections. In a world where every AI workflow eventually needs to touch a database, simple wins.
+
+<Callout type="info">dbx gained 253 stars in a single week — more than most servers accumulate in their lifetime. The appetite for reliable database access in AI agents is enormous.</Callout>
+
+[Claude Flow](/s/claude-flow) and [Cli Core](/s/cli-core) each gained **+169 stars** and are now sitting at nearly 59,000 stars each. The Claude Flow ecosystem — enterprise agent orchestration with 60+ specialized agents and swarm coordination — is one of the most ambitious projects in the MCP space. The momentum shows no sign of slowing.
+
+[FunASR](/s/funasr) grabbed **+178 stars** this week, pushing toward 18,000 total. Industrial-grade speech recognition at 170x realtime across 50+ languages is not a niche offering. As voice interfaces become a real AI deployment pattern, expect this one to keep climbing.
+
+[Vibe Trading](/s/vibe-trading) jumped **+152 stars** to 11,527 total. Finance and trading tooling have been a consistent theme in MCP trending lists, and Vibe Trading's personal trading agent framing clearly resonates.
+
+[Headroom](/s/headroom) — which compresses tool outputs, logs, and RAG chunks before they hit the LLM for **60-95% fewer tokens** — added 138 stars to reach 21,279. Token efficiency is a silent cost center for every production AI system. Headroom is addressing something real.
+
+<PullQuote>60-95% fewer tokens with the same answers. Headroom might be the most quietly important server in the entire trending list.</PullQuote>
+
+And [N8n](/s/n8n) — already at a staggering **191,896 stars** — added another 172 this week. At this point N8n isn't trending so much as it's gravitationally pulling everything nearby.
+
+---
+
+<SectionLabel>The Bottom Line</SectionLabel>
+
+## What This Week Actually Means
+
+Three things stand out from this week's data.
+
+**First**, the ecosystem is maturing beyond novelty. Trust scoring for MCP servers, token compression middleware, foundational STDIO transports — these aren't demos. These are tools people are building because production systems need them.
+
+**Second**, vertical specificity is becoming a real pattern. Skincare Q&A. Norwegian flood hazard data. Whoop wearable integration. The long tail of MCP is getting longer and stranger, and that's exactly right.
+
+**Third**, the star velocity on infrastructure plays — dbx at +253, Headroom at +138, Transport Stdio at 196 total — signals that developers aren't just exploring MCP anymore. They're building on it and reaching for the boring-but-necessary layers.
+
+**1,130 servers in seven days.** Whatever ceiling this ecosystem has, we haven't found it yet.
+
+---
