@@ -1,0 +1,77 @@
+---
+title: "Critical RCE in MermAId: Missing Binary Verification Enables Remote Code Execution"
+description: "High-severity vulnerability (GHSA-gv7w-rqvm-qjhr) in MermAId's esbuild Deno module allows RCE via unverified binary downloads. Patch immediately."
+hook: "MermAId's esbuild module downloads executables without verifying them—a flaw the Node.js version fixed months ago. If you're running MermAId, stop. Now."
+date: "2026-06-15"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+## Security Alert: Critical RCE Vulnerability in MermAId Server — Act Now
+
+A **high-severity remote code execution (RCE) vulnerability** has been discovered in the [MermAId](/s/mermaid) MCP server, stemming from missing integrity checks in its esbuild binary dependency. If you're running this server in production, you need to patch immediately.
+
+<Callout type="warning">
+**CVSS Score: HIGH** — GHSA-gv7w-rqvm-qjhr affects all versions of MermAId using the vulnerable esbuild Deno module without SHA-256 verification.
+</Callout>
+
+---
+
+<SectionLabel>What Went Wrong</SectionLabel>
+
+The [MermAId](/s/mermaid) server relies on esbuild to bundle and execute code. When esbuild's Deno module initializes, it **downloads native binary executables from an npm registry and writes them to disk with full execute permissions — without verifying the binary hasn't been tampered with**.
+
+This is a textbook supply chain attack vector. Here's the kicker: the Node.js version of esbuild includes `binaryIntegrityCheck()` — a function that validates SHA-256 hashes against hardcoded expected values. **That protection was never ported to the Deno module.** Dead code path. Critical oversight.
+
+An attacker who can intercept or redirect the binary download — via DNS poisoning, BGP hijacking, or by compromising `NPM_CONFIG_REGISTRY` — can inject arbitrary code. The moment that malicious binary executes, the attacker owns your MCP runtime.
+
+---
+
+<SectionLabel>Who's At Risk</SectionLabel>
+
+Any MCP deployment running [MermAId](/s/mermaid) is vulnerable. This includes:
+
+- Development environments using MermAId for diagram generation
+- Production systems integrating MermAId with LLM orchestration
+- CI/CD pipelines that invoke MermAId as a code generation step
+- Multi-tenant setups where MermAId processes untrusted inputs
+
+The attack surface is **especially wide** if you're running MermAId on shared infrastructure or in environments where network traffic isn't fully controlled.
+
+<PullQuote>
+An attacker who can redirect a binary download owns your entire MCP runtime.
+</PullQuote>
+
+---
+
+<SectionLabel>What You Should Do Now</SectionLabel>
+
+### 1. Stop using MermAId immediately
+Disable the [MermAId](/s/mermaid) server in production until a patched version is released. Don't wait for the next scheduled update cycle.
+
+### 2. Audit your logs
+Check for suspicious binary downloads or unexpected child process spawning. Look for `npm_config_registry` environment variable overrides in your execution logs.
+
+### 3. Wait for the patch
+The maintainers need to backport the Node.js `binaryIntegrityCheck()` logic to the Deno module and release a new version. Monitor the MCPpedia security feed for the all-clear.
+
+### 4. Update aggressively
+When a patched version drops, deploy it without delay. Don't skip versions.
+
+---
+
+<SectionLabel>The Bigger Picture</SectionLabel>
+
+This vulnerability highlights a recurring pattern in MCP ecosystem security: **features aren't always ported consistently across runtime targets.** Node.js gets hardened. Deno gets skipped. Rust gets ignored. Then six months later, you're reading a security advisory.
+
+<Callout type="info">
+**Best Practice**: If a security control exists in one runtime, it should exist in all runtimes — or that runtime should be deprecated. No exceptions.
+</Callout>
+
+The [MermAId](/s/mermaid) maintainers aren't uniquely negligent here; this reflects a systemic gap in how MCP servers are tested and audited across different JavaScript runtimes.
+
+---
+
+The window for exploiting this is wide, and the damage is total. Patch now. Don't be the incident report.
+
+---

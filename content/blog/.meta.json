@@ -16,5 +16,7 @@
   "publishedSeoTopics": [
     "MCP vs API what is the difference"
   ],
-  "publishedCveIds": []
+  "publishedCveIds": [
+    "GHSA-gv7w-rqvm-qjhr"
+  ]
 }
