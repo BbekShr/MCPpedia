@@ -1,0 +1,94 @@
+---
+title: "StatFin MCP: Finland's 3,000+ Official Tables, No API Key Needed"
+description: "This MCP server wires Finland's entire StatFin database into your AI client — 3,000+ tables, zero credentials required."
+hook: "Finland's entire official statistics database — 3,000+ tables on population, housing, labor, and more — is now queryable through an AI assistant. No API key. No signup. Just ask."
+date: "2026-06-16"
+tags: ["spotlight","review"]
+category: "server-spotlight"
+featuredServers: ["io-github-3121n-statfin-mcp"]
+---
+## Finland's Official Stats Engine, Now in Your AI Workflow
+
+You want authoritative population data for Finland. Or housing prices. Or labor market trends broken down by region and year. The old way: navigate Statistics Finland's website, find the right table, figure out the query builder, export a CSV, import it somewhere useful.
+
+The new way: ask your AI assistant — and let [io.github.3121n/statfin-mcp](/s/io-github-3121n-statfin-mcp) do the heavy lifting.
+
+This MCP server plugs directly into the StatFin database — **Finland's official national statistics repository** — through the PxWeb API. No API key. No bureaucratic signup. Just 3,000+ tables of government-grade data, instantly accessible.
+
+<Callout type="fire">3,000+ statistical tables. Zero API keys required. This is Finland's entire StatFin database — population, economy, housing, labor, and more — wired directly into your MCP-compatible client.</Callout>
+
+---
+
+<SectionLabel>What It Does</SectionLabel>
+
+The server exposes four tightly scoped tools that mirror exactly how you'd want to explore a statistical database: **discover, inspect, filter, fetch**.
+
+That's it. No bloat. No abstraction layers doing weird things behind your back. Each tool has a clear job.
+
+All tools support three languages out of the box — **English, Finnish (fi), and Swedish (sv)** — which is appropriate given Finland's bilingual official status. A small detail, but it signals that the author thought carefully about the actual users of this data.
+
+---
+
+<SectionLabel>The Tools, One by One</SectionLabel>
+
+### 1. `sok_tabell` — Search the Catalog
+
+Start here. Feed it keywords, get back the most relevant tables with their `tabell_id`. The smart part: it matches against a **bundled local index** rather than firing a live API call for every search. That means fast, offline-capable discovery.
+
+Query "unemployment rate" or "birth rate by municipality" — it finds the right table IDs so you can proceed.
+
+### 2. `list_emner` — Browse Subject Areas
+
+When your keyword search misses — because you don't know the right terminology — this is your fallback. It lists **approximately 140 subject areas** (topics like `vaerak` for Population Structure) that organize the entire StatFin catalog.
+
+Think of it as the table of contents for Finland's statistical universe.
+
+### 3. `hent_tabell` — Read the Metadata
+
+Once you have a `tabell_id`, this tool fetches the table's full metadata: title, dimensions, valid value codes, and labels. This is the step most people skip and then wonder why their data query fails.
+
+You need to know what filters are valid before you query. This tool tells you.
+
+### 4. `hent_data` — Pull the Numbers
+
+The payoff. Submit a `tabell_id` plus a filter map, get back **JSON-stat2** — a structured statistical data format that's well-suited for programmatic use. There's also a `top` filter shortcut for grabbing the latest time period without knowing the exact year code.
+
+<PullQuote>The filter shortcut `{filter:'top', values:['1']}` for the latest period is a small UX win — the kind of detail that separates a tool built for actual use from one built to check a box.</PullQuote>
+
+---
+
+<SectionLabel>Score Breakdown</SectionLabel>
+
+<ScoreBreakdown>
+  <ScoreRow label="Security" points="30" description="Full marks. No API key means no credential exposure risk — a genuinely secure architecture for a read-only public data source." />
+  <ScoreRow label="Efficiency" points="20" description="Full marks. Local search index avoids unnecessary network calls; JSON-stat2 output is structured and lightweight." />
+  <ScoreRow label="Documentation" points="15" description="Full marks on documentation. Tool descriptions are clear and specific — variable names, filter syntax, and language codes are all documented inline." />
+  <ScoreRow label="Maintenance" points="17" description="Near-full marks. Zero GitHub stars is a concern for community longevity, but the codebase appears current." />
+  <ScoreRow label="Compatibility" points="10" description="Full marks. Available as an npm package, fits standard MCP client setups." />
+</ScoreBreakdown>
+
+**Total: 92/100.** That's a strong score — and notably, it's built on genuine technical decisions, not marketing.
+
+<Callout type="tip">The 92/100 score is driven by architecture choices: keyless auth, local search indexing, and clean tool boundaries. This isn't a padded score — it reflects a server that does its job without creating new problems.</Callout>
+
+---
+
+<SectionLabel>Who Should Use This</SectionLabel>
+
+The target audience is narrower than a general-purpose data server — but that's a feature, not a bug.
+
+**Researchers and analysts** working on Finnish demographics, economics, or social policy now have a direct AI-native interface into official statistics. No more manual table hunting.
+
+**Journalists and data reporters** covering Finland can query historical trends conversationally — "show me Helsinki housing prices for the last five years" — and get structured data back without an intermediate export step.
+
+**Developers building applications** on top of Finnish government data get a clean MCP abstraction over the PxWeb API, with proper metadata inspection built in. The JSON-stat2 output is already formatted for programmatic consumption.
+
+<PullQuote>If you work with Finnish data — professionally, academically, or journalistically — this is the most frictionless path to StatFin that exists right now.</PullQuote>
+
+And for anyone curious about what MCP servers *should* look like: a focused domain, clean tool separation, sensible output formats, and zero unnecessary dependencies. This is a good example to study.
+
+---
+
+The zero-star GitHub count is the only real yellow flag — adoption is early, and community support is unproven. But the server itself is technically solid and solves a real problem elegantly.
+
+**Finland's official statistics belong in your AI workflow. This server makes that happen.**
