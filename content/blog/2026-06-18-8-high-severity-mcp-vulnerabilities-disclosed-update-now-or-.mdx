@@ -1,0 +1,84 @@
+---
+title: "8 High-Severity MCP Vulnerabilities Disclosed: Update Now or Expose RCE"
+description: "Header leakage, privilege escalation, and three yt-dlp RCE flaws affect popular MCP servers. Patches available—get them today."
+hook: "Three major MCP servers just disclosed 8 high-severity vulnerabilities—including multiple remote code execution flaws hidden in video metadata. Update now or risk being pwned through your downloads."
+date: "2026-06-18"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+## Three Critical Security Vulnerabilities Land in Popular MCP Servers
+
+Over the past 72 hours, **eight high-severity security advisories** have been disclosed affecting MCP servers in active use. If you're running any of these, action is required now — not later.
+
+---
+
+<SectionLabel>The Threats</SectionLabel>
+
+### 1. Header Leakage in HTTP Redirects
+
+[io.github.strangeadvancedmarketing/adam-framework](/s/io-github-strangeadvancedmarketing-adam-framework) is vulnerable to **CVE-2026-53840**, where custom-configured HTTP headers can leak to unintended origins when the MCP endpoint redirects across domain boundaries.
+
+The attack vector is specific but dangerous: if your adam-framework instance uses `streamable-http` transport with custom headers (API tokens, bearer credentials, etc.), those headers could end up in a cross-origin redirect response. This affects **only deployments using custom headers** — but if you are, treat this as critical.
+
+<Callout type="warning">
+Check your adam-framework configuration immediately. If you're using custom headers with streamable-http transport, update to the patched version. The good news: this doesn't expose unrelated OpenClaw credentials.
+</Callout>
+
+### 2. Local Privilege Escalation on Shared Hosts
+
+[io.github.CoReason-AI/coreason-ecosystem](/s/io-github-coreason-ai-coreason-ecosystem) suffers from **CVE-2026-54328**, a predictable temporary path vulnerability that opens the door to local privilege escalation on multi-user Linux systems.
+
+When coreason installs temporary npm or git extension packages, it uses predictable paths under the OS temp directory. A malicious local user on a shared Linux host can race the installation, plant a malicious package in the expected location, and execute arbitrary code with the victim's privileges.
+
+<PullQuote>
+This is a textbook privilege escalation flaw — and it only matters if you're on shared infrastructure, but when it does, it's game over.
+</PullQuote>
+
+---
+
+<SectionLabel>The Real Problem: yt-dlp Cascade</SectionLabel>
+
+Both [MCP X](/s/mcp-x) and [Chubbyskills](/s/chubbyskills) are affected by **three separate, critical yt-dlp vulnerabilities**:
+
+### Vulnerability Breakdown
+
+**CVE-2026-54328**: Remote Code Execution via `--exec` Command Injection  
+The `--exec` option allows arbitrary command injection when handling untrusted metadata. An attacker can embed shell metacharacters in video metadata to execute code on your machine during download.
+
+**CVE-2026-50574**: Arbitrary Code Execution via aria2c Downloader  
+If aria2c is configured as an external downloader for fragmented formats (HLS/DASH), yt-dlp passes unsanitized input that allows attackers to write arbitrary files. On Windows, this is immediate RCE. On Linux/Mac, it triggers on the next yt-dlp invocation.
+
+**CVE-2026-50023**: OS-Shortcut File Creation (CVE-2024-38519 Bypass)  
+A previous patch tried to block dangerous file extensions but explicitly whitelisted `.desktop`, `.url`, and `.webloc` — all of which are executable OS shortcuts. Attackers can now write these files to trigger code execution.
+
+<ScoreBreakdown>
+<ScoreRow label="Command Injection Risk" points="10/10" description="--exec option is widely used; metadata is often untrusted" />
+<ScoreRow label="File Write Exploitability" points="10/10" description="Shortcut files execute silently; users won't notice until it's too late" />
+<ScoreRow label="Detection Difficulty" points="9/10" description="These attacks hide in video metadata and download artifacts" />
+</ScoreBreakdown>
+
+---
+
+<SectionLabel>What You Should Do Now</SectionLabel>
+
+**If you run [io.github.strangeadvancedmarketing/adam-framework](/s/io-github-strangeadvancedmarketing-adam-framework):**  
+Update immediately and verify your custom headers aren't being logged in access patterns. Check for suspicious cross-origin requests in the past 30 days.
+
+**If you run [io.github.CoReason-AI/coreason-ecosystem](/s/io-github-coreason-ai-coreason-ecosystem) on shared Linux hosts:**  
+Patch before the next extension install. If you can't patch immediately, isolate the host from untrusted users or move to dedicated infrastructure.
+
+**If you run [MCP X](/s/mcp-x) or [Chubbyskills](/s/chubbyskills):**  
+This is critical. Disable yt-dlp integration or upgrade to the latest patched release immediately. Do **not** use the `--exec` option with untrusted sources. Do **not** rely on aria2c for downloads from untrusted streams. Monitor your file system for unexpected `.desktop`, `.url`, or `.webloc` files.
+
+<Callout type="fire">
+All four servers affected by these advisories have published patches as of June 17, 2026. Check your version numbers now — if you're not on the latest release, you're exposed.
+</Callout>
+
+---
+
+The pattern here is troubling: two cascading supply-chain vulnerabilities (header leakage, predictable paths) and a third-party library (yt-dlp) with **three separate RCE vectors**. This isn't a gotcha for security teams — it's a reminder that **dependency management isn't optional in production MCP deployments**.
+
+Update your servers. Audit your configurations. And if you're still on versions from June or earlier, assume you've been compromised until proven otherwise.
+
+---

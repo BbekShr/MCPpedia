@@ -1,5 +1,5 @@
 {
-  "lastRoundupDate": "2026-06-11",
+  "lastRoundupDate": "2026-06-18",
   "lastSpotlightSlugs": [
     "io-github-3121n-statfin-mcp",
     "trvl-mcp",
@@ -17,6 +17,14 @@
     "MCP vs API what is the difference"
   ],
   "publishedCveIds": [
+    "CVE-2026-53840",
+    "CVE-2026-54328",
+    "GHSA-69qj-pvh9-c5wg",
+    "GHSA-69qj-pvh9-c5wg",
+    "CVE-2026-50574",
+    "CVE-2026-50574",
+    "CVE-2026-50023",
+    "CVE-2026-50023",
     "CVE-2026-48746",
     "CVE-2026-41523",
     "GHSA-gv7w-rqvm-qjhr"

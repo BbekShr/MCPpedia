@@ -1,0 +1,105 @@
+---
+title: "1,062 New MCP Servers in 7 Days — Here's What Actually Matters"
+description: "The MCP ecosystem hit 23,812 servers this week. We cut through the noise to find the debuts and trends worth your attention."
+hook: "1,062 MCP servers launched in a single week. A $0/token memory graph scored 91. A vault that keeps secrets FROM the AI model. And Firecrawl added 381 stars in 7 days. Here's what's actually happening in the MCP ecosystem."
+date: "2026-06-18"
+tags: ["weekly","ecosystem","new-servers"]
+category: "weekly-roundup"
+featuredServers: ["io-github-yonasvalentin-mcp-memory-graph","io-github-jurimaxam-dotcom-chemdraw-mcp","io-github-wundervault-wundervault-mcp","io-github-red-square-software-keeping-mcp","an-mcp-server-that-exposes-tree-sitter-based-code-navigation-as-tools-for-ai-assistants","mk-qa-master","mcp-apps","kapture-mcp","scrivener-mcp","io-github-asklokesh-loki-mode"]
+---
+<SectionLabel>Weekly Roundup</SectionLabel>
+
+## The MCP Ecosystem Just Added 1,062 Servers in a Single Week
+
+That's not a typo. The MCP catalog hit **23,812 total servers** this week — and 1,062 of them are brand new. The pace isn't slowing down. If anything, the diversity of what's being built is getting more interesting.
+
+This week's batch spans chemistry tools, zero-knowledge secret vaults, writers' studio integrations, and a memory layer that costs literally nothing per token. Let's get into it.
+
+---
+
+<SectionLabel>New Servers Worth Your Attention</SectionLabel>
+
+<StatGrid>
+  <Stat value="23,812" label="Total Servers" detail="In the catalog" />
+  <Stat value="1,062" label="New This Week" detail="Added in 7 days" />
+  <Stat value="91" label="Top Score" detail="mcp-memory-graph" />
+  <Stat value="381" label="Star Gain" detail="Firecrawl this week" />
+</StatGrid>
+
+### 1. The $0/Token Memory Layer
+
+[io.github.YonasValentin/mcp-memory-graph](/s/io-github-yonasvalentin-mcp-memory-graph) is doing something genuinely clever: **local-first persistent memory via a hybrid search + knowledge graph**, with zero token cost. It scored a 91 — the highest of any new server this week — and works with Claude Code or any MCP-compatible client.
+
+The "local-first, $0/token" framing is a direct shot at hosted memory solutions that meter every query. If you're running Claude Code heavily, this is worth an immediate look.
+
+<Callout type="fire">mcp-memory-graph scored 91 this week — the highest debut score in this batch. Local-first, hybrid search, and it costs nothing per token.</Callout>
+
+### 2. Chemistry Gets an Offline MCP Server
+
+[io.github.jurimaxam-dotcom/chemdraw-mcp](/s/io-github-jurimaxam-dotcom-chemdraw-mcp) converts molecule names or SMILES strings into 2D structures, reactions, mechanisms, and spectra — **entirely offline via RDKit**. Three stars already, 87 score total.
+
+This is a niche pick but a significant one. Researchers who can't send proprietary compound data to a cloud API now have a viable path to AI-assisted chemistry workflows. Offline-first scientific tooling is an underserved corner of the MCP ecosystem.
+
+### 3. The Vault That Keeps Secrets From the Model
+
+[io.github.wundervault/wundervault-mcp](/s/io-github-wundervault-wundervault-mcp) describes itself as a **zero-knowledge secret vault for AI agents**: secrets get injected into commands but are never exposed to the model itself. 86 score, zero stars yet — but the concept is sharp.
+
+<PullQuote>An AI agent that can act on your secrets without ever seeing them is a fundamentally different security posture than what most teams are running today.</PullQuote>
+
+This addresses a real problem: you want your agent to run authenticated commands, but you don't want API keys sitting in the model's context window. The architecture matters here, and the team deserves scrutiny — but the premise is sound.
+
+### 4. Scrivener Finally Gets Serious MCP Support
+
+[Scrivener MCP](/s/scrivener-mcp) ships **60+ tools** for document management, writing analysis, content enhancement, semantic search, and character/plot tracking inside Scrivener. It works with Claude, ChatGPT, and other assistants.
+
+Writers using Scrivener for novels, screenplays, or long-form research have been oddly underserved by the MCP ecosystem until now. Sixty-plus tools is not a shallow integration — that's a real attempt at making Scrivener AI-native.
+
+### 5. Test Automation Across Every Stack
+
+[Mk Qa Master](/s/mk-qa-master) drives **pytest, Jest, Cypress, Go, and Maestro** from a single MCP server, covering web and mobile (iOS, Android, BlueStacks). At 36 stars and a 64 score, it's already finding an audience.
+
+The breadth is the story here. Most testing MCP servers pick a lane. This one doesn't.
+
+---
+
+<SectionLabel>Trending This Week</SectionLabel>
+
+## Web Scraping Is Having a Moment
+
+Three of the top ten trending servers are web scraping tools — and the numbers are striking.
+
+[Firecrawl](/s/firecrawl) added **381 stars this week** alone, sitting at 133,968 total. [Scrapling](/s/scrapling) added 276 stars on top of its 64,514 base. [Puppeteer Core](/s/puppeteer-core) picked up 194 stars heading toward 95,022.
+
+<Callout type="info">Firecrawl, Scrapling, and Puppeteer Core collectively added 851 stars this week. Web data extraction is clearly where AI agent builders are focusing their energy right now.</Callout>
+
+Something is clearly driving demand for clean web data pipelines. My read: as agentic workflows mature, the bottleneck shifts from "can the model reason?" to "can the model get good data?" Scraping infrastructure is becoming foundational agent plumbing.
+
+## The Claude Flow Duopoly
+
+Both [Claude Flow](/s/claude-flow) and [Claude Flow MCP Server](/s/io-github-ruvnet-claude-flow) landed in the trending list — adding 145 and 136 stars respectively. Together they represent nearly **120,000 combined stars** and a serious bet on multi-agent swarm orchestration.
+
+The top-scored server in the entire trending list, at **94**, is Claude Flow. Enterprise agent orchestration with 60+ specialized agents isn't a weekend project — and the market seems to be noticing.
+
+<PullQuote>When two variants of the same orchestration framework both trend in the same week, the underlying idea has escaped the early-adopter ghetto.</PullQuote>
+
+## ByteDance Is Building Quietly
+
+Both [UI TARS Desktop](/s/ui-tars-desktop) (+140 stars) and [io.github.bytedance/mcp-server-search](/s/io-github-bytedance-mcp-server-search) (+137 stars) trended this week under the ByteDance umbrella. Combined star base: over 73,000.
+
+A major tech company shipping open-source MCP tooling at this scale is worth watching. The search server is functional and straightforward; UI TARS is more ambitious — a multimodal agent stack connecting AI models to desktop automation. Neither is a toy.
+
+---
+
+<SectionLabel>The Bigger Picture</SectionLabel>
+
+## What This Week Actually Tells Us
+
+The 1,062 new servers aren't noise — they're signal. The categories breaking through this week (offline scientific tools, zero-knowledge secrets management, memory graphs, full-stack test automation) suggest **builders are solving real production problems**, not just prototyping.
+
+<Callout type="tip">If you're evaluating MCP servers for production use, this week's debut scores are unusually high. mcp-memory-graph (91), chemdraw-mcp (87), and wundervault-mcp (86) all cleared the bar for serious consideration.</Callout>
+
+The scraping trend reinforces something important: **data infrastructure is becoming the competitive moat for AI agents**, not the models themselves. The teams investing in clean, reliable data pipelines now are building advantages that won't be easy to replicate.
+
+23,812 servers and counting. The ecosystem isn't maturing — it's accelerating.
+
+---
