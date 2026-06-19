@@ -17,6 +17,16 @@
     "MCP vs API what is the difference"
   ],
   "publishedCveIds": [
+    "GHSA-6jcq-6546-qrrw",
+    "GHSA-8ccj-p46r-jwqq",
+    "GHSA-29w3-p9w9-wc47",
+    "GHSA-jxcw-qp4h-6jfq",
+    "GHSA-7qw2-w5rc-37x2",
+    "GHSA-f44v-7qgw-9gh9",
+    "GHSA-gcq3-mfvh-3x25",
+    "GHSA-p75f-6fp4-p57w",
+    "GHSA-x92v-rpx6-p6cw",
+    "GHSA-892r-p3jq-jp24",
     "CVE-2026-53840",
     "CVE-2026-54328",
     "GHSA-69qj-pvh9-c5wg",

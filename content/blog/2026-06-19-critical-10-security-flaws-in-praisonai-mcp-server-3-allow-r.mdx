@@ -1,0 +1,111 @@
+---
+title: "CRITICAL: 10 Security Flaws in PraisonAI MCP Server—3 Allow Remote Code Execution"
+description: "PraisonAI MCP server disclosed with 3 critical RCE vulnerabilities, 7 high-severity auth bypasses, and arbitrary file access. Production deployments must be isolated immediately."
+hook: "PraisonAI just disclosed 10 security advisories—3 critical RCE flaws, zero-auth endpoints, and arbitrary file read/write. If you're running it in production, take it offline now. Full breakdown inside."
+date: "2026-06-19"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+## CRITICAL: 10 Security Advisories Expose PraisonAI MCP Server to Remote Code Execution
+
+PraisonAI, a popular open-source MCP server for AI agent orchestration, has been hit with **10 security advisories** in a single disclosure cycle. Three are **critical** severity — meaning remote attackers can execute arbitrary code on systems running this server. If you're using [Praisonai MCP Server](/s/io-github-mervinpraison-praisonai), stop and read this now.
+
+<Callout type="warning">
+**Immediate action required**: Do not expose PraisonAI to untrusted networks. All advisories were published June 18, 2026. Updates may not be available yet — verify your version and apply patches as they land.
+</Callout>
+
+---
+
+<SectionLabel>The Three Critical Issues</SectionLabel>
+
+### 1. OS Command Injection via Unauthenticated MCP Endpoint (GHSA-p75f-6fp4-p57w)
+
+The `/api/mcp/connect` endpoint accepts `command` and `args` from any remote client — no authentication required. An attacker can POST a crafted request and execute **any local command** as the PraisonAI service user.
+
+**Impact**: Full system compromise. An attacker running on the internet can spawn shells, steal credentials, or pivot into internal networks.
+
+**What to do**: Disable the MCP connect endpoint entirely if you don't need it. Firewall the UI host to trusted IPs only. Await a patched version.
+
+---
+
+### 2. Arbitrary File Read/Write via `multiedit` Tool (GHSA-29w3-p9w9-wc47)
+
+The `multiedit` tool has **zero path validation**. If an LLM prompt or user input influences tool arguments, an attacker can read `/etc/shadow`, `~/.ssh/id_rsa`, `~/.aws/credentials`, or overwrite any file on the system.
+
+**Impact**: Credential theft and data exfiltration. Every file the PraisonAI process can access is exposed.
+
+**What to do**: Restrict file system access at the OS level using SELinux, AppArmor, or containers. Never run PraisonAI with broad file permissions. Disable the `multiedit` tool if unused.
+
+---
+
+### 3. AgentOS Unauthenticated Agent Invocation (GHSA-892r-p3jq-jp24)
+
+PraisonAI's `AgentOS` deployment remains completely unauthenticated even after a published "patch." Attackers can invoke remote agents and trigger arbitrary workflows.
+
+**Impact**: Unauthorized agent execution, data pipeline manipulation, and potential downstream damage.
+
+**What to do**: Do not expose AgentOS endpoints to the internet. The listed "patched" version `4.5.128` and current `4.6.57` are **still vulnerable**. Wait for a genuine fix.
+
+---
+
+<PullQuote>
+Three critical vulnerabilities that allow unauthenticated remote code execution and arbitrary file access. This is not a flaw in isolation — it's a pattern of authentication and validation failures across the entire codebase.
+</PullQuote>
+
+---
+
+<SectionLabel>Seven High-Severity Issues</SectionLabel>
+
+The remaining advisories are no less damaging — they just require slightly more setup to exploit. Here's the rundown:
+
+### High-Severity Vulnerability Summary
+
+| Advisory | Threat | GHSA ID |
+|----------|--------|---------|
+| Sandbox fallback to unrestricted execution | Code execution when Landlock unavailable | GHSA-6jcq-6546-qrrw |
+| `PRAISONAI_CALL_AUTH=disabled` env bypass | Complete auth bypass on `/invoke` endpoint | GHSA-8ccj-p46r-jwqq |
+| Recipe policy bypass via YAML manipulation | Dangerous tools execute despite restrictions | GHSA-7qw2-w5rc-37x2 |
+| GitHub template cache path traversal | Directory deletion and arbitrary file write | GHSA-f44v-7qgw-9gh9 |
+| Code agent tools fail open | File access without workspace boundary | GHSA-gcq3-mfvh-3x25 |
+| Webhook signature verification skipped | Forged webhook events in WhatsApp/Linear bots | GHSA-x92v-rpx6-p6cw |
+| A2U event streaming unauthenticated | Unprotected event subscription and streaming | GHSA-jxcw-qp4h-6jfq |
+
+<Callout type="info">
+**Pattern recognition**: Nearly every advisory involves either missing authentication, failed-open validation, or silent fallbacks to unsafe behavior. These aren't isolated bugs — they're architectural choices that need redesign.
+</Callout>
+
+---
+
+<SectionLabel>What You Should Do Right Now</SectionLabel>
+
+### For Production Deployments
+
+1. **Take PraisonAI offline** if it's exposed to untrusted networks.
+2. **Rotate all credentials** that might be accessible to the process (AWS keys, API tokens, SSH keys).
+3. **Check logs** for unauthorized API calls to `/api/mcp/connect`, `/api/v1/agents/*/invoke`, or webhook endpoints.
+4. **Firewall aggressively**: Restrict access to localhost or specific IP ranges only.
+5. **Monitor the MCPpedia advisory feed** and the [PraisonAI GitHub repository](https://github.com/MervinPraison/PraisonAI) for patched versions.
+
+### For Development
+
+- **Do not set `PRAISONAI_CALL_AUTH=disabled`** in any config, especially Docker Compose files.
+- **Explicitly set a workspace boundary** before using code tools.
+- **Disable dangerous tools** by default unless explicitly needed.
+- **Validate all file paths** in custom tools — never trust LLM output for file operations.
+
+### For the PraisonAI Team
+
+This disclosure reveals systemic issues in design, not one-off oversights. A security audit and comprehensive redesign of the authentication layer are mandatory before the next release.
+
+---
+
+<ScoreBreakdown>
+<ScoreRow label="Critical RCE Vulns" points="3" description="OS command injection, arbitrary file write, unauthenticated agents" />
+<ScoreRow label="Authentication Failures" points="7" description="Bypass, missing auth, fail-open patterns across endpoints" />
+<ScoreRow label="Days Since Disclosure" points="0" description="All advisories published June 18, 2026" />
+</ScoreBreakdown>
+
+---
+
+**Bottom line**: [Praisonai MCP Server](/s/io-github-mervinpraison-praisonai) is currently unsafe for production without heavy network isolation. The breadth and severity of these issues suggest the codebase has never undergone serious security review. Do not upgrade blindly — wait for patches that actually fix the root causes, not surface symptoms. If you need MCP automation right now, look for alternatives until the PraisonAI team ships a hardened release.
