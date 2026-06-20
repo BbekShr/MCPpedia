@@ -17,6 +17,13 @@
     "MCP vs API what is the difference"
   ],
   "publishedCveIds": [
+    "CVE-2026-53865",
+    "CVE-2026-53858",
+    "CVE-2026-53849",
+    "CVE-2026-53846",
+    "CVE-2026-53853",
+    "CVE-2026-53857",
+    "CVE-2026-53855",
     "GHSA-6jcq-6546-qrrw",
     "GHSA-8ccj-p46r-jwqq",
     "GHSA-29w3-p9w9-wc47",
