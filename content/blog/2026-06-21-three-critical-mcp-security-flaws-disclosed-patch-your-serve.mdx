@@ -1,0 +1,77 @@
+---
+title: "Three Critical MCP Security Flaws Disclosed — Patch Your Servers Now"
+description: "Two HIGH-severity SSRF and DoS vulnerabilities hit Searxng; a CRITICAL OS command injection flaw found in Gemini Tool. Update immediately."
+hook: "Two HIGH-severity flaws in Searxng MCP + a CRITICAL vulnerability in Gemini Tool let attackers read private files and crash servers. Patches are live. Your move."
+date: "2026-06-21"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+# Three Critical Security Advisories Hit Popular MCP Servers — Patch Now
+
+The MCP ecosystem just got a reality check. Three serious vulnerabilities — two HIGH severity, one CRITICAL — have been disclosed across widely-used servers, and they expose fundamental trust assumptions in how tools handle untrusted input and network requests. If you're running [Mcp Searxng](/s/mcp-searxng) or [Gemini Mcp Tool](/s/gemini-mcp-tool), you need to act today.
+
+<Callout type="warning">
+CRITICAL: Two servers have unpatched vulnerabilities affecting production systems. Check your deployments immediately.
+</Callout>
+
+---
+
+<SectionLabel>The Searxng Disasters: Two Holes in One Tool</SectionLabel>
+
+[Mcp Searxng](/s/mcp-searxng) has been hit with **two separate HIGH-severity flaws** in the same `web_url_read` function. Both are exploitable, both are bad, and the timing of their disclosure suggests they were found together during a security audit.
+
+### 1. DNS Rebinding SSRF (GHSA-mrvx-jmjw-vggc)
+
+The first hole is a textbook **Server-Side Request Forgery (SSRF) vulnerability via DNS rebinding**. Here's what breaks: the `assertUrlAllowed()` function checks the *syntactic hostname string* against a blocklist of private IPs and internal hostnames — but it never actually resolves the domain. An attacker can register a domain that *looks* safe (like `example.com`) but resolves to `127.0.0.1` or an internal IP range. The validator passes it. The server fetches it. Your internal API is exposed.
+
+**Who's at risk:** Anyone using `web_url_read` to fetch URLs from semi-trusted sources, or in environments where DNS hijacking is possible.
+
+**What to do:** Update immediately when a patch drops. In the meantime, restrict network access to private IP ranges at the firewall level.
+
+### 2. Unbounded Memory Read (GHSA-xcqx-9jf5-w339)
+
+The second flaw is sneakier. Searxng enforces a 5 MiB response-size limit by checking the `Content-Length` HTTP header. But if the server doesn't send that header — which is totally valid HTTP — the check returns `null`, the guard condition short-circuits, and the entire response body loads into memory *without any cap*.
+
+An attacker hosting a malicious server can feed your instance gigabytes of data, causing memory exhaustion, crashes, or denial of service.
+
+<PullQuote>
+The 5 MiB limit only works if the remote server *volunteers* the response size. If it doesn't, there is no limit.
+</PullQuote>
+
+**Who's at risk:** Anyone using `web_url_read` against untrusted or attacker-controlled URLs.
+
+**What to do:** Patch on release. Add system-level memory limits (`ulimit`) as a temporary failsafe.
+
+---
+
+<SectionLabel>Gemini Tool: OS Command Injection via Prompt Input</SectionLabel>
+
+[Gemini Mcp Tool](/s/gemini-mcp-tool) has a **CRITICAL vulnerability (CVE-2026-0755)** that lets untrusted prompts become arbitrary file reads or OS command execution.
+
+The `@file` parser in the Gemini CLI accepts file references like `@/etc/passwd` or `@~/.ssh/id_rsa` directly from user input. On Windows, unquoted cmd.exe metacharacters can escape into shell commands. On Unix, path traversal (`@../../secret`) bypasses any directory boundary checks.
+
+**The impact:** An attacker can read any file the process has access to, exfiltrate SSH keys, environment variables, or configuration secrets. On Windows, they can execute arbitrary OS commands.
+
+**The good news:** Version **1.1.6** fixes this with three hardening measures:
+- Removed broken shell quoting logic
+- Added `assertSafeFileReferences()` to contain `@file` refs to the working directory
+- Hardened Windows command escaping
+
+**What to do:** Upgrade to **1.1.6 or later immediately**. This is not optional.
+
+<Callout type="fire">
+If you're exposing Gemini MCP Tool to user input or untrusted prompts, assume compromise until patched.
+</Callout>
+
+---
+
+<SectionLabel>What This Means for the MCP Ecosystem</SectionLabel>
+
+These advisories expose a pattern: **network-facing and input-handling code in MCP servers is being built without sufficient security rigor**. URL validators that skip DNS resolution. Size limits that assume HTTP headers are honest. File parsers that trust prompt input.
+
+The good news: disclosure is happening, patches are being shipped, and the community is catching these before they hit zero-day exploits.
+
+The bad news: you have to keep up. Update your servers. Monitor MCPpedia for security advisories. And if you're writing an MCP server that touches the network or parses untrusted input — think like an attacker.
+
+**The verdict:** These are serious, exploitable flaws in production-grade tools. Patch them today, not next week.
