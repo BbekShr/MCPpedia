@@ -1,0 +1,90 @@
+---
+title: "Mailtrap's Official MCP Server Gives AI Agents a Full Email Stack"
+description: "12 tools covering sandbox testing, live sending, templates, logs, and stats — with a perfect security score."
+hook: "Your AI agent can now send emails, test them in a sandbox, and pull delivery stats — all in one conversation. Mailtrap's official MCP server scores a perfect 30/30 on security. Here's what 12 tools looks like in practice."
+date: "2026-06-23"
+tags: ["spotlight","review"]
+category: "server-spotlight"
+featuredServers: ["io-mailtrap-mcp"]
+---
+## The Email Testing Layer Your AI Workflow Has Been Missing
+
+Most AI-powered apps eventually need to send email. The problem? Testing email sending without spamming real inboxes is a pain — and wiring up your LLM to a transactional email provider usually means bespoke code, manual API calls, and a lot of context-switching.
+
+[io.mailtrap/mcp](/s/io-mailtrap-mcp) is Mailtrap's official MCP server, and it closes that gap decisively.
+
+<SectionLabel>What It Does</SectionLabel>
+
+Mailtrap has long been the go-to tool for developers who need a safe sandbox to test email delivery. This MCP server wraps that infrastructure — and Mailtrap's production sending service — into **12 discrete tools** your AI agent can call directly.
+
+That's the whole stack: sandbox testing, live sending, template management, delivery logs, and sending statistics. All of it accessible from a single MCP interface.
+
+<PullQuote>You can ask your AI to send a transactional email, check its delivery stats, and inspect the sandbox copy — without leaving the conversation.</PullQuote>
+
+<SectionLabel>The Toolset, Unpacked</SectionLabel>
+
+The 12 tools break cleanly into four functional groups:
+
+**Sending:**
+- `send-email` — sends to real recipients via Mailtrap's production service
+- `send-sandbox-email` — routes to a sandbox inbox for safe testing (supports a configurable `sandbox_id`)
+- `send-template-email` — fires off a stored template by UUID, with variable substitution
+
+**Inspection & Logs:**
+- `list-email-logs` — paginated log of sent emails with search filtering
+- `get-email-log` — detailed view of a specific sent message
+- `list-sandbox-messages` — browse messages in a test inbox
+- `get-sandbox-message` — inspect a specific sandbox message
+
+**Analytics:**
+- `get-sending-stats` — delivery statistics, groupable by day, week, month, domain, or category
+
+**Template Management:**
+- `list-templates` — paginated list of stored templates
+- `create-template` — build a new template with HTML and optional plain-text fallback
+
+**Account Management:**
+- `list-sub-accounts` — view all sub-accounts in your organization
+- `create-sub-account` — provision a new sub-account programmatically
+
+<Callout type="tip">The `send-template-email` tool accepts a `variables` object for dynamic substitution — so your agent can personalize emails without constructing raw HTML every time.</Callout>
+
+The design is smart: sensitive defaults like `DEFAULT_FROM_EMAIL`, `MAILTRAP_SANDBOX_ID`, and `MAILTRAP_TEST_INBOX_ID` can be set as environment variables, so agents don't need to pass credentials explicitly on every call.
+
+<SectionLabel>Score Breakdown</SectionLabel>
+
+With an **89 overall score**, this server sits well above average. Here's where it lands across the five dimensions:
+
+<ScoreBreakdown>
+  <ScoreRow label="Security" points="30" description="Full marks — env-based credential management, no secrets in tool calls" />
+  <ScoreRow label="Maintenance" points="18" description="Official repo from Mailtrap themselves — actively maintained" />
+  <ScoreRow label="Documentation" points="15" description="Solid coverage; schema definitions are clear and complete" />
+  <ScoreRow label="Efficiency" points="16" description="Clean tool design, sensible required vs. optional parameter splits" />
+  <ScoreRow label="Compatibility" points="10" description="NPM-native (mailtrap package); no pip support currently" />
+</ScoreBreakdown>
+
+The **security score is perfect** — a meaningful signal for anything involving email sending. API credentials stay in environment variables; tool schemas never ask you to pass tokens inline. That matters when you're operating at agent scale.
+
+<Callout type="info">61 GitHub stars and counting — modest, but this is an official vendor release, not a community experiment. The backing of Mailtrap's engineering team is worth more than star count here.</Callout>
+
+<SectionLabel>Who Should Use This</SectionLabel>
+
+This server earns its place in several workflows:
+
+**Developers building AI agents** that trigger transactional email — order confirmations, password resets, notifications — can now let the agent handle the full flow, including inspecting what actually got sent.
+
+**QA and testing workflows** get the most obvious win. An AI that can send to the sandbox, retrieve the message, and verify rendering or content is a genuinely useful automation loop — no human in the middle.
+
+**DevOps and platform teams** managing multi-tenant SaaS can use `create-sub-account` and `list-sub-accounts` to let agents handle provisioning tasks that would otherwise require manual portal access.
+
+**Email marketers** experimenting with AI-generated campaigns can draft, create a template, and test delivery — all within a single agent session.
+
+<PullQuote>The sandbox + production split is what makes this server genuinely trustworthy for agent use — your AI can't accidentally email real users while you're iterating.</PullQuote>
+
+<Callout type="fire">The combo of `send-template-email` + `get-sending-stats` is particularly powerful: build a campaign, send it, and have the agent report back on delivery rates — all without touching a dashboard.</Callout>
+
+<SectionLabel>Bottom Line</SectionLabel>
+
+[io.mailtrap/mcp](/s/io-mailtrap-mcp) is one of the cleaner official vendor integrations in the MCP ecosystem. Twelve well-scoped tools, a perfect security score, and the credibility of being maintained by the Mailtrap team directly.
+
+If your AI stack touches email — even occasionally — this server deserves a permanent slot in your setup.
