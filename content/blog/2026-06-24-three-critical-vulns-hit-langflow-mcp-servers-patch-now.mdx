@@ -1,0 +1,93 @@
+---
+title: "Three Critical Vulns Hit Langflow MCP Servers—Patch Now"
+description: "Critical RCE and IDOR vulnerabilities exposed in MCPin10. Two critical, one high-severity. Unauthenticated DoS also disclosed."
+hook: "3 security flaws just hit Langflow MCP servers—2 critical, including arbitrary file read + RCE. If you run file uploads or multi-tenant flows, patch today or disable them."
+date: "2026-06-24"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+# Three Critical Vulnerabilities Strike Langflow — Here's What You Need to Know Right Now
+
+A security researcher just disclosed **three vulnerabilities in [MCPin10](/s/mcpin10)** — including two marked critical. If you're running Langflow-based MCP deployments, stop what you're doing and read this.
+
+The flaws range from arbitrary file read with remote code execution to unauthenticated denial-of-service attacks. None of them are theoretical. All three landed public disclosure on June 19th. Your move.
+
+---
+
+<SectionLabel>The Vulnerabilities</SectionLabel>
+
+## Critical: Arbitrary File Read + RCE via BaseFileComponent
+
+**CVE-2026-55447** is the worst of the bunch. Six components all inherit from `BaseFileComponent` and are vulnerable:
+
+- Docling (`DoclingInlineComponent`)
+- Docling Serve (`DoclingRemoteComponent`)
+- Read File (`FileComponent`)
+- NVIDIA Retriever Extraction (`NvidiaIngestComponent`)
+- Video File (`VideoFileComponent`)
+- Unstructured API (`UnstructuredComponent`)
+
+An attacker who controls file input to any of these nodes can **read arbitrary files from your system and execute code**. Think about that in the context of a RAG pipeline — if someone can poison document uploads, they own your server.
+
+<Callout type="warning">This is not a theoretical edge case. BaseFileComponent processes user-controlled files directly. Your RAG systems are exposed if you haven't patched.</Callout>
+
+---
+
+## Critical: Insecure Direct Object Reference (IDOR) in Flow Execution
+
+**CVE-2026-55255** lets authenticated users execute flows they shouldn't have access to. The vulnerability lives in the `/api/v1/responses` endpoint — an attacker just specifies someone else's flow ID and runs it.
+
+The impact here depends on what your flows do. If they interact with databases, external APIs, or sensitive data sources, an authenticated user can pivot into other workflows and abuse them.
+
+<PullQuote>An authenticated user can execute any flow in the system by guessing or enumerating flow IDs.</PullQuote>
+
+---
+
+## High: Unauthenticated Denial-of-Service
+
+**CVE-2026-55446** is the sneakiest. The `/api/v1/files/upload/` endpoint doesn't require authentication and will happily process **malformed multipart form requests with extremely large boundaries**. An attacker sends one request and crashes Langflow for every user indefinitely.
+
+No credentials needed. No user interaction required. Just a crafted HTTP request.
+
+<Callout type="tip">This can be mitigated with request size limits at your reverse proxy (nginx, Cloudflare) while you patch.</Callout>
+
+---
+
+<SectionLabel>What You Should Do</SectionLabel>
+
+### 1. Check your version
+
+These advisories affect [MCPin10](/s/mcpin10). If you're running Langflow on top of MCP infrastructure, audit which versions are deployed.
+
+### 2. Patch immediately
+
+The researchers published these on June 19th. Assume active exploitation is already happening. Prioritize the two critical flaws.
+
+### 3. Disable file uploads temporarily
+
+If you can't patch today, disable the affected file components until you can upgrade. The IDOR and DoS attacks are more complex to mitigate at the network level.
+
+### 4. Rotate flow IDs and API tokens
+
+If you've been running unpatched for any length of time, treat it as a potential compromise. Issue new authentication tokens and audit flow execution logs for suspicious activity.
+
+---
+
+<SectionLabel>The Bigger Picture</SectionLabel>
+
+Three vulnerabilities in one package, all within the same disclosure window, suggests **deeper architectural issues**. BaseFileComponent shouldn't trust file input by default. API endpoints shouldn't assume all authentication is equal. File uploads should respect strict size limits.
+
+This isn't just about patching — it's about whether MCP server implementations are taking security seriously as they scale.
+
+Check your deployments. Update your systems. And if you're building new MCP servers, learn from Langflow's mistakes.
+
+---
+
+<ScoreBreakdown>
+<ScoreRow label="CVE-2026-55447 (RCE)" points="CRITICAL" description="Arbitrary file read + code execution via BaseFileComponent" />
+<ScoreRow label="CVE-2026-55255 (IDOR)" points="CRITICAL" description="Authenticated users can execute flows they don't own" />
+<ScoreRow label="CVE-2026-55446 (DoS)" points="HIGH" description="Unauthenticated crash via malformed file upload" />
+</ScoreBreakdown>
+
+---
