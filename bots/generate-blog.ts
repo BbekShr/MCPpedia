@@ -205,7 +205,7 @@ function daysAgo(n: number): string {
 // stay on Sonnet; ephemeral/templated posts (security alerts, trending) run on
 // Haiku 4.5 — ~3x cheaper ($1/$5 vs $3/$15 per 1M tokens) and plenty capable
 // for these short, data-driven formats.
-const DEFAULT_MODEL = 'claude-sonnet-4-6'
+const DEFAULT_MODEL = 'claude-sonnet-5'
 const HAIKU_MODEL = 'claude-haiku-4-5'
 
 function modelForType(type: ArticlePlan['type']): string {
@@ -351,16 +351,23 @@ const securityOnly = process.argv.includes('--security-only')
 const prepareMode = process.argv.includes('--prepare')
 const finalizeMode = process.argv.includes('--finalize')
 
-// Scratch files exchanged with the Claude Code action. These live outside
-// content/blog/ so the workflow's `git add content/blog/` never commits them.
-const WORK_DIR = process.env.BLOG_WORK_DIR || path.join(process.cwd(), 'blog-work')
-const PROMPT_FILE = path.join(WORK_DIR, 'security-prompt.txt')
-const OUTPUT_FILE = path.join(WORK_DIR, 'security-output.md')
-const JOB_FILE = path.join(WORK_DIR, 'security-job.json')
+// runFull produces at most 2 articles, so prepare emits at most 2 jobs.
+const MAX_JOBS = 2
 
-interface SecurityJob {
+// Scratch files exchanged with the Claude Code action, one set per planned
+// article (job-0, job-1, ...). These live outside content/blog/ so the
+// workflow's `git add content/blog/` never commits them.
+const WORK_DIR = process.env.BLOG_WORK_DIR || path.join(process.cwd(), 'blog-work')
+const jobPath = (i: number) => path.join(WORK_DIR, `job-${i}.json`)
+const promptPath = (i: number) => path.join(WORK_DIR, `prompt-${i}.txt`)
+const outputPath = (i: number) => path.join(WORK_DIR, `output-${i}.md`)
+
+// A planned article, persisted between --prepare and --finalize. `data` is the
+// same ArticlePlan.data used to build frontmatter/meta, round-tripped through
+// JSON — enough for buildArticleFromResponse and the meta bookkeeping.
+interface BlogJob {
   type: ArticlePlan['type']
-  alertKeys: string[]
+  data: Record<string, unknown>
 }
 
 /** Append a `key=value` line to $GITHUB_OUTPUT so later workflow steps can gate on it. */
@@ -719,17 +726,64 @@ function getTagsForType(type: string): string[] {
   return tagMap[type] || ['mcp']
 }
 
-// ---------- Security-only prepare / finalize (subscription-backed) ----------
+/**
+ * Write the finished article to disk and record its side effects in meta, so
+ * the next run doesn't regenerate the same roundup/spotlight/CVE. Shared by the
+ * direct generation path (runFull) and the subscription --finalize path, which
+ * both arrive here with an assembled article + its plan.
+ */
+function writeArticleAndUpdateMeta(
+  result: { slug: string; content: string; featuredServers: string[] },
+  plan: Pick<ArticlePlan, 'type' | 'data'>,
+  meta: Meta,
+): void {
+  const filePath = path.join(blogDir, `${result.slug}.mdx`)
+  fs.writeFileSync(filePath, result.content)
+  console.log(`  Written: ${result.slug}.mdx`)
+
+  // Update meta — only after a successful write, so a failed article doesn't
+  // mark its topic/CVEs as "published".
+  if (plan.type === 'weekly-roundup') {
+    meta.lastRoundupDate = todayStr()
+  }
+  if (plan.type === 'server-spotlight' && result.featuredServers.length > 0) {
+    meta.lastSpotlightSlugs = [
+      ...result.featuredServers.slice(0, 3),
+      ...meta.lastSpotlightSlugs.slice(0, 7),
+    ]
+  }
+  if (plan.type === 'category-deep-dive') {
+    meta.lastCategoryDeepDive = (plan.data.category as string) || null
+    meta.lastCategoryDeepDiveDate = todayStr()
+  }
+  if (plan.type === 'seo-guide' && plan.data.topic) {
+    const topic = plan.data.topic as typeof SEO_TOPICS[number]
+    meta.publishedSeoTopics = [...(meta.publishedSeoTopics || []), topic.keyword]
+    meta.lastSeoTopicIndex = SEO_TOPICS.findIndex(t => t.keyword === topic.keyword)
+  }
+  if (plan.type === 'security-alert') {
+    const covered = (plan.data.alerts as Array<{ id: string; cve_id?: string | null }>) || []
+    // Keep the most recent ~200 keys — enough to cover the 7-day window many
+    // times over without growing .meta.json unbounded.
+    meta.publishedCveIds = [...covered.map(alertKey), ...meta.publishedCveIds].slice(0, 200)
+  }
+}
+
+// ---------- Prepare / finalize (subscription-backed generation) ----------
+//
+// Instead of calling the Anthropic API directly, prepare emits one prompt file
+// per planned article; the Claude Code action (billed to a Claude subscription)
+// writes each article to output-<i>.md; finalize turns those back into MDX. The
+// deterministic planning/slug/frontmatter/meta work stays here in TS.
 
 /**
- * Build the prompt file the Claude Code action consumes. We fold SYSTEM_PROMPT
- * into the user turn (the action supplies its own Claude Code system prompt) and
- * append an explicit instruction to Write the finished article to OUTPUT_FILE —
- * that file, not stdout, is how the prose comes back to --finalize.
+ * Build the prompt file the Claude Code action consumes for job `i`. We fold
+ * SYSTEM_PROMPT into the user turn (the action supplies its own Claude Code
+ * system prompt) and append an explicit instruction to Write the finished
+ * article to output-<i>.md — that file, not stdout, is how the prose comes back.
  */
-function writeSecurityPrompt(plan: ArticlePlan) {
-  fs.mkdirSync(WORK_DIR, { recursive: true })
-  const relOutput = path.relative(process.cwd(), OUTPUT_FILE)
+function writeJobPrompt(i: number, plan: ArticlePlan) {
+  const relOutput = path.relative(process.cwd(), outputPath(i))
   const combined = [
     SYSTEM_PROMPT,
     '',
@@ -742,85 +796,98 @@ function writeSecurityPrompt(plan: ArticlePlan) {
     `When the article is complete, use the Write tool to save it — including the trailing \`\`\`json metadata block described above — to the file: ${relOutput}`,
     'Write that file and nothing else. Do not create or modify any other file, and do not print the article to stdout. The saved file is the only deliverable.',
   ].join('\n')
-  fs.writeFileSync(PROMPT_FILE, combined)
+  fs.writeFileSync(promptPath(i), combined)
 }
 
-/** --prepare: decide whether there's a security alert worth publishing today. */
+/**
+ * --prepare: plan the article(s) and emit a prompt + job file for each. Sets the
+ * `job_count` and `model_<i>` step outputs the workflow uses to fan out the
+ * Claude Code action. No model call happens here.
+ */
 async function runPrepare() {
-  console.log('=== MCPpedia Blog Generator (security-only, prepare) ===')
+  console.log(`=== MCPpedia Blog Generator (${securityOnly ? 'security-only, ' : ''}prepare) ===`)
   console.log(new Date().toISOString())
 
+  fs.mkdirSync(WORK_DIR, { recursive: true })
   const meta = loadMeta()
-  const plans = await planArticles(meta)
-  const plan = plans.find(p => p.type === 'security-alert')
+  const plans = (await planArticles(meta)).slice(0, MAX_JOBS)
 
-  if (!plan) {
-    console.log('No new security alerts to publish today.')
-    setStepOutput('has_job', 'false')
+  if (plans.length === 0) {
+    console.log('Nothing to generate — no new alerts / insufficient data.')
+    setStepOutput('job_count', '0')
     const run = await BotRun.start('generate-blog')
-    run.setSummary({ mode: 'security-prepare', reason: 'no new alerts' })
+    run.setSummary({ mode: 'prepare', jobCount: 0 })
     await run.finish()
     return
   }
 
-  const alertKeys = (plan.data.alerts as Array<{ id: string; cve_id?: string | null }>).map(alertKey)
-  const job: SecurityJob = { type: plan.type, alertKeys }
-  fs.mkdirSync(WORK_DIR, { recursive: true })
-  fs.writeFileSync(JOB_FILE, JSON.stringify(job, null, 2))
-  writeSecurityPrompt(plan)
-
-  console.log(`Prepared security-alert job for ${alertKeys.length} advisory(ies): ${alertKeys.join(', ')}`)
-  console.log(`  Prompt -> ${PROMPT_FILE}`)
-  setStepOutput('has_job', 'true')
+  plans.forEach((plan, i) => {
+    const job: BlogJob = { type: plan.type, data: plan.data }
+    fs.writeFileSync(jobPath(i), JSON.stringify(job, null, 2))
+    writeJobPrompt(i, plan)
+    setStepOutput(`model_${i}`, modelForType(plan.type))
+    console.log(`  job ${i}: ${plan.type} (${modelForType(plan.type)}) -> ${promptPath(i)}`)
+  })
+  setStepOutput('job_count', String(plans.length))
+  console.log(`Prepared ${plans.length} job(s): ${plans.map(p => p.type).join(', ')}`)
 }
 
 /**
- * --finalize: the Claude Code action has written the article to OUTPUT_FILE.
- * Turn it into a real MDX post and record the covered CVEs so tomorrow's run
- * doesn't republish the same advisory.
+ * --finalize: for each prepared job, read the article the Claude Code action
+ * wrote to output-<i>.md, assemble it into MDX, and apply its meta side effects.
+ * Fails the job only if nothing at all was produced.
  */
 async function runFinalize() {
-  console.log('=== MCPpedia Blog Generator (security-only, finalize) ===')
+  console.log(`=== MCPpedia Blog Generator (${securityOnly ? 'security-only, ' : ''}finalize) ===`)
   console.log(new Date().toISOString())
 
-  if (!fs.existsSync(JOB_FILE)) {
-    console.error(`Missing job file at ${JOB_FILE} — did --prepare run?`)
-    process.exit(1)
-  }
-  if (!fs.existsSync(OUTPUT_FILE)) {
-    console.error(`Expected the generated article at ${OUTPUT_FILE}, but it is missing — the Claude Code step did not produce output.`)
-    process.exit(1)
-  }
-
-  const job = JSON.parse(fs.readFileSync(JOB_FILE, 'utf-8')) as SecurityJob
-  const response = fs.readFileSync(OUTPUT_FILE, 'utf-8')
-
   const run = await BotRun.start('generate-blog')
-  run.addProcessed(1)
   try {
-    // Security-alert data has no top-level server slugs, so featuredServers is
-    // empty here — matching the direct-generation path. Pass an empty data bag.
-    const article = buildArticleFromResponse(response, { type: job.type, data: { alerts: [] } })
-    if (!article) {
-      run.setSummary({ mode: 'security-finalize', written: 0 })
-      await run.fail('Generated security article was empty or too short')
+    const meta = loadMeta()
+    let written = 0
+    const errors: string[] = []
+
+    for (let i = 0; i < MAX_JOBS; i++) {
+      if (!fs.existsSync(jobPath(i))) continue
+      run.addProcessed(1)
+
+      if (!fs.existsSync(outputPath(i))) {
+        const msg = `job ${i}: no generated output at ${outputPath(i)} — the Claude Code step produced nothing`
+        console.error(`  ${msg}`)
+        errors.push(msg)
+        continue
+      }
+
+      const job = JSON.parse(fs.readFileSync(jobPath(i), 'utf-8')) as BlogJob
+      const response = fs.readFileSync(outputPath(i), 'utf-8')
+      const plan = { type: job.type, data: job.data }
+      const article = buildArticleFromResponse(response, plan)
+      if (!article) {
+        const msg = `job ${i} (${job.type}): generated article was empty or too short`
+        console.error(`  ${msg}`)
+        errors.push(msg)
+        continue
+      }
+
+      writeArticleAndUpdateMeta(article, plan, meta)
+      run.addUpdated(1)
+      written++
+    }
+
+    saveMeta(meta)
+
+    if (written === 0) {
+      // Jobs existed but none produced a usable article — surface as a failure
+      // so the workflow's commit step (also gated on job_count) isn't relied on
+      // to silently no-op.
+      run.setSummary({ mode: 'finalize', written, errors })
+      await run.fail(errors.length ? `All job(s) failed: ${errors.join('; ')}` : 'No prepared jobs to finalize')
       return
     }
 
-    const filePath = path.join(blogDir, `${article.slug}.mdx`)
-    fs.writeFileSync(filePath, article.content)
-    console.log(`  Written: ${article.slug}.mdx`)
-    run.addUpdated(1)
-
-    const meta = loadMeta()
-    // Keep the most recent ~200 keys — enough to cover the 7-day window many
-    // times over without growing .meta.json unbounded.
-    meta.publishedCveIds = [...job.alertKeys, ...meta.publishedCveIds].slice(0, 200)
-    saveMeta(meta)
-
-    run.setSummary({ mode: 'security-finalize', written: 1, cveIds: job.alertKeys })
+    run.setSummary({ mode: 'finalize', written, errors })
     await run.finish()
-    console.log('\nDone. 1 security-alert article written.')
+    console.log(`\nDone. ${written} article(s) written${errors.length ? `, ${errors.length} failed (non-fatal)` : ''}.`)
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error('Finalize failed:', msg)
@@ -871,38 +938,9 @@ async function runFull() {
         const result = await generateArticle(plan)
         if (!result) continue
 
-        const filePath = path.join(blogDir, `${result.slug}.mdx`)
-        fs.writeFileSync(filePath, result.content)
-        console.log(`  Written: ${result.slug}.mdx`)
+        writeArticleAndUpdateMeta(result, plan, meta)
         run.addUpdated(1)
         written++
-
-        // Update meta — only after a successful write, so a failed article
-        // doesn't mark its topic/CVEs as "published".
-        if (plan.type === 'weekly-roundup') {
-          meta.lastRoundupDate = todayStr()
-        }
-        if (plan.type === 'server-spotlight' && result.featuredServers.length > 0) {
-          meta.lastSpotlightSlugs = [
-            ...result.featuredServers.slice(0, 3),
-            ...meta.lastSpotlightSlugs.slice(0, 7),
-          ]
-        }
-        if (plan.type === 'category-deep-dive') {
-          meta.lastCategoryDeepDive = (plan.data.category as string) || null
-          meta.lastCategoryDeepDiveDate = todayStr()
-        }
-        if (plan.type === 'seo-guide' && plan.data.topic) {
-          const topic = plan.data.topic as typeof SEO_TOPICS[number]
-          meta.publishedSeoTopics = [...(meta.publishedSeoTopics || []), topic.keyword]
-          meta.lastSeoTopicIndex = SEO_TOPICS.findIndex(t => t.keyword === topic.keyword)
-        }
-        if (plan.type === 'security-alert') {
-          const covered = (plan.data.alerts as Array<{ id: string; cve_id?: string | null }>) || []
-          // Keep the most recent ~200 keys — enough to cover the 7-day window
-          // many times over without growing .meta.json unbounded.
-          meta.publishedCveIds = [...covered.map(alertKey), ...meta.publishedCveIds].slice(0, 200)
-        }
       } catch (err) {
         // One article failing (e.g. a 529 overload on the 2nd of 2) must NOT
         // sink the whole run — the articles that DID write should still be
