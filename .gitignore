@@ -58,3 +58,6 @@ social-posts-and-outreach.md
 # ad-hoc design/polish screenshots dumped at the repo root + comparison renders
 /*.png
 /comparison/
+
+# scratch files exchanged with the Claude Code action in the blog-security workflow
+/blog-work/

@@ -27,14 +27,43 @@ jobs:
 
       - run: npm ci
 
-      - name: Check for security alerts and publish if found
-        run: npx tsx bots/generate-blog.ts --security-only
+      # 1) Decide whether there's a new security advisory worth publishing.
+      #    This only touches Supabase — no model call — and emits a prompt file
+      #    (job 0) for the Claude Code step below when (and only when) there's an
+      #    alert. Sets job_count + model_0 outputs.
+      - name: Prepare security alert job
+        id: prep
+        run: npx tsx bots/generate-blog.ts --security-only --prepare
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      # 2) Generate the article with the Claude Code action. This bills a Claude
+      #    subscription via CLAUDE_CODE_OAUTH_TOKEN instead of Anthropic API
+      #    credits, so there's no ANTHROPIC_API_KEY here. Generate `claude
+      #    setup-token` locally (Pro/Max) and store the result as the
+      #    CLAUDE_CODE_OAUTH_TOKEN repository secret. Runs only when step 1 found
+      #    something to publish.
+      - name: Generate article with Claude (subscription)
+        if: steps.prep.outputs.job_count == '1'
+        uses: anthropics/claude-code-base-action@beta
+        with:
+          prompt_file: blog-work/prompt-0.txt
+          allowed_tools: "Write"
+          model: ${{ steps.prep.outputs.model_0 }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+      # 3) Turn the generated prose back into a proper MDX post and record the
+      #    covered CVEs in .meta.json so tomorrow's run doesn't republish them.
+      - name: Finalize article
+        if: steps.prep.outputs.job_count == '1'
+        run: npx tsx bots/generate-blog.ts --security-only --finalize
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Commit and push if new alerts
+        if: steps.prep.outputs.job_count == '1'
         run: |
           git config user.name "mcppedia-bot"
           git config user.email "bot@mcppedia.org"
