@@ -338,6 +338,36 @@ async function getEcosystemStats() {
 // ---------- CLI Flags ----------
 
 const securityOnly = process.argv.includes('--security-only')
+// The daily security workflow no longer calls the Anthropic API directly.
+// Instead it runs in two passes around the Claude Code GitHub Action (which
+// bills a Claude subscription via CLAUDE_CODE_OAUTH_TOKEN instead of metered
+// API credits):
+//   --prepare   query Supabase, dedup CVEs, and if there's something to write,
+//               emit a prompt file for the action to consume. No model call.
+//   --finalize  turn the article text the action produced back into a proper
+//               MDX file + update .meta.json. No model call.
+// The deterministic parts (slug, frontmatter, CVE bookkeeping) stay in TS; only
+// the prose generation moves to the subscription-backed action in between.
+const prepareMode = process.argv.includes('--prepare')
+const finalizeMode = process.argv.includes('--finalize')
+
+// Scratch files exchanged with the Claude Code action. These live outside
+// content/blog/ so the workflow's `git add content/blog/` never commits them.
+const WORK_DIR = process.env.BLOG_WORK_DIR || path.join(process.cwd(), 'blog-work')
+const PROMPT_FILE = path.join(WORK_DIR, 'security-prompt.txt')
+const OUTPUT_FILE = path.join(WORK_DIR, 'security-output.md')
+const JOB_FILE = path.join(WORK_DIR, 'security-job.json')
+
+interface SecurityJob {
+  type: ArticlePlan['type']
+  alertKeys: string[]
+}
+
+/** Append a `key=value` line to $GITHUB_OUTPUT so later workflow steps can gate on it. */
+function setStepOutput(key: string, value: string) {
+  const file = process.env.GITHUB_OUTPUT
+  if (file) fs.appendFileSync(file, `${key}=${value}\n`)
+}
 
 // ---------- Article Planning ----------
 
@@ -597,7 +627,19 @@ async function generateArticle(plan: ArticlePlan): Promise<{ slug: string; conte
   console.log(`  Generating ${plan.type} article (${model})...`)
 
   const response = await callClaude(SYSTEM_PROMPT, plan.prompt, model)
+  return buildArticleFromResponse(response, plan)
+}
 
+/**
+ * Post-process a raw model response into a ready-to-write MDX article. Split out
+ * of generateArticle so the security workflow's --finalize pass — where the
+ * prose comes from the Claude Code action rather than callClaude — reuses the
+ * exact same slug/frontmatter assembly instead of duplicating it.
+ */
+function buildArticleFromResponse(
+  response: string,
+  plan: Pick<ArticlePlan, 'type' | 'data'>,
+): { slug: string; content: string; featuredServers: string[] } | null {
   // Extract title/description JSON from the end
   const jsonMatch = response.match(/```json\s*\n?(\{[\s\S]*?\})\s*\n?```/)
   let title = `MCP Ecosystem Update — ${todayStr()}`
@@ -677,16 +719,133 @@ function getTagsForType(type: string): string[] {
   return tagMap[type] || ['mcp']
 }
 
+// ---------- Security-only prepare / finalize (subscription-backed) ----------
+
+/**
+ * Build the prompt file the Claude Code action consumes. We fold SYSTEM_PROMPT
+ * into the user turn (the action supplies its own Claude Code system prompt) and
+ * append an explicit instruction to Write the finished article to OUTPUT_FILE —
+ * that file, not stdout, is how the prose comes back to --finalize.
+ */
+function writeSecurityPrompt(plan: ArticlePlan) {
+  fs.mkdirSync(WORK_DIR, { recursive: true })
+  const relOutput = path.relative(process.cwd(), OUTPUT_FILE)
+  const combined = [
+    SYSTEM_PROMPT,
+    '',
+    '========================================',
+    '',
+    plan.prompt,
+    '',
+    '========================================',
+    '',
+    `When the article is complete, use the Write tool to save it — including the trailing \`\`\`json metadata block described above — to the file: ${relOutput}`,
+    'Write that file and nothing else. Do not create or modify any other file, and do not print the article to stdout. The saved file is the only deliverable.',
+  ].join('\n')
+  fs.writeFileSync(PROMPT_FILE, combined)
+}
+
+/** --prepare: decide whether there's a security alert worth publishing today. */
+async function runPrepare() {
+  console.log('=== MCPpedia Blog Generator (security-only, prepare) ===')
+  console.log(new Date().toISOString())
+
+  const meta = loadMeta()
+  const plans = await planArticles(meta)
+  const plan = plans.find(p => p.type === 'security-alert')
+
+  if (!plan) {
+    console.log('No new security alerts to publish today.')
+    setStepOutput('has_job', 'false')
+    const run = await BotRun.start('generate-blog')
+    run.setSummary({ mode: 'security-prepare', reason: 'no new alerts' })
+    await run.finish()
+    return
+  }
+
+  const alertKeys = (plan.data.alerts as Array<{ id: string; cve_id?: string | null }>).map(alertKey)
+  const job: SecurityJob = { type: plan.type, alertKeys }
+  fs.mkdirSync(WORK_DIR, { recursive: true })
+  fs.writeFileSync(JOB_FILE, JSON.stringify(job, null, 2))
+  writeSecurityPrompt(plan)
+
+  console.log(`Prepared security-alert job for ${alertKeys.length} advisory(ies): ${alertKeys.join(', ')}`)
+  console.log(`  Prompt -> ${PROMPT_FILE}`)
+  setStepOutput('has_job', 'true')
+}
+
+/**
+ * --finalize: the Claude Code action has written the article to OUTPUT_FILE.
+ * Turn it into a real MDX post and record the covered CVEs so tomorrow's run
+ * doesn't republish the same advisory.
+ */
+async function runFinalize() {
+  console.log('=== MCPpedia Blog Generator (security-only, finalize) ===')
+  console.log(new Date().toISOString())
+
+  if (!fs.existsSync(JOB_FILE)) {
+    console.error(`Missing job file at ${JOB_FILE} — did --prepare run?`)
+    process.exit(1)
+  }
+  if (!fs.existsSync(OUTPUT_FILE)) {
+    console.error(`Expected the generated article at ${OUTPUT_FILE}, but it is missing — the Claude Code step did not produce output.`)
+    process.exit(1)
+  }
+
+  const job = JSON.parse(fs.readFileSync(JOB_FILE, 'utf-8')) as SecurityJob
+  const response = fs.readFileSync(OUTPUT_FILE, 'utf-8')
+
+  const run = await BotRun.start('generate-blog')
+  run.addProcessed(1)
+  try {
+    // Security-alert data has no top-level server slugs, so featuredServers is
+    // empty here — matching the direct-generation path. Pass an empty data bag.
+    const article = buildArticleFromResponse(response, { type: job.type, data: { alerts: [] } })
+    if (!article) {
+      run.setSummary({ mode: 'security-finalize', written: 0 })
+      await run.fail('Generated security article was empty or too short')
+      return
+    }
+
+    const filePath = path.join(blogDir, `${article.slug}.mdx`)
+    fs.writeFileSync(filePath, article.content)
+    console.log(`  Written: ${article.slug}.mdx`)
+    run.addUpdated(1)
+
+    const meta = loadMeta()
+    // Keep the most recent ~200 keys — enough to cover the 7-day window many
+    // times over without growing .meta.json unbounded.
+    meta.publishedCveIds = [...job.alertKeys, ...meta.publishedCveIds].slice(0, 200)
+    saveMeta(meta)
+
+    run.setSummary({ mode: 'security-finalize', written: 1, cveIds: job.alertKeys })
+    await run.finish()
+    console.log('\nDone. 1 security-alert article written.')
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('Finalize failed:', msg)
+    await run.fail(msg)
+    process.exit(1)
+  }
+}
+
 // ---------- Main ----------
 
 async function main() {
-  console.log(`=== MCPpedia Blog Generator${securityOnly ? ' (security-only)' : ''} ===`)
-  console.log(new Date().toISOString())
-
-  // Ensure blog directory exists
+  // Ensure blog directory exists for every mode.
   if (!fs.existsSync(blogDir)) {
     fs.mkdirSync(blogDir, { recursive: true })
   }
+
+  if (prepareMode) return runPrepare()
+  if (finalizeMode) return runFinalize()
+  return runFull()
+}
+
+/** Full generation path: plan, call the Anthropic API directly, write + commit. */
+async function runFull() {
+  console.log(`=== MCPpedia Blog Generator${securityOnly ? ' (security-only)' : ''} ===`)
+  console.log(new Date().toISOString())
 
   const run = await BotRun.start('generate-blog')
 
@@ -780,4 +939,7 @@ async function main() {
   }
 }
 
-main().catch(console.error)
+main().catch((err) => {
+  console.error(err)
+  process.exit(1)
+})
