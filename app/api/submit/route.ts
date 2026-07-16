@@ -53,14 +53,21 @@ export async function POST(request: Request) {
     .maybeSingle()
 
   if (existingBySlug) {
+    // An archived entry still holds the slug, so a legit resubmission collides.
+    // Say so explicitly instead of the generic "already exists" — otherwise the
+    // submitter has no idea the blocking row is archived and unreachable, and
+    // can't tell it apart from an active listing they could edit/claim. (#27)
+    const archived = existingBySlug.is_archived
     return NextResponse.json({
       error: 'duplicate_slug',
-      message: 'A server with this name already exists.',
+      message: archived
+        ? 'An archived listing with this name already exists. Ask a maintainer to reactivate it (or open a GitHub issue), or resubmit under a slightly different name.'
+        : 'A server with this name already exists.',
       existing: {
         slug: existingBySlug.slug,
         name: existingBySlug.name,
         url: `/s/${existingBySlug.slug}`,
-        archived: existingBySlug.is_archived,
+        archived,
       },
     }, { status: 409 })
   }

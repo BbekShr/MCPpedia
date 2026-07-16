@@ -166,27 +166,41 @@ async function main() {
 
     // New server from registry
     if (!rs.name && !rs.id) continue
-    const slug = slugify(rs.name || rs.id || 'unknown')
+    const baseSlug = slugify(rs.name || rs.id || 'unknown')
 
-    const { data: existingSlug } = await supabase
-      .from('servers')
-      .select('id')
-      .eq('slug', slug)
-      .single()
+    // Resolve a free slug. A bare slug collision is NOT treated as "the same
+    // server": GitHub-URL matches were already linked above, so anything
+    // reaching here with a slug clash is a *distinct* server. Linking the
+    // official registry entry onto whichever row happened to hold the slug
+    // merged official servers onto unrelated third-party listings and hid them
+    // from search (issue #25) — e.g. an official `@org/foo-mcp` swallowed by a
+    // third-party `foo mcp`. Give the official entry its own slug instead; the
+    // detect-duplicates bot can still merge genuine duplicates later.
+    let slug = baseSlug
+    const owner = githubUrl ? slugify(githubUrl.split('/').slice(-2, -1)[0] || '') : ''
+    const slugCandidates = [
+      baseSlug,
+      owner ? `${baseSlug}-${owner}` : '',
+      `${baseSlug}-2`,
+      `${baseSlug}-3`,
+      `${baseSlug}-4`,
+    ].filter((v, i, a) => v && a.indexOf(v) === i)
 
-    if (existingSlug) {
-      // Link by slug match
-      await supabase
+    let resolvedSlug: string | null = null
+    for (const cand of slugCandidates) {
+      const { data: taken } = await supabase
         .from('servers')
-        .update({
-          registry_id: rs.id,
-          registry_synced_at: new Date().toISOString(),
-          registry_verified: true,
-        })
-        .eq('slug', slug)
-      updated++
+        .select('id')
+        .eq('slug', cand)
+        .maybeSingle()
+      if (!taken) { resolvedSlug = cand; break }
+    }
+    if (!resolvedSlug) {
+      console.warn(`  Skipped ${baseSlug} (could not resolve a free slug)`)
+      duplicates++
       continue
     }
+    slug = resolvedSlug
 
     // Auto-categorize from name + description
     const categories = categorize(rs.name || slug, rs.description)
