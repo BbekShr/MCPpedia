@@ -33,8 +33,11 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
-# claude
-.claude/
+# claude — local state stays ignored; the org's agents/skills/commands are tracked
+.claude/*
+!.claude/agents/
+!.claude/commands/
+!.claude/skills/
 
 # bulk dumps and curated classifications (Stage 2 outputs)
 /data/dumps/

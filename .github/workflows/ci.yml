@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+    # labeled/unlabeled included so the guard job re-evaluates when a human
+    # toggles the human-approved label.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
 
 jobs:
   ci:
@@ -29,3 +32,36 @@ jobs:
 
       - name: Test
         run: npm test
+
+  # Governance gate: fails any PR that touches a protected path (CLAUDE.md §5)
+  # unless a human has added the `human-approved` label. Agents never add that
+  # label and never merge; a red guard means "hand to human".
+  guard:
+    name: Protected-path guard
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      HUMAN_APPROVED: ${{ contains(github.event.pull_request.labels.*.name, 'human-approved') }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check protected paths
+        run: |
+          set -euo pipefail
+          BASE="origin/${{ github.base_ref }}"
+          git fetch origin "${{ github.base_ref }}" --quiet
+          CHANGED=$(git diff --name-only "$BASE"...HEAD)
+          echo "Changed files:"
+          echo "$CHANGED"
+          # Keep this regex in sync with the protected-paths list in CLAUDE.md §5.
+          PROTECTED='^(CLAUDE\.md|AGENTS\.md|\.github/workflows/|\.env|proxy\.ts|lib/supabase/|lib/validators\.ts|lib/rate-limit\.ts|supabase/migrations/|__tests__/|lib/__tests__/)'
+          VIOLATIONS=$(echo "$CHANGED" | grep -E "$PROTECTED" || true)
+          if [ -n "$VIOLATIONS" ] && [ "$HUMAN_APPROVED" != "true" ]; then
+            echo ""
+            echo "::error::PR touches protected path(s) without the human-approved label:"
+            echo "$VIOLATIONS"
+            exit 1
+          fi
+          echo "Guard: OK (protected paths touched: $([ -n "$VIOLATIONS" ] && echo 'yes, human-approved' || echo 'none'))"
