@@ -49,7 +49,13 @@ function SubmitForm() {
     try {
       const res = await fetch(`/api/github-metadata?url=${encodeURIComponent(githubUrl)}`)
       if (!res.ok) {
-        setError('Could not fetch repository metadata')
+        const data = await res.json().catch(() => null)
+        setError(
+          (typeof data?.error === 'string' ? data.error : 'Could not fetch repository metadata.') +
+          ' Auto-fill is optional — you can enter the details yourself.'
+        )
+        // Auto-fill is a convenience; never block manual entry on its failure.
+        setStep(s => Math.max(s, 2))
         setFetching(false)
         return
       }
@@ -60,9 +66,10 @@ function SubmitForm() {
       setLicense(meta.license || '')
       setAuthorName(meta.owner || '')
       setAuthorGithub(meta.owner || '')
-      if (meta.name) setStep(2)
+      setStep(s => Math.max(s, 2))
     } catch {
-      setError('Failed to fetch metadata')
+      setError('Failed to fetch metadata. Auto-fill is optional — you can enter the details yourself.')
+      setStep(s => Math.max(s, 2))
     }
     setFetching(false)
   }

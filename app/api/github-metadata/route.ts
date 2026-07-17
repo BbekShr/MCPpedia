@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { fetchRepoMetadata } from '@/lib/github'
+import { fetchRepoMetadataResult } from '@/lib/github'
 
 export async function GET(request: Request) {
   // Require authentication to prevent abuse as a GitHub API proxy
@@ -34,11 +34,27 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Invalid GitHub repository URL' }, { status: 400 })
   }
 
-  const metadata = await fetchRepoMetadata(url)
+  const result = await fetchRepoMetadataResult(url)
 
-  if (!metadata) {
-    return NextResponse.json({ error: 'Could not fetch repository' }, { status: 404 })
+  if (!result.ok) {
+    switch (result.error) {
+      case 'rate_limited':
+        return NextResponse.json(
+          { error: 'GitHub is rate-limiting our requests right now. You can fill in the details manually below, or try Auto-fill again in a few minutes.' },
+          { status: 503 }
+        )
+      case 'not_found':
+        return NextResponse.json(
+          { error: 'Repository not found on GitHub. Check the URL — private repositories cannot be auto-filled.' },
+          { status: 404 }
+        )
+      default:
+        return NextResponse.json(
+          { error: 'Could not reach GitHub to fetch repository metadata. You can fill in the details manually below.' },
+          { status: 502 }
+        )
+    }
   }
 
-  return NextResponse.json(metadata)
+  return NextResponse.json(result.metadata)
 }
