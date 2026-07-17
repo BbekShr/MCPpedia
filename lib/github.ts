@@ -26,32 +26,68 @@ export async function parseGitHubUrl(url: string): Promise<{ owner: string; repo
   return { owner: match[1], repo: match[2].replace(/\.git$/, '') }
 }
 
-export async function fetchRepoMetadata(githubUrl: string): Promise<RepoMetadata | null> {
+export type RepoMetadataError = 'invalid_url' | 'not_found' | 'rate_limited' | 'upstream_error'
+
+export type RepoMetadataResult =
+  | { ok: true; metadata: RepoMetadata }
+  | { ok: false; error: RepoMetadataError }
+
+/**
+ * Like fetchRepoMetadata but reports WHY a fetch failed, so API routes can
+ * surface an actionable message (e.g. GitHub rate limit vs repo not found).
+ */
+export async function fetchRepoMetadataResult(githubUrl: string): Promise<RepoMetadataResult> {
   const parsed = await parseGitHubUrl(githubUrl)
-  if (!parsed) return null
+  if (!parsed) return { ok: false, error: 'invalid_url' }
 
-  const res = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}`, {
-    headers: headers(),
-    next: { revalidate: 3600 },
-  })
+  let res: Response
+  try {
+    res = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}`, {
+      headers: headers(),
+      next: { revalidate: 3600 },
+    })
+  } catch (e) {
+    console.error(`github metadata fetch failed for ${parsed.owner}/${parsed.repo}:`, (e as Error).message)
+    return { ok: false, error: 'upstream_error' }
+  }
 
-  if (!res.ok) return null
+  if (!res.ok) {
+    // GitHub signals rate limiting via 429, or 403 with X-RateLimit-Remaining: 0
+    const rateLimited =
+      res.status === 429 ||
+      (res.status === 403 && res.headers.get('x-ratelimit-remaining') === '0')
+    console.error(
+      `github metadata fetch for ${parsed.owner}/${parsed.repo} returned ${res.status}` +
+      (rateLimited ? ' (rate limited — check GITHUB_TOKEN)' : '')
+    )
+    if (rateLimited) return { ok: false, error: 'rate_limited' }
+    if (res.status === 404) return { ok: false, error: 'not_found' }
+    return { ok: false, error: 'upstream_error' }
+  }
 
   const data = await res.json()
 
   return {
-    name: data.name,
-    description: data.description,
-    license: data.license?.spdx_id || null,
-    owner: data.owner?.login,
-    stars: data.stargazers_count,
-    language: data.language,
-    topics: data.topics || [],
-    archived: data.archived,
-    lastCommit: data.pushed_at,
-    openIssues: data.open_issues_count,
-    homepage: data.homepage || null,
+    ok: true,
+    metadata: {
+      name: data.name,
+      description: data.description,
+      license: data.license?.spdx_id || null,
+      owner: data.owner?.login,
+      stars: data.stargazers_count,
+      language: data.language,
+      topics: data.topics || [],
+      archived: data.archived,
+      lastCommit: data.pushed_at,
+      openIssues: data.open_issues_count,
+      homepage: data.homepage || null,
+    },
   }
+}
+
+export async function fetchRepoMetadata(githubUrl: string): Promise<RepoMetadata | null> {
+  const result = await fetchRepoMetadataResult(githubUrl)
+  return result.ok ? result.metadata : null
 }
 
 export async function fetchReadme(githubUrl: string): Promise<string | null> {
