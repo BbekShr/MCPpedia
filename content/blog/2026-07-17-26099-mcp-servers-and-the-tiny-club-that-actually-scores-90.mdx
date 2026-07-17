@@ -1,0 +1,92 @@
+---
+title: "26,099 MCP Servers — and the Tiny Club That Actually Scores 90+"
+description: "The MCP catalog crossed 26,000 servers, AI-ML quietly became the biggest category, and a handful of servers pull 13M+ weekly downloads with barely any stars. Here's what the data says."
+hook: "There are 26,099 MCP servers now. Fewer than a dozen crack a 90 on our score. One pulls 16.5M downloads a week with 2,300 stars. Stars are lying to you — the scores aren't."
+date: "2026-07-17"
+tags: ["weekly","ecosystem","new-servers"]
+category: "weekly-roundup"
+featuredServers: ["jscpd","io-github-cameroncooke-xcodebuildmcp","supabase","mcp-gitlab","brave-search","postgres","tavily-mcp","io-github-signerlabs-shipswift","dbhub","mcp-agent-mail"]
+---
+<SectionLabel>Weekly Roundup</SectionLabel>
+
+## 26,099 Servers, and Most of Them Don't Matter
+
+The MCP catalog just crossed **26,099 servers**. That number is the story everyone tells — the ecosystem is exploding, MCP won, etc. It's also the least useful number in this post.
+
+Because volume isn't the signal. **Quality is.** And when you sort all 26,099 by the MCPpedia score — our 0–100 blend of security, maintenance, documentation, compatibility, and token efficiency — the top of the list is startlingly thin. Fewer than a dozen servers crack **94**. Only two hit **95**.
+
+<PullQuote>Anyone can publish an MCP server. Almost nobody publishes a good one.</PullQuote>
+
+---
+
+## The 90+ Club
+
+Here's who's actually at the top this week — every one of them **active, zero CVEs, and a grade-A token footprint**:
+
+- [Jscpd](/s/jscpd) — **95**. A copy/paste detector for 224+ languages, now Rust-powered. 1.15M weekly npm downloads. The highest-scoring server in the entire catalog.
+- [XcodeBuildMCP](/s/io-github-cameroncooke-xcodebuildmcp) — **95**. Xcode project + simulator control for agents. The iOS toolchain finally has a serious MCP story.
+- [Supabase MCP Server](/s/supabase) — **94**. Databases, auth, storage, and edge functions from one server.
+- [Mcp Gitlab](/s/mcp-gitlab) — **94**. The GitLab API, cleanly wrapped.
+- [Brave Search](/s/brave-search) — **94**. Real-time search that doesn't leak your queries into an ad graph.
+- [PostgreSQL MCP Server](/s/postgres) — **94**. The reference database server, still setting the bar.
+- [Tavily Mcp](/s/tavily-mcp) — **94**. Production search, extract, map, and crawl in one place.
+- [Dbhub](/s/dbhub) — **94**. Zero-dependency, token-efficient access to Postgres, MySQL, SQL Server, and MariaDB.
+
+<Callout type="info">Notice the pattern: **developer tools and data** dominate the top. When a server has a narrow, well-specified job — run a query, build a project, search the web — it's easy to make it secure, documented, and efficient. Sprawling "do everything" servers score worse precisely because they try to do everything.</Callout>
+
+Want to see how a 95 is actually built? Here's [Jscpd](/s/jscpd)'s breakdown:
+
+<ScoreBreakdown>
+<ScoreRow label="Security" points="30" description="No CVEs, no unauthenticated write surface, tight tool schemas" />
+<ScoreRow label="Efficiency" points="20" description="Grade-A token footprint — 245 tokens across its tool definitions" />
+<ScoreRow label="Maintenance" points="20" description="Active repo, recent commits, real release cadence" />
+<ScoreRow label="Documentation" points="15" description="Clear install configs for Claude Desktop, Cursor, and Claude Code" />
+<ScoreRow label="Compatibility" points="10" description="stdio + SSE transports, multi-client support" />
+</ScoreBreakdown>
+
+---
+
+## AI-ML Quietly Became the Biggest Category
+
+For most of MCP's short life, **developer-tools** was the center of gravity. Not anymore.
+
+<StatGrid>
+<Stat value="5,307" label="AI-ML" detail="The new #1 category" />
+<Stat value="3,929" label="Developer Tools" detail="Former leader" />
+<Stat value="2,053" label="Data" detail="Databases + pipelines" />
+<Stat value="968" label="Security" detail="Smallest of the majors" />
+</StatGrid>
+
+AI-ML servers — agents wrapping other agents, model routers, memory layers, RAG plumbing — now outnumber developer tools by nearly **1,400**. That's the ecosystem eating itself in the best way: MCP started as a bridge from models to tools, and it's increasingly a bridge from models to *other models*.
+
+The category worth watching isn't the biggest, though. It's the smallest. **Security** sits at just **968 servers** — under 4% of the catalog — even as agents get handed more credentials, more filesystem access, and more ability to act. The tooling to *watch* agents is badly outpaced by the tooling to *empower* them.
+
+---
+
+## Stars Are Lying to You
+
+Here's the most useful thing in the data this week. Sort by GitHub stars and you get a leaderboard dominated by projects that barely touch MCP: [eslint-plugin-react-hooks](/s/eslint-plugin-react-hooks) (246K stars, score **55**), [n8n](/s/n8n) (194K stars, score **46**). Huge repos, mediocre MCP servers.
+
+Now sort by actual **usage** — weekly npm downloads — and a completely different cast shows up:
+
+<StatGrid>
+<Stat value="16.5M" label="ShipSwift" detail="2,322 stars" />
+<Stat value="14.9M" label="Pullmd" detail="194 stars" />
+<Stat value="13.6M" label="Agent Mail" detail="2,012 stars" />
+</StatGrid>
+
+[io.github.signerlabs/shipswift](/s/io-github-signerlabs-shipswift) — 40+ production SwiftUI recipes delivered over MCP — pulls **16.5 million downloads a week** with roughly 2,300 stars. [Mcp_agent_mail](/s/mcp-agent-mail), an async coordination layer that gives AI coding agents identities and shared inboxes, does **13.6 million** — a hard signal that multi-agent workflows have left the demo stage and are running in real pipelines.
+
+<PullQuote>A star is someone who liked your README. A download is someone who ran your code. Optimize for the second one.</PullQuote>
+
+<Callout type="warning">This is exactly why MCPpedia scores servers instead of ranking them by stars. A star count tells you a repo got attention two years ago. It tells you nothing about whether the server is secure, maintained, or efficient *today* — which is the only thing that matters when you're wiring it into an agent with access to your data.</Callout>
+
+---
+
+## The Takeaway
+
+The MCP ecosystem is not short on servers. It's short on *good* servers — and the gap between "published" and "worth installing" is widening every week.
+
+So don't browse by count, and don't trust the star graph. Sort by score, check for a zero next to CVEs, and look at whether anyone's actually running it. Start with the [90+ club](/servers?sort=score), read the [scoring methodology](/methodology) so you know what the number means, and when you're stuck between two options, run them through the [comparison tool](/compare).
+
+26,099 servers. Your job is to find the eight that matter.
