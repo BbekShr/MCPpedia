@@ -1,0 +1,39 @@
+# Codebase facts
+
+Verified facts about MCPpedia, one dated bullet each, with `file:line` evidence and the
+originating cycle/PR. Read before every task; written at the Records step; delete when
+falsified; promote hardened facts to CLAUDE.md via human-approved PR. Keep ~120 lines.
+
+## Gates & environment
+
+- 2026-07-16 (bootstrap): The full local bar is green on main — `npx tsc --noEmit` (0 errors),
+  `npm run lint` (0 errors, 11 warnings), `npm test` (97/97 in ~1.2s across 9 files).
+- 2026-07-16 (bootstrap): CI (`.github/workflows/ci.yml`) runs typecheck/lint/test only — no
+  build, no smoke (filed as S1, S3).
+- 2026-07-16 (bootstrap): Tests live in two places: `__tests__/` (rate-limit, scoring,
+  validators, widget-escaping) and `lib/__tests__/` (scoring-all, scoring-security).
+
+## Security & auth
+
+- 2026-07-16 (bootstrap): The rate limiter fails OPEN intentionally — documented trade-off in
+  the header comment, lib/rate-limit.ts:1-14; backed by the atomic `check_rate_limit` RPC
+  from supabase/migrations/20260417155046_rate_limits.sql.
+- 2026-07-16 (bootstrap): `sanitizeSearchQuery` (lib/validators.ts:6-8) strips PostgREST
+  filter-syntax injection; required for raw user input reaching `.or()`/`.ilike`.
+- 2026-07-16 (bootstrap): Admin routes gate on `profiles.role IN ('maintainer','admin')` —
+  reference pattern at app/api/admin/bots/route.ts:61-65.
+- 2026-07-16 (bootstrap): proxy.ts gates on Supabase cookie presence (not path) to cut Vercel
+  invocations; path-narrowing previously BROKE auth — the file's comment explains why.
+
+## Structure
+
+- 2026-07-16 (bootstrap): ~28 API routes under app/api/**/route.ts; 14 bots in bots/ driven
+  by 17 workflow files; bots share helpers in bots/lib/ (bot-run, categorize, github, supabase).
+- 2026-07-16 (bootstrap): lib/scoring.ts is ~1,080 lines — the scoring engine; its tests are
+  the largest suites (lib/__tests__/scoring-all.test.ts, scoring-security.test.ts).
+- 2026-07-16 (bootstrap): Sitemaps are code-generated routes (app/sitemap.xml,
+  app/sitemap-servers-{1,2,3}.xml, app/sitemap-static.xml), not static files.
+
+## Audit log (discovery grounds)
+
+_(record "audited <ground> under <lens>: clean" entries here so discovery skips them)_
