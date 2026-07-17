@@ -8,8 +8,11 @@ falsified; promote hardened facts to CLAUDE.md via human-approved PR. Keep ~120 
 
 - 2026-07-16 (bootstrap): The full local bar is green on main — `npx tsc --noEmit` (0 errors),
   `npm run lint` (0 errors, 11 warnings), `npm test` (97/97 in ~1.2s across 9 files).
-- 2026-07-16 (bootstrap): CI (`.github/workflows/ci.yml`) runs typecheck/lint/test only — no
-  build, no smoke (filed as S1, S3).
+- 2026-07-17 (S1): CI (`.github/workflows/ci.yml`) runs typecheck → lint → test → build. The
+  build step is deliberately env-less: without env the Supabase factories fall back to mock
+  clients (lib/supabase/server.ts, public.ts, client.ts) and build-time DB callers skip
+  fetching — placeholder Supabase URLs would defeat those guards (comment in ci.yml documents
+  it). Still no smoke gate (S3 open).
 - 2026-07-16 (bootstrap): Tests live in two places: `__tests__/` (rate-limit, scoring,
   validators, widget-escaping) and `lib/__tests__/` (scoring-all, scoring-security).
 

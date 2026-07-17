@@ -33,6 +33,15 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Build
+        # Runs env-less ON PURPOSE — do not add placeholder Supabase env vars.
+        # Without env, the Supabase factories fall back to mock clients
+        # (lib/supabase/server.ts, public.ts, client.ts) and build-time DB
+        # callers skip fetching. A placeholder URL like
+        # https://placeholder.supabase.co would defeat those guards and make
+        # prerender attempt real network calls, failing or slowing the build.
+        run: npm run build
+
   # Governance gate: fails any PR that touches a protected path (CLAUDE.md §5)
   # unless a human has added the `human-approved` label. Agents never add that
   # label and never merge; a red guard means "hand to human".
