@@ -44,13 +44,16 @@ jobs:
       #    setup-token` locally (Pro/Max) and store the result as the
       #    CLAUDE_CODE_OAUTH_TOKEN repository secret. Runs only when step 1 found
       #    something to publish.
+      # @main, not @beta: the beta ref pins Claude Code 1.0.88, which rejects
+      # OAuth tokens minted by current CLI versions (401 invalid bearer token).
+      # main also renamed the allowed_tools/model inputs into claude_args.
       - name: Generate article with Claude (subscription)
         if: steps.prep.outputs.job_count == '1'
-        uses: anthropics/claude-code-base-action@beta
+        uses: anthropics/claude-code-base-action@main
+        timeout-minutes: 15
         with:
           prompt_file: blog-work/prompt-0.txt
-          allowed_tools: "Write"
-          model: ${{ steps.prep.outputs.model_0 }}
+          claude_args: "--allowedTools Write --model ${{ steps.prep.outputs.model_0 }}"
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
       # 3) Turn the generated prose back into a proper MDX post and record the
