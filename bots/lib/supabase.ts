@@ -30,18 +30,34 @@ export function createAdminClient(actorLabel: string) {
  *   )
  *
  * Build the query (filters, ordering) without `.range()` — this function
- * appends range() pages internally. Throws on any Supabase error so callers
- * fail loudly rather than silently operating on a partial set.
+ * appends range() pages internally. Transient errors (statement timeout,
+ * connection drops) are retried per page with exponential backoff — the
+ * sync-registry bot was failing whole runs on a single 8s statement timeout
+ * under DB load. Throws once retries are exhausted so callers fail loudly
+ * rather than silently operating on a partial set.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function fetchAllRows<T>(queryBuilder: any): Promise<T[]> {
   const PAGE_SIZE = 1000
+  const MAX_ATTEMPTS = 4
   const out: T[] = []
   let from = 0
 
   while (true) {
-    const { data, error } = await queryBuilder.range(from, from + PAGE_SIZE - 1)
-    if (error) throw new Error(`fetchAllRows error at offset ${from}: ${error.message}`)
+    let data: T[] | null = null
+    for (let attempt = 1; ; attempt++) {
+      const { data: page, error } = await queryBuilder.range(from, from + PAGE_SIZE - 1)
+      if (!error) {
+        data = page
+        break
+      }
+      if (attempt >= MAX_ATTEMPTS) {
+        throw new Error(`fetchAllRows error at offset ${from} after ${attempt} attempts: ${error.message}`)
+      }
+      const backoffMs = 2000 * 2 ** (attempt - 1) // 2s, 4s, 8s
+      console.warn(`fetchAllRows: page at offset ${from} failed (${error.message}) — retrying in ${backoffMs / 1000}s (attempt ${attempt}/${MAX_ATTEMPTS})`)
+      await new Promise(r => setTimeout(r, backoffMs))
+    }
     if (!data || data.length === 0) break
     out.push(...(data as T[]))
     if (data.length < PAGE_SIZE) break
