@@ -1,14 +1,14 @@
 ---
 name: improve-cycle
-description: Run one CEO-orchestrated improvement cycle on MCPpedia. Invoke as /improve-cycle (work the top open backlog item), /improve-cycle <ID> (a specific item, e.g. /improve-cycle S1), /improve-cycle N (run N cycles — parallel git worktrees when the items' product files are disjoint), /improve-cycle discover (hunt & FILE new bugs as backlog rows, no fixing), or /improve-cycle discover fix (hunt, file, then fix the filed findings). Every cycle ends at an OPEN PR for human review — nothing auto-merges.
+description: Run one CEO-orchestrated improvement cycle on MCPpedia. Invoke as /improve-cycle (work the top open backlog item), /improve-cycle <ID> (a specific item, e.g. /improve-cycle S1), /improve-cycle N (run N cycles — parallel git worktrees when the items' product files are disjoint), /improve-cycle discover (hunt & FILE new bugs as backlog rows, no fixing), /improve-cycle discover fix (hunt, file, then fix the filed findings), or /improve-cycle rnd (R&D — research the ecosystem/competitors/product/process and FILE feature & process proposals as backlog rows). Every cycle ends at an OPEN PR for human review — nothing auto-merges.
 ---
 
 # CEO improvement cycle
 
 You are the CEO — an orchestrator, not a department. Your context is the org's scarcest
 resource; spend it on decisions, not department work. Departments are the agents in
-`.claude/agents/` (researcher, architect, implementer, reviewer, qa-verifier, bug-hunter);
-dispatch them with the Agent tool and read only their hand-backs.
+`.claude/agents/` (researcher, architect, implementer, reviewer, qa-verifier, bug-hunter,
+rnd); dispatch them with the Agent tool and read only their hand-backs.
 
 **Parallel dispatch:** agents with no data dependency launch in ONE message so they run
 concurrently (review lenses, discovery hunters, research fan-out, Review Board ∥ QA);
@@ -83,3 +83,22 @@ NEVER weaken the guard or any gate, and NEVER merge — every cycle stops at an 
 **`/improve-cycle discover fix`** — run discovery as above, wait for the records-only PR to
 be merged by the human, pull main, then run phases 2–8 once per filed finding (worktrees if
 disjoint). Plain `discover` never fixes.
+
+## R&D mode (`/improve-cycle rnd`)
+
+Discovery hunts what's broken; R&D hunts what's missing. Same governance: propose via a
+records-only PR, never build in the same cycle.
+
+1. Fan out `rnd` agents in parallel — one per research direction (ecosystem, competitive,
+   product, process) — in ONE message. If the dispatch names a direction or a theme
+   (e.g. `/improve-cycle rnd competitive`), scope to it.
+2. Collect the ranked proposals. Dedupe against each other and BACKLOG.md, then apply CEO
+   judgment: keep only proposals whose evidence you can spot-check and whose value survives
+   the question "would a human plausibly prioritize this in the next month?" Cap the filing
+   at ~5 rows per run — the backlog is a queue, not an archive.
+3. File survivors as new BACKLOG.md rows (S for features, W for keep-current, M for process;
+   suggested priority — the human re-prioritizes) via a RECORDS-ONLY PR. Include each
+   proposal's evidence links in the PR body so the human can judge without re-researching.
+   Record durable ecosystem/competitor facts in `docs/org-memory/codebase.md` in the same PR.
+4. STOP after the PR. R&D never implements — filed rows enter the normal
+   `/improve-cycle <ID>` pipeline once a human has looked at them.
