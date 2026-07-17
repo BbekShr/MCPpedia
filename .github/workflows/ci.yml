@@ -13,6 +13,10 @@ jobs:
   ci:
     name: Type-check / Lint / Test
     runs-on: ubuntu-latest
+    # Cap wall-clock so a stalled build-time fetch (e.g. next/font/google
+    # fonts, which have no timeout in production builds) fails the job in
+    # minutes instead of hanging for GitHub's 6-hour default.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
