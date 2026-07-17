@@ -36,7 +36,10 @@ async function main() {
   console.log('=== MCPpedia Score Computation ===')
   console.log(new Date().toISOString())
 
-  // Supabase returns max 1000 rows by default — paginate to get all
+  // Supabase returns max 1000 rows by default — paginate to get all.
+  // Stalest-first ordering pairs with the wall-clock deadline below: if a run
+  // can't finish every server before the GitHub Actions 6h job limit, it exits
+  // cleanly and the next run picks up the servers it didn't reach.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const servers: any[] = []
   let page = 0
@@ -45,6 +48,8 @@ async function main() {
     const { data: batch, error: batchError } = await supabase
       .from('servers')
       .select('*')
+      .order('score_computed_at', { ascending: true, nullsFirst: true })
+      .order('id', { ascending: true }) // stable tiebreak for pagination
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
     if (batchError) {
@@ -64,6 +69,13 @@ async function main() {
 
   console.log(`Computing scores for ${servers.length} servers...\n`)
 
+  // Wall-clock budget: GitHub Actions kills jobs at 6h, which was cancelling
+  // most runs mid-flight (no BotRun.finish, no cache revalidation). Stop
+  // scoring cleanly at 5h and let the next run continue — the stalest-first
+  // ordering above guarantees the unreached servers go first tomorrow.
+  const DEADLINE_MS = 5 * 60 * 60 * 1000
+  const startedAt = Date.now()
+
   let processed = 0
   // Slugs whose total score shifted ≥ 2 points this run. Used after the loop
   // to revalidate /compare/... pages containing them (score-driven freshness
@@ -71,34 +83,35 @@ async function main() {
   const movedSlugs = new Set<string>()
 
   for (const server of servers) {
+    if (Date.now() - startedAt > DEADLINE_MS) {
+      console.warn(`\nDeadline (5h) reached after ${processed}/${servers.length} servers — exiting cleanly. Next run resumes with the stalest.`)
+      break
+    }
     console.log(`[${processed + 1}/${servers.length}] ${server.slug}`)
 
     // 2. EFFICIENCY — measure actual tool schema tokens (compute tools early, security needs it)
     const tools = (server.tools || []) as Tool[]
 
-    // 1. SECURITY — CVEs + tool safety + tool poisoning + injection vectors + dep health
-    const security = await scanSecurity(
-      server.npm_package,
-      server.pip_package,
-      server.has_authentication || false,
-      server.license,
-      server.is_archived || false,
-      server.security_verified || false,
-      tools,
-      server.tool_definition_hash || null
-    )
+    // 1. SECURITY + 3. DOCUMENTATION README — the OSV/deps.dev scan and the
+    // GitHub README fetch are independent network calls; overlapping them
+    // roughly halves per-server wall time across ~19k servers.
+    const parsed = server.github_url ? parseGitHubUrl(server.github_url) : null
+    const [security, readme] = await Promise.all([
+      scanSecurity(
+        server.npm_package,
+        server.pip_package,
+        server.has_authentication || false,
+        server.license,
+        server.is_archived || false,
+        server.security_verified || false,
+        tools,
+        server.tool_definition_hash || null
+      ),
+      parsed ? getReadme(parsed.owner, parsed.repo) : Promise.resolve(null),
+    ])
     console.log(`  Security: ${security.score}/${SCORE_WEIGHTS.security} (${security.cve_count} CVEs, ${security.evidence.length} checks)`)
     const efficiency = measureTokenEfficiency(tools)
     console.log(`  Efficiency: ${efficiency.score}/${SCORE_WEIGHTS.efficiency} (${efficiency.total_tool_tokens} tokens, grade ${efficiency.grade})`)
-
-    // 3. DOCUMENTATION — analyze README + metadata
-    let readme: string | null = null
-    if (server.github_url) {
-      const parsed = parseGitHubUrl(server.github_url)
-      if (parsed) {
-        readme = await getReadme(parsed.owner, parsed.repo)
-      }
-    }
 
     const docs = await scoreDocumentation(
       readme,
