@@ -13,7 +13,7 @@ needs the human-approved label.
 
 | ID | P | Item | Acceptance criteria | Status | Protected |
 |----|---|------|---------------------|--------|-----------|
-| S1 | P2 | CI has no build gate — `next build` never runs in CI, so type-safe-but-unbuildable changes (bad route exports, RSC violations, config errors) surface only at Vercel deploy time | `.github/workflows/ci.yml` runs `npm run build` on every PR (with placeholder env vars as needed) and it passes on main | open | yes |
+| S1 | P2 | CI has no build gate — `next build` never runs in CI, so type-safe-but-unbuildable changes (bad route exports, RSC violations, config errors) surface only at Vercel deploy time | `.github/workflows/ci.yml` runs `npm run build` on every PR (with placeholder env vars as needed) and it passes on main | in-progress | yes |
 | S2 | P3 | `npm run lint` reports 11 warnings (unused vars etc.) — warning noise hides new ones | `npm run lint` exits with 0 errors and 0 warnings, with no `eslint-disable` added and no rule weakened | open | no |
 | S3 | P3 | No smoke check exists — nothing verifies the built app boots and serves pages | A scripted smoke check (build + `next start` + curl of `/`, one server page, and one API route asserting HTTP 200) exists as an npm script, is documented in CLAUDE.md §2, and runs in CI | open | yes |
 | M1 | P3 | Pre-existing `.claude/commands/qa.md` predates the org and overlaps qa-verifier | A human decision is recorded in `docs/org-memory/codebase.md`: fold it into qa-verifier's feature-specific checks, keep it as a standalone manual skill, or delete it | open | no |
