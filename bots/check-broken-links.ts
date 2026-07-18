@@ -17,19 +17,40 @@ function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
   return { owner: match[1], repo: match[2].replace(/\.git$/, '') }
 }
 
-async function checkRepo(owner: string, repo: string): Promise<'ok' | 'not_found' | 'error'> {
-  try {
-    const headers: Record<string, string> = { 'User-Agent': 'MCPpedia' }
-    if (GITHUB_TOKEN) headers.Authorization = `Bearer ${GITHUB_TOKEN}`
+// A single 404 from the GitHub API is NOT a reliable "repo is gone" signal:
+// GitHub also 404s for renamed repos, briefly-private repos, and secondary
+// rate-limiting — all transient. Since a not_found result permanently archives
+// the listing (and blocks the owner from resubmitting), we must CONFIRM a 404
+// by re-checking with backoff, and only report not_found if it persists across
+// every attempt. Any non-404 error (403/429/5xx/network) returns 'error' and
+// never archives. See #<broken-links-confirm-404>.
+const NOT_FOUND_CONFIRM_ATTEMPTS = 3
+const NOT_FOUND_RETRY_BASE_MS = 1500
 
-    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers })
+async function checkRepo(owner: string, repo: string): Promise<'ok' | 'not_found' | 'error'> {
+  const headers: Record<string, string> = { 'User-Agent': 'MCPpedia' }
+  if (GITHUB_TOKEN) headers.Authorization = `Bearer ${GITHUB_TOKEN}`
+
+  for (let attempt = 0; attempt < NOT_FOUND_CONFIRM_ATTEMPTS; attempt++) {
+    let res: Response
+    try {
+      res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers })
+    } catch {
+      return 'error' // network failure — never archive on this
+    }
 
     if (res.status === 200) return 'ok'
-    if (res.status === 404) return 'not_found'
-    return 'error'
-  } catch {
-    return 'error'
+    if (res.status !== 404) return 'error' // rate-limit / 5xx / etc — never archive
+
+    // Got a 404. Confirm it isn't transient before trusting it.
+    if (attempt < NOT_FOUND_CONFIRM_ATTEMPTS - 1) {
+      await new Promise(r => setTimeout(r, NOT_FOUND_RETRY_BASE_MS * (attempt + 1)))
+      continue
+    }
+    return 'not_found' // 404 persisted across every attempt
   }
+
+  return 'error'
 }
 
 async function main() {
