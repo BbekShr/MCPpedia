@@ -82,7 +82,18 @@ interface ChangeRow {
   server: { name: string; slug: string } | null
 }
 
-type Tab = 'servers' | 'users' | 'edits' | 'bots' | 'history'
+interface ClaimRow {
+  id: string
+  server_id: string
+  proof_type: string
+  proof_value: string
+  verified: boolean
+  created_at: string
+  profile: { username: string } | null
+  server: { name: string; slug: string } | null
+}
+
+type Tab = 'servers' | 'users' | 'edits' | 'claims' | 'bots' | 'history'
 
 export default function AdminPage() {
   const supabase = createClient()
@@ -98,6 +109,8 @@ export default function AdminPage() {
   const [serverCount, setServerCount] = useState<number | null>(null)
   const [users, setUsers] = useState<ProfileRow[]>([])
   const [edits, setEdits] = useState<EditRow[]>([])
+  const [claims, setClaims] = useState<ClaimRow[]>([])
+  const [pendingClaims, setPendingClaims] = useState(0)
   const [changes, setChanges] = useState<ChangeRow[]>([])
   const [changeFilter, setChangeFilter] = useState('')
   const [bots, setBots] = useState<BotInfo[]>([])
@@ -139,6 +152,13 @@ export default function AdminPage() {
     } else if (tab === 'edits') {
       const { data } = await supabase.from('edits').select('*, profile:profiles(username), server:servers(name, slug)').order('created_at', { ascending: false }).limit(50)
       setEdits((data || []) as EditRow[])
+    } else if (tab === 'claims') {
+      const { data } = await supabase
+        .from('publisher_claims')
+        .select('id, server_id, proof_type, proof_value, verified, created_at, profile:profiles(username), server:servers(name, slug)')
+        .order('created_at', { ascending: false })
+        .limit(50)
+      setClaims((data || []) as unknown as ClaimRow[])
     } else if (tab === 'history') {
       const { data } = await supabase
         .from('server_changes')
@@ -176,11 +196,22 @@ export default function AdminPage() {
     setPendingEdits(count || 0)
   }, [supabase])
 
+  const refreshPendingClaims = useCallback(async () => {
+    const { count } = await supabase
+      .from('publisher_claims')
+      .select('id', { count: 'exact', head: true })
+      .eq('verified', false)
+    setPendingClaims(count || 0)
+  }, [supabase])
+
   useEffect(() => {
     if (role === 'admin' || role === 'maintainer' || role === 'editor') {
       refreshPendingEdits()
     }
-  }, [role, refreshPendingEdits])
+    if (role === 'admin' || role === 'maintainer') {
+      refreshPendingClaims()
+    }
+  }, [role, refreshPendingEdits, refreshPendingClaims])
 
   // Fetch non-server tabs immediately
   useEffect(() => {
@@ -239,6 +270,28 @@ export default function AdminPage() {
     if (!res.ok) return
     setEdits(prev => prev.map(e => e.id === editId ? { ...e, status: 'approved' } : e))
     refreshPendingEdits()
+  }
+
+  async function approveClaim(claimId: string) {
+    const res = await fetch('/api/admin/approve-claim', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ claim_id: claimId }),
+    })
+    if (!res.ok) return
+    setClaims(prev => prev.map(c => c.id === claimId ? { ...c, verified: true } : c))
+    refreshPendingClaims()
+  }
+
+  async function rejectClaim(claimId: string) {
+    const res = await fetch('/api/admin/approve-claim', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ claim_id: claimId, reject: true }),
+    })
+    if (!res.ok) return
+    setClaims(prev => prev.filter(c => c.id !== claimId))
+    refreshPendingClaims()
   }
 
   async function runCategorize() {
@@ -344,7 +397,7 @@ export default function AdminPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 border-b border-border">
-        {(['servers', 'users', 'edits', 'bots', 'history'] as Tab[]).map(t => (
+        {(['servers', 'users', 'edits', 'claims', 'bots', 'history'] as Tab[]).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -356,6 +409,11 @@ export default function AdminPage() {
             {t === 'edits' && pendingEdits > 0 && (
               <span className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-yellow/15 text-yellow">
                 {pendingEdits}
+              </span>
+            )}
+            {t === 'claims' && pendingClaims > 0 && (
+              <span className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-yellow/15 text-yellow">
+                {pendingClaims}
               </span>
             )}
           </button>
@@ -546,6 +604,51 @@ export default function AdminPage() {
                   </button>
                   <button
                     onClick={() => rejectEdit(e.id)}
+                    className="text-xs px-3 py-1 rounded border border-red text-red hover:bg-red/5"
+                  >
+                    Reject
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Claims tab */}
+      {tab === 'claims' && !loading && (
+        <div className="space-y-3">
+          {claims.length === 0 && <p className="text-text-muted text-sm">No ownership claims yet.</p>}
+          {claims.map(c => (
+            <div key={c.id} className="border border-border rounded-md p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-text-primary">@{c.profile?.username}</span>
+                  <span className="text-xs text-text-muted">claims</span>
+                  <Link href={`/s/${c.server?.slug}`} className="text-sm text-accent hover:text-accent-hover">{c.server?.name}</Link>
+                </div>
+                <span className={`text-xs px-2 py-0.5 rounded ${
+                  c.verified ? 'bg-green/10 text-green' : 'bg-yellow/10 text-yellow'
+                }`}>{c.verified ? 'verified' : 'pending'}</span>
+              </div>
+
+              <div className="text-sm mb-2">
+                <span className="text-text-muted">Proof (</span>
+                <code className="font-mono text-text-primary">{c.proof_type}</code>
+                <span className="text-text-muted">): </span>
+                <span className="text-text-primary break-all">{c.proof_value}</span>
+              </div>
+
+              {!c.verified && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => approveClaim(c.id)}
+                    className="text-xs px-3 py-1 rounded bg-green text-white hover:bg-green/80"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => rejectClaim(c.id)}
                     className="text-xs px-3 py-1 rounded border border-red text-red hover:bg-red/5"
                   >
                     Reject
