@@ -481,29 +481,36 @@ function DonutCard({ title, entries, footnote, centerLabel }: {
 export default async function AnalyticsPage() {
   const supabase = createPublicClient()
 
-  // Fetch all non-archived servers in pages of 1000 (Supabase default limit)
-  const fields = 'categories,health_status,author_type,api_pricing,transport,compatible_clients,score_total,score_security,score_maintenance,score_documentation,score_compatibility,score_efficiency,token_efficiency_grade,github_stars,npm_weekly_downloads,cve_count,has_authentication,tools,created_at'
+  // Fetch all non-archived servers in pages of 1000 (Supabase default limit).
+  // Keyset (cursor) pagination on the indexed `id` primary key, NOT offset-based
+  // `.range()` — at 19k+ rows, OFFSET forces Postgres to scan and discard every
+  // prior row on each page, and blew the statement timeout once offset hit ~19000.
+  // `.gt('id', cursor)` is an index seek regardless of table size.
+  const fields = 'id,categories,health_status,author_type,api_pricing,transport,compatible_clients,score_total,score_security,score_maintenance,score_documentation,score_compatibility,score_efficiency,token_efficiency_grade,github_stars,npm_weekly_downloads,cve_count,has_authentication,tools,created_at'
   const pageSize = 1000
   let servers: Record<string, unknown>[] = []
-  let from = 0
+  let cursor: string | null = null
   while (true) {
-    const { data, error } = await supabase
+    let query = supabase
       .from('servers')
       .select(fields)
       .eq('is_archived', false)
-      .range(from, from + pageSize - 1)
+      .order('id', { ascending: true })
+      .limit(pageSize)
+    if (cursor) query = query.gt('id', cursor)
+    const { data, error } = await query
     // Fail loud on a fetch error instead of silently rendering a partial set.
     // A transient error on any page would otherwise `break` and cache a
     // truncated dataset for `revalidate` seconds — every aggregate below
     // (counts, stars, downloads, deltas) computed off the fetched slice.
     // Throwing here makes Next keep serving the last good page and retry.
     if (error) {
-      throw new Error(`analytics: failed to fetch servers at offset ${from}: ${error.message}`)
+      throw new Error(`analytics: failed to fetch servers after cursor ${cursor}: ${error.message}`)
     }
     if (!data || data.length === 0) break
     servers = servers.concat(data)
     if (data.length < pageSize) break
-    from += pageSize
+    cursor = data[data.length - 1].id as string
   }
 
   // Fetch MCP API usage (last 90 days)
