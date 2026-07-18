@@ -112,6 +112,24 @@ export default async function ServersPage({
 
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE)
 
+  // Canonical catalog total. The homepage hero reads `total_servers` from the
+  // daily home_stats snapshot; if the unfiltered /servers view used its own
+  // live count instead, the two numbers would drift apart between refreshes
+  // (and badly whenever compute-scores fails to refresh the snapshot). Source
+  // the catalog headline from the SAME snapshot so the numbers always agree.
+  // The live `totalCount` above still drives pagination and filtered/search
+  // result counts, which must stay exact.
+  const { data: statsData } = await supabase.rpc('home_stats')
+  const catalogTotal =
+    (statsData as { total_servers?: number } | null)?.total_servers ?? totalCount
+
+  const hasFilters = Boolean(
+    q || category || status || pricing || author || transport || minScore > 0,
+  )
+  // Filtered/search views show the live filtered count; the plain catalog view
+  // shows the shared snapshot total.
+  const headerTotal = hasFilters ? totalCount : catalogTotal
+
   // Build full structured-data set on the canonical landing (page 1, no query).
   // Filtered/paginated views canonicalize to /servers, so emitting schema there
   // would just duplicate signals.
@@ -120,7 +138,7 @@ export default async function ServersPage({
     ? [
         generateCollectionJsonLd(
           'MCP Server Directory',
-          `Browse ${totalCount.toLocaleString()}+ Model Context Protocol servers, scored on security, maintenance, documentation, compatibility, and token efficiency.`,
+          `Browse ${catalogTotal.toLocaleString()}+ Model Context Protocol servers, scored on security, maintenance, documentation, compatibility, and token efficiency.`,
           `${SITE_URL}/servers`,
         ),
         generateBreadcrumbJsonLd([
@@ -146,7 +164,7 @@ export default async function ServersPage({
       {jsonLd && <JsonLdScript data={jsonLd} />}
       <div className="mb-6">
         <SearchBar
-          placeholder={`Search ${totalCount.toLocaleString()}+ MCP servers...`}
+          placeholder={`Search ${catalogTotal.toLocaleString()}+ MCP servers...`}
           large
         />
       </div>
@@ -163,7 +181,7 @@ export default async function ServersPage({
         <p className="text-sm text-text-muted">
           {q
             ? `${totalCount.toLocaleString()} server${totalCount !== 1 ? 's' : ''} matching "${q}"`
-            : `${totalCount.toLocaleString()} servers`
+            : `${headerTotal.toLocaleString()} servers`
           }
         </p>
       </div>
