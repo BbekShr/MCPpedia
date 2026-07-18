@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { scanSecurity, measureTokenEfficiency } from '../scoring'
+import { scanSecurity } from '../scoring'
 import type { Tool } from '../types'
 
 // Helper: create a tool with given description and optional schema

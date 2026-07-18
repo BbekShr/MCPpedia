@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getGuide, getAllGuides } from '@/lib/mdx'
-import { SITE_NAME, SITE_URL } from '@/lib/constants'
+import { SITE_URL } from '@/lib/constants'
 import type { Metadata } from 'next'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 

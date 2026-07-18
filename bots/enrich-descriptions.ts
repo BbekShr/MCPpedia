@@ -22,7 +22,6 @@ function extractDescription(readme: string): string | null {
   const lines = readme.split('\n')
 
   // Skip badges, images, HTML, empty lines, and headings at the top
-  let started = false
   const paragraphs: string[] = []
   let currentParagraph = ''
 
@@ -41,13 +40,12 @@ function extractDescription(readme: string): string | null {
     // Skip badges, images, HTML
     if (trimmed.startsWith('![') || trimmed.startsWith('<') || trimmed.startsWith('[![') || trimmed.startsWith('|')) continue
     // Skip headings
-    if (trimmed.startsWith('#')) { started = true; continue }
+    if (trimmed.startsWith('#')) { continue }
     // Skip short lines that look like links or badges
     if (trimmed.length < 20 && (trimmed.includes('http') || trimmed.includes('['))) continue
 
     // This looks like real text
     if (trimmed.length > 30) {
-      started = true
       currentParagraph += ' ' + trimmed
     }
   }

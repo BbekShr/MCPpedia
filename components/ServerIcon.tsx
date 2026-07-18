@@ -29,7 +29,7 @@ function hashColor(str: string): string {
 
 export default function ServerIcon({ name, authorGithub, size = 32, className = '' }: Props) {
   // GitHub avatars are always crisp at any size. Use as primary.
-  const [imgSrc, setImgSrc] = useState<string | null>(() => {
+  const [imgSrc] = useState<string | null>(() => {
     if (authorGithub) {
       // Strip leading @ and validate — GitHub usernames are alphanumeric + hyphens only
       const clean = authorGithub.replace(/^@/, '')

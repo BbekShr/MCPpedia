@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import type { Server, SecurityAdvisory } from '@/lib/types'
+import type { Server } from '@/lib/types'
 import { SCORE_WEIGHTS } from '@/lib/scoring'
 
 function ScoreBar({ label, score, max, children }: {
@@ -147,7 +147,7 @@ function efficiencyGrade(tokens: number): 'A' | 'B' | 'C' | 'D' | 'F' {
   return 'F'
 }
 
-export default function ScoreCard({ server, advisories = [] }: { server: Server; advisories?: SecurityAdvisory[] }) {
+export default function ScoreCard({ server }: { server: Server }) {
   const subcategorySum = (server.score_security || 0) + (server.score_maintenance || 0) + (server.score_efficiency || 0) + (server.score_documentation || 0) + (server.score_compatibility || 0)
   const total = Math.min(subcategorySum || server.score_total || 0, 100)
   const toolCount = server.tools?.length || 0

@@ -25,7 +25,6 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   let license = ''
   let cveCount = 0
   let hasAuth = false
-  let healthStatus = 'unknown'
   let stars = 0
   let grade = 'F'
 
@@ -51,7 +50,6 @@ export default async function Image({ params }: { params: Promise<{ slug: string
       license = server.license || ''
       cveCount = server.cve_count || 0
       hasAuth = server.has_authentication || false
-      healthStatus = server.health_status || 'unknown'
       stars = server.github_stars || 0
     }
   }
