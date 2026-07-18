@@ -3,6 +3,7 @@ import ServerIcon from '@/components/ServerIcon'
 import VerifiedBadge from '@/components/VerifiedBadge'
 import type { Server, SecurityAdvisory } from '@/lib/types'
 import { Chip, Icon, ScoreRing, daysSince, formatNumber } from './helpers'
+import { timeAgo } from '@/lib/dates'
 
 function stripHtml(html: string): string {
   return html
@@ -243,6 +244,24 @@ export default function Hero({
             </div>
 
             <Verdict server={s} advisories={advisories} />
+
+            {/* Data-freshness signal — when MCPpedia last refreshed this
+                server's GitHub metadata (stars, last commit, health). Makes
+                stale data visible instead of silently trusting old numbers. */}
+            {s.health_checked_at && (
+              <p className="mt-3 text-[11.5px] text-text-muted inline-flex items-center gap-1.5">
+                <Icon name="clock" size={11} />
+                <span>
+                  MCPpedia last refreshed this data{' '}
+                  <time
+                    dateTime={s.health_checked_at}
+                    title={new Date(s.health_checked_at).toUTCString()}
+                  >
+                    {timeAgo(s.health_checked_at)}
+                  </time>
+                </span>
+              </p>
+            )}
           </div>
 
           {/* right — score + primary CTA stacked */}
