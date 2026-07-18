@@ -7,6 +7,7 @@ import { PUBLIC_SERVER_FIELDS, PUBLIC_CARD_FIELDS } from '@/lib/constants'
 import DiscussionSection from '@/components/DiscussionSection'
 import NewsletterSignup from '@/components/NewsletterSignup'
 import BadgeEmbed from '@/components/BadgeEmbed'
+import ClaimServer from '@/components/ClaimServer'
 import ServerFAQ, { buildServerFAQs } from '@/components/ServerFAQ'
 import ReviewSection from '@/components/ReviewSection'
 import ServerTester from '@/components/ServerTester'
@@ -242,6 +243,7 @@ export default async function ServerDetailPage({
                   </div>
                 </div>
                 <BadgeEmbed slug={s.slug} />
+                <ClaimServer serverId={s.id} publisherVerified={s.publisher_verified} />
               </section>
 
               {hasEnvInstructions && (
