@@ -25,6 +25,20 @@ falsified; promote hardened facts to CLAUDE.md via human-approved PR. Keep ~120 
   future build-time-reachable server-client caller using those methods would TypeError in the
   env-less CI build while building fine on Vercel. `createAdminClient` (admin.ts:18-20) has no
   env fallback at all — every build-time admin caller must self-guard on env presence.
+- 2026-07-18 (S2): ESLint is `@typescript-eslint/no-unused-vars: 'warn'` with NO options
+  (node_modules/eslint-config-next/dist/typescript.js:36), so `args` defaults to `'after-used'`
+  — an unused parameter positioned before a used one is NOT flagged (why `rawName` in
+  app/api/badge/[slug]/route.ts stays unflagged after its only use was deleted).
+- 2026-07-18 (S2): TRAP — a `// eslint-disable-next-line react-hooks/exhaustive-deps` can be
+  reported as "unused directive" yet still be load-bearing: at app/admin/page.tsx:245 removing
+  it surfaces 3 `react-hooks/set-state-in-effect` ERRORS in sibling effects (:223, :233, :239).
+  Do not delete a react-hooks disable directive on the "unused" warning alone — run eslint
+  without it first. This is the sole residual lint warning; the real fix (effect refactor) is S7.
+- 2026-07-18 (S2): The score badge SVG (app/api/badge/[slug]/route.ts `generateScoreSVG`)
+  renders a fixed "MCPpedia" label and never interpolates the server name — no user-controlled
+  text, so no escaping needed there (unlike the widget at app/api/widget/[slug]/route.ts which
+  does escape `server.name`). `ScoreCard` (components/ScoreCard.tsx) renders only in
+  app/compare/[slugs]/page.tsx and its `advisories` prop was dead (removed in S2).
 - 2026-07-16 (bootstrap): Tests live in two places: `__tests__/` (rate-limit, scoring,
   validators, widget-escaping) and `lib/__tests__/` (scoring-all, scoring-security).
 

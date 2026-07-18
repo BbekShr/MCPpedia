@@ -10,3 +10,11 @@ One line per cycle: `- YYYY-MM-DD <ID>: <friction observed> → <action or M-row
   No agent/skill/rule friction; one process note: AC wording ("with placeholder env vars as
   needed") contradicts the correct implementation (no placeholders) — human should reconcile
   the AC text on merge, since cycles can't edit acceptance criteria.
+- 2026-07-18 S2: implementer correctly refused to force item #1 — the "unused" exhaustive-deps
+  directive is load-bearing (removing it = 3 set-state-in-effect errors); CEO empirically
+  re-verified rather than trusting the hand-back, shipped 10/11, filed S7 for the real refactor.
+  Process note: AC was atomic ("0 warnings") but one warning was structurally unfixable by
+  dead-code removal — human should decide whether S2's 0/0 target waits on S7. Two of the 11
+  sites live in protected `lib/__tests__/**`, so a pure-cleanup PR still needs human-approved;
+  worth considering whether trivial unused-import fixes in test files should be exempt. No
+  agent/skill friction; researcher's exact-replacement table let me skip a separate architect pass.
