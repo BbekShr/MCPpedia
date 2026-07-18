@@ -487,11 +487,19 @@ export default async function AnalyticsPage() {
   let servers: Record<string, unknown>[] = []
   let from = 0
   while (true) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('servers')
       .select(fields)
       .eq('is_archived', false)
       .range(from, from + pageSize - 1)
+    // Fail loud on a fetch error instead of silently rendering a partial set.
+    // A transient error on any page would otherwise `break` and cache a
+    // truncated dataset for `revalidate` seconds — every aggregate below
+    // (counts, stars, downloads, deltas) computed off the fetched slice.
+    // Throwing here makes Next keep serving the last good page and retry.
+    if (error) {
+      throw new Error(`analytics: failed to fetch servers at offset ${from}: ${error.message}`)
+    }
     if (!data || data.length === 0) break
     servers = servers.concat(data)
     if (data.length < pageSize) break
@@ -506,18 +514,20 @@ export default async function AnalyticsPage() {
     .limit(600) // ~90 days * 6 actions
   const mcpUsage = (rawMcpUsage || []) as Array<{ usage_date: string; action: string; count: number }>
 
-  // Fetch historical snapshots (last 90 days)
+  // Fetch historical snapshots (last 90 days). Order descending + limit so we
+  // take the 90 MOST RECENT rows (ascending+limit would return the oldest 90),
+  // then reverse to ascending for left-to-right chart rendering and deltas.
   const { data: history } = await supabase
     .from('daily_metrics')
     .select('snapshot_date, total_servers, avg_score_total, total_github_stars, total_npm_weekly_downloads, total_tools, servers_with_cves, open_cves, servers_with_auth')
-    .order('snapshot_date', { ascending: true })
+    .order('snapshot_date', { ascending: false })
     .limit(90)
 
-  const historyRows = (history || []) as Array<{
+  const historyRows = ((history || []) as Array<{
     snapshot_date: string; total_servers: number; avg_score_total: number;
     total_github_stars: number; total_npm_weekly_downloads: number; total_tools: number;
     servers_with_cves: number; open_cves: number; servers_with_auth: number;
-  }>
+  }>).slice().reverse()
 
   // Find the row from ~7 days ago for delta calculations
   const targetDate = new Date()
@@ -535,6 +545,19 @@ export default async function AnalyticsPage() {
 
   const all = (servers as Pick<Server, 'categories' | 'health_status' | 'author_type' | 'api_pricing' | 'transport' | 'compatible_clients' | 'score_total' | 'score_security' | 'score_maintenance' | 'score_documentation' | 'score_compatibility' | 'score_efficiency' | 'token_efficiency_grade' | 'github_stars' | 'npm_weekly_downloads' | 'cve_count' | 'has_authentication' | 'tools' | 'created_at'>[]) || []
   const total = all.length
+
+  // Sanity guard: if we fetched far fewer servers than the most recent daily
+  // snapshot recorded, the paginated fetch almost certainly returned a partial
+  // set (see the throw in the fetch loop above). Refuse to render — throwing
+  // keeps Next serving the last good page rather than caching bad numbers for
+  // `revalidate` seconds. A legitimate day-over-day drop of >50% is not real.
+  const latestSnapshot = historyRows.length > 0 ? historyRows[historyRows.length - 1] : null
+  if (latestSnapshot && latestSnapshot.total_servers > 100 && total < latestSnapshot.total_servers * 0.5) {
+    throw new Error(
+      `analytics: fetched ${total} servers but the latest daily snapshot recorded ` +
+      `${latestSnapshot.total_servers} — refusing to render a likely-truncated dataset`
+    )
+  }
 
   if (total === 0) {
     return (
