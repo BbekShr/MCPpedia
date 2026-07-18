@@ -44,7 +44,7 @@ export default function ServerTester({ server }: { server: Server }) {
       const controller = new AbortController()
       const timeout = setTimeout(() => controller.abort(), 10000)
 
-      const res = await fetch(server.homepage_url!, {
+      await fetch(server.homepage_url!, {
         method: 'GET',
         signal: controller.signal,
         mode: 'no-cors', // Most MCP servers won't have CORS headers

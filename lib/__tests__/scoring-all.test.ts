@@ -10,7 +10,6 @@ import {
   scoreDocumentation,
   scoreCompatibility,
   scoreMaintenance,
-  SCORE_WEIGHTS,
 } from '../scoring'
 import type { Tool } from '../types'
 

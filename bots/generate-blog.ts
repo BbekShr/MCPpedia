@@ -9,7 +9,6 @@ config({ path: '.env.local' })
 
 import fs from 'fs'
 import path from 'path'
-import matter from 'gray-matter'
 import { createAdminClient } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
 
@@ -168,18 +167,6 @@ function loadMeta(): Meta {
 
 function saveMeta(meta: Meta) {
   fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2))
-}
-
-function getExistingPostDates(): string[] {
-  if (!fs.existsSync(blogDir)) return []
-  return fs.readdirSync(blogDir)
-    .filter(f => f.endsWith('.mdx'))
-    .map(f => {
-      const raw = fs.readFileSync(path.join(blogDir, f), 'utf-8')
-      const { data } = matter(raw)
-      return data.date as string
-    })
-    .filter(Boolean)
 }
 
 function toSlug(text: string): string {
@@ -381,7 +368,6 @@ function setStepOutput(key: string, value: string) {
 async function planArticles(meta: Meta): Promise<ArticlePlan[]> {
   const plans: ArticlePlan[] = []
   const today = todayStr()
-  const existingDates = getExistingPostDates()
 
   // Priority 1: Security alerts (always checked, even in security-only mode).
   // Dedup against advisories we've already covered, so the daily --security-only
