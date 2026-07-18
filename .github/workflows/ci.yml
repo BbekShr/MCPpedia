@@ -50,7 +50,7 @@ jobs:
   # unless a human has added the `human-approved` label. Agents never add that
   # label and never merge; a red guard means "hand to human".
   guard:
-    name: Protected-path guard
+    name: Protected-path guard (needs human-approved label if red)
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     env:
