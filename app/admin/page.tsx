@@ -85,6 +85,7 @@ interface ChangeRow {
 interface ClaimRow {
   id: string
   server_id: string
+  user_id: string | null
   proof_type: string
   proof_value: string
   verified: boolean
@@ -153,12 +154,25 @@ export default function AdminPage() {
       const { data } = await supabase.from('edits').select('*, profile:profiles(username), server:servers(name, slug)').order('created_at', { ascending: false }).limit(50)
       setEdits((data || []) as EditRow[])
     } else if (tab === 'claims') {
+      // publisher_claims.user_id references auth.users, not profiles, so we
+      // cannot embed `profile:profiles(...)` here — PostgREST fails the embed
+      // and nulls the whole result. Fetch usernames separately and stitch.
       const { data } = await supabase
         .from('publisher_claims')
-        .select('id, server_id, proof_type, proof_value, verified, created_at, profile:profiles(username), server:servers(name, slug)')
+        .select('id, server_id, user_id, proof_type, proof_value, verified, created_at, server:servers(name, slug)')
         .order('created_at', { ascending: false })
         .limit(50)
-      setClaims((data || []) as unknown as ClaimRow[])
+      const rows = (data || []) as unknown as ClaimRow[]
+      const userIds = [...new Set(rows.map(r => r.user_id).filter((id): id is string => !!id))]
+      const usernameById = new Map<string, string>()
+      if (userIds.length > 0) {
+        const { data: profs } = await supabase.from('profiles').select('id, username').in('id', userIds)
+        for (const p of (profs || []) as { id: string; username: string }[]) usernameById.set(p.id, p.username)
+      }
+      setClaims(rows.map(r => ({
+        ...r,
+        profile: r.user_id && usernameById.has(r.user_id) ? { username: usernameById.get(r.user_id)! } : null,
+      })))
     } else if (tab === 'history') {
       const { data } = await supabase
         .from('server_changes')
