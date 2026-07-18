@@ -142,6 +142,18 @@ async function main() {
   run.addUpdated(updated)
   run.setSummary({ updated, errors })
   console.log(`\nDone. Updated: ${updated}, Errors: ${errors}`)
+
+  // A run that updated ZERO servers while erroring on some is NOT a success — it
+  // means every GitHub fetch failed (e.g. an expired/invalid BOT_GITHUB_TOKEN or
+  // a GitHub outage). Without this guard the job reports green while silently
+  // freezing the whole site's stars/last-commit/health for days. Fail loudly so
+  // the scheduled run turns red and someone rotates the token.
+  if (updated === 0 && errors > 0) {
+    throw new Error(
+      `Every server failed to update (0 updated, ${errors} errors) — likely an expired/invalid BOT_GITHUB_TOKEN or a GitHub outage`
+    )
+  }
+
   await run.finish()
   } catch (err) {
     await run.fail(String(err))
