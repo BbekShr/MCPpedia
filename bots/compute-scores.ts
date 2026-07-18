@@ -249,20 +249,29 @@ async function main() {
 }
 
 // Recompute the home_stats_cache row so /security and the homepage hero
-// reflect today's totals. Runs as service_role (8s timeout) so it can
-// safely scan ~20k servers + advisories — the anon-facing home_stats() RPC
-// then becomes a sub-ms single-row read. Failure is non-fatal: previous
-// cache row remains.
+// reflect today's totals. Runs as service_role (statement_timeout raised to
+// 120s in migration 20260718120000 — the full-table scan outgrew the previous
+// ceiling once the catalog passed ~20k servers) so it can scan the servers
+// table + advisories; the anon-facing home_stats() RPC then becomes a sub-ms
+// single-row read.
+//
+// The previous cache row stays intact on failure, so this does not corrupt
+// data — but a silent failure means the homepage/security stats go stale
+// unnoticed (this is exactly how the cache sat frozen for ~2 weeks). So on
+// failure we log at error level and mark the run failed (non-zero exit) to
+// surface it, without throwing — later steps (cache revalidation) still run.
 async function refreshHomeStatsCache() {
   try {
     const { error } = await supabase.rpc('refresh_home_stats_cache')
     if (error) {
-      console.warn(`refresh_home_stats_cache failed: ${error.message}`)
+      console.error(`refresh_home_stats_cache failed — home_stats_cache is now stale: ${error.message}`)
+      process.exitCode = 1
       return
     }
     console.log('Refreshed home_stats_cache.')
   } catch (err) {
-    console.warn(`refresh_home_stats_cache threw: ${String(err)}`)
+    console.error(`refresh_home_stats_cache threw — home_stats_cache is now stale: ${String(err)}`)
+    process.exitCode = 1
   }
 }
 
