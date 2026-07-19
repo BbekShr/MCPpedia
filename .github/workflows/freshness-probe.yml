@@ -1,0 +1,24 @@
+name: Freshness Probe
+
+# Fails loudly if home_stats_cache goes stale (>48h) — the silent-failure class
+# from backlog S8 where the homepage froze for two weeks. A red run emails the
+# repo owner; alert-on-failure.yml also opens a tracking issue.
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # every 6 hours
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npx tsx bots/freshness-probe.ts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
