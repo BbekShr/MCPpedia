@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
 import { rateLimitUser } from '@/lib/rate-limit'
 
@@ -44,7 +45,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to update' }, { status: 500 })
   }
 
-  await supabase.from('edits').insert({
+  // Audit row must go through the service-role client: the `edits` INSERT
+  // policy only permits status='pending' rows (see 20260610000000), so a
+  // user-scoped insert of this 'approved' audit row is silently RLS-rejected.
+  const admin = createAdminClient(`admin-verify:${user.id}`)
+  const { error: auditErr } = await admin.from('edits').insert({
     server_id,
     user_id: user.id,
     field_name: 'verified',
@@ -55,6 +60,9 @@ export async function POST(request: Request) {
     reviewed_by: user.id,
     reviewed_at: new Date().toISOString(),
   })
+  if (auditErr) {
+    console.error('verify audit insert failed:', auditErr.message)
+  }
 
   return NextResponse.json({ ok: true })
 }

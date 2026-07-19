@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
 import { rateLimitUser } from '@/lib/rate-limit'
 
@@ -51,8 +52,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to update archive status' }, { status: 500 })
   }
 
-  // Log the action as an edit for audit trail
-  await supabase.from('edits').insert({
+  // Log the action as an edit for audit trail. This must go through the
+  // service-role client: the `edits` INSERT policy only permits rows with
+  // status='pending' (anti self-approval farming, see 20260610000000), so a
+  // user-scoped insert of an 'approved' audit row is silently rejected by RLS.
+  const admin = createAdminClient(`admin-archive:${user.id}`)
+  const { error: auditErr } = await admin.from('edits').insert({
     server_id,
     user_id: user.id,
     field_name: 'is_archived',
@@ -63,6 +68,9 @@ export async function POST(request: Request) {
     reviewed_by: user.id,
     reviewed_at: new Date().toISOString(),
   })
+  if (auditErr) {
+    console.error('archive audit insert failed:', auditErr.message)
+  }
 
   return NextResponse.json({
     ok: true,
