@@ -1,4 +1,5 @@
 import { createPublicClient } from '@/lib/supabase/public'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { CATEGORY_LABELS, HEALTH_STATUSES, CLIENT_LABELS } from '@/lib/constants'
 import type { Server } from '@/lib/types'
 import type { Category, CompatibleClient } from '@/lib/constants'
@@ -479,7 +480,22 @@ function DonutCard({ title, entries, footnote, centerLabel }: {
 }
 
 export default async function AnalyticsPage() {
-  const supabase = createPublicClient()
+  // This page walks the ENTIRE servers table (~32k active rows, paginated
+  // below) to compute ecosystem aggregates. Use the service-role client, NOT
+  // the anon `createPublicClient()`: the anon/authenticated roles carry a short
+  // per-statement timeout (see 20260718120000_home_stats_refresh_timeout.sql),
+  // and the concurrent build-time prerender workers were tripping it
+  // mid-pagination — failing the whole production build. service_role has no
+  // statement timeout, so the keyset scan completes even under build load. This
+  // is the SAME client `lib/sitemap-shared.ts` already uses to walk the full
+  // servers table at build. It's the plain supabase-js client (no next/headers
+  // cookies), so the page stays statically generated / ISR-cacheable for SEO,
+  // exactly like createPublicClient(). Server component only — the service key
+  // never reaches the client. Falls back to the anon client when the service
+  // key is absent (local dev without secrets → mock client → empty render).
+  const supabase = process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? createAdminClient('analytics')
+    : createPublicClient()
 
   // Fetch all non-archived servers in pages of 1000 (Supabase default limit).
   // Keyset (cursor) pagination on the indexed `id` primary key, NOT offset-based
