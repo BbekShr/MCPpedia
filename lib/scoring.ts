@@ -66,7 +66,7 @@ export async function queryOSV(packageName: string, ecosystem: 'npm' | 'PyPI'): 
 // CVSS v3 base score calculation from vector string.
 // OSV severity.score is always the full vector (e.g. "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"),
 // never a pre-computed numeric score, so we must compute it ourselves.
-function computeCVSS3BaseScore(vector: string): number | null {
+export function computeCVSS3BaseScore(vector: string): number | null {
   const parts: Record<string, string> = {}
   const metrics = vector.replace(/^CVSS:\d+\.\d+\//, '').split('/')
   for (const m of metrics) {
