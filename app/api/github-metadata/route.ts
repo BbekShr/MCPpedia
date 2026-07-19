@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { fetchRepoMetadataResult } from '@/lib/github'
+import { rateLimitUser } from '@/lib/rate-limit'
 
 export async function GET(request: Request) {
   // Require authentication to prevent abuse as a GitHub API proxy
@@ -9,6 +10,10 @@ export async function GET(request: Request) {
   if (!user) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
   }
+
+  // Cap how fast an authed user can fan out GitHub API calls through this proxy.
+  const rl = await rateLimitUser(user.id, 'github-metadata', 30, 60_000)
+  if (!rl.allowed) return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
 
   const { searchParams } = new URL(request.url)
   const url = searchParams.get('url')

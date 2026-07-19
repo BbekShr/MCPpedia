@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { rateLimitUser } from '@/lib/rate-limit'
 import { fetchRepoMetadata, fetchReadme } from '@/lib/github'
 import {
   scanSecurity,
@@ -43,6 +44,12 @@ export async function POST(
 
   if (!profile || !['maintainer', 'admin'].includes(profile.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  // This route fans out to OSV/deps.dev/GitHub/npm — throttle even trusted callers.
+  const rl = await rateLimitUser(user.id, 'refresh-score', 30, 60_000)
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
   }
 
   const supabase = createAdminClient('refresh-score')
