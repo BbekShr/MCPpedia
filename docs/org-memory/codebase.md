@@ -41,6 +41,23 @@ falsified; promote hardened facts to CLAUDE.md via human-approved PR. Keep ~120 
   app/compare/[slugs]/page.tsx and its `advisories` prop was dead (removed in S2).
 - 2026-07-16 (bootstrap): Tests live in two places: `__tests__/` (rate-limit, scoring,
   validators, widget-escaping) and `lib/__tests__/` (scoring-all, scoring-security).
+- 2026-07-18 (S4): `generateStaticParams` env guards must key on the env vars of the client the
+  page actually renders with. `app/s/[slug]/page.tsx:100` guards on `SUPABASE_SERVICE_ROLE_KEY`
+  (uses `createAdminClient`); `app/compare/[slugs]/page.tsx:41` guards on
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY` (uses `createPublicClient`, whose mock trigger is exactly
+  `!NEXT_PUBLIC_SUPABASE_URL || !NEXT_PUBLIC_SUPABASE_ANON_KEY`, lib/supabase/public.ts:32-36).
+  Not a copy-paste inconsistency between the two files.
+- 2026-07-18 (S4): The compare route's curated-pair list is read from `data/comparison-pairs.json`
+  in three independent places — `generateStaticParams` (app/compare/[slugs]/page.tsx:46), the
+  sitemap (lib/sitemap-shared.ts:118-127), and on-demand revalidate (lib/revalidate.ts:10-12).
+  The static-params env guard gates only prerendering; the route is ISR (`revalidate = 604800`,
+  default `dynamicParams: true`), so `return []` drops build-time prerender only — indexing and
+  on-demand serving of real pairs are unaffected.
+- 2026-07-18 (S4): Env-less `next build` prints `● /compare/[slugs]` as SSG with ZERO enumerated
+  child paths (no `[+N more paths]` line) — the signature of a `generateStaticParams` returning
+  `[]`; other SSG routes (`/best/[category]`, `/blog/[slug]`, `/skills/[slug]`) still enumerate
+  and summarize children, so an empty compare child set is meaningful, not a print quirk. Full
+  env-less build now generates 262 static pages in ~3.9s (compile ~8.8s).
 
 ## Security & auth
 
