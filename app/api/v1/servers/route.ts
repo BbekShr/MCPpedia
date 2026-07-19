@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { sanitizeSearchQuery } from '@/lib/validators'
+import { rateLimitIp, getClientIp } from '@/lib/rate-limit'
 
 const MAX_LIMIT = 100
 const DEFAULT_LIMIT = 20
+// Cap deep-offset scans: paging past this against the shared DB is pure cost with
+// no legitimate use — beyond it, keyset/filtered queries are the intended path.
+const MAX_OFFSET = 10_000
 
 /**
  * Public API: GET /api/v1/servers
@@ -16,11 +20,20 @@ const DEFAULT_LIMIT = 20
  *   min_score  - Minimum MCPpedia score (0-100)
  *   sort       - Sort by: score (default), stars, downloads, newest, name
  *   limit      - Results per page (max 100, default 20)
- *   offset     - Pagination offset (default 0)
+ *   offset     - Pagination offset (default 0, capped at 10000)
+ *
+ * Rate limited to 60 requests/minute per IP. The list response returns server
+ * metadata + scores but NOT the full tools/resources/prompts schemas — fetch a
+ * single server for those.
  *
  * Response: { servers: [...], total: number, limit: number, offset: number }
  */
 export async function GET(request: NextRequest) {
+  const rl = await rateLimitIp(getClientIp(request), 'v1-servers', 60, 60_000)
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Rate limited' }, { status: 429, headers: { 'Access-Control-Allow-Origin': '*' } })
+  }
+
   const { searchParams } = request.nextUrl
   const q = searchParams.get('q') || ''
   const category = searchParams.get('category') || ''
@@ -29,7 +42,8 @@ export async function GET(request: NextRequest) {
   const minScore = parseInt(searchParams.get('min_score') || '0', 10)
   const sort = searchParams.get('sort') || 'score'
   const limit = Math.min(parseInt(searchParams.get('limit') || String(DEFAULT_LIMIT), 10), MAX_LIMIT)
-  const offset = parseInt(searchParams.get('offset') || '0', 10)
+  const rawOffset = parseInt(searchParams.get('offset') || '0', 10)
+  const offset = Math.min(Math.max(Number.isNaN(rawOffset) ? 0 : rawOffset, 0), MAX_OFFSET)
 
   const supabase = await createClient()
 
@@ -46,7 +60,9 @@ export async function GET(request: NextRequest) {
     'score_documentation', 'score_compatibility', 'score_efficiency',
     'cve_count', 'has_authentication',
     'total_tool_tokens', 'token_efficiency_grade',
-    'tools', 'resources', 'prompts',
+    // The full tools/resources/prompts JSONB is intentionally NOT returned by the
+    // list endpoint — it is the heaviest payload on the shared DB and a list view
+    // does not need per-tool schemas. Fetch a single server for the full detail.
   ].join(', ')
 
   let query = supabase
