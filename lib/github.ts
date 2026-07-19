@@ -102,14 +102,3 @@ export async function fetchReadme(githubUrl: string): Promise<string | null> {
   if (!res.ok) return null
   return res.text()
 }
-
-export async function searchGitHubRepos(query: string, perPage = 30): Promise<Array<{ full_name: string; html_url: string; description: string | null; stargazers_count: number }>> {
-  const res = await fetch(
-    `https://api.github.com/search/repositories?q=${encodeURIComponent(query)}&per_page=${perPage}&sort=stars&order=desc`,
-    { headers: headers() }
-  )
-
-  if (!res.ok) return []
-  const data = await res.json()
-  return data.items || []
-}

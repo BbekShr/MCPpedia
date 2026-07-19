@@ -57,7 +57,3 @@ export function validateUsername(raw: string): UsernameValidation {
   }
   return { ok: true, normalized: candidate }
 }
-
-export function isReservedUsername(value: string): boolean {
-  return RESERVED_USERNAMES.has(value.toLowerCase())
-}
