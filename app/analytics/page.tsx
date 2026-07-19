@@ -486,7 +486,14 @@ export default async function AnalyticsPage() {
   // `.range()` — at 19k+ rows, OFFSET forces Postgres to scan and discard every
   // prior row on each page, and blew the statement timeout once offset hit ~19000.
   // `.gt('id', cursor)` is an index seek regardless of table size.
-  const fields = 'id,categories,health_status,author_type,api_pricing,transport,compatible_clients,score_total,score_security,score_maintenance,score_documentation,score_compatibility,score_efficiency,token_efficiency_grade,github_stars,npm_weekly_downloads,cve_count,has_authentication,tools,created_at'
+  // Deliberately excludes `tools` — its full jsonb (per-server tool schemas)
+  // was the heaviest column in this select and made keyset pages on this
+  // ~30k-row table occasionally exceed the anon role's statement timeout
+  // (unlike service_role, anon/authenticated keep the short default — see
+  // 20260718120000_home_stats_refresh_timeout.sql). The one stat that needs a
+  // tools count (`totalTools` below) already gets it for free from the
+  // `daily_metrics` snapshot fetched further down.
+  const fields = 'id,categories,health_status,author_type,api_pricing,transport,compatible_clients,score_total,score_security,score_maintenance,score_documentation,score_compatibility,score_efficiency,token_efficiency_grade,github_stars,npm_weekly_downloads,cve_count,has_authentication,created_at'
   const pageSize = 1000
   let servers: Record<string, unknown>[] = []
   let cursor: string | null = null
@@ -550,7 +557,7 @@ export default async function AnalyticsPage() {
   // Only use prev if it's actually from a different day (not today's row)
   const hasPrev = prev && prev.snapshot_date <= targetStr
 
-  const all = (servers as Pick<Server, 'categories' | 'health_status' | 'author_type' | 'api_pricing' | 'transport' | 'compatible_clients' | 'score_total' | 'score_security' | 'score_maintenance' | 'score_documentation' | 'score_compatibility' | 'score_efficiency' | 'token_efficiency_grade' | 'github_stars' | 'npm_weekly_downloads' | 'cve_count' | 'has_authentication' | 'tools' | 'created_at'>[]) || []
+  const all = (servers as Pick<Server, 'categories' | 'health_status' | 'author_type' | 'api_pricing' | 'transport' | 'compatible_clients' | 'score_total' | 'score_security' | 'score_maintenance' | 'score_documentation' | 'score_compatibility' | 'score_efficiency' | 'token_efficiency_grade' | 'github_stars' | 'npm_weekly_downloads' | 'cve_count' | 'has_authentication' | 'created_at'>[]) || []
   const total = all.length
 
   // Sanity guard: if we fetched far fewer servers than the most recent daily
@@ -697,7 +704,9 @@ export default async function AnalyticsPage() {
   // Stars & downloads
   const totalStars = all.reduce((s, x) => s + (x.github_stars || 0), 0)
   const totalDownloads = all.reduce((s, x) => s + (x.npm_weekly_downloads || 0), 0)
-  const totalTools = all.reduce((s, x) => s + (x.tools?.length || 0), 0)
+  // Sourced from the daily_metrics snapshot rather than summing `tools` live
+  // across every server — see the `fields` comment above.
+  const totalTools = latestSnapshot?.total_tools ?? 0
 
   // Score breakdown — uses category-specific palette colors from globals.css
   const scoreCategories = [
