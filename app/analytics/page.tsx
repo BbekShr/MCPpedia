@@ -1,4 +1,5 @@
 import { createPublicClient } from '@/lib/supabase/public'
+import { withRetry } from '@/lib/retry'
 import { CATEGORY_LABELS, HEALTH_STATUSES, CLIENT_LABELS } from '@/lib/constants'
 import type { Server } from '@/lib/types'
 import type { Category, CompatibleClient } from '@/lib/constants'
@@ -498,22 +499,31 @@ export default async function AnalyticsPage() {
   let servers: Record<string, unknown>[] = []
   let cursor: string | null = null
   while (true) {
-    let query = supabase
-      .from('servers')
-      .select(fields)
-      .eq('is_archived', false)
-      .order('id', { ascending: true })
-      .limit(pageSize)
-    if (cursor) query = query.gt('id', cursor)
-    const { data, error } = await query
-    // Fail loud on a fetch error instead of silently rendering a partial set.
-    // A transient error on any page would otherwise `break` and cache a
-    // truncated dataset for `revalidate` seconds — every aggregate below
-    // (counts, stars, downloads, deltas) computed off the fetched slice.
-    // Throwing here makes Next keep serving the last good page and retry.
-    if (error) {
-      throw new Error(`analytics: failed to fetch servers after cursor ${cursor}: ${error.message}`)
-    }
+    // withRetry absorbs a one-off transient blip (statement timeout under
+    // concurrent build-time load, cold pooled connection) on this one page
+    // before it's treated as a real failure — same idiom as app/page.tsx and
+    // app/security/page.tsx. Each retry re-runs only this page's query, not
+    // the whole cursor walk, since the cursor hasn't advanced yet.
+    const data = await withRetry(async () => {
+      let query = supabase
+        .from('servers')
+        .select(fields)
+        .eq('is_archived', false)
+        .order('id', { ascending: true })
+        .limit(pageSize)
+      if (cursor) query = query.gt('id', cursor)
+      const { data, error } = await query
+      // Fail loud on a fetch error instead of silently rendering a partial
+      // set. A transient error on any page would otherwise `break` and cache
+      // a truncated dataset for `revalidate` seconds — every aggregate below
+      // (counts, stars, downloads, deltas) computed off the fetched slice.
+      // Throwing here (after retries are exhausted) makes Next keep serving
+      // the last good page and retry.
+      if (error) {
+        throw new Error(`analytics: failed to fetch servers after cursor ${cursor}: ${error.message}`)
+      }
+      return data
+    })
     if (!data || data.length === 0) break
     servers = servers.concat(data)
     if (data.length < pageSize) break
