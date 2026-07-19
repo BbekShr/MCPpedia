@@ -36,6 +36,7 @@ export async function POST(request: Request) {
 
   const { error } = await admin.from('health_checks').insert({
     server_id: data.server_id,
+    user_id: user.id,
     status: data.status,
     response_time_ms: data.response_time_ms || null,
     checked_transport: data.transport || null,
@@ -47,29 +48,32 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to record health report' }, { status: 500 })
   }
 
-  // Update server's last health check status
-  // Use majority vote from last 5 user reports
-  const { data: recentChecks } = await admin
+  // Recompute the server's health status from ONE vote per distinct user (their
+  // latest report), not raw rows — otherwise a single account filing 5 `fail`
+  // reports flips a healthy server. Legacy rows with no user_id count individually.
+  const { data: recentRows } = await admin
     .from('health_checks')
-    .select('status')
+    .select('id, user_id, status')
     .eq('server_id', data.server_id)
     .order('checked_at', { ascending: false })
-    .limit(5)
+    .limit(200)
 
-  if (recentChecks && recentChecks.length > 0) {
-    const passCount = recentChecks.filter((c: { status: string }) => c.status === 'pass').length
-    const majorityStatus = passCount > recentChecks.length / 2 ? 'pass' : 'fail'
+  if (recentRows && recentRows.length > 0) {
+    const latestPerUser = new Map<string, string>()
+    for (const row of recentRows as Array<{ id: string; user_id: string | null; status: string }>) {
+      const key = row.user_id ?? `anon:${row.id}`
+      if (!latestPerUser.has(key)) latestPerUser.set(key, row.status) // first seen = latest (desc order)
+    }
+    const votes = [...latestPerUser.values()]
 
-    // Calculate uptime from all checks
-    const { data: allChecks } = await admin
-      .from('health_checks')
-      .select('status')
-      .eq('server_id', data.server_id)
-      .order('checked_at', { ascending: false })
-      .limit(100)
+    // Majority over the 5 most-recent distinct voters
+    const recentVotes = votes.slice(0, 5)
+    const passCount = recentVotes.filter(s => s === 'pass').length
+    const majorityStatus = passCount > recentVotes.length / 2 ? 'pass' : 'fail'
 
-    const total = allChecks?.length || 1
-    const passes = allChecks?.filter((c: { status: string }) => c.status === 'pass').length || 0
+    // Uptime = share of distinct voters whose latest report passed
+    const total = votes.length
+    const passes = votes.filter(s => s === 'pass').length
     const uptime = (passes / total) * 100
 
     await admin
