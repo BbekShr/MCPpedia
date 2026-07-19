@@ -20,6 +20,7 @@ export interface Server {
   compatible_clients: string[]
   install_configs: Record<string, unknown>
   tools: Tool[]
+  tool_count: number
   resources: Resource[]
   prompts: Prompt[]
   api_name: string | null

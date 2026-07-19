@@ -26,7 +26,7 @@ function timeAgo(date: string): string {
 }
 
 export default function ServerCard({ server }: { server: Server }) {
-  const toolCount = server.tools?.length || 0
+  const toolCount = server.tool_count ?? 0
   const score = server.score_total || 0
   const transports = server.transport || []
   const hasRemote = transports.includes('http') || transports.includes('sse')

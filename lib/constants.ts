@@ -104,9 +104,9 @@ export const PUBLIC_CARD_FIELDS = [
   'github_stars', 'github_last_commit', 'npm_weekly_downloads',
   'health_status', 'cve_count',
   'score_total',
-  // tools is selected so `tools.length` renders in the card; we can drop to
-  // `tool_count` once that column is backfilled. Keep for now to avoid a migration.
-  'tools',
+  // Denormalized count instead of the heavy `tools` JSONB — cards only need the
+  // number (see migration 20260719130000_tool_count_column).
+  'tool_count',
 ].join(', ')
 
 // Public fields safe to expose in API responses (excludes internal scoring details, scan internals, claimed_by, etc.)
