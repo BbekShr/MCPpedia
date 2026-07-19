@@ -65,9 +65,13 @@ export async function GET(request: NextRequest) {
     // does not need per-tool schemas. Fetch a single server for the full detail.
   ].join(', ')
 
+  // `estimated`, NOT `exact`: an exact window-count over the ~46k-row servers
+  // table exceeds anon's 3s statement timeout and 500s this endpoint
+  // (`canceling statement due to statement timeout`). `total` becomes a planner
+  // estimate for large result sets and stays exact for small filtered ones.
   let query = supabase
     .from('servers')
-    .select(fields, { count: 'exact' })
+    .select(fields, { count: 'estimated' })
     .eq('is_archived', false)
 
   // Filters

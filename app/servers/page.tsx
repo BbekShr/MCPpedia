@@ -71,9 +71,13 @@ export default async function ServersPage({
     }
   } else {
     // Direct query — hide archived by default
+    // `estimated` (planner row-count), NOT `exact`: an exact window-count over
+    // the ~46k-row servers table exceeds anon's 3s statement timeout, which
+    // returned `canceling statement due to statement timeout` and rendered an
+    // empty "No servers found" catalog. An approximate total is fine for paging.
     let query = supabase
       .from('servers')
-      .select(PUBLIC_CARD_FIELDS, { count: 'exact' })
+      .select(PUBLIC_CARD_FIELDS, { count: 'estimated' })
       .eq('is_archived', false)
 
     if (category) query = query.contains('categories', [category])
@@ -106,7 +110,10 @@ export default async function ServersPage({
 
     query = query.range(offset, offset + ITEMS_PER_PAGE - 1)
 
-    const { data, count } = await query
+    const { data, count, error } = await query
+    // Degrade gracefully (revalidate=60 re-tries within a minute) but never fail
+    // silently again — log so a recurrence is visible instead of a blank catalog.
+    if (error) console.error('[servers] catalog query failed', error)
     servers = (data as Server[]) || []
     totalCount = count || 0
   }
