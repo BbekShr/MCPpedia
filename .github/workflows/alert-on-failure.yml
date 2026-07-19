@@ -1,0 +1,65 @@
+name: Alert on Workflow Failure
+
+# Fleet-wide failure alarm. Before this, a failed bot only turned a run red and
+# emailed whoever committed last — easy to miss, and nothing tracked it. This
+# opens (or comments on) a GitHub issue whenever any scheduled bot or the
+# freshness probe fails, so every failure is visible and tracked in one place.
+# CI is intentionally excluded — its failures already surface on the PR.
+
+on:
+  workflow_run:
+    workflows:
+      - Score Computation
+      - Registry Sync
+      - Discovery Bot
+      - Schema Extractor
+      - Install Info Extractor
+      - Metadata Updater
+      - Description Enricher
+      - Duplicate Detector
+      - Broken Link Checker
+      - Daily Metrics Snapshot
+      - Trending Tracker
+      - Blog Generator
+      - Blog Security Alerts
+      - Publish Scheduled Blog Post
+      - Generate Comparison Pairs
+      - Newsletter Digest
+      - Freshness Probe
+    types: [completed]
+
+permissions:
+  issues: write
+
+jobs:
+  alert:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open or update a tracking issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WF_NAME: ${{ github.event.workflow_run.name }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          RUN_NUMBER: ${{ github.event.workflow_run.run_number }}
+        run: |
+          set -euo pipefail
+          TITLE="⚠️ Workflow failing: ${WF_NAME}"
+          BODY="Run #${RUN_NUMBER} of **${WF_NAME}** failed.
+
+          - Run: ${RUN_URL}
+          - Detected by \`alert-on-failure.yml\`
+
+          This issue auto-updates on each new failure of this workflow. Close it once the workflow is green again."
+
+          # Find an existing open tracking issue for this workflow (exact title match).
+          EXISTING=$(gh issue list --state open --label bot-failure --search "in:title ${TITLE}" --json number,title \
+            --jq ".[] | select(.title == \"${TITLE}\") | .number" | head -n1)
+
+          if [ -n "${EXISTING}" ]; then
+            gh issue comment "${EXISTING}" --body "${BODY}"
+            echo "Commented on existing issue #${EXISTING}"
+          else
+            gh label create bot-failure --color b60205 --description "A scheduled bot/probe workflow failed" 2>/dev/null || true
+            gh issue create --title "${TITLE}" --body "${BODY}" --label bot-failure
+          fi
