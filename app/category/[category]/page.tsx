@@ -71,9 +71,13 @@ export default async function CategoryPage({
 
   const supabase = createPublicClient()
 
+  // `estimated`, NOT `exact`: an exact window-count on large categories
+  // (e.g. developer-tools, 6k+ rows) exceeds anon's 3s statement timeout —
+  // the error guard below then throws and the category 500s. An approximate
+  // total is fine for paging; the timeout is what breaks the page.
   let query = supabase
     .from('servers')
-    .select(PUBLIC_CARD_FIELDS, { count: 'exact' })
+    .select(PUBLIC_CARD_FIELDS, { count: 'estimated' })
     .contains('categories', [category])
     .eq('is_archived', false)
 
@@ -109,10 +113,9 @@ export default async function CategoryPage({
 
   query = query.range(offset, offset + ITEMS_PER_PAGE - 1)
 
-  // Throw on Supabase failure so the empty render never gets pinned by ISR.
-  // count: 'exact' on large categories (e.g. developer-tools, 6k+ rows) can hit
-  // anon's 3s statement timeout under build-worker concurrency; without this
-  // guard the failure surfaces as `count: null` → 0 servers, cached for 7d.
+  // Throw on Supabase failure so the empty render never gets pinned by ISR
+  // (a transient failure would otherwise surface as `count: null` → 0 servers,
+  // cached for 7d). The `estimated` count above keeps this off the timeout path.
   const { data: servers, count, error } = await query
   if (error) {
     console.error(`[category/${category}] Supabase query failed`, error)
