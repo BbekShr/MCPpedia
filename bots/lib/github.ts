@@ -108,18 +108,3 @@ export async function getReadme(owner: string, repo: string): Promise<string | n
   }
   return res.text()
 }
-
-export async function getReleases(owner: string, repo: string): Promise<Array<{ tag_name: string; name: string; body: string; html_url: string; published_at: string }>> {
-  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases?per_page=5`, {
-    headers: headers(),
-  })
-  if (!res.ok) {
-    if (await handleRateLimit(res)) {
-      const retry = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases?per_page=5`, { headers: headers() })
-      if (!retry.ok) return []
-      return retry.json()
-    }
-    return []
-  }
-  return res.json()
-}
