@@ -38,6 +38,9 @@ function loadComparisonPairs(): ComparisonPair[] {
 }
 
 export async function generateStaticParams() {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return []
+  }
   // Only pre-render the curated 2-server pairs. N≥3 routes are ISR'd on demand —
   // generating every 3- or 4-tuple of 17k servers would explode.
   const pairs = loadComparisonPairs()

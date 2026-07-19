@@ -18,3 +18,9 @@ One line per cycle: `- YYYY-MM-DD <ID>: <friction observed> → <action or M-row
   sites live in protected `lib/__tests__/**`, so a pure-cleanup PR still needs human-approved;
   worth considering whether trivial unused-import fixes in test files should be exempt. No
   agent/skill friction; researcher's exact-replacement table let me skip a separate architect pass.
+- 2026-07-18 S4: no friction — a 3-line mechanical guard mirroring an existing pattern; CEO did
+  the research inline (read public.ts to confirm the mock trigger) and skipped separate
+  researcher/architect passes, went straight implementer → review∥QA. All lenses refuted clean,
+  QA bar green, build confirmed compare pages dropped ~701→0. For changes this small the full
+  6-agent pipeline is heavier than the change; the lean path (inline research, implementer, 2
+  relevant review lenses + qa) fit well.
