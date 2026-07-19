@@ -47,7 +47,8 @@ export default async function ServersPage({
 
   if (q) {
     // Fetch one page of search results from Supabase RPC with DB-side pagination.
-    // JS-side filters (min_score, transport, author) are applied post-fetch.
+    // ALL filters (incl. min_score/transport/author) run in the RPC so
+    // pagination and hasNextPage are computed over the already-filtered set.
     // We request one extra row to detect if there's a next page.
     const { data, error } = await supabase.rpc('search_servers', {
       search_query: q,
@@ -57,12 +58,12 @@ export default async function ServersPage({
       sort_by: sort || 'relevance',
       page_size: ITEMS_PER_PAGE + 1,
       page_offset: offset,
+      min_score_filter: minScore > 0 ? minScore : null,
+      transport_filter: transport || null,
+      author_filter: author || null,
     })
     if (!error && data) {
-      let results = data as Server[]
-      if (minScore > 0) results = results.filter(s => (s.score_total || 0) >= minScore)
-      if (transport) results = results.filter(s => (s.transport || []).includes(transport))
-      if (author) results = results.filter(s => s.author_type === author)
+      const results = data as Server[]
       const hasNextPage = results.length > ITEMS_PER_PAGE
       servers = results.slice(0, ITEMS_PER_PAGE)
       // Approximate total for search: show current offset + results fetched
