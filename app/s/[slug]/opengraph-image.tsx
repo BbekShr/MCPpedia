@@ -32,7 +32,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     const supabase = createAdminClient('og-image')
     const { data: server } = await supabase
       .from('servers')
-      .select('name, tagline, score_total, score_security, score_maintenance, score_efficiency, score_documentation, score_compatibility, tools, transport, license, cve_count, has_authentication, health_status, github_stars')
+      .select('name, tagline, score_total, score_security, score_maintenance, score_efficiency, score_documentation, score_compatibility, tool_count, transport, license, cve_count, has_authentication, health_status, github_stars')
       .eq('slug', slug)
       .single()
 
@@ -45,7 +45,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
       scoreEfficiency = server.score_efficiency || 0
       scoreDocs = server.score_documentation || 0
       scoreCompat = server.score_compatibility || 0
-      toolCount = (server.tools as unknown[])?.length || 0
+      toolCount = (server.tool_count as number) ?? 0
       transport = server.transport || []
       license = server.license || ''
       cveCount = server.cve_count || 0

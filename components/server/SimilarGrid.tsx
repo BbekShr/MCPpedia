@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import ServerIcon from '@/components/ServerIcon'
-import type { Server, Tool } from '@/lib/types'
+import type { Server } from '@/lib/types'
 import { Icon, formatNumber, gradeColor } from './helpers'
 
 type CardServer = Pick<
@@ -13,14 +13,14 @@ type CardServer = Pick<
   | 'author_github'
   | 'github_stars'
   | 'score_total'
-  | 'tools'
+  | 'tool_count'
 >
 
 export default function SimilarGrid({ servers }: { servers: CardServer[] }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
       {servers.map(s => {
-        const toolCount = (s.tools as Tool[] | undefined)?.length ?? 0
+        const toolCount = s.tool_count ?? 0
         const score = s.score_total || 0
         return (
           <Link

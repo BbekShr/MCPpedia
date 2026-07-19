@@ -60,13 +60,13 @@ export async function generateMetadata({
   const supabase = createPublicClient()
   const { data: server } = await supabase
     .from('servers')
-    .select('name, tagline, tools, categories, score_total')
+    .select('name, tagline, tool_count, categories, score_total')
     .eq('slug', slug)
     .single()
 
   if (!server) return { title: 'Server Not Found' }
 
-  const toolCount = (server.tools as unknown[])?.length || 0
+  const toolCount = (server.tool_count as number) ?? 0
   const score = server.score_total || 0
   const grade = score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 40 ? 'C' : score >= 20 ? 'D' : 'F'
 
