@@ -1,0 +1,25 @@
+-- Drop the stale 7-argument search_servers overload.
+--
+-- 20260429110848_search_servers_hide_archived.sql defined
+--   search_servers(text, text, text, text, text, integer, integer)   -- 7 args
+-- 20260719120000_search_servers_filters.sql then `create or replace`d a
+--   search_servers(text, text, text, text, text, integer, integer, integer, text, text)
+--                                                                    ^^^^^^^  ^^^^  ^^^^
+--   10-arg version (min_score_filter / transport_filter / author_filter, all
+-- defaulting null). Postgres keys functions on their FULL argument signature, so
+-- `create or replace` did not replace the 7-arg function — it created a SECOND
+-- overload beside it. A 7-argument call (PostgREST rpc passing the first seven
+-- positional args) then matches BOTH candidates and Postgres raises
+--   "function search_servers(...) is not unique"
+-- which 500s /api/search. On a fresh, in-order migration apply this ambiguity is
+-- guaranteed; in production during the 2026-07-19 servers-listing incident it was
+-- hot-patched by dropping the duplicate in the SQL editor. This migration records
+-- that fix so the history converges to a single 10-arg function everywhere.
+--
+-- The surviving 10-arg version's args 8-10 default to null, so every existing
+-- caller (7, 8, 9, or 10 positional args) still resolves against it unambiguously.
+--
+-- Idempotent: `if exists` makes this a no-op where the 7-arg overload was already
+-- dropped by hand (i.e. current production).
+
+drop function if exists search_servers(text, text, text, text, text, integer, integer);
