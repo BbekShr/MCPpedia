@@ -10,6 +10,7 @@ import {
   scoreCompatibility,
   scoreMaintenance,
 } from '@/lib/scoring'
+import { deriveDangerousPatternCount, deriveInjectionRisk } from '@/lib/security-columns'
 import type { Tool } from '@/lib/types'
 
 async function fetchNpmDownloads(packageName: string): Promise<number> {
@@ -165,10 +166,8 @@ export async function POST(
       last_security_scan: new Date().toISOString(),
       security_evidence: security.evidence,
       has_code_execution: security.evidence.some(e => e.id === 'tool-safety' && e.pass === false),
-      has_injection_risk: security.evidence.some(e => (e.id === 'injection' || e.id === 'tool-poisoning') && e.pass === false),
-      dangerous_pattern_count: security.evidence.find(e => e.id === 'tool-safety')?.points !== undefined
-        ? (security.evidence.find(e => e.id === 'tool-safety')!.max_points - security.evidence.find(e => e.id === 'tool-safety')!.points)
-        : 0,
+      has_injection_risk: deriveInjectionRisk(security.evidence),
+      dangerous_pattern_count: deriveDangerousPatternCount(security.evidence),
       dep_health_score: security.evidence.find(e => e.id === 'dep-health')?.points ?? null,
       has_tool_poisoning: security.has_tool_poisoning,
       tool_poisoning_flags: security.tool_poisoning_flags,

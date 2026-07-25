@@ -54,6 +54,22 @@ const ALLOWED_CATEGORIES = new Set([
 
 const ALLOWED_SORTS = new Set(['score', 'stars', 'newest'])
 
+// Every action the switch below handles. `increment_mcp_usage` writes one
+// mcp_api_usage row per distinct (date, action) and nothing prunes the table, so
+// an unauthenticated caller must never be able to name the bucket: usage is
+// counted only after `action` passes this allow-list. The `never` assignment in
+// the switch's default branch keeps the two in sync — dropping a case here (or
+// adding one the switch doesn't handle) is a typecheck error.
+const KNOWN_ACTIONS = [
+  'search', 'details', 'security', 'compare',
+  'install', 'trending', 'categories', 'changes',
+] as const
+type McpAction = (typeof KNOWN_ACTIONS)[number]
+
+function isKnownAction(action: string): action is McpAction {
+  return (KNOWN_ACTIONS as readonly string[]).includes(action)
+}
+
 // Sanitize user input for use in Supabase .or() filters — strip anything that could inject filter syntax
 function sanitizeQuery(input: string): string {
   // Only allow alphanumeric, spaces, hyphens, and basic punctuation
@@ -65,11 +81,13 @@ function isValidSlug(s: string): boolean {
   return typeof s === 'string' && s.length > 0 && s.length <= 200 && /^[a-z0-9\-_.]+$/.test(s)
 }
 
-// Safe integer parser
+// Safe integer parser. A finite non-integer is ROUNDED, not discarded: falling
+// back silently turned `min_score: 62.5` into "no score floor at all" and
+// returned servers scoring 4/100 as if they had passed the filter.
 function safeInt(val: unknown, fallback: number, min: number, max: number): number {
   const n = Number(val)
-  if (!Number.isFinite(n) || !Number.isInteger(n)) return fallback
-  return Math.min(Math.max(n, min), max)
+  if (!Number.isFinite(n)) return fallback
+  return Math.min(Math.max(Math.round(n), min), max)
 }
 
 // Build a response with a strong ETag derived from the payload. Honors
@@ -119,6 +137,9 @@ export async function POST(request: Request) {
   const { action, params } = body
   if (!action || typeof action !== 'string') {
     return NextResponse.json({ error: 'Missing action' }, { status: 400 })
+  }
+  if (!isKnownAction(action)) {
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
   }
 
   const supabase = await createClient()
@@ -358,8 +379,12 @@ export async function POST(request: Request) {
         )
       }
 
-      default:
-        return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+      default: {
+        // Unreachable — `action` is narrowed to McpAction above. This assignment
+        // is what makes KNOWN_ACTIONS and the cases above one source of truth.
+        const unhandled: never = action
+        throw new Error(`Unhandled action: ${String(unhandled)}`)
+      }
     }
   } catch {
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })

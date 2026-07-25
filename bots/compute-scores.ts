@@ -20,6 +20,7 @@ import {
   scoreMaintenance,
   SCORE_WEIGHTS,
 } from '../lib/scoring'
+import { deriveDangerousPatternCount, deriveInjectionRisk } from '../lib/security-columns'
 import type { Tool } from '../lib/types'
 
 const supabase = createAdminClient('bot-compute-scores')
@@ -176,10 +177,8 @@ async function main() {
         security_scan_status: security.scan_status,
         last_security_scan: new Date().toISOString(),
         has_code_execution: security.evidence.some(e => e.id === 'tool-safety' && e.pass === false),
-        has_injection_risk: security.evidence.some(e => e.id === 'injection' && e.pass === false),
-        dangerous_pattern_count: security.evidence.find(e => e.id === 'tool-safety')?.points !== undefined
-          ? (security.evidence.find(e => e.id === 'tool-safety')!.max_points - security.evidence.find(e => e.id === 'tool-safety')!.points)
-          : 0,
+        has_injection_risk: deriveInjectionRisk(security.evidence),
+        dangerous_pattern_count: deriveDangerousPatternCount(security.evidence),
         dep_health_score: security.evidence.find(e => e.id === 'dep-health')?.points ?? null,
         dependency_count: null, // deps.dev doesn't reliably return this yet
         has_tool_poisoning: security.has_tool_poisoning,
