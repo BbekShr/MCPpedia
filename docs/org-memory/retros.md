@@ -24,3 +24,11 @@ One line per cycle: `- YYYY-MM-DD <ID>: <friction observed> → <action or M-row
   QA bar green, build confirmed compare pages dropped ~701→0. For changes this small the full
   6-agent pipeline is heavier than the change; the lean path (inline research, implementer, 2
   relevant review lenses + qa) fit well.
+- 2026-07-24 discover: 5 bug-hunters (api-security, bots data-integrity, scoring correctness,
+  pages performance, MCP correctness) returned 23 findings; CEO spot-verified 6 of the
+  highest-severity against the code and prod before filing, all held. Filed S23-S45 + M3/M4.
+  Friction: the skill's `discover fix` path says "wait for the records-only PR to be merged by
+  the human", but a cycle can never merge — so `discover fix` structurally cannot self-continue
+  in one session. Resolved by CEO decision (standing instruction to decide): file the
+  records-only PR, then open FIX PRs off the same discovery branch's base (`main`), keeping
+  finding and fixing in separate diffs as the bright line requires. Filed as M5.

@@ -83,3 +83,74 @@ falsified; promote hardened facts to CLAUDE.md via human-approved PR. Keep ~120 
 ## Audit log (discovery grounds)
 
 _(record "audited <ground> under <lens>: clean" entries here so discovery skips them)_
+
+## Discovery 2026-07-24 (5-lens hunt, S23–S45 + M3/M4)
+
+- 2026-07-24: Anon per-statement timeout is **3s** (`supabase/migrations/20260430160000_home_stats_snapshot_cache.sql:1-2`);
+  prod catalog is **39,409 non-archived** servers. Any full-table scan on the anon role is
+  within ~2x of failing — treat 2s+ measured page latency as pre-outage, not "fine".
+- 2026-07-24: A page with NO `revalidate` export that queries Supabase is prerendered **once
+  per deploy and never refreshed** — prod `/badge` serves `age: 452489` (5.2 days) and still
+  says "17,000 servers" (S28). Build-time query failures on such pages are permanent,
+  invisible content bugs.
+- 2026-07-24: `/servers` and `/category/[category]` are **fully dynamic** in prod
+  (`cache-control: private, no-store`, `x-vercel-cache: MISS`, absent from
+  `.next/prerender-manifest.json`) because they `await searchParams` before their fetches —
+  their `revalidate` exports are inert (S35). `/best/[category]` and `/best-for/[usecase]`
+  (no searchParams) are genuine PRERENDER/ISR.
+- 2026-07-24: PERMISSIVE-POLICY OR HAZARD, same class as S21 — when a migration RENAMES a
+  policy/function, later hardening that `DROP ... IF EXISTS` the OLD name and re-`CREATE`s it
+  **adds** a policy instead of replacing it, and Postgres ORs permissive policies, so the
+  WEAKER one decides. Live on `profiles` UPDATE (S23). Check `pg_policies` after any such
+  migration pair.
+- 2026-07-24: `score_security`/`score_total` and friends are `integer default 0`, **NOT
+  nullable** (`supabase/migrations/20260402010000_scores_security_registry.sql:6-11`) — every
+  `server.score_x ?? fallback` in bots/routes is dead code that silently means 0 (S25).
+- 2026-07-24: There are **two** live scoring implementations — `lib/scoring.ts`
+  (evidence-summing, 30/25/20/15/10) and the SQL `compute_server_score`
+  (subtract-from-ceiling, no tool-poisoning/injection/dep-health terms,
+  `20260426120000_fix_scoring_formula.sql:19-26`), still RPC-called by
+  `scripts/apply-classifications.ts:197,282` (S42).
+- 2026-07-24: `search_servers` is `returns setof servers`
+  (`20260719120000_search_servers_filters.sql:21`) — i.e. EVERY column. Any route returning
+  its result unprojected bypasses the `PUBLIC_SERVER_FIELDS`/`PUBLIC_CARD_FIELDS` allow-lists
+  in `lib/constants.ts:99,113` (S30).
+- 2026-07-24: `bots/lib/supabase.ts:fetchAllRows` appends `.range()` pages to a caller-built
+  query and therefore **requires the caller to supply a unique tiebreak in `.order()`**;
+  `bots/compute-scores.ts:52` does, `bots/detect-duplicates.ts:86` does not (S32).
+- 2026-07-24: WHEN HARDENING A QUERY PATTERN, CHECK THE BOT TWIN. The `/analytics` fix
+  (keyset + throw-on-error + no `tools`, `app/analytics/page.tsx:500-537`) was never mirrored
+  into `bots/snapshot-metrics.ts:17-34`, which still carries all three defects and is the bot
+  that PERSISTS `daily_metrics` forever (S24).
+- 2026-07-24: The hosted `/mcp` endpoint does not query the DB directly — it self-fetches
+  `https://mcppedia.org/api/mcp` over the public internet (`lib/mcp/api.ts:1,86-100`), one
+  round trip per tool call, with a per-lambda in-process cache. Any reasoning about `/mcp`
+  latency, caching, or rate limiting must account for that hop (S36).
+- 2026-07-24: `mcppedia-server/` is a **gitignored sibling checkout**, not part of this repo
+  (`.gitignore:46-47`), byte-identical to `lib/mcp/*` except `.js` import suffixes — fixes to
+  `lib/mcp/**` do not reach it (M3). CLAUDE.md §3 currently implies otherwise.
+
+### Audit log (discovery grounds)
+
+- 2026-07-24 `app/api/**` (30 route files) × **security**: admin role gates,
+  `sanitizeSearchQuery` coverage on `.or()/.ilike`, SSRF in `github-metadata`, SVG escaping in
+  `badge`/`widget`, the `/api/revalidate` `timingSafeEqual` comparison, and the
+  `vote_and_recount`/`toggle_community_verify` `auth.uid()` guards are **clean**. Residue is
+  S23/S30/S31/S39. Noted below the filing bar: `/api/admin/categorize` is a state-changing GET
+  (`route.ts:8`) reachable by a maintainer clicking a link (SameSite=Lax) — not filed only
+  because the write is rule-derived and roughly idempotent.
+- 2026-07-24 `lib/scoring.ts` + `bots/compute-scores.ts` + refresh-score + submit ×
+  **correctness**: `SCORE_WEIGHTS` sums to 100 with every sub-score clamped; `scoreMaintenance`
+  tier boundaries; `measureTokenEfficiency` grade thresholds; `scoreDocumentation` boundaries;
+  `walkSchemaStrings` depth cap; order-independent stability hash; date math (GitHub
+  `pushed_at` makes negative/future `daysSinceCommit` unreachable) — all **clean**. Future
+  correctness passes can skip the tier tables; the residue is entirely in the CVE/OSV severity
+  path and the derived-column writers (S25/S26/S34/S42/S43).
+- 2026-07-24 `components/**` markdown-render paths (`InlineMarkdown.tsx:34`,
+  `ServerReadme.tsx:91`), the three `dangerouslySetInnerHTML` sites (`app/layout.tsx:54`,
+  `lib/seo.tsx:16`, `app/badge/page.tsx:117` — no user/bot data), `lib/compareStore.ts`
+  `useSyncExternalStore` snapshot caching, `components/CompareTray.tsx:36-54` keying, and
+  `components/ScoreCard.tsx` field coverage × **correctness/regression**: **clean**.
+- 2026-07-24 `lib/mcp/resources.ts` URI round-trip, SDK error-to-JSON-RPC conversion, tool
+  `outputSchema`/`structuredContent` validation, and the route's `ALLOWED_CATEGORIES` vs
+  `lib/constants.ts` `CATEGORIES` × **correctness**: **clean**. Residue is S36-S38/S44/S45.
