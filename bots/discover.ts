@@ -42,16 +42,22 @@ function computeHealth(pushedAt: string | null, archived: boolean): string {
   return 'abandoned'
 }
 
+// These four loaders build the dedupe sets that are the ONLY thing stopping this
+// bot from inserting duplicate rows — there is no unique index on github_url, slug,
+// npm_package or pip_package. So every page error must abort the run: a swallowed
+// error truncates the set, and every already-known server past that point gets
+// re-inserted as a duplicate.
 async function getExistingGithubUrls(): Promise<Set<string>> {
   const urls: string[] = []
   let from = 0
   const PAGE = 1000
   while (true) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('servers')
       .select('github_url')
       .not('github_url', 'is', null)
       .range(from, from + PAGE - 1)
+    if (error) throw new Error(`Failed to load existing github_urls at offset ${from}: ${error.message}`)
     if (!data || data.length === 0) break
     urls.push(...data.map(s => s.github_url?.toLowerCase()))
     if (data.length < PAGE) break
@@ -65,10 +71,11 @@ async function getExistingSlugs(): Promise<Set<string>> {
   let from = 0
   const PAGE = 1000
   while (true) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('servers')
       .select('slug')
       .range(from, from + PAGE - 1)
+    if (error) throw new Error(`Failed to load existing slugs at offset ${from}: ${error.message}`)
     if (!data || data.length === 0) break
     slugs.push(...data.map(s => s.slug))
     if (data.length < PAGE) break
@@ -82,11 +89,12 @@ async function getExistingNpmPackages(): Promise<Set<string>> {
   let from = 0
   const PAGE = 1000
   while (true) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('servers')
       .select('npm_package')
       .not('npm_package', 'is', null)
       .range(from, from + PAGE - 1)
+    if (error) throw new Error(`Failed to load existing npm_packages at offset ${from}: ${error.message}`)
     if (!data || data.length === 0) break
     pkgs.push(...data.map(s => s.npm_package))
     if (data.length < PAGE) break
@@ -100,11 +108,12 @@ async function getExistingPipPackages(): Promise<Set<string>> {
   let from = 0
   const PAGE = 1000
   while (true) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('servers')
       .select('pip_package')
       .not('pip_package', 'is', null)
       .range(from, from + PAGE - 1)
+    if (error) throw new Error(`Failed to load existing pip_packages at offset ${from}: ${error.message}`)
     if (!data || data.length === 0) break
     pkgs.push(...data.map(s => s.pip_package))
     if (data.length < PAGE) break
