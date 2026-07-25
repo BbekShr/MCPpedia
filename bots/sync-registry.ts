@@ -85,14 +85,14 @@ async function fetchRegistryServers(): Promise<RegistryServer[]> {
 
 async function getExistingRegistryIds(): Promise<Set<string>> {
   const rows = await fetchAllRows<{ registry_id: string }>(
-    supabase.from('servers').select('registry_id').not('registry_id', 'is', null)
+    supabase.from('servers').select('registry_id').not('registry_id', 'is', null).order('id')
   )
   return new Set(rows.map(s => s.registry_id))
 }
 
 async function getExistingGithubUrls(): Promise<Set<string>> {
   const rows = await fetchAllRows<{ github_url: string }>(
-    supabase.from('servers').select('github_url').not('github_url', 'is', null)
+    supabase.from('servers').select('github_url').not('github_url', 'is', null).order('id')
   )
   return new Set(
     rows

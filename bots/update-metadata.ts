@@ -57,6 +57,9 @@ async function main() {
       .from('servers')
       .select('id, slug, github_url, npm_package, is_archived, license')
       .not('github_url', 'is', null)
+      // Offset paging needs a unique sort key — without one, rows shifting
+      // between page fetches silently drop servers from the day's refresh.
+      .order('id')
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
     if (batchError) {
