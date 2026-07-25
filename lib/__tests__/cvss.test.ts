@@ -92,38 +92,37 @@ describe('cvssToSeverity — band boundaries', () => {
   })
 })
 
-// CVSS 4.0 vectors carry no C/I/A metrics, so the 3.x formula cannot score them.
-// They are banded instead (cvss4VectorSeverity) — no exact base score is claimed,
-// but a v4 critical must never land in the unpenalized 'info' bucket.
-describe('cvss4VectorSeverity — CVSS 4.0 vectors', () => {
-  it('bands a fully-remote total compromise as critical', () => {
-    expect(
-      cvss4VectorSeverity('CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N'),
-    ).toBe('critical')
+// CVSS 4.0 vectors carry no C/I/A metrics, so the 3.x formula cannot score them; they
+// are banded instead (cvss4VectorSeverity), which decides only records with no publisher
+// label. The band is a coarse approximation, so each case below is pinned to a NAMED real
+// advisory and the severity its publisher assigned — both read from api.osv.dev — rather
+// than to whatever the function happens to compute.
+describe('cvss4VectorSeverity — pinned to real v4-only advisories', () => {
+  const cases: Array<[string, string, string]> = [
+    // parse-server RCE — GHSA says CRITICAL
+    ['GHSA-gqpp-xgvh-9h7h', 'CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N', 'critical'],
+    // @modelcontextprotocol/sdk ReDoS — a single High (VA), official 8.7, GHSA says HIGH.
+    // This is the record that used to read as 'critical' because one High and three Highs
+    // landed in the same bucket.
+    ['GHSA-8r9q-7v3j-jr4g', 'CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:H/SC:N/SI:N/SA:N', 'high'],
+    // parse-server DoS, same single-High shape — GHSA says HIGH
+    ['GHSA-cgxm-vr2f-6fj8', 'CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:H/SC:N/SI:N/SA:N', 'high'],
+    // parse-server info leak — GHSA says MODERATE
+    ['GHSA-9cp7-3q5w-j92g', 'CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:L/VI:N/VA:N/SC:N/SI:N/SA:N', 'medium'],
+    // parse-server, high privileges and high complexity — GHSA says LOW
+    ['GHSA-jpq4-7fmq-q5fj', 'CVSS:4.0/AV:N/AC:H/AT:N/PR:H/UI:N/VC:N/VI:L/VA:N/SC:N/SI:N/SA:N', 'low'],
+  ]
+
+  it.each(cases)('%s → %s', (_id, vector, expected) => {
+    expect(cvss4VectorSeverity(vector)).toBe(expected)
   })
 
-  it('bands high impact behind privileges or local access as high', () => {
-    expect(
-      cvss4VectorSeverity('CVSS:4.0/AV:L/AC:L/AT:N/PR:L/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N'),
-    ).toBe('high')
-    expect(
-      cvss4VectorSeverity('CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:P/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N'),
-    ).toBe('high')
-  })
-
-  it('counts subsequent-system impact, not just the vulnerable system', () => {
+  it('counts subsequent-system impact, but never as critical on its own', () => {
+    // Nothing on the vulnerable system is High, so this must not reach 'critical' —
+    // that band feeds cves_critical_open and the generate-blog security-alert query.
     expect(
       cvss4VectorSeverity('CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:N/SC:H/SI:H/SA:H'),
-    ).toBe('critical')
-  })
-
-  it('bands low impact by reachability', () => {
-    expect(
-      cvss4VectorSeverity('CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:L/VI:N/VA:N/SC:N/SI:N/SA:N'),
-    ).toBe('medium')
-    expect(
-      cvss4VectorSeverity('CVSS:4.0/AV:P/AC:H/AT:P/PR:H/UI:A/VC:L/VI:N/VA:N/SC:N/SI:N/SA:N'),
-    ).toBe('low')
+    ).toBe('high')
   })
 
   it('bands a zero-impact vector as info', () => {
@@ -166,8 +165,15 @@ describe('parseCVSSScore — vector preference', () => {
   })
 })
 
+// Precedence: computed CVSS 3.1 score → publisher label → CVSS 4.0 band → unrated.
 describe('rateOSVSeverity', () => {
-  it('rates a v4-only advisory by band, with no invented score', () => {
+  it('keeps the computed score for a rated advisory', () => {
+    expect(rateOSVSeverity([{ type: 'CVSS_V3', score: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H' }]))
+      .toEqual({ cvss_score: 9.8, severity: 'critical' })
+  })
+
+  it('rates a v4-only advisory by band when no publisher label exists', () => {
+    // PYSEC records ship a v4 vector with no database_specific.severity.
     expect(
       rateOSVSeverity([
         { type: 'CVSS_V4', score: 'CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N' },
@@ -175,15 +181,63 @@ describe('rateOSVSeverity', () => {
     ).toEqual({ cvss_score: null, severity: 'critical' })
   })
 
-  it('marks an advisory with no severity data as unrated (null score + info)', () => {
+  // Real advisories whose publisher rating contradicts the band. Rating them by band
+  // would feed generate-blog's `.in('severity', ['critical','high'])` security-alert
+  // query a severity the upstream advisory denies.
+  it.each([
+    // npm tar, GHSA says MODERATE; band says high (local AV)
+    ['GHSA-vmf3-w455-68vh', 'CVSS:4.0/AV:L/AC:L/AT:N/PR:N/UI:N/VC:N/VI:H/VA:N/SC:N/SI:N/SA:N', 'MODERATE'],
+    // jupyter-server, GHSA says MODERATE; band says high (subsequent-system High)
+    ['GHSA-qh7q-6qm3-653w', 'CVSS:4.0/AV:L/AC:L/AT:N/PR:N/UI:P/VC:N/VI:N/VA:N/SC:H/SI:N/SA:N', 'MODERATE'],
+  ])('%s is rated by its publisher label, not by our band', (_id, vector, label) => {
+    expect(rateOSVSeverity([{ type: 'CVSS_V4', score: vector }], label))
+      .toEqual({ cvss_score: null, severity: 'medium' })
+  })
+
+  it('maps every publisher label GHSA uses', () => {
+    const v4 = [{ type: 'CVSS_V4', score: 'CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:L/VI:N/VA:N/SC:N/SI:N/SA:N' }]
+    expect(rateOSVSeverity(v4, 'CRITICAL').severity).toBe('critical')
+    expect(rateOSVSeverity(v4, 'HIGH').severity).toBe('high')
+    expect(rateOSVSeverity(v4, 'MODERATE').severity).toBe('medium')
+    expect(rateOSVSeverity(v4, 'LOW').severity).toBe('low')
+    // Unknown label → falls through to the band, not to unrated
+    expect(rateOSVSeverity(v4, 'WHATEVER').severity).toBe('medium')
+  })
+
+  it('uses the publisher label when a record carries no CVSS vector at all', () => {
+    // e.g. GHSA-3mpp-xfvh-qh37 (node-ipc): severity array empty, label LOW.
+    expect(rateOSVSeverity([], 'LOW')).toEqual({ cvss_score: null, severity: 'low' })
+  })
+
+  it('marks an advisory with no severity data and no label as unrated (null score + info)', () => {
+    // e.g. MAL-2026-3744: no severity array, no database_specific.severity.
     expect(rateOSVSeverity(undefined)).toEqual({ cvss_score: null, severity: 'info' })
     expect(rateOSVSeverity([{ type: 'CVSS_V2', score: 'AV:N/AC:L/Au:N/C:P/I:P/A:P' }]))
       .toEqual({ cvss_score: null, severity: 'info' })
   })
 
-  it('keeps the computed score for a rated advisory', () => {
-    expect(rateOSVSeverity([{ type: 'CVSS_V3', score: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H' }]))
-      .toEqual({ cvss_score: 9.8, severity: 'critical' })
+  it('treats a zero rating as rated, not unrated — score 0, never null', () => {
+    // A banded-zero v4 vector is a real 0.0 rating.
+    expect(
+      rateOSVSeverity([
+        { type: 'CVSS_V4', score: 'CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:N/SC:N/SI:N/SA:N' },
+      ]),
+    ).toEqual({ cvss_score: 0, severity: 'info' })
+    // As is a computed 0.0 v3 vector, and a plain numeric "0" from OSV.
+    expect(rateOSVSeverity([{ type: 'CVSS_V3', score: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N' }]))
+      .toEqual({ cvss_score: 0, severity: 'info' })
+    expect(rateOSVSeverity([{ type: 'CVSS_V3', score: '0' }]))
+      .toEqual({ cvss_score: 0, severity: 'info' })
+  })
+
+  it('does not let a zero-impact v3 vector mask a rated v4 vector or label', () => {
+    const zeroV3 = { type: 'CVSS_V3', score: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N' }
+    const criticalV4 = {
+      type: 'CVSS_V4',
+      score: 'CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N',
+    }
+    expect(rateOSVSeverity([zeroV3, criticalV4]).severity).toBe('critical')
+    expect(rateOSVSeverity([zeroV3], 'HIGH').severity).toBe('high')
   })
 })
 
@@ -205,12 +259,14 @@ describe('CVE penalty — open advisories always cost something', () => {
     })
   }
 
-  // An open advisory has no "fixed" event in its affected ranges.
-  function openVuln(id: string, severity?: Array<{ type: string; score: string }>) {
+  // An open advisory has no "fixed" event in its affected ranges. `label` mirrors the
+  // real OSV shape: database_specific.severity, which GHSA records carry and MAL-* omit.
+  function openVuln(id: string, severity?: Array<{ type: string; score: string }>, label?: string) {
     return {
       id,
       summary: `${id} summary`,
       severity,
+      database_specific: label ? { severity: label } : undefined,
       affected: [{
         package: { name: 'evil-pkg', ecosystem: 'npm' },
         ranges: [{ type: 'SEMVER', events: [{ introduced: '0' }] }],
@@ -293,5 +349,43 @@ describe('CVE penalty — open advisories always cost something', () => {
 
     expect(cve.points).toBe(15)
     expect(cve.detail).not.toContain('unrated')
+  })
+
+  it('does not treat a banded-zero CVSS 4.0 advisory as unrated either', async () => {
+    const { result, cve } = await cveEvidence([
+      openVuln('GHSA-v4-zero', [
+        { type: 'CVSS_V4', score: 'CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:N/SC:N/SI:N/SA:N' },
+      ]),
+    ])
+
+    expect(result.advisories[0].severity).toBe('info')
+    expect(cve.points).toBe(15)
+    expect(cve.detail).not.toContain('unrated')
+  })
+
+  // Ground truth from api.osv.dev: these two records' publisher ratings contradict the
+  // CVSS 4.0 band, and the stored severity is what /security renders, what home_stats
+  // counts as cves_critical_open, and what generate-blog turns into a SECURITY ALERT post.
+  it('stores the publisher severity, not the band, for real v4-only advisories', async () => {
+    const { result, cve } = await cveEvidence([
+      // @modelcontextprotocol/sdk ReDoS — official 8.7, GHSA HIGH (banded critical before)
+      openVuln('GHSA-8r9q-7v3j-jr4g', [
+        { type: 'CVSS_V4', score: 'CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:H/SC:N/SI:N/SA:N' },
+      ], 'HIGH'),
+      // npm tar — GHSA MODERATE (banded high before)
+      openVuln('GHSA-vmf3-w455-68vh', [
+        { type: 'CVSS_V4', score: 'CVSS:4.0/AV:L/AC:L/AT:N/PR:N/UI:N/VC:N/VI:H/VA:N/SC:N/SI:N/SA:N' },
+      ], 'MODERATE'),
+      // jupyter-server — GHSA MODERATE (banded high before)
+      openVuln('GHSA-qh7q-6qm3-653w', [
+        { type: 'CVSS_V4', score: 'CVSS:4.0/AV:L/AC:L/AT:N/PR:N/UI:P/VC:N/VI:N/VA:N/SC:H/SI:N/SA:N' },
+      ], 'MODERATE'),
+    ])
+
+    expect(result.advisories.map(a => a.severity)).toEqual(['high', 'medium', 'medium'])
+    expect(result.advisories.filter(a => a.severity === 'critical')).toHaveLength(0)
+    // 5 + 3 + 3
+    expect(cve.points).toBe(4)
+    expect(cve.detail).toBe('3 open CVE(s): 1 critical/high, 2 medium, 0 low')
   })
 })
