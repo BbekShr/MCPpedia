@@ -1,10 +1,24 @@
 import { CATEGORIES, CATEGORY_LABELS, SITE_URL } from '@/lib/constants'
 import { getAllBlogPosts } from '@/lib/blog'
 import { getAllGuides } from '@/lib/mdx'
+import { withDeadline } from '@/lib/retry'
 
 export const revalidate = 604800 // 7d
 
 const TOP_SERVER_LIMIT = 150
+
+/**
+ * Wall-clock budget for the top-servers query.
+ *
+ * Next allows 60s per static-export attempt and this route is prerendered at
+ * build time, so an unbounded query here fails the production deploy. It is not
+ * a cheap query — ordering 41k non-archived rows by `score_total` measures
+ * 13–17s against prod even warm, and during a build three export workers
+ * contend over the same Postgres while generating ~2k pages, which is what
+ * pushed it past 60s and broke the deploy. 30s stays inside the route budget
+ * while comfortably covering the normal case.
+ */
+const TOP_SERVERS_BUDGET_MS = 30_000
 
 function escape(text: string | null | undefined): string {
   if (!text) return ''
@@ -82,12 +96,23 @@ ${CATEGORIES.map(c => `- ${CATEGORY_LABELS[c]}: ${SITE_URL}/category/${c}`).join
   if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
     const { createAdminClient } = await import('@/lib/supabase/admin')
     const supabase = createAdminClient('llms-full')
-    const { data } = await supabase
-      .from('servers')
-      .select('slug, name, tagline, score_total, categories')
-      .eq('is_archived', false)
-      .order('score_total', { ascending: false, nullsFirst: false })
-      .limit(TOP_SERVER_LIMIT)
+    // Degrade to the static sections rather than failing the build: this file is
+    // a discovery aid, so shipping it without the top-servers list beats not
+    // deploying at all. Every other section is filesystem-backed and unaffected.
+    const data = await withDeadline(
+      supabase
+        .from('servers')
+        .select('slug, name, tagline, score_total, categories')
+        .eq('is_archived', false)
+        .order('score_total', { ascending: false, nullsFirst: false })
+        .limit(TOP_SERVER_LIMIT)
+        .then(({ data, error }) => {
+          if (error) throw new Error(`llms-full: top servers fetch failed: ${error.message}`)
+          return data
+        }),
+      TOP_SERVERS_BUDGET_MS,
+      'llms-full: top servers fetch',
+    ).catch(() => null)
 
     if (data && data.length > 0) {
       serversSection = `\n## Top ${data.length} MCP servers (by MCPpedia score)\n\n${data

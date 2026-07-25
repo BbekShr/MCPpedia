@@ -25,7 +25,7 @@
  *
  * The timer is unref'd so a pending deadline never keeps the build process alive.
  */
-export function withDeadline<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+export function withDeadline<T>(promise: PromiseLike<T>, ms: number, label: string): Promise<T> {
   let timer: ReturnType<typeof setTimeout>
   const deadline = new Promise<never>((_, reject) => {
     timer = setTimeout(() => reject(new Error(`${label} exceeded ${ms}ms`)), ms)
