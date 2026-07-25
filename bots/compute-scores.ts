@@ -189,6 +189,9 @@ async function main() {
         }),
         security_scan_status: security.scan_status,
         last_security_scan: new Date().toISOString(),
+        // Deliberately NOT under the guard above: dep-health comes from deps.dev,
+        // and scan_status 'failed' reflects only the OSV queries — so this entry
+        // is genuinely fresh during an OSV outage.
         dep_health_score: security.evidence.find(e => e.id === 'dep-health')?.points ?? null,
         dependency_count: null, // deps.dev doesn't reliably return this yet
         has_tool_poisoning: security.has_tool_poisoning,
