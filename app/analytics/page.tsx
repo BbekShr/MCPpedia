@@ -1,7 +1,7 @@
 import { createPublicClient } from '@/lib/supabase/public'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { withRetry } from '@/lib/retry'
 import { CATEGORY_LABELS, HEALTH_STATUSES, CLIENT_LABELS } from '@/lib/constants'
-import type { Server } from '@/lib/types'
 import type { Category, CompatibleClient } from '@/lib/constants'
 import type { Metadata } from 'next'
 import Link from 'next/link'
@@ -10,7 +10,80 @@ export const revalidate = 86400 // 24 hours
 
 export const metadata: Metadata = {
   title: 'MCP Ecosystem Analytics',
-  description: 'Live stats on the MCP server ecosystem — scores, categories, health, security, and more. Updated daily.',
+  description: 'Stats on the MCP server ecosystem — scores, categories, health, security, and more. Updated daily.',
+}
+
+type Counts = Record<string, number>
+
+/**
+ * One row of `daily_metrics` — the nightly ecosystem snapshot written by
+ * bots/snapshot-metrics.ts (5:30 UTC, after compute-scores). Every aggregate
+ * this page shows is read from here.
+ */
+type Snapshot = {
+  snapshot_date: string
+  total_servers: number
+  avg_score_total: number
+  avg_score_security: number
+  avg_score_maintenance: number
+  avg_score_documentation: number
+  avg_score_compatibility: number
+  avg_score_efficiency: number
+  total_github_stars: number
+  total_npm_weekly_downloads: number
+  total_tools: number
+  servers_with_cves: number
+  servers_with_auth: number
+  open_cves: number
+  score_buckets: { label: string; count: number }[] | null
+  categories: Counts | null
+  health_status: Counts | null
+  author_type: Counts | null
+  api_pricing: Counts | null
+  transport: Counts | null
+  compatible_clients: Counts | null
+  token_efficiency_grades: Counts | null
+}
+
+const SNAPSHOT_FIELDS = [
+  'snapshot_date',
+  'total_servers',
+  'avg_score_total',
+  'avg_score_security',
+  'avg_score_maintenance',
+  'avg_score_documentation',
+  'avg_score_compatibility',
+  'avg_score_efficiency',
+  'total_github_stars',
+  'total_npm_weekly_downloads',
+  'total_tools',
+  'servers_with_cves',
+  'servers_with_auth',
+  'open_cves',
+  'score_buckets',
+  'categories',
+  'health_status',
+  'author_type',
+  'api_pricing',
+  'transport',
+  'compatible_clients',
+  'token_efficiency_grades',
+].join(', ')
+
+const asCounts = (v: Counts | null | undefined): Counts => v ?? {}
+
+const EMPTY_BUCKETS = Array.from({ length: 10 }, (_, i) => ({
+  label: `${i * 10}-${i === 9 ? 100 : i * 10 + 9}`,
+  count: 0,
+}))
+
+/** "2026-07-24" → "Jul 24, 2026". Dates are stored as plain UTC dates. */
+function formatSnapshotDate(isoDate: string): string {
+  const d = new Date(`${isoDate}T00:00:00Z`)
+  if (Number.isNaN(d.getTime())) return isoDate
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC',
+  })
 }
 
 function pct(n: number, total: number) {
@@ -480,15 +553,11 @@ function DonutCard({ title, entries, footnote, centerLabel }: {
 }
 
 export default async function AnalyticsPage() {
-  // This page walks the ENTIRE servers table (~32k active rows, paginated
-  // below) to compute ecosystem aggregates. Use the service-role client, NOT
-  // the anon `createPublicClient()`: the anon/authenticated roles carry a short
-  // per-statement timeout (see 20260718120000_home_stats_refresh_timeout.sql),
-  // and the concurrent build-time prerender workers were tripping it
-  // mid-pagination — failing the whole production build. service_role has no
-  // statement timeout, so the keyset scan completes even under build load. This
-  // is the SAME client `lib/sitemap-shared.ts` already uses to walk the full
-  // servers table at build. It's the plain supabase-js client (no next/headers
+  // Use the service-role client, NOT the anon `createPublicClient()`: the
+  // anon/authenticated roles carry a short per-statement timeout (see
+  // 20260718120000_home_stats_refresh_timeout.sql) and the concurrent
+  // build-time prerender workers were tripping it. service_role has no
+  // statement timeout. It's the plain supabase-js client (no next/headers
   // cookies), so the page stays statically generated / ISR-cacheable for SEO,
   // exactly like createPublicClient(). Server component only — the service key
   // never reaches the client. Falls back to the anon client when the service
@@ -497,67 +566,102 @@ export default async function AnalyticsPage() {
     ? createAdminClient('analytics')
     : createPublicClient()
 
-  // Fetch all non-archived servers in pages of 1000 (Supabase default limit).
-  // Keyset (cursor) pagination on the indexed `id` primary key, NOT offset-based
-  // `.range()` — at 19k+ rows, OFFSET forces Postgres to scan and discard every
-  // prior row on each page, and blew the statement timeout once offset hit ~19000.
-  // `.gt('id', cursor)` is an index seek regardless of table size.
-  // Deliberately excludes `tools` — its full jsonb (per-server tool schemas)
-  // was the heaviest column in this select and made keyset pages on this
-  // ~30k-row table occasionally exceed the anon role's statement timeout
-  // (unlike service_role, anon/authenticated keep the short default — see
-  // 20260718120000_home_stats_refresh_timeout.sql). The one stat that needs a
-  // tools count (`totalTools` below) already gets it for free from the
-  // `daily_metrics` snapshot fetched further down.
-  const fields = 'id,categories,health_status,author_type,api_pricing,transport,compatible_clients,score_total,score_security,score_maintenance,score_documentation,score_compatibility,score_efficiency,token_efficiency_grade,github_stars,npm_weekly_downloads,cve_count,has_authentication,created_at'
-  const pageSize = 1000
-  let servers: Record<string, unknown>[] = []
-  let cursor: string | null = null
-  while (true) {
-    let query = supabase
-      .from('servers')
-      .select(fields)
-      .eq('is_archived', false)
-      .order('id', { ascending: true })
-      .limit(pageSize)
-    if (cursor) query = query.gt('id', cursor)
-    const { data, error } = await query
-    // Fail loud on a fetch error instead of silently rendering a partial set.
-    // A transient error on any page would otherwise `break` and cache a
-    // truncated dataset for `revalidate` seconds — every aggregate below
-    // (counts, stars, downloads, deltas) computed off the fetched slice.
-    // Throwing here makes Next keep serving the last good page and retry.
-    if (error) {
-      throw new Error(`analytics: failed to fetch servers after cursor ${cursor}: ${error.message}`)
-    }
-    if (!data || data.length === 0) break
-    servers = servers.concat(data)
-    if (data.length < pageSize) break
-    cursor = data[data.length - 1].id as string
+  // Every ecosystem aggregate below is read from the nightly `daily_metrics`
+  // snapshot (bots/snapshot-metrics.ts). This page used to recompute all of
+  // them live by walking the ENTIRE servers table — ~40 sequential 1000-row
+  // keyset pages — which pushed /analytics past Next's 60s per-route build
+  // budget and made production deploys depend on build retries (S50). The
+  // snapshot computes the same aggregates the same way over the same
+  // `is_archived = false` row set, so no number changes meaning; only its
+  // as-of time moves from "build time" to "last nightly snapshot", which the
+  // header now states explicitly.
+  const now = new Date()
+
+  const [historyRows, mcpUsage, months] = await Promise.all([
+    // Last 90 snapshots. Order descending + limit takes the 90 MOST RECENT
+    // rows (ascending+limit would return the oldest 90); reversed below to
+    // ascending for left-to-right chart rendering and deltas.
+    withRetry(async () => {
+      const { data, error } = await supabase
+        .from('daily_metrics')
+        .select(SNAPSHOT_FIELDS)
+        .order('snapshot_date', { ascending: false })
+        .limit(90)
+      if (error) throw new Error(`analytics: daily_metrics fetch failed: ${error.message}`)
+      return ((data || []) as unknown as Snapshot[]).slice().reverse()
+    }).catch((): Snapshot[] => []),
+
+    // MCP API usage (last 90 days)
+    withRetry(async () => {
+      const { data, error } = await supabase
+        .from('mcp_api_usage')
+        .select('usage_date, action, count')
+        .order('usage_date', { ascending: true })
+        .limit(600) // ~90 days * 6 actions
+      if (error) throw new Error(`analytics: mcp_api_usage fetch failed: ${error.message}`)
+      return (data || []) as Array<{ usage_date: string; action: string; count: number }>
+    }).catch((): Array<{ usage_date: string; action: string; count: number }> => []),
+
+    // The 12-month "servers added" histogram is the ONE aggregate
+    // daily_metrics cannot supply: it stores only `servers_added_today`, and
+    // its history starts 2026-04-08 (20260408000000_daily_metrics.sql) — well
+    // short of 12 months. Rather than re-walk every row for `created_at`, ask
+    // Postgres for 12 head-only exact counts in parallel: each is a range seek
+    // on `servers_created_idx` (20260402000000_initial_schema.sql:87) and
+    // transfers no rows at all.
+    withRetry(async () => {
+      const windows = Array.from({ length: 12 }, (_, i) => {
+        const from = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1)
+        const to = new Date(now.getFullYear(), now.getMonth() - (10 - i), 1)
+        return { from, to, label: from.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }) }
+      })
+      const results = await Promise.all(windows.map(w =>
+        supabase
+          .from('servers')
+          .select('id', { count: 'exact', head: true })
+          .eq('is_archived', false)
+          .gte('created_at', w.from.toISOString())
+          .lt('created_at', w.to.toISOString())
+      ))
+      // A month whose count errored would render as a zero bar — "no servers
+      // were added that month", a wrong fact rather than a missing one. Fail
+      // the batch so the whole chart degrades to an explicit notice instead.
+      const failed = results.find(r => r.error)
+      if (failed) throw new Error(`analytics: monthly additions count failed: ${failed.error!.message}`)
+      return windows.map((w, i) => ({ label: w.label, count: results[i].count ?? 0 }))
+    }).catch((): { label: string; count: number }[] | null => null),
+  ])
+
+  // Pick the newest snapshot we are willing to render. Two failure modes are
+  // deliberately treated differently:
+  //   - transient FETCH failure (query errored after retries, or last night's
+  //     bot run never wrote a row): fall back to the newest row we DO have and
+  //     say "as of <date>" in the header. Degrade, don't throw — throwing here
+  //     fails the production build, which is exactly what S50 was about.
+  //   - genuine DATA truncation (a snapshot whose total_servers collapsed by
+  //     >50% versus the readings right before it — e.g. the bot ran against a
+  //     partial table): refuse that row, same as the old >50% guard did, and
+  //     keep walking back. We never render numbers we believe to be wrong.
+  let latestSnapshot: Snapshot | null = null
+  for (let i = historyRows.length - 1; i >= 0; i--) {
+    const priorBest = historyRows
+      .slice(Math.max(0, i - 7), i)
+      .reduce((m, r) => Math.max(m, r.total_servers || 0), 0)
+    if (priorBest > 100 && (historyRows[i].total_servers || 0) < priorBest * 0.5) continue
+    latestSnapshot = historyRows[i]
+    break
   }
 
-  // Fetch MCP API usage (last 90 days)
-  const { data: rawMcpUsage } = await supabase
-    .from('mcp_api_usage')
-    .select('usage_date, action, count')
-    .order('usage_date', { ascending: true })
-    .limit(600) // ~90 days * 6 actions
-  const mcpUsage = (rawMcpUsage || []) as Array<{ usage_date: string; action: string; count: number }>
+  const total = latestSnapshot?.total_servers ?? 0
 
-  // Fetch historical snapshots (last 90 days). Order descending + limit so we
-  // take the 90 MOST RECENT rows (ascending+limit would return the oldest 90),
-  // then reverse to ascending for left-to-right chart rendering and deltas.
-  const { data: history } = await supabase
-    .from('daily_metrics')
-    .select('snapshot_date, total_servers, avg_score_total, total_github_stars, total_npm_weekly_downloads, total_tools, servers_with_cves, open_cves, servers_with_auth')
-    .order('snapshot_date', { ascending: false })
-    .limit(90)
-
-  const historyRows = ((history || []) as Array<{
-    snapshot_date: string; total_servers: number; avg_score_total: number;
-    total_github_stars: number; total_npm_weekly_downloads: number; total_tools: number;
-    servers_with_cves: number; open_cves: number; servers_with_auth: number;
-  }>).slice().reverse()
+  if (!latestSnapshot || total === 0) {
+    return (
+      <div className="max-w-[1200px] mx-auto px-4 py-12 text-center">
+        <h1 className="text-2xl font-semibold text-text-primary mb-2">Analytics</h1>
+        <p className="text-text-muted">No server data available yet.</p>
+      </div>
+    )
+  }
 
   // Find the row from ~7 days ago for delta calculations
   const targetDate = new Date()
@@ -573,67 +677,25 @@ export default async function AnalyticsPage() {
   // Only use prev if it's actually from a different day (not today's row)
   const hasPrev = prev && prev.snapshot_date <= targetStr
 
-  const all = (servers as Pick<Server, 'categories' | 'health_status' | 'author_type' | 'api_pricing' | 'transport' | 'compatible_clients' | 'score_total' | 'score_security' | 'score_maintenance' | 'score_documentation' | 'score_compatibility' | 'score_efficiency' | 'token_efficiency_grade' | 'github_stars' | 'npm_weekly_downloads' | 'cve_count' | 'has_authentication' | 'created_at'>[]) || []
-  const total = all.length
+  // --- Read aggregates off the snapshot ---
 
-  // Sanity guard: if we fetched far fewer servers than the most recent daily
-  // snapshot recorded, the paginated fetch almost certainly returned a partial
-  // set (see the throw in the fetch loop above). Refuse to render — throwing
-  // keeps Next serving the last good page rather than caching bad numbers for
-  // `revalidate` seconds. A legitimate day-over-day drop of >50% is not real.
-  const latestSnapshot = historyRows.length > 0 ? historyRows[historyRows.length - 1] : null
-  if (latestSnapshot && latestSnapshot.total_servers > 100 && total < latestSnapshot.total_servers * 0.5) {
-    throw new Error(
-      `analytics: fetched ${total} servers but the latest daily snapshot recorded ` +
-      `${latestSnapshot.total_servers} — refusing to render a likely-truncated dataset`
-    )
-  }
-
-  if (total === 0) {
-    return (
-      <div className="max-w-[1200px] mx-auto px-4 py-12 text-center">
-        <h1 className="text-2xl font-semibold text-text-primary mb-2">Analytics</h1>
-        <p className="text-text-muted">No server data available yet.</p>
-      </div>
-    )
-  }
-
-  // --- Compute aggregates ---
-
-  // Scores
-  const avgScore = Math.round(all.reduce((s, x) => s + (x.score_total || 0), 0) / total)
-  const avgSecurity = Math.round(all.reduce((s, x) => s + (x.score_security || 0), 0) / total)
-  const avgMaintenance = Math.round(all.reduce((s, x) => s + (x.score_maintenance || 0), 0) / total)
-  const avgDocs = Math.round(all.reduce((s, x) => s + (x.score_documentation || 0), 0) / total)
-  const avgCompat = Math.round(all.reduce((s, x) => s + (x.score_compatibility || 0), 0) / total)
-  const avgEfficiency = Math.round(all.reduce((s, x) => s + (x.score_efficiency || 0), 0) / total)
+  const avgScore = latestSnapshot.avg_score_total || 0
+  const avgSecurity = latestSnapshot.avg_score_security || 0
+  const avgMaintenance = latestSnapshot.avg_score_maintenance || 0
+  const avgDocs = latestSnapshot.avg_score_documentation || 0
+  const avgCompat = latestSnapshot.avg_score_compatibility || 0
+  const avgEfficiency = latestSnapshot.avg_score_efficiency || 0
 
   // Score distribution (buckets of 10)
-  const scoreBuckets = Array.from({ length: 10 }, (_, i) => {
-    const lo = i * 10
-    const hi = lo + 10
-    const label = `${lo}-${hi === 100 ? 100 : hi - 1}`
-    const count = all.filter(s => {
-      const sc = s.score_total || 0
-      return hi === 100 ? sc >= lo && sc <= 100 : sc >= lo && sc < hi
-    }).length
-    return { label, count }
-  })
+  const rawBuckets = latestSnapshot.score_buckets ?? []
+  const scoreBuckets = rawBuckets.length > 0 ? rawBuckets : EMPTY_BUCKETS
 
   // Categories
-  const catCounts: Record<string, number> = {}
-  for (const s of all) {
-    for (const c of s.categories || []) {
-      catCounts[c] = (catCounts[c] || 0) + 1
-    }
-  }
-  const catEntries = Object.entries(catCounts).sort((a, b) => b[1] - a[1])
+  const catEntries = Object.entries(asCounts(latestSnapshot.categories)).sort((a, b) => b[1] - a[1])
   const maxCat = Math.max(...catEntries.map(e => e[1]), 1)
 
   // Health status
-  const healthCounts: Record<string, number> = {}
-  for (const status of HEALTH_STATUSES) healthCounts[status] = 0
-  for (const s of all) healthCounts[s.health_status] = (healthCounts[s.health_status] || 0) + 1
+  const healthCounts = asCounts(latestSnapshot.health_status)
 
   const healthColors: Record<string, string> = {
     active: 'var(--green)',
@@ -649,8 +711,7 @@ export default async function AnalyticsPage() {
     .map(s => ({ label: healthLabel(s), value: healthCounts[s], color: healthColors[s] || 'var(--accent)' }))
 
   // Author type
-  const authorCounts: Record<string, number> = { official: 0, community: 0, unknown: 0 }
-  for (const s of all) authorCounts[s.author_type] = (authorCounts[s.author_type] || 0) + 1
+  const authorCounts = { official: 0, community: 0, unknown: 0, ...asCounts(latestSnapshot.author_type) }
   const authorEntries = [
     { label: 'Official', value: authorCounts.official, color: 'var(--accent)' },
     { label: 'Community', value: authorCounts.community, color: 'var(--cat-maintenance)' },
@@ -658,8 +719,7 @@ export default async function AnalyticsPage() {
   ].filter(e => e.value > 0)
 
   // API pricing
-  const pricingCounts: Record<string, number> = { free: 0, freemium: 0, paid: 0, unknown: 0 }
-  for (const s of all) pricingCounts[s.api_pricing] = (pricingCounts[s.api_pricing] || 0) + 1
+  const pricingCounts = { free: 0, freemium: 0, paid: 0, unknown: 0, ...asCounts(latestSnapshot.api_pricing) }
   const pricingEntries = [
     { label: 'Free', value: pricingCounts.free, color: 'var(--green)' },
     { label: 'Freemium', value: pricingCounts.freemium, color: 'var(--accent)' },
@@ -668,12 +728,7 @@ export default async function AnalyticsPage() {
   ].filter(e => e.value > 0)
 
   // Transport
-  const transportCounts: Record<string, number> = {}
-  for (const s of all) {
-    for (const t of s.transport || []) {
-      transportCounts[t] = (transportCounts[t] || 0) + 1
-    }
-  }
+  const transportCounts = asCounts(latestSnapshot.transport)
   const transportPalette = ['var(--accent)', 'var(--cat-maintenance)', 'var(--cat-efficiency)', 'var(--cat-documentation)', 'var(--yellow)']
   const transportEntries = Object.entries(transportCounts)
     .sort((a, b) => b[1] - a[1])
@@ -684,18 +739,11 @@ export default async function AnalyticsPage() {
     }))
 
   // Compatible clients
-  const clientCounts: Record<string, number> = {}
-  for (const s of all) {
-    for (const c of s.compatible_clients || []) {
-      clientCounts[c] = (clientCounts[c] || 0) + 1
-    }
-  }
-  const clientEntries = Object.entries(clientCounts).sort((a, b) => b[1] - a[1])
+  const clientEntries = Object.entries(asCounts(latestSnapshot.compatible_clients)).sort((a, b) => b[1] - a[1])
   const maxClient = Math.max(...clientEntries.map(e => e[1]), 1)
 
   // Token efficiency grades
-  const gradeCounts: Record<string, number> = { A: 0, B: 0, C: 0, D: 0, F: 0, unknown: 0 }
-  for (const s of all) gradeCounts[s.token_efficiency_grade] = (gradeCounts[s.token_efficiency_grade] || 0) + 1
+  const gradeCounts = { A: 0, B: 0, C: 0, D: 0, F: 0, unknown: 0, ...asCounts(latestSnapshot.token_efficiency_grades) }
   const gradeColors: Record<string, string> = {
     A: 'var(--green)',
     B: 'color-mix(in srgb, var(--green) 60%, transparent)',
@@ -713,16 +761,19 @@ export default async function AnalyticsPage() {
     }))
 
   // Security stats
-  const withCVEs = all.filter(s => (s.cve_count || 0) > 0).length
-  const withAuth = all.filter(s => s.has_authentication).length
-  const openCVEs = all.reduce((s, x) => s + (x.cve_count || 0), 0)
+  const withCVEs = latestSnapshot.servers_with_cves ?? 0
+  const withAuth = latestSnapshot.servers_with_auth ?? 0
+  // MEANING CHANGE: this used to be SUM(servers.cve_count) — the per-server CVE
+  // counter the scoring engine writes. It is now `daily_metrics.open_cves`, a
+  // direct count of `security_advisories` rows with status = 'open'. That is
+  // the same number the "Open CVEs" trend card on this page already plots, so
+  // the two now agree instead of contradicting each other by construction.
+  const openCVEs = latestSnapshot.open_cves ?? 0
 
   // Stars & downloads
-  const totalStars = all.reduce((s, x) => s + (x.github_stars || 0), 0)
-  const totalDownloads = all.reduce((s, x) => s + (x.npm_weekly_downloads || 0), 0)
-  // Sourced from the daily_metrics snapshot rather than summing `tools` live
-  // across every server — see the `fields` comment above.
-  const totalTools = latestSnapshot?.total_tools ?? 0
+  const totalStars = latestSnapshot.total_github_stars ?? 0
+  const totalDownloads = latestSnapshot.total_npm_weekly_downloads ?? 0
+  const totalTools = latestSnapshot.total_tools ?? 0
 
   // Score breakdown — uses category-specific palette colors from globals.css
   const scoreCategories = [
@@ -733,27 +784,14 @@ export default async function AnalyticsPage() {
     { label: 'Compatibility', value: avgCompat, max: 10, color: 'var(--cat-compatibility)' },
   ]
 
-  // Growth by month (last 12 months)
-  const now = new Date()
-  const months: { label: string; count: number }[] = []
-  for (let i = 11; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    const nextD = new Date(now.getFullYear(), now.getMonth() - i + 1, 1)
-    const label = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
-    const count = all.filter(s => {
-      const created = new Date(s.created_at)
-      return created >= d && created < nextD
-    }).length
-    months.push({ label, count })
-  }
-
   return (
     <div className="max-w-[1200px] mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-text-primary mb-1">MCP Ecosystem Analytics</h1>
         <p className="text-text-muted text-sm">
-          Live stats across {total.toLocaleString()} servers. Data refreshed daily.
+          Ecosystem stats across {total.toLocaleString()} servers, as of{' '}
+          {formatSnapshotDate(latestSnapshot.snapshot_date)}. Refreshed daily.
         </p>
       </div>
 
@@ -850,7 +888,9 @@ export default async function AnalyticsPage() {
         <section className="border border-border rounded-lg p-5 bg-bg">
           <h2 className="text-sm font-semibold text-text-primary mb-1">Servers Added (Last 12 Months)</h2>
           <p className="text-xs text-text-muted mb-3">New servers indexed by month</p>
-          <MonthlyBarChart months={months} />
+          {months
+            ? <MonthlyBarChart months={months} />
+            : <p className="text-sm text-text-muted py-8 text-center">Monthly breakdown temporarily unavailable.</p>}
         </section>
       </div>
 
@@ -989,7 +1029,8 @@ export default async function AnalyticsPage() {
         <p>
           Data sourced from the <Link href="/methodology" className="text-accent hover:text-accent-hover">MCPpedia scoring engine</Link>,
           GitHub API, npm registry, and the official MCP registry.
-          Refreshed daily at 5:00 UTC.
+          Ecosystem aggregates come from the nightly snapshot taken at 5:30 UTC
+          ({formatSnapshotDate(latestSnapshot.snapshot_date)}).
         </p>
       </div>
     </div>
