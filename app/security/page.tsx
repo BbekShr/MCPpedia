@@ -93,9 +93,16 @@ const getSecurityPageData = unstable_cache(
   () => withRetry(async () => {
     const supabase = createPublicClient()
     const [advisoriesResult, statsResult] = await Promise.all([
+      // Open only. The list below is sorted worst-severity-first and sits
+      // directly under the open_cves/cves_*_open counters, so it reads as
+      // "current problems" — a resolved advisory (or one the daily scan closed
+      // because its package was cleared or OSV withdrew it) belongs in the
+      // fixed_cves counter, not in a critical-red row. Per-server history
+      // stays available on /s/[slug], which renders open and fixed separately.
       supabase
         .from('security_advisories')
         .select('*, server:servers(name, slug)')
+        .eq('status', 'open')
         .order('published_at', { ascending: false })
         .limit(100),
       supabase.rpc('home_stats'),
@@ -109,7 +116,9 @@ const getSecurityPageData = unstable_cache(
       stats: statsResult.data as Partial<HomeStats>,
     }
   }),
-  ['security-page-data-v5'],
+  // v6: query narrowed to status='open' — the key must change or the 24h
+  // cache would keep serving the old unfiltered rows.
+  ['security-page-data-v6'],
   { revalidate: 86400, tags: ['security-page'] },
 )
 
@@ -267,7 +276,7 @@ export default async function SecurityPage() {
       </div>
 
       {/* Advisory list */}
-      <h2 className="text-lg font-semibold text-text-primary mb-4">Recent advisories</h2>
+      <h2 className="text-lg font-semibold text-text-primary mb-4">Open advisories</h2>
       <div className="space-y-3">
         {advList.map(adv => (
           <div key={adv.id} className={`border border-border border-l-3 ${SEVERITY_BORDER[adv.severity] || 'border-l-border'} rounded-md p-4`}>
