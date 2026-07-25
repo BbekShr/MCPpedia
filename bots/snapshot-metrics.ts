@@ -181,13 +181,34 @@ async function main() {
     // DROP in total_servers is not a real ecosystem event, it's a partial fetch.
     // The upsert below is keyed on snapshot_date, so a bad row is permanent, and
     // /analytics picks the ~7-day-ago row for every delta arrow it shows.
-    // Compare against the last snapshot BEFORE today so a re-run doesn't validate
-    // itself against a bad row it wrote earlier the same day.
+    //
+    // The comparison snapshot must be BEFORE today (so a same-day re-run doesn't
+    // validate itself against a bad row it wrote an hour ago) but no older than
+    // GUARD_LOOKBACK_DAYS. That upper bound is what makes the guard SELF-RELEASING,
+    // and it is load-bearing — do not "simplify" it away:
+    //
+    // A legitimate mass shrink is possible (detect-duplicates bulk-archives merged
+    // duplicates; next.config.ts already carries merged-duplicate redirects). With an
+    // unbounded lookback, day 1 of such a shrink throws, and because nothing was
+    // written, day 2 compares against the SAME pre-shrink snapshot and throws again —
+    // forever. daily_metrics would stop growing permanently, /analytics trends would
+    // flatline, and the S19 workflow-failure alert would fire daily with no path to
+    // clear itself. Pre-guard, the bot always wrote and self-corrected; a permanent
+    // wedge is worse than the corruption the guard exists to prevent.
+    //
+    // Three days = three consecutive daily runs failing loudly (long enough for the
+    // S19 alert to reach a human) before the newest surviving snapshot ages out of
+    // the window, the lookup returns nothing, and the bot resumes writing. Chosen
+    // over a manual override env var: nobody is on call for a bot, and an override
+    // that needs a human is just a wedge with extra steps.
+    const GUARD_LOOKBACK_DAYS = 3
     const snapshotDate = new Date().toISOString().slice(0, 10)
+    const guardCutoff = new Date(Date.now() - GUARD_LOOKBACK_DAYS * 86400000).toISOString().slice(0, 10)
     const { data: prevSnapshot, error: prevError } = await supabase
       .from('daily_metrics')
       .select('snapshot_date, total_servers')
       .lt('snapshot_date', snapshotDate)
+      .gte('snapshot_date', guardCutoff)
       .order('snapshot_date', { ascending: false })
       .limit(1)
       .maybeSingle()
@@ -197,7 +218,8 @@ async function main() {
     if (prevSnapshot && prevSnapshot.total_servers > 100 && total < prevSnapshot.total_servers * 0.8) {
       throw new Error(
         `Refusing to write snapshot: counted ${total} servers but ${prevSnapshot.snapshot_date} ` +
-        `recorded ${prevSnapshot.total_servers} — dataset is likely truncated`
+        `recorded ${prevSnapshot.total_servers} — dataset is likely truncated. If the drop is ` +
+        `real, this clears itself once that snapshot is more than ${GUARD_LOOKBACK_DAYS} days old.`
       )
     }
 
