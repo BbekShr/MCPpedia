@@ -11,6 +11,16 @@ export const SERVER_CHUNK_SIZE = 10000
 // for months; never publish fewer than that even if the count read below fails.
 const MIN_SERVER_CHUNKS = 3
 
+// Hard ceiling on the shard number the route will serve. This is a DoS bound, NOT
+// a coverage number — coverage comes from getServerChunkCount(), and only shards
+// up to that count are ever advertised in the sitemap index. Its only job is to
+// keep `fetchServerChunk`'s OFFSET finite so an arbitrary /sitemap-servers-<n>.xml
+// cannot be turned into an unbounded deep scan. 100 shards is ~1M servers of
+// headroom at the current chunk size; shards past the real catalog just render an
+// empty <urlset>. Deliberately a constant so the shard route needs no DB read to
+// validate its input — a count failure must never take the shard URLs offline.
+export const MAX_SERVER_CHUNKS = 100
+
 export interface SitemapEntry {
   url: string
   lastModified?: Date | string
@@ -185,7 +195,12 @@ async function fetchServerTotal(): Promise<number> {
 // `dynamicParams` instead, which serves one shard past this count on demand.
 export async function getServerChunkCount(): Promise<number> {
   const total = await fetchServerTotal()
-  return Math.max(MIN_SERVER_CHUNKS, Math.ceil(total / SERVER_CHUNK_SIZE))
+  // Clamped to MAX_SERVER_CHUNKS so the index can never advertise a shard the
+  // route refuses to serve; reaching the clamp means raising that constant.
+  return Math.min(
+    MAX_SERVER_CHUNKS,
+    Math.max(MIN_SERVER_CHUNKS, Math.ceil(total / SERVER_CHUNK_SIZE)),
+  )
 }
 
 // Fetch a chunk of servers ordered by score_total descending.
