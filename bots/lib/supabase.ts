@@ -30,7 +30,11 @@ export function createAdminClient(actorLabel: string) {
  *   )
  *
  * Build the query (filters, ordering) without `.range()` — this function
- * appends range() pages internally. Transient errors (statement timeout,
+ * appends range() pages internally. The caller MUST order by a unique column
+ * (`.order('id')`, or `id` as the last key after a meaningful sort): paging is
+ * by offset, so without a unique tiebreak Postgres may return ties in a
+ * different order per page and rows get silently skipped and duplicated across
+ * page boundaries. Transient errors (statement timeout,
  * connection drops) are retried per page with exponential backoff — the
  * sync-registry bot was failing whole runs on a single 8s statement timeout
  * under DB load. Throws once retries are exhausted so callers fail loudly

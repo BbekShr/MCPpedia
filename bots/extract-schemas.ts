@@ -6,11 +6,35 @@
 import { config } from 'dotenv'
 config({ path: '.env.local' })
 
+import { z } from 'zod'
 import { createAdminClient } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
 import { getReadme } from './lib/github'
 
 const supabase = createAdminClient('bot-extract-schemas')
+
+// The model's JSON is untrusted: it can return the wrong shape (a string where
+// an array belongs) or omit keys entirely. `servers.tools` is read back by
+// compute-scores as `Tool[]` and `.filter()`ed, so a malformed value written
+// here corrupts scoring — validate before ANY write, and skip on mismatch.
+const extractionSchema = z.object({
+  tools: z.array(z.object({
+    name: z.string(),
+    description: z.string(),
+    input_schema: z.record(z.string(), z.unknown()).optional(),
+  })).optional(),
+  resources: z.array(z.object({
+    name: z.string(),
+    description: z.string(),
+    uri_template: z.string().optional(),
+  })).optional(),
+  prompts: z.array(z.object({
+    name: z.string(),
+    description: z.string(),
+  })).optional(),
+})
+
+type Extraction = z.infer<typeof extractionSchema>
 
 function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
   const match = url.match(/github\.com\/([\w.-]+)\/([\w.-]+)/)
@@ -18,11 +42,7 @@ function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
   return { owner: match[1], repo: match[2].replace(/\.git$/, '') }
 }
 
-async function extractToolsWithHaiku(readme: string): Promise<{
-  tools: Array<{ name: string; description: string; input_schema?: Record<string, unknown> }>
-  resources: Array<{ name: string; description: string; uri_template?: string }>
-  prompts: Array<{ name: string; description: string }>
-}> {
+async function extractToolsWithHaiku(readme: string): Promise<Extraction> {
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
   if (!ANTHROPIC_API_KEY) {
     console.warn('No ANTHROPIC_API_KEY — falling back to regex extraction')
@@ -64,29 +84,34 @@ ${readme.slice(0, 8000)}`,
   }
 
   const data = await res.json()
-  const text = data.content?.[0]?.text || '{}'
+  const text: string = data.content?.[0]?.text || '{}'
 
+  let raw: unknown
   try {
-    return JSON.parse(text)
+    raw = JSON.parse(text)
   } catch {
     // Try extracting JSON from the response
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (jsonMatch) {
       try {
-        return JSON.parse(jsonMatch[0])
+        raw = JSON.parse(jsonMatch[0])
       } catch {
-        // Fall through
+        // Fall through to the regex extractor
       }
     }
+  }
+
+  if (raw === undefined) return extractToolsWithRegex(readme)
+
+  const parsed = extractionSchema.safeParse(raw)
+  if (!parsed.success) {
+    console.warn(`  Model returned a non-conforming shape (${parsed.error.issues[0]?.message}) — falling back to regex`)
     return extractToolsWithRegex(readme)
   }
+  return parsed.data
 }
 
-function extractToolsWithRegex(readme: string): {
-  tools: Array<{ name: string; description: string }>
-  resources: Array<{ name: string; description: string }>
-  prompts: Array<{ name: string; description: string }>
-} {
+function extractToolsWithRegex(readme: string): Extraction {
   const tools: Array<{ name: string; description: string }> = []
 
   // Match common patterns: `tool_name` - description, or ### tool_name
@@ -140,33 +165,50 @@ async function main() {
   console.log(`Extracting schemas for ${servers.length} servers...`)
 
   let extracted = 0
+  let failed = 0
 
   for (const server of servers) {
-    const parsed = parseGitHubUrl(server.github_url)
-    if (!parsed) continue
+    // One bad README/API response must not abort the whole batch — without this
+    // the remaining servers of the 200-row batch are dropped for the day.
+    try {
+      const parsed = parseGitHubUrl(server.github_url)
+      if (!parsed) continue
 
-    console.log(`  Processing ${server.slug}...`)
+      console.log(`  Processing ${server.slug}...`)
 
-    const readme = await getReadme(parsed.owner, parsed.repo)
-    if (!readme) {
-      console.warn(`  No README found for ${server.slug}`)
-      continue
-    }
-
-    const { tools, resources, prompts } = await extractToolsWithHaiku(readme)
-
-    if (tools.length > 0 || resources.length > 0 || prompts.length > 0) {
-      const { error } = await supabase
-        .from('servers')
-        .update({ tools, resources, prompts })
-        .eq('id', server.id)
-
-      if (error) {
-        console.error(`  Error updating ${server.slug}: ${error.message}`)
-      } else {
-        console.log(`  Extracted ${tools.length} tools, ${resources.length} resources, ${prompts.length} prompts`)
-        extracted++
+      const readme = await getReadme(parsed.owner, parsed.repo)
+      if (!readme) {
+        console.warn(`  No README found for ${server.slug}`)
+        continue
       }
+
+      const { tools, resources, prompts } = await extractToolsWithHaiku(readme)
+
+      // Write only what was actually extracted: always sending all three keys
+      // blanks any existing resources/prompts on a row selected purely for
+      // having `tools = '[]'`.
+      const updates: Record<string, unknown> = {}
+      if (tools?.length) updates.tools = tools
+      if (resources?.length) updates.resources = resources
+      if (prompts?.length) updates.prompts = prompts
+
+      if (Object.keys(updates).length > 0) {
+        const { error } = await supabase
+          .from('servers')
+          .update(updates)
+          .eq('id', server.id)
+
+        if (error) {
+          console.error(`  Error updating ${server.slug}: ${error.message}`)
+          failed++
+        } else {
+          console.log(`  Extracted ${tools?.length ?? 0} tools, ${resources?.length ?? 0} resources, ${prompts?.length ?? 0} prompts`)
+          extracted++
+        }
+      }
+    } catch (err) {
+      console.error(`  Exception for ${server.slug}: ${String(err).slice(0, 200)}`)
+      failed++
     }
 
     // Rate limit
@@ -175,8 +217,8 @@ async function main() {
 
   run.addProcessed(servers.length)
   run.addUpdated(extracted)
-  run.setSummary({ extracted })
-  console.log(`\nDone. Extracted schemas for ${extracted} servers.`)
+  run.setSummary({ extracted, failed })
+  console.log(`\nDone. Extracted schemas for ${extracted} servers (${failed} failed).`)
   await run.finish()
   } catch (err) {
     await run.fail(String(err))

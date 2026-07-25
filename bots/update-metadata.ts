@@ -9,8 +9,65 @@ config({ path: '.env.local' })
 import { createAdminClient } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
 import { getRepo } from './lib/github'
+import { normalizeGithubUrl } from '../lib/normalize'
 
 const supabase = createAdminClient('bot-update-metadata')
+
+// Bots that archive a row because the upstream repo is archived or gone. Those
+// archives are safe to undo once the repo is live again; every other archiving
+// path (admin toggle, detect-duplicates merge) is not.
+const AUTO_ARCHIVE_ACTORS = new Set(['bot-update-metadata', 'bot-check-broken-links'])
+
+/**
+ * Can we safely clear `is_archived` on a row whose GitHub repo is live again?
+ *
+ * Only when the archive is attributable to an automated "GitHub says archived /
+ * gone" decision. Resurrecting a merged duplicate or overriding an admin's
+ * manual archive is far worse than leaving a stale archive in place, so this
+ * fails closed on every ambiguity — including its own query errors.
+ */
+async function canUnarchive(serverId: string, githubUrl: string, owner: string, repo: string): Promise<boolean> {
+  // A live row on the same repo means this one was archived as a merged
+  // duplicate — un-archiving would put the duplicate listing back in search.
+  // The ilike is a cheap pre-filter (owner/repo come from a `[\w.-]+` regex, so
+  // they carry no filter syntax); normalizeGithubUrl decides the actual match,
+  // exactly as detect-duplicates groups them.
+  const normalized = normalizeGithubUrl(githubUrl)
+  const { data: siblings, error: siblingError } = await supabase
+    .from('servers')
+    .select('id, github_url')
+    .eq('is_archived', false)
+    .ilike('github_url', `%/${owner}/${repo}%`)
+  if (siblingError) {
+    console.warn(`  Un-archive check failed (siblings): ${siblingError.message}`)
+    return false
+  }
+  if ((siblings || []).some(s => s.id !== serverId && normalizeGithubUrl(s.github_url) === normalized)) {
+    return false
+  }
+
+  // Who set is_archived last? No audit row at all means it was archived at
+  // INSERT time (the audit trigger only fires on update/delete) — i.e. ingested
+  // straight from GitHub's own `archived` flag by discover/submit, which is the
+  // exact case this heals (GitHub issues #22, #26).
+  const { data: history, error: historyError } = await supabase
+    .from('server_changes')
+    .select('actor_id, actor_label, new_value')
+    .eq('server_id', serverId)
+    .eq('field_name', 'is_archived')
+    .order('changed_at', { ascending: false })
+    .limit(1)
+  if (historyError) {
+    console.warn(`  Un-archive check failed (audit): ${historyError.message}`)
+    return false
+  }
+
+  const last = history?.[0]
+  if (!last) return true
+  if (last.new_value !== true) return false
+  // actor_id is set only for logged-in (admin) writes; bots are service-role.
+  return last.actor_id === null && AUTO_ARCHIVE_ACTORS.has(last.actor_label)
+}
 
 function computeHealth(pushedAt: string | null, archived: boolean): string {
   if (archived) return 'archived'
@@ -78,6 +135,7 @@ async function main() {
 
   let updated = 0
   let errors = 0
+  let unarchived = 0
 
   for (const server of servers) {
     try {
@@ -105,18 +163,28 @@ async function main() {
       daysSinceCommit > 730 && repo.stargazers_count === 0 && downloads === 0
     )
 
-    // Only archive forward — never unarchive here. Otherwise we clobber
-    // manual archives (e.g. duplicate merges) whenever the upstream GitHub
-    // repo looks healthy. Admins can unarchive via /admin if needed.
+    // Archiving is unconditional; UN-archiving is not. We only clear the flag
+    // when canUnarchive can prove the archive came from an automated "repo is
+    // archived/gone" decision — otherwise we would clobber manual archives and
+    // duplicate merges whenever the upstream repo looks healthy.
+    const unarchive = server.is_archived && !shouldAutoArchive
+      && await canUnarchive(server.id, server.github_url, parsed.owner, parsed.repo)
+
+    const stillArchived = shouldAutoArchive || (server.is_archived && !unarchive)
     const updates: Record<string, unknown> = {
       github_stars: repo.stargazers_count,
       github_last_commit: repo.pushed_at,
       github_open_issues: repo.open_issues_count,
-      health_status: computeHealth(repo.pushed_at, server.is_archived || shouldAutoArchive),
+      health_status: computeHealth(repo.pushed_at, stillArchived),
       health_checked_at: new Date().toISOString(),
       npm_weekly_downloads: downloads,
     }
     if (shouldAutoArchive) updates.is_archived = true
+    if (unarchive) {
+      updates.is_archived = false
+      unarchived++
+      console.log(`  ↩ Un-archived ${server.slug} — upstream repo is live again`)
+    }
 
     const { error: updateError } = await supabase
       .from('servers')
@@ -140,8 +208,8 @@ async function main() {
 
   run.addProcessed(servers.length)
   run.addUpdated(updated)
-  run.setSummary({ updated, errors })
-  console.log(`\nDone. Updated: ${updated}, Errors: ${errors}`)
+  run.setSummary({ updated, errors, unarchived })
+  console.log(`\nDone. Updated: ${updated}, Errors: ${errors}, Un-archived: ${unarchived}`)
 
   // A run that updated ZERO servers while erroring on some is NOT a success — it
   // means every GitHub fetch failed (e.g. an expired/invalid BOT_GITHUB_TOKEN or

@@ -31,29 +31,54 @@ const REPARENT_TABLES_USER_UNIQUE = [
   'favorites',
 ] as const
 
-async function reparent(keeperId: string, dupeId: string): Promise<void> {
+/**
+ * Moves every child row off the duplicate onto the keeper.
+ *
+ * Returns the tables that failed. The caller MUST NOT archive the duplicate
+ * when this is non-empty: archiving hides the row while its reviews,
+ * discussions and favorites still point at it, which is silent data loss. An
+ * un-merged visible duplicate is merely cosmetic and the next run retries it.
+ */
+async function reparent(keeperId: string, dupeId: string): Promise<string[]> {
+  const failures: string[] = []
+
   for (const table of REPARENT_TABLES) {
     const { error } = await supabase
       .from(table)
       .update({ server_id: keeperId })
       .eq('server_id', dupeId)
-    if (error) console.warn(`    reparent ${table}: ${error.message}`)
+    if (error) {
+      console.warn(`    reparent ${table}: ${error.message}`)
+      failures.push(table)
+    }
   }
 
   for (const table of REPARENT_TABLES_USER_UNIQUE) {
     // Find dupe rows whose user_id has no matching row on the keeper.
     // Move those, skip the conflicts (user already acted on the keeper).
-    const { data: dupeRows } = await supabase
+    const { data: dupeRows, error: dupeError } = await supabase
       .from(table)
       .select('user_id')
       .eq('server_id', dupeId)
+    if (dupeError) {
+      console.warn(`    reparent ${table} (read dupe rows): ${dupeError.message}`)
+      failures.push(table)
+      continue
+    }
     if (!dupeRows?.length) continue
 
-    const { data: keeperRows } = await supabase
+    // A failed keeper lookup would leave keeperUsers empty and we would try to
+    // move rows that DO conflict — bail instead of hitting the unique constraint.
+    const { data: keeperRows, error: keeperError } = await supabase
       .from(table)
       .select('user_id')
       .eq('server_id', keeperId)
       .in('user_id', dupeRows.map(r => r.user_id))
+    if (keeperError) {
+      console.warn(`    reparent ${table} (read keeper rows): ${keeperError.message}`)
+      failures.push(table)
+      continue
+    }
 
     const keeperUsers = new Set((keeperRows || []).map(r => r.user_id))
     const movableUserIds = dupeRows
@@ -66,9 +91,14 @@ async function reparent(keeperId: string, dupeId: string): Promise<void> {
         .update({ server_id: keeperId })
         .eq('server_id', dupeId)
         .in('user_id', movableUserIds)
-      if (error) console.warn(`    reparent ${table}: ${error.message}`)
+      if (error) {
+        console.warn(`    reparent ${table}: ${error.message}`)
+        failures.push(table)
+      }
     }
   }
+
+  return failures
 }
 
 async function main() {
@@ -84,6 +114,9 @@ async function main() {
         .not('github_url', 'is', null)
         .eq('is_archived', false)
         .order('data_quality', { ascending: false, nullsFirst: false })
+        // `data_quality` is not unique — without a unique last key the offset
+        // pagination in fetchAllRows can skip and duplicate rows across pages.
+        .order('id')
     )
     run.addProcessed(servers.length)
 
@@ -114,6 +147,7 @@ async function main() {
     let duplicateGroups = 0
     let archived = 0
     const merged: { keeper: string; dupe: string; url: string }[] = []
+    const reparentFailures: { dupe: string; tables: string[] }[] = []
 
     for (const [url, group] of byUrl) {
       if (group.length <= 1) continue
@@ -127,7 +161,12 @@ async function main() {
 
       for (const dupe of dupes) {
         console.log(`    MERGE: ${dupe.slug} (quality: ${dupe.data_quality}, score: ${dupe.score_total})`)
-        await reparent(keep.id, dupe.id)
+        const failures = await reparent(keep.id, dupe.id)
+        if (failures.length > 0) {
+          console.error(`    SKIP archive ${dupe.slug}: reparent failed for ${failures.join(', ')} — leaving the duplicate visible so the next run retries`)
+          reparentFailures.push({ dupe: dupe.slug, tables: failures })
+          continue
+        }
         const { error } = await supabase
           .from('servers')
           .update({ is_archived: true })
@@ -142,8 +181,8 @@ async function main() {
     }
 
     run.addUpdated(archived)
-    run.setSummary({ duplicateGroups, archived, merged })
-    console.log(`\nDone. Duplicate groups: ${duplicateGroups}, Archived: ${archived}`)
+    run.setSummary({ duplicateGroups, archived, merged, reparentFailures })
+    console.log(`\nDone. Duplicate groups: ${duplicateGroups}, Archived: ${archived}, Reparent failures: ${reparentFailures.length}`)
     if (merged.length > 0) {
       console.log('\nAdd these redirects to next.config.ts:')
       for (const m of merged) {
