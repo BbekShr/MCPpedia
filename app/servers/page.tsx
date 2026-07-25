@@ -42,6 +42,12 @@ export default async function ServersPage({
 
   const supabase = createPublicClient()
 
+  // Start the shared home_stats snapshot now so it overlaps the listing query
+  // below instead of costing a second serial round trip (it is awaited after
+  // the branch). `supabase.rpc()` is lazy — the request only fires when the
+  // builder is `then`-ed — so wrap it to kick it off here.
+  const statsPromise = Promise.resolve(supabase.rpc('home_stats'))
+
   let servers: Server[] = []
   let totalCount = 0
 
@@ -127,7 +133,7 @@ export default async function ServersPage({
   // the catalog headline from the SAME snapshot so the numbers always agree.
   // The live `totalCount` above still drives pagination and filtered/search
   // result counts, which must stay exact.
-  const { data: statsData } = await supabase.rpc('home_stats')
+  const { data: statsData } = await statsPromise
   const catalogTotal =
     (statsData as { total_servers?: number } | null)?.total_servers ?? totalCount
 
