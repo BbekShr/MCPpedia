@@ -112,31 +112,100 @@ export function computeCVSS3BaseScore(vector: string): number | null {
   return Math.ceil(raw * 10) / 10
 }
 
-export function parseCVSSScore(severityArr?: Array<{ type: string; score: string }>): number | null {
-  if (!severityArr?.length) return null
-  const cvss = severityArr.find(s => s.type === 'CVSS_V3' || s.type === 'CVSS_V4')
-  if (!cvss?.score) return null
+function parseSeverityEntry(score: string | undefined): number | null {
+  if (!score) return null
 
   // If it's already a plain numeric score (some OSV records omit the vector)
-  if (/^\d+\.?\d*$/.test(cvss.score.trim())) {
-    return parseFloat(cvss.score) || null
+  if (/^\d+\.?\d*$/.test(score.trim())) {
+    return parseFloat(score) || null
   }
 
   // Otherwise it's a CVSS vector string — compute the base score from it
-  if (cvss.score.startsWith('CVSS:')) {
-    return computeCVSS3BaseScore(cvss.score)
+  if (score.startsWith('CVSS:')) {
+    return computeCVSS3BaseScore(score)
   }
 
   return null
 }
 
-export function cvssToSeverity(score: number | null): 'critical' | 'high' | 'medium' | 'low' | 'info' {
+export function parseCVSSScore(severityArr?: Array<{ type: string; score: string }>): number | null {
+  if (!severityArr?.length) return null
+
+  // Only the v3 formula is implemented, so every CVSS_V3 entry gets a chance before any
+  // CVSS_V4 one: taking the first match meant an OSV record that happens to list its v4
+  // vector first threw away a perfectly parseable v3 vector. A CVSS_V4 entry still parses
+  // when OSV supplies a plain number; a v4 *vector* yields null here and is banded by
+  // cvss4VectorSeverity instead.
+  for (const type of ['CVSS_V3', 'CVSS_V4']) {
+    for (const entry of severityArr) {
+      if (entry.type !== type) continue
+      const score = parseSeverityEntry(entry.score)
+      if (score !== null) return score
+    }
+  }
+
+  return null
+}
+
+export type Severity = 'critical' | 'high' | 'medium' | 'low' | 'info'
+
+export function cvssToSeverity(score: number | null): Severity {
   if (score === null) return 'info'
   if (score >= 9.0) return 'critical'
   if (score >= 7.0) return 'high'
   if (score >= 4.0) return 'medium'
   if (score > 0) return 'low'
   return 'info'
+}
+
+// CVSS 4.0 renamed the impact metrics (C/I/A → VC/VI/VA), added AT, and replaced Scope
+// with subsequent-system impact (SC/SI/SA), so computeCVSS3BaseScore always returns null
+// for a v4 vector — which used to grade a v4 critical as 'info', i.e. free of penalty.
+// We deliberately do NOT implement the v4 base formula: it needs the MacroVector lookup
+// table and a subtly wrong number is worse than an honest band. Nothing in the product
+// displays a v4 base score, so we band the vector and leave cvss_score null. The bands
+// round toward the harsher side on purpose.
+export function cvss4VectorSeverity(vector: string): Severity | null {
+  if (!vector.startsWith('CVSS:4')) return null
+
+  const parts: Record<string, string> = {}
+  for (const m of vector.replace(/^CVSS:\d+\.\d+\//, '').split('/')) {
+    const [k, v] = m.split(':')
+    if (k && v) parts[k] = v
+  }
+
+  const IMPACT: Record<string, number> = { H: 2, L: 1, N: 0 }
+  const vc = IMPACT[parts['VC']], vi = IMPACT[parts['VI']], va = IMPACT[parts['VA']]
+  if (vc === undefined || vi === undefined || va === undefined) return null
+
+  // Subsequent-system impact counts the same as vulnerable-system impact here — coarser
+  // than the real formula, in the conservative direction.
+  const sub = Math.max(IMPACT[parts['SC']] ?? 0, IMPACT[parts['SI']] ?? 0, IMPACT[parts['SA']] ?? 0)
+  const impact = Math.max(vc, vi, va, sub)
+
+  if (impact === 0) return 'info'
+
+  // Worst case: remote, no added attack complexity or requirements, no privileges, no user.
+  const easy = parts['AV'] === 'N' && parts['AC'] === 'L' && parts['AT'] === 'N'
+    && parts['PR'] === 'N' && parts['UI'] === 'N'
+  if (impact === 2) return easy ? 'critical' : 'high'
+
+  const reachable = (parts['AV'] === 'N' || parts['AV'] === 'A') && parts['AC'] === 'L'
+    && parts['AT'] === 'N' && parts['PR'] !== 'H' && parts['UI'] !== 'A'
+  return reachable ? 'medium' : 'low'
+}
+
+// How one OSV record is rated: a computed base score when we can get one, otherwise a
+// CVSS 4.0 band with no score attached. A null score paired with 'info' means "unrated",
+// which checkCVEs charges for rather than waving through as harmless.
+export function rateOSVSeverity(
+  severityArr?: Array<{ type: string; score: string }>
+): { cvss_score: number | null; severity: Severity } {
+  const cvss_score = parseCVSSScore(severityArr)
+  if (cvss_score !== null) return { cvss_score, severity: cvssToSeverity(cvss_score) }
+
+  const v4 = severityArr?.find(s => s.type === 'CVSS_V4' && s.score?.startsWith('CVSS:4'))
+  return { cvss_score: null, severity: (v4 && cvss4VectorSeverity(v4.score)) || 'info' }
 }
 
 export type Advisory = {
@@ -186,12 +255,12 @@ function collectAdvisories(
 
   function processVulns(vulns: OSVVulnerability[]) {
     for (const v of vulns) {
-      const cvssScore = parseCVSSScore(v.severity)
+      const rating = rateOSVSeverity(v.severity)
       const fixedEvent = v.affected?.[0]?.ranges?.[0]?.events?.find(e => e.fixed)
       advisories.push({
         cve_id: v.aliases?.find(a => a.startsWith('CVE-')) || v.id,
-        severity: cvssToSeverity(cvssScore),
-        cvss_score: cvssScore,
+        severity: rating.severity,
+        cvss_score: rating.cvss_score,
         title: v.summary || v.id,
         description: v.details?.slice(0, 500) || null,
         affected_versions: v.affected?.[0]?.ranges?.[0]?.events?.find(e => e.introduced)?.introduced
@@ -233,8 +302,14 @@ function checkCVEs(
   const criticalOrHigh = openVulns.filter(a => a.severity === 'critical' || a.severity === 'high')
   const medium = openVulns.filter(a => a.severity === 'medium')
   const low = openVulns.filter(a => a.severity === 'low')
+  // An open advisory we could not rate at all (no severity data, or a vector we cannot
+  // score) is not evidence of safety — unbucketed, it used to score a full 15/15 while
+  // the detail line still said "N open CVE(s)". Charge it the medium weight: over-
+  // penalizing a genuinely informational advisory is the safer error for a security
+  // score. A rated 0.0 keeps its cvss_score, so it stays out of this bucket.
+  const unrated = openVulns.filter(a => a.severity === 'info' && a.cvss_score === null)
 
-  let penalty = criticalOrHigh.length * 5 + medium.length * 3 + low.length * 1
+  let penalty = criticalOrHigh.length * 5 + medium.length * 3 + low.length * 1 + unrated.length * 3
   penalty = Math.min(penalty, 15) // cap at -15
 
   const points = 15 - penalty
@@ -246,6 +321,7 @@ function checkCVEs(
   const detail = openVulns.length === 0
     ? `No known CVEs for ${packageName}`
     : `${openVulns.length} open CVE(s): ${criticalOrHigh.length} critical/high, ${medium.length} medium, ${low.length} low`
+      + (unrated.length > 0 ? `, ${unrated.length} unrated` : '')
 
   return {
     id: 'cve',
