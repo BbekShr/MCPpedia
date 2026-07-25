@@ -3,6 +3,8 @@ import { unstable_cache } from 'next/cache'
 import NewsletterSignup from '@/components/NewsletterSignup'
 import { createPublicClient } from '@/lib/supabase/public'
 import { withRetry } from '@/lib/retry'
+import { liveDataOrNull } from '@/lib/degrade'
+import LiveDataUnavailable from '@/components/LiveDataUnavailable'
 import {
   CATEGORIES,
   CATEGORY_LABELS,
@@ -243,7 +245,16 @@ async function fetchHomeData() {
 }
 
 export default async function HomePage() {
-  const { stats, featured, trending, useCaseTiles, advisories, categoryTiles } = await getHomeData()
+  // fetchHomeData throws when the queries that carry the page fail, which is
+  // what stops unstable_cache pinning a hollow homepage for 24h. Catching it
+  // out here keeps that property while replacing the generic crash boundary
+  // with a shell that says what is actually wrong. No JSON-LD is emitted on
+  // this path — publishing a Dataset with zeroed counts is worse than
+  // publishing nothing.
+  const data = await liveDataOrNull(getHomeData)
+  if (!data) return <LiveDataUnavailable title="The catalog is temporarily unavailable" />
+
+  const { stats, featured, trending, useCaseTiles, advisories, categoryTiles } = data
 
   const homepageFaqs = [
     {

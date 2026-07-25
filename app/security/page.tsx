@@ -1,6 +1,8 @@
 import { createPublicClient } from '@/lib/supabase/public'
 import { unstable_cache } from 'next/cache'
 import { withRetry } from '@/lib/retry'
+import { liveDataOrNull } from '@/lib/degrade'
+import LiveDataUnavailable from '@/components/LiveDataUnavailable'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { SITE_URL } from '@/lib/constants'
@@ -123,7 +125,14 @@ const getSecurityPageData = unstable_cache(
 )
 
 export default async function SecurityPage() {
-  const { advisories, stats } = await getSecurityPageData()
+  // Same contract as the homepage: the fetcher still throws inside
+  // unstable_cache so an empty advisory feed is never pinned, and the degraded
+  // shell is chosen out here. This page especially must not render its zeros —
+  // "0 open CVEs" reads as an all-clear security report rather than an outage.
+  const data = await liveDataOrNull(getSecurityPageData)
+  if (!data) return <LiveDataUnavailable title="Security data is temporarily unavailable" />
+
+  const { advisories, stats } = data
 
   const openCount = stats?.open_cves ?? 0
   const fixedCount = stats?.fixed_cves ?? 0
