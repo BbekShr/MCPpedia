@@ -8,8 +8,12 @@ import { fetchServerChunk, getServerChunkCount, renderUrlset, SITEMAP_HEADERS } 
 // index, and a folder named `sitemap-servers-[chunk].xml` would not route — a
 // dynamic segment must be the whole folder name.
 //
-// `dynamicParams` stays on (default) so a shard beyond the build-time count is
-// still served on demand as the catalog grows between deploys.
+// `dynamicParams` stays on (default) so the shard that appears as the catalog
+// grows between deploys is served on demand — but only ONE past the current
+// count. Anything further 404s: `fetchServerChunk` walks with OFFSET on the
+// service-role client (no anon statement timeout), so an unbounded chunk number
+// would let any anonymous request trigger a full ordered scan of the table and
+// mint a permanent ISR entry per URL (the S27 deep-offset class of bug).
 export const revalidate = 86400 // 1d
 
 export async function generateStaticParams() {
@@ -23,7 +27,7 @@ export async function GET(
 ) {
   const { chunk } = await params
   const n = Number(chunk)
-  if (!Number.isInteger(n) || n < 1) {
+  if (!Number.isInteger(n) || n < 1 || n > (await getServerChunkCount()) + 1) {
     return new Response('Not found', { status: 404 })
   }
   const entries = await fetchServerChunk(n - 1)

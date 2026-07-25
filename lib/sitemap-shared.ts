@@ -151,32 +151,41 @@ export function buildStaticEntries(): SitemapEntry[] {
 // daily home_stats snapshot already holds this number (same source the /servers
 // header uses); the planner estimate is the fallback if the snapshot is missing.
 async function fetchServerTotal(): Promise<number> {
+  // Same trigger as the mock client in lib/supabase/public.ts: with no env there
+  // is no database to ask (env-less CI build), which is not a failure.
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return 0
+  }
   const { createPublicClient } = await import('./supabase/public')
   const supabase = createPublicClient()
 
-  const { data } = await supabase.rpc('home_stats')
+  const { data, error: rpcError } = await supabase.rpc('home_stats')
   const snapshotTotal = (data as { total_servers?: number } | null)?.total_servers
   if (snapshotTotal) return snapshotTotal
 
-  const { count } = await supabase
+  const { count, error: countError } = await supabase
     .from('servers')
     .select('id', { count: 'estimated', head: true })
     .eq('is_archived', false)
-  return count ?? 0
+  if (!countError) return count ?? 0
+
+  // Env is present and BOTH reads failed. Degrading to the floor here would
+  // silently republish the truncated 3-shard index this item exists to fix —
+  // a failure indistinguishable from success. Fail loudly instead.
+  console.error('[sitemap] server count unavailable', { rpcError, countError })
+  throw new Error('[sitemap] cannot size server sitemap shards: home_stats and estimated count both failed')
 }
 
 // How many /sitemap-servers-<n>.xml shards to publish. Derived from the catalog
 // size, never hardcoded: three fixed chunk routes silently hid every server past
 // position 30,000 once the catalog outgrew them (S29).
+//
+// No padding shard: a trailing empty sitemap is reported by Search Console as an
+// error on every fetch. Growth between revalidations is covered by the route's
+// `dynamicParams` instead, which serves one shard past this count on demand.
 export async function getServerChunkCount(): Promise<number> {
-  // The sitemap index must never 500 just because this count is unavailable —
-  // fall back to the floor, which is what shipped before this was derived.
-  const total = await fetchServerTotal().catch(() => 0)
-  // One chunk of headroom: the total comes from a daily snapshot (or an
-  // estimate), so it lags the real catalog. The extra shard keeps newly added
-  // servers covered until the next refresh; if it turns out to be empty it just
-  // renders an empty <urlset>, which is valid.
-  return Math.max(MIN_SERVER_CHUNKS, Math.ceil(total / SERVER_CHUNK_SIZE) + 1)
+  const total = await fetchServerTotal()
+  return Math.max(MIN_SERVER_CHUNKS, Math.ceil(total / SERVER_CHUNK_SIZE))
 }
 
 // Fetch a chunk of servers ordered by score_total descending.
