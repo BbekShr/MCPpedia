@@ -13,14 +13,40 @@ import {
 import type { Server } from '@/lib/types'
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { notFound } from 'next/navigation'
 import BlinkLogo from '@/components/BlinkLogo'
 
 export const revalidate = 60
 
-export const metadata: Metadata = {
-  title: 'Browse MCP Servers',
-  description: 'Search and browse MCP servers scored on security, maintenance, and efficiency. Filter by category, transport, status, and more.',
-  alternates: { canonical: `${SITE_URL}/servers` },
+// Cap the reachable offset at the same 10k the public API uses
+// (app/api/v1/servers/route.ts:10). Past it Postgres has to walk the whole
+// ordered set, which blows anon's 3s statement timeout — and the error path
+// below then rendered a 200-OK "No servers found" catalog with the pagination
+// hidden, i.e. a silently empty encyclopedia. Nothing legitimate browses that
+// deep, so a page beyond the cap 404s instead of running the query.
+const MAX_OFFSET = 10_000
+const MAX_PAGE = Math.floor(MAX_OFFSET / ITEMS_PER_PAGE)
+
+function parsePage(raw: string | undefined): number {
+  const n = parseInt(raw || '1', 10)
+  return Number.isNaN(n) || n < 1 ? 1 : n
+}
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>
+}): Promise<Metadata> {
+  const params = await searchParams
+  return {
+    title: 'Browse MCP Servers',
+    description: 'Search and browse MCP servers scored on security, maintenance, and efficiency. Filter by category, transport, status, and more.',
+    alternates: { canonical: `${SITE_URL}/servers` },
+    // Deep pages are near-duplicate slices of the same catalog and all
+    // canonicalize to /servers — keep crawlers off the offset walk, but let
+    // them follow through to the individual server pages they link to.
+    ...(parsePage(params.page) > 1 ? { robots: { index: false, follow: true } } : {}),
+  }
 }
 
 export default async function ServersPage({
@@ -37,13 +63,15 @@ export default async function ServersPage({
   const transport = params.transport || ''
   const sort = params.sort || ''
   const minScore = parseInt(params.min_score || '0', 10)
-  const page = parseInt(params.page || '1', 10)
+  const page = parsePage(params.page)
+  if (page > MAX_PAGE) notFound()
   const offset = (page - 1) * ITEMS_PER_PAGE
 
   const supabase = createPublicClient()
 
   let servers: Server[] = []
   let totalCount = 0
+  let loadFailed = false
 
   if (q) {
     // Fetch one page of search results from Supabase RPC with DB-side pagination.
@@ -62,6 +90,10 @@ export default async function ServersPage({
       transport_filter: transport || null,
       author_filter: author || null,
     })
+    // Same contract as the catalog branch below: a failed RPC must be logged
+    // and surfaced as a degraded state, never rendered as "no results".
+    if (error) console.error('[servers] search query failed', error)
+    loadFailed = Boolean(error)
     if (!error && data) {
       const results = data as Server[]
       const hasNextPage = results.length > ITEMS_PER_PAGE
@@ -114,11 +146,13 @@ export default async function ServersPage({
     // Degrade gracefully (revalidate=60 re-tries within a minute) but never fail
     // silently again — log so a recurrence is visible instead of a blank catalog.
     if (error) console.error('[servers] catalog query failed', error)
+    loadFailed = Boolean(error)
     servers = (data as Server[]) || []
     totalCount = count || 0
   }
 
-  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE)
+  // Clamped to MAX_PAGE so "Next" never links to a page that now 404s.
+  const totalPages = Math.min(Math.ceil(totalCount / ITEMS_PER_PAGE), MAX_PAGE)
 
   // Canonical catalog total. The homepage hero reads `total_servers` from the
   // daily home_stats snapshot; if the unfiltered /servers view used its own
@@ -185,14 +219,18 @@ export default async function ServersPage({
         <ScoreFilterPills />
       </div>
 
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-text-muted">
-          {q
-            ? `${totalCount.toLocaleString()} server${totalCount !== 1 ? 's' : ''} matching "${q}"`
-            : `${headerTotal.toLocaleString()} servers`
-          }
-        </p>
-      </div>
+      {/* A failed query leaves totalCount at 0 — suppress the count line rather
+          than contradict the degraded state below with `0 servers matching`. */}
+      {!loadFailed && (
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm text-text-muted">
+            {q
+              ? `${totalCount.toLocaleString()} server${totalCount !== 1 ? 's' : ''} matching "${q}"`
+              : `${headerTotal.toLocaleString()} servers`
+            }
+          </p>
+        </div>
+      )}
 
       <div className="space-y-3">
         {servers.map(server => (
@@ -200,7 +238,24 @@ export default async function ServersPage({
         ))}
       </div>
 
-      {servers.length === 0 && (
+      {/* A failed query and a genuinely empty result look identical in the data
+          (both give zero rows) but mean opposite things to the reader — say
+          which one happened instead of claiming the catalog is empty. */}
+      {loadFailed && (
+        <div className="text-center py-12">
+          <div className="flex justify-center mb-3">
+            <BlinkLogo size={48} className="text-text-muted" />
+          </div>
+          <p className="text-text-muted mb-2">
+            We couldn&apos;t load the catalog right now. Please try again in a moment.
+          </p>
+          <Link href="/servers" className="text-sm text-accent hover:text-accent-hover">
+            Retry &rarr;
+          </Link>
+        </div>
+      )}
+
+      {!loadFailed && servers.length === 0 && (
         <div className="text-center py-12">
           <div className="flex justify-center mb-3">
             <BlinkLogo size={48} className="text-text-muted" />
