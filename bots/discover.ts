@@ -56,6 +56,13 @@ async function getExistingGithubUrls(): Promise<Set<string>> {
       .from('servers')
       .select('github_url')
       .not('github_url', 'is', null)
+      // Order by the `id` primary key — a UNIQUE tiebreak, which offset paging
+      // requires. Without one, Postgres may return rows in a different order per
+      // page, so a row can be skipped entirely; a skipped row means an already-
+      // listed server looks new and gets inserted as a DUPLICATE, because there
+      // is no unique index on github_url/npm_package/pip_package (M4). Cleaning
+      // that up then falls to detect-duplicates, which can archive the wrong row.
+      .order('id', { ascending: true })
       .range(from, from + PAGE - 1)
     if (error) throw new Error(`Failed to load existing github_urls at offset ${from}: ${error.message}`)
     if (!data || data.length === 0) break
@@ -74,6 +81,7 @@ async function getExistingSlugs(): Promise<Set<string>> {
     const { data, error } = await supabase
       .from('servers')
       .select('slug')
+      .order('id', { ascending: true })
       .range(from, from + PAGE - 1)
     if (error) throw new Error(`Failed to load existing slugs at offset ${from}: ${error.message}`)
     if (!data || data.length === 0) break
@@ -93,6 +101,7 @@ async function getExistingNpmPackages(): Promise<Set<string>> {
       .from('servers')
       .select('npm_package')
       .not('npm_package', 'is', null)
+      .order('id', { ascending: true })
       .range(from, from + PAGE - 1)
     if (error) throw new Error(`Failed to load existing npm_packages at offset ${from}: ${error.message}`)
     if (!data || data.length === 0) break
@@ -112,6 +121,7 @@ async function getExistingPipPackages(): Promise<Set<string>> {
       .from('servers')
       .select('pip_package')
       .not('pip_package', 'is', null)
+      .order('id', { ascending: true })
       .range(from, from + PAGE - 1)
     if (error) throw new Error(`Failed to load existing pip_packages at offset ${from}: ${error.message}`)
     if (!data || data.length === 0) break
