@@ -20,6 +20,7 @@ import {
   scoreMaintenance,
   SCORE_WEIGHTS,
 } from '../lib/scoring'
+import type { Advisory } from '../lib/scoring'
 import type { Tool } from '../lib/types'
 
 const supabase = createAdminClient('bot-compute-scores')
@@ -28,6 +29,81 @@ function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
   const match = url.match(/github\.com\/([\w.-]+)\/([\w.-]+)/)
   if (!match) return null
   return { owner: match[1], repo: match[2].replace(/\.git$/, '') }
+}
+
+/**
+ * Write a fresh scan's advisories and close the rows it no longer reports.
+ *
+ * Nothing else ever clears an advisory, so without this the table is
+ * append-only: a row stays `open` forever after its package is cleared or
+ * renamed (bots/extract-install-info.ts nulls a wrong `npm_package`) or after
+ * OSV withdraws the entry, and keeps inflating `open_cves` in every
+ * daily_metrics snapshot and on /security.
+ *
+ * Identity is the `(server_id, cve_id)` pair the unique index backs
+ * (migration 20260403010000) — the same key the upsert conflicts on — so an
+ * open row whose `cve_id` is absent from the fresh result was not re-confirmed
+ * by this scan and is stale. That also covers alias drift: `cve_id` is
+ * `aliases.find(CVE-) || id` (lib/scoring.ts), so when OSV later attaches a CVE
+ * alias to a GHSA advisory the fresh row lands under a NEW key; closing the
+ * old GHSA-keyed row leaves exactly one open row per vulnerability instead of
+ * two. Keying identity on the immutable OSV id instead would need a different
+ * unique index, i.e. a migration.
+ *
+ * MUST NOT be called when the OSV scan failed — see the call site.
+ */
+async function reconcileAdvisories(serverId: string, advisories: Advisory[]) {
+  for (const adv of advisories) {
+    await supabase
+      .from('security_advisories')
+      .upsert(
+        {
+          server_id: serverId,
+          cve_id: adv.cve_id,
+          severity: adv.severity,
+          cvss_score: adv.cvss_score,
+          title: adv.title,
+          description: adv.description,
+          affected_versions: adv.affected_versions,
+          fixed_version: adv.fixed_version,
+          source_url: adv.source_url,
+          status: adv.status,
+          published_at: adv.published_at,
+        },
+        { onConflict: 'server_id,cve_id', ignoreDuplicates: false }
+      )
+  }
+
+  // Read AFTER the upsert so anything this scan just refreshed (including
+  // advisories it downgraded to 'fixed') is already out of the open set.
+  const { data: openRows, error: readError } = await supabase
+    .from('security_advisories')
+    .select('id, cve_id')
+    .eq('server_id', serverId)
+    .eq('status', 'open')
+
+  if (readError) {
+    console.error(`  Error reading advisories: ${readError.message}`)
+    return
+  }
+
+  const fresh = new Set(advisories.map(a => a.cve_id).filter((id): id is string => !!id))
+  // Rows with a null cve_id can't be produced by a scan (the upsert always
+  // supplies one), so they're left alone rather than closed on a key we never
+  // wrote.
+  const stale = (openRows || []).filter(r => r.cve_id && !fresh.has(r.cve_id)).map(r => r.id)
+  if (stale.length === 0) return
+
+  const { error: closeError } = await supabase
+    .from('security_advisories')
+    .update({ status: 'fixed' })
+    .in('id', stale)
+
+  if (closeError) {
+    console.error(`  Error closing stale advisories: ${closeError.message}`)
+  } else {
+    console.log(`  Closed ${stale.length} stale advisor${stale.length === 1 ? 'y' : 'ies'}`)
+  }
 }
 
 async function main() {
@@ -203,28 +279,19 @@ async function main() {
       console.error(`  Error updating ${server.slug}: ${updateError.message}`)
     }
 
-    // Upsert security advisories
-    if (security.advisories.length > 0) {
-      for (const adv of security.advisories) {
-        await supabase
-          .from('security_advisories')
-          .upsert(
-            {
-              server_id: server.id,
-              cve_id: adv.cve_id,
-              severity: adv.severity,
-              cvss_score: adv.cvss_score,
-              title: adv.title,
-              description: adv.description,
-              affected_versions: adv.affected_versions,
-              fixed_version: adv.fixed_version,
-              source_url: adv.source_url,
-              status: adv.status,
-              published_at: adv.published_at,
-            },
-            { onConflict: 'server_id,cve_id', ignoreDuplicates: false }
-          )
-      }
+    // Upsert security advisories, and close the ones this scan no longer
+    // reports — but ONLY when the scan result is trustworthy.
+    //
+    // A 'failed' scan returns zero advisories because OSV was unreachable, not
+    // because the CVEs are gone; reconciling on that would mark every real CVE
+    // in the fleet "fixed" in a single run. Never reconcile on the osvFailed
+    // path — same guard the CVE-derived columns above use.
+    //
+    // 'pending' (no npm/pip package left to scan) IS trustworthy: there is no
+    // package to carry a CVE, and the update above already wrote cve_count = 0
+    // for it, so the advisory rows are what's left inconsistent.
+    if (!osvFailed) {
+      await reconcileAdvisories(server.id, security.advisories)
     }
 
     processed++
