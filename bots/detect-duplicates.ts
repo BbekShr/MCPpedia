@@ -84,6 +84,11 @@ async function main() {
         .not('github_url', 'is', null)
         .eq('is_archived', false)
         .order('data_quality', { ascending: false, nullsFirst: false })
+        // `data_quality` is a non-unique integer, so its tie groups are enormous and
+        // Postgres may order them differently between offset pages — a row could be
+        // returned twice and end up in its own duplicate group, archiving the keeper.
+        // `id` is the unique tiebreak that makes the pagination deterministic.
+        .order('id', { ascending: true })
     )
     run.addProcessed(servers.length)
 
@@ -115,7 +120,12 @@ async function main() {
     let archived = 0
     const merged: { keeper: string; dupe: string; url: string }[] = []
 
-    for (const [url, group] of byUrl) {
+    for (const [url, rawGroup] of byUrl) {
+      // Defence in depth against the same row appearing twice: the `.order('id')`
+      // tiebreak above should make it impossible, but archiving is effectively
+      // irreversible (update-metadata is archive-forward only), so never trust the
+      // group's shape — dedupe by id BEFORE deciding whether this is a real group.
+      const group = [...new Map(rawGroup.map(s => [s.id, s])).values()]
       if (group.length <= 1) continue
 
       duplicateGroups++
@@ -126,6 +136,12 @@ async function main() {
       console.log(`    KEEP: ${keep.slug} (quality: ${keep.data_quality}, score: ${keep.score_total})`)
 
       for (const dupe of dupes) {
+        // Never archive the keeper: reparent() would be a no-op and the archive write
+        // would take the live listing down (gone from search, /servers, sitemaps).
+        if (dupe.id === keep.id) {
+          console.warn(`    SKIP: ${dupe.slug} is the keeper itself`)
+          continue
+        }
         console.log(`    MERGE: ${dupe.slug} (quality: ${dupe.data_quality}, score: ${dupe.score_total})`)
         await reparent(keep.id, dupe.id)
         const { error } = await supabase
