@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation'
+import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
+import { withRetry } from '@/lib/retry'
 import ServerCard from '@/components/ServerCard'
 import CategoryFilters from '@/components/CategoryFilters'
 import { CATEGORIES, CATEGORY_LABELS, ITEMS_PER_PAGE, SITE_URL, PUBLIC_CARD_FIELDS } from '@/lib/constants'
@@ -48,33 +50,52 @@ export async function generateMetadata({
   }
 }
 
-export default async function CategoryPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ category: string }>
-  searchParams: Promise<Record<string, string | undefined>>
-}) {
-  const { category } = await params
-  const sp = await searchParams
+type CategoryListingParams = {
+  category: string
+  sort: string
+  status: string
+  transport: string
+  minScore: number
+  q: string
+  offset: number
+}
 
-  if (!CATEGORIES.includes(category as Category)) notFound()
+// Cache the listing round-trip for 1h. This page reads `searchParams`, so it is
+// dynamic and the route-level `revalidate` above never applies — without this,
+// every crawler hit of the 22 sitemap-listed categories (and every ?sort/?page
+// permutation) ran a live anon query against the 3s statement timeout.
+//
+// `unstable_cache` keys on the stringified arguments in addition to the key
+// prefix below, so the SINGLE argument object must carry every input that
+// changes the result set: category, sort, status, transport, minScore, q and
+// offset (the page number, already folded into offset). Adding a new filter
+// above without adding it here would serve one filter's results for another.
+//
+// Bust on demand with `revalidateTag('category-listing')`. Throwing inside the
+// cached function (below) is what stops a transient Supabase blip from pinning
+// an empty listing for the full hour — unstable_cache only caches successful
+// returns, and withRetry absorbs a one-off failure before the caller degrades.
+const getCategoryListing = unstable_cache(
+  (params: CategoryListingParams) => withRetry(() => fetchCategoryListing(params)),
+  ['category-page-listing-v1'],
+  { revalidate: 3600, tags: ['category-listing'] },
+)
 
-  const label = CATEGORY_LABELS[category as Category]
-  const sort = sp.sort || 'score'
-  const status = sp.status || ''
-  const transport = sp.transport || ''
-  const minScore = parseInt(sp.min_score || '0', 10)
-  const q = sp.q || ''
-  const page = parseInt(sp.page || '1', 10)
-  const offset = (page - 1) * ITEMS_PER_PAGE
-
+async function fetchCategoryListing({
+  category,
+  sort,
+  status,
+  transport,
+  minScore,
+  q,
+  offset,
+}: CategoryListingParams): Promise<{ servers: Server[]; totalCount: number }> {
   const supabase = createPublicClient()
 
   // `estimated`, NOT `exact`: an exact window-count on large categories
   // (e.g. developer-tools, 6k+ rows) exceeds anon's 3s statement timeout —
-  // the error guard below then throws and the category 500s. An approximate
-  // total is fine for paging; the timeout is what breaks the page.
+  // the error guard below then throws and the page renders degraded. An
+  // approximate total is fine for paging; the timeout is what breaks the page.
   let query = supabase
     .from('servers')
     .select(PUBLIC_CARD_FIELDS, { count: 'estimated' })
@@ -113,15 +134,51 @@ export default async function CategoryPage({
 
   query = query.range(offset, offset + ITEMS_PER_PAGE - 1)
 
-  // Throw on Supabase failure so the empty render never gets pinned by ISR
-  // (a transient failure would otherwise surface as `count: null` → 0 servers,
-  // cached for 7d). The `estimated` count above keeps this off the timeout path.
-  const { data: servers, count, error } = await query
+  const { data, count, error } = await query
   if (error) {
     console.error(`[category/${category}] Supabase query failed`, error)
     throw new Error(`Category page query failed: ${error.message}`)
   }
-  const totalCount = count || 0
+  return { servers: (data as Server[]) || [], totalCount: count || 0 }
+}
+
+export default async function CategoryPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ category: string }>
+  searchParams: Promise<Record<string, string | undefined>>
+}) {
+  const { category } = await params
+  const sp = await searchParams
+
+  if (!CATEGORIES.includes(category as Category)) notFound()
+
+  const label = CATEGORY_LABELS[category as Category]
+  const sort = sp.sort || 'score'
+  const status = sp.status || ''
+  const transport = sp.transport || ''
+  const minScore = parseInt(sp.min_score || '0', 10)
+  const q = sp.q || ''
+  const page = parseInt(sp.page || '1', 10)
+  const offset = (page - 1) * ITEMS_PER_PAGE
+
+  // Degrade instead of 500ing: a persistent query failure (the 3s statement
+  // timeout during the S20 outage) renders an explicit "try again" state rather
+  // than an error page. Nothing failed gets cached — fetchCategoryListing
+  // throws, so unstable_cache stores nothing and the next request retries.
+  let servers: Server[] = []
+  let totalCount = 0
+  let loadFailed = false
+  try {
+    const listing = await getCategoryListing({ category, sort, status, transport, minScore, q, offset })
+    servers = listing.servers
+    totalCount = listing.totalCount
+  } catch (err) {
+    console.error(`[category/${category}] listing unavailable — rendering degraded`, err)
+    loadFailed = true
+  }
+
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE)
 
   // Calculate category stats for the header
@@ -162,9 +219,11 @@ export default async function CategoryPage({
 
       <h1 className="text-2xl font-semibold text-text-primary mb-2">{label} MCP Servers</h1>
       <p className="text-text-muted mb-6">
-        {hasFilters
-          ? `${totalCount.toLocaleString()} server${totalCount !== 1 ? 's' : ''} matching your filters`
-          : `${totalCount.toLocaleString()} server${totalCount !== 1 ? 's' : ''} in this category`
+        {loadFailed
+          ? 'Server list temporarily unavailable'
+          : hasFilters
+            ? `${totalCount.toLocaleString()} server${totalCount !== 1 ? 's' : ''} matching your filters`
+            : `${totalCount.toLocaleString()} server${totalCount !== 1 ? 's' : ''} in this category`
         }
       </p>
 
@@ -175,20 +234,22 @@ export default async function CategoryPage({
 
       {/* Results */}
       <div className="space-y-3">
-        {(servers as Server[] || []).map(server => (
+        {servers.map(server => (
           <ServerCard key={server.id} server={server} />
         ))}
       </div>
 
-      {(!servers || servers.length === 0) && (
+      {servers.length === 0 && (
         <div className="text-center py-12">
           <p className="text-text-muted mb-2">
-            {hasFilters
-              ? 'No servers match your filters.'
-              : 'No servers in this category yet.'
+            {loadFailed
+              ? "We couldn't load this category right now. Please try again in a moment."
+              : hasFilters
+                ? 'No servers match your filters.'
+                : 'No servers in this category yet.'
             }
           </p>
-          {hasFilters && (
+          {!loadFailed && hasFilters && (
             <Link href={`/category/${category}`} className="text-sm text-accent hover:text-accent-hover">
               Clear all filters &rarr;
             </Link>

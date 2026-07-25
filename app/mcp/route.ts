@@ -1,5 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
+import { getClientIp } from '@/lib/rate-limit'
+import { runWithCallerIp } from '@/lib/mcp/api'
 import { registerTools } from '@/lib/mcp/tools'
 import { registerResources } from '@/lib/mcp/resources'
 import { registerPrompts } from '@/lib/mcp/prompts'
@@ -40,10 +42,16 @@ function buildServer(): McpServer {
 }
 
 async function handle(request: Request): Promise<Response> {
-  const transport = new WebStandardStreamableHTTPServerTransport()
-  const server = buildServer()
-  await server.connect(transport)
-  const response = await transport.handleRequest(request)
+  // Tool handlers reach /api/mcp over a public round trip, which rate-limits by
+  // client IP — from here that would be the lambda's egress IP, one shared
+  // bucket for every user. Carry the real caller's IP so the limiter can see
+  // who it is actually limiting.
+  const response = await runWithCallerIp(getClientIp(request), async () => {
+    const transport = new WebStandardStreamableHTTPServerTransport()
+    const server = buildServer()
+    await server.connect(transport)
+    return transport.handleRequest(request)
+  })
 
   // Append CORS headers — MCPpedia allows any origin for this public endpoint.
   response.headers.set('Access-Control-Allow-Origin', '*')
