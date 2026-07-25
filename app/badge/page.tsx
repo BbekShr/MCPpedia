@@ -4,6 +4,11 @@ import { createPublicClient } from '@/lib/supabase/public'
 import type { Metadata } from 'next'
 import BadgePreview from '@/components/BadgePreview'
 
+// Without this the page was prerendered once at deploy and never again — prod
+// served a 5-day-old copy of the catalog total. A daily revalidate lets the
+// figure self-correct without a deploy.
+export const revalidate = 86400
+
 export const metadata: Metadata = {
   title: `MCPpedia Security Badges — Show your MCP server's score`,
   description: 'Add MCPpedia security badges to your GitHub README. Show your MCP server\'s overall score and security grade, backed by daily CVE scanning.',
@@ -78,13 +83,17 @@ function SecurityBadgeSVG({ secScore, cves }: { secScore: number; cves: number }
 }
 
 export default async function BadgePage() {
-  // Fetch real server count
   const supabase = createPublicClient()
-  const { count } = await supabase
-    .from('servers')
-    .select('id', { count: 'exact', head: true })
-    .eq('is_archived', false)
-  const serverCount = count || 17000
+
+  // Catalog total comes from the shared daily home_stats snapshot — the same
+  // source as the homepage hero and the /servers headline — so the number can
+  // never disagree between pages. An exact count over the ~46k-row table
+  // exceeds anon's 3s statement timeout; this page used to swallow that error
+  // and fall back to a hardcoded 17,000, which is what it served for days. No
+  // hardcoded fallback: if the snapshot is unreachable, say nothing.
+  const { data: statsData, error: statsError } = await supabase.rpc('home_stats')
+  if (statsError) console.error('[badge] home_stats failed', statsError)
+  const serverCount = (statsData as { total_servers?: number } | null)?.total_servers ?? null
 
   // Fetch a few popular servers for "Try it" examples
   const { data: popularServers } = await supabase
@@ -327,7 +336,7 @@ export default async function BadgePage() {
       <div className="border border-accent/20 rounded-lg p-6 bg-accent/5">
         <h2 className="text-lg font-semibold text-text-primary mb-2">Is your server listed?</h2>
         <p className="text-sm text-text-muted mb-4">
-          MCPpedia tracks {serverCount.toLocaleString()} MCP servers with daily security scanning. Find yours or add it now.
+          MCPpedia tracks {serverCount === null ? 'MCP servers' : `${serverCount.toLocaleString()} MCP servers`} with daily security scanning. Find yours or add it now.
         </p>
         <div className="flex gap-3">
           <Link href="/servers" className="px-4 py-2 text-sm rounded-md bg-accent text-accent-fg hover:bg-accent-hover transition-colors">
