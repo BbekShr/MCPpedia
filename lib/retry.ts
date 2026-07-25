@@ -13,6 +13,27 @@
  * Keep retries INSIDE the cached function so only the final result is cached —
  * the intermediate failed attempts are not.
  */
+/**
+ * Reject if `promise` has not settled within `ms`.
+ *
+ * For build-time fetches, a SLOW success is as fatal as a throw: Next gives each
+ * route 60s per static-export attempt, and a fetch that returns at 80s fails the
+ * route — and with it the production deploy — no matter how well the caller
+ * handles errors. Racing a deadline converts that into an ordinary rejection the
+ * caller can degrade on. Wrap the retry, not the attempt: a deadline inside
+ * `withRetry` is multiplied by the retry count.
+ *
+ * The timer is unref'd so a pending deadline never keeps the build process alive.
+ */
+export function withDeadline<T>(promise: PromiseLike<T>, ms: number, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} exceeded ${ms}ms`)), ms)
+    timer.unref?.()
+  })
+  return Promise.race([promise, deadline]).finally(() => clearTimeout(timer)) as Promise<T>
+}
+
 export async function withRetry<T>(
   fn: () => Promise<T>,
   opts: { retries?: number; baseDelayMs?: number } = {},
