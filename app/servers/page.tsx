@@ -90,6 +90,10 @@ export default async function ServersPage({
       transport_filter: transport || null,
       author_filter: author || null,
     })
+    // Same contract as the catalog branch below: a failed RPC must be logged
+    // and surfaced as a degraded state, never rendered as "no results".
+    if (error) console.error('[servers] search query failed', error)
+    loadFailed = Boolean(error)
     if (!error && data) {
       const results = data as Server[]
       const hasNextPage = results.length > ITEMS_PER_PAGE
@@ -215,14 +219,18 @@ export default async function ServersPage({
         <ScoreFilterPills />
       </div>
 
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-text-muted">
-          {q
-            ? `${totalCount.toLocaleString()} server${totalCount !== 1 ? 's' : ''} matching "${q}"`
-            : `${headerTotal.toLocaleString()} servers`
-          }
-        </p>
-      </div>
+      {/* A failed query leaves totalCount at 0 — suppress the count line rather
+          than contradict the degraded state below with `0 servers matching`. */}
+      {!loadFailed && (
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm text-text-muted">
+            {q
+              ? `${totalCount.toLocaleString()} server${totalCount !== 1 ? 's' : ''} matching "${q}"`
+              : `${headerTotal.toLocaleString()} servers`
+            }
+          </p>
+        </div>
+      )}
 
       <div className="space-y-3">
         {servers.map(server => (
