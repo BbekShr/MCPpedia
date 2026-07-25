@@ -10,11 +10,16 @@ export const revalidate = 86400 // 24 hours
 
 /**
  * Wall-clock budget for the 12-month additions histogram (see its fetch below).
- * Next allows 60s per static-export attempt for the whole route; 20s leaves room
- * for the snapshot and usage queries beside it and for rendering, so a slow
- * histogram costs the chart rather than the deploy.
+ *
+ * Next allows 60s per static-export attempt for the whole route, so this has to
+ * leave room for the snapshot and usage queries running beside it plus rendering.
+ * The batch measures 7-13s against prod; 20s proved too tight — the first build
+ * after this guard landed degraded the chart, because during a build three export
+ * workers contend over the same Postgres while generating ~2k pages. 30s keeps
+ * the chart through that contention and still fails the route budget by a wide
+ * margin only if the database is genuinely sick.
  */
-const MONTHLY_ADDITIONS_BUDGET_MS = 20_000
+const MONTHLY_ADDITIONS_BUDGET_MS = 30_000
 
 export const metadata: Metadata = {
   title: 'MCP Ecosystem Analytics',
