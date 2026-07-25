@@ -2,15 +2,17 @@ import { NextResponse } from 'next/server'
 import { createHash, timingSafeEqual } from 'node:crypto'
 import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
-import { CATEGORIES, CATEGORY_LABELS } from '@/lib/constants'
+import { CATEGORIES, CATEGORY_LABELS, projectFields } from '@/lib/constants'
 
 // Fields per action — only fetch what's needed
-const SEARCH_FIELDS = [
+const SEARCH_FIELD_LIST = [
   'slug', 'name', 'tagline', 'score_total', 'score_security', 'score_maintenance',
   'score_efficiency', 'score_documentation', 'score_compatibility',
   'github_stars', 'npm_weekly_downloads', 'token_efficiency_grade',
   'health_status', 'categories', 'author_type', 'cve_count', 'transport',
-].join(', ')
+] as const
+
+const SEARCH_FIELDS = SEARCH_FIELD_LIST.join(', ')
 
 const DETAIL_FIELDS = [
   'slug', 'name', 'tagline', 'description',
@@ -229,7 +231,9 @@ export async function POST(request: Request) {
           servers = data
         }
 
-        return NextResponse.json({ data: servers || [] }, {
+        // The RPC returns whole `servers` rows; the fallback above is already
+        // narrowed. Project both through the same allow-list before responding.
+        return NextResponse.json({ data: projectFields(servers, SEARCH_FIELD_LIST) }, {
           headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' },
         })
       }

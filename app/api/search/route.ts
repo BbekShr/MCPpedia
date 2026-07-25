@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { rateLimitIp, getClientIp } from '@/lib/rate-limit'
-import { PUBLIC_CARD_FIELDS } from '@/lib/constants'
+import { PUBLIC_CARD_FIELDS, PUBLIC_CARD_FIELD_LIST, projectFields } from '@/lib/constants'
 
 export async function GET(request: Request) {
   const rl = await rateLimitIp(getClientIp(request), 'search', 30, 60_000)
@@ -28,8 +28,10 @@ export async function GET(request: Request) {
       console.error('search error:', error.message)
       return NextResponse.json({ error: 'Search failed' }, { status: 500 })
     }
+    // Project the setof-servers RPC rows down to the same allow-list the
+    // non-search branch below selects — the RPC returns every column.
     return NextResponse.json(
-      { servers: data || [] },
+      { servers: projectFields(data, PUBLIC_CARD_FIELD_LIST) },
       { headers: { 'Cache-Control': 'public, s-maxage=900, stale-while-revalidate=1800' } }
     )
   }
