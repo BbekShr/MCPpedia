@@ -1,12 +1,20 @@
 import { createPublicClient } from '@/lib/supabase/public'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { withRetry } from '@/lib/retry'
+import { withRetry, withDeadline } from '@/lib/retry'
 import { CATEGORY_LABELS, HEALTH_STATUSES, CLIENT_LABELS } from '@/lib/constants'
 import type { Category, CompatibleClient } from '@/lib/constants'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
 export const revalidate = 86400 // 24 hours
+
+/**
+ * Wall-clock budget for the 12-month additions histogram (see its fetch below).
+ * Next allows 60s per static-export attempt for the whole route; 20s leaves room
+ * for the snapshot and usage queries beside it and for rendering, so a slow
+ * histogram costs the chart rather than the deploy.
+ */
+const MONTHLY_ADDITIONS_BUDGET_MS = 20_000
 
 export const metadata: Metadata = {
   title: 'MCP Ecosystem Analytics',
@@ -609,27 +617,39 @@ export default async function AnalyticsPage() {
     // Postgres for 12 head-only exact counts in parallel: each is a range seek
     // on `servers_created_idx` (20260402000000_initial_schema.sql:87) and
     // transfers no rows at all.
-    withRetry(async () => {
-      const windows = Array.from({ length: 12 }, (_, i) => {
-        const from = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1)
-        const to = new Date(now.getFullYear(), now.getMonth() - (10 - i), 1)
-        return { from, to, label: from.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }) }
-      })
-      const results = await Promise.all(windows.map(w =>
-        supabase
-          .from('servers')
-          .select('id', { count: 'exact', head: true })
-          .eq('is_archived', false)
-          .gte('created_at', w.from.toISOString())
-          .lt('created_at', w.to.toISOString())
-      ))
-      // A month whose count errored would render as a zero bar — "no servers
-      // were added that month", a wrong fact rather than a missing one. Fail
-      // the batch so the whole chart degrades to an explicit notice instead.
-      const failed = results.find(r => r.error)
-      if (failed) throw new Error(`analytics: monthly additions count failed: ${failed.error!.message}`)
-      return windows.map((w, i) => ({ label: w.label, count: results[i].count ?? 0 }))
-    }).catch((): { label: string; count: number }[] | null => null),
+    //
+    // Bounded by a deadline because those counts are only cheap when Postgres
+    // has the pages cached: measured against prod they run ~4.5s warm but ~80s
+    // COLD, and `servers` is 60k+ rows. A cold build therefore blew Next's 60s
+    // per-route export budget and failed the deploy — S50 again, via a slow
+    // success rather than a throw, which is why the `.catch` below did not save
+    // it. The deadline wraps `withRetry` so retries cannot multiply the budget,
+    // and the batch degrades to the same explicit notice a query error gets.
+    withDeadline(
+      withRetry(async () => {
+        const windows = Array.from({ length: 12 }, (_, i) => {
+          const from = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1)
+          const to = new Date(now.getFullYear(), now.getMonth() - (10 - i), 1)
+          return { from, to, label: from.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }) }
+        })
+        const results = await Promise.all(windows.map(w =>
+          supabase
+            .from('servers')
+            .select('id', { count: 'exact', head: true })
+            .eq('is_archived', false)
+            .gte('created_at', w.from.toISOString())
+            .lt('created_at', w.to.toISOString())
+        ))
+        // A month whose count errored would render as a zero bar — "no servers
+        // were added that month", a wrong fact rather than a missing one. Fail
+        // the batch so the whole chart degrades to an explicit notice instead.
+        const failed = results.find(r => r.error)
+        if (failed) throw new Error(`analytics: monthly additions count failed: ${failed.error!.message}`)
+        return windows.map((w, i) => ({ label: w.label, count: results[i].count ?? 0 }))
+      }, { retries: 1 }),
+      MONTHLY_ADDITIONS_BUDGET_MS,
+      'analytics: monthly additions count',
+    ).catch((): { label: string; count: number }[] | null => null),
   ])
 
   // Pick the newest snapshot we are willing to render. Two failure modes are
