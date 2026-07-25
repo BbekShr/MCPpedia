@@ -11,6 +11,7 @@ import {
   scoreCompatibility,
   scoreMaintenance,
 } from '@/lib/scoring'
+import { deriveDangerousPatternCount, deriveInjectionRisk } from '@/lib/security-columns'
 import { mergeScoresOnOsvFailure } from '@/lib/score-merge'
 import { revalidateServer, revalidateProfile } from '@/lib/revalidate'
 import { normalizeGithubUrl, normalizePackageName } from '@/lib/normalize'
@@ -252,10 +253,8 @@ export async function POST(request: Request) {
           cve_count: security.cve_count,
           security_evidence: security.evidence,
           has_code_execution: security.evidence.some(e => e.id === 'tool-safety' && e.pass === false),
-          has_injection_risk: security.evidence.some(e => (e.id === 'injection' || e.id === 'tool-poisoning') && e.pass === false),
-          dangerous_pattern_count: security.evidence.find(e => e.id === 'tool-safety')?.points !== undefined
-            ? (security.evidence.find(e => e.id === 'tool-safety')!.max_points - security.evidence.find(e => e.id === 'tool-safety')!.points)
-            : 0,
+          has_injection_risk: deriveInjectionRisk(security.evidence),
+          dangerous_pattern_count: deriveDangerousPatternCount(security.evidence),
         }),
         security_scan_status: security.scan_status,
         last_security_scan: new Date().toISOString(),
