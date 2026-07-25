@@ -154,3 +154,73 @@ _(record "audited <ground> under <lens>: clean" entries here so discovery skips 
 - 2026-07-24 `lib/mcp/resources.ts` URI round-trip, SDK error-to-JSON-RPC conversion, tool
   `outputSchema`/`structuredContent` validation, and the route's `ALLOWED_CATEGORIES` vs
   `lib/constants.ts` `CATEGORIES` × **correctness**: **clean**. Residue is S36-S38/S44/S45.
+
+## Batch 1 fixes, 2026-07-24/25 (S24, S25/S34, S27/S28, S29 — PRs #72–#75)
+
+- 2026-07-25 (S25): Any "was this row previously scanned successfully" predicate must key on
+  `last_security_scan`, **never** on `security_scan_status` — all three score writers overwrite
+  `security_scan_status` AND `last_security_scan` on every run *including failures*
+  (`bots/compute-scores.ts:186-187`, `app/api/server/[slug]/refresh-score/route.ts:180-181`,
+  `app/api/submit/route.ts:250-251`), so a status-based predicate is **self-erasing after one
+  cycle**. This caused a real regression caught by two review lenses: the fix would have held a
+  score for exactly one failed run instead of through an outage.
+- 2026-07-25 (S25): `scan_status: 'failed'` on a `SecurityScanResult` means "the OSV.dev query
+  failed" specifically (`lib/scoring.ts:736`), never the deps.dev call in
+  `checkDependencyHealth` (`:759`). So `dep_health_score` is deliberately written on a failed
+  scan while the other evidence-derived columns are skipped — "CVE-derived" and
+  "evidence-derived" are NOT the same set. All three writers now carry a comment saying so.
+  Also: a package-less server is `'pending'`, never `'failed'` (`:777`).
+- 2026-07-25 (S24): A fail-loud data guard in an UNATTENDED bot needs an age bound on whatever it
+  compares against, or it converts a one-day anomaly into a permanent outage — the failing run
+  writes nothing, so the next run re-reads the identical comparison row and fails identically.
+  `bots/snapshot-metrics.ts` bounds its >20% guard to snapshots from the last 3 days, so it
+  self-releases after three loud failures. An override env var was rejected: nobody is on call
+  for a bot, so an override needing a human is a wedge with extra steps.
+- 2026-07-25 (S24): `fetchAllRows` (`bots/lib/supabase.ts:23-68`) paginates by offset and
+  explicitly delegates ordering to the caller (doc at :32) — **every** call site needs a unique
+  `.order()` or its pages can skip rows. It does handle transient errors properly (4 attempts,
+  2s/4s/8s backoff, throws when exhausted, :54-59), which hand-rolled offset loops do not. Four
+  callers still pass no ordering at all: filed as S47.
+- 2026-07-25 (S29): Validate caller-supplied indices against a **static** ceiling, not a
+  DB-derived one, in anything a crawler can hit — a derived read puts the database in front of
+  every URL and converts a transient failure into a total outage of that route family. Derived
+  counts belong on the build/index path, where ISR serves the last good page on a throw.
+  `MAX_SERVER_CHUNKS = 100` in `lib/sitemap-shared.ts` is the DoS bound; `getServerChunkCount()`
+  is the coverage number and is clamped to it.
+- 2026-07-25 (S29): A cheap env short-circuit must sit **before** the `await import` of the
+  Supabase client, not after — that ordering is what keeps a deliberately loud `throw`
+  unreachable during the env-less CI build. `lib/sitemap-shared.ts:fetchServerTotal` mirrors the
+  mock trigger at `lib/supabase/public.ts:32-36` verbatim (the S4 rule).
+- 2026-07-25 (S29): Partial dynamic segments (`foo-[bar].xml/`) are UNUSABLE in this Next
+  version — `getRouteRegex` drops the literal prefix/suffix unless `includePrefix`/
+  `includeSuffix` are passed, collapsing the route to `^\/([^/]+?)$`, which would swallow every
+  top-level path (`node_modules/next/dist/shared/lib/router/utils/route-regex.js:55-70`). Wrap
+  the whole folder and rewrite in `next.config.ts`. The rewrite's `:chunk(\d{1,})` custom group
+  depends on Next 16.2.2 pinning `path-to-regexp` 6.3.0 — custom groups were removed in v8.
+  CORRECTION to the 2026-07-16 bootstrap fact: the server sitemaps are no longer
+  `app/sitemap-servers-{1,2,3}.xml` but one derived `app/sitemap-servers/[chunk]/route.ts`.
+- 2026-07-25 (S29): `home_stats` can hit Postgres 57014 during `next build` under build-worker
+  concurrency — `app/page.tsx:31-34` and `app/security/page.tsx:8-10` both carry
+  `export const dynamic = 'force-dynamic'` solely for that. Any new build-time `home_stats`
+  caller inherits the risk and needs a non-scanning fallback (`count: 'estimated'`) or the same
+  opt-out. Separately, `home_stats()` RETURNS jsonb (a single object, not a set), so it
+  destructures as `(data as {total_servers?: number})?.total_servers`, never `data[0]`.
+- 2026-07-25 (S27): `?page=` style params reaching a `.range()` need normalizing AND an upper
+  clamp — `/servers?page=abc` previously produced `range(NaN, NaN)` and `?page=-5` a negative
+  range. `MAX_OFFSET = 10_000` matches the cap S16 put on `/api/v1/servers`.
+- 2026-07-25 (S27): TRAP — Next 16 forbids exporting both a `metadata` object and a
+  `generateMetadata` function from one route segment, so adding per-page `robots` to a page with
+  static metadata forces the conversion.
+- 2026-07-25 (gates): **zsh's `PIPESTATUS` is 1-indexed**, so `${PIPESTATUS[0]}` after a piped
+  gate command silently prints EMPTY — a gate exit code read that way is not evidence and a red
+  gate can read as green. Use `${pipestatus[1]}`, or redirect to a file and read `$?`. Hit twice
+  by qa-verifier this cycle.
+- 2026-07-25 (gates): `npx next start -p <port>` + `curl 127.0.0.1` is a working local route gate
+  for this repo (no smoke gate exists — S3): ready in ~1.6s, probes MUST be in a Bash call
+  separate from the launch (same-call probes return `000`), clean up with
+  `lsof -ti :PORT | xargs -r kill`. This is the ONLY way to verify `next.config.ts` rewrites,
+  which do not resolve without a real server. Worktrees have no `node_modules` and no
+  `.env.local`, so a worktree build faithfully reproduces env-less CI.
+- 2026-07-25 (S24): The bot fleet has **zero test coverage** — no file under `__tests__/` or
+  `lib/__tests__/` references anything in `bots/`. Every bot fix ships on typecheck + lint +
+  review alone, and a first bot test needs a new Supabase-client mock harness, not just a case.
