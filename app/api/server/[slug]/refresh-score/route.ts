@@ -10,6 +10,7 @@ import {
   scoreCompatibility,
   scoreMaintenance,
 } from '@/lib/scoring'
+import { mergeScoresOnOsvFailure } from '@/lib/score-merge'
 import type { Tool } from '@/lib/types'
 
 async function fetchNpmDownloads(packageName: string): Promise<number> {
@@ -146,24 +147,33 @@ export async function POST(
     server.verified || false
   )
 
-  const total = Math.min(100, security.score + efficiency.score + docs.score + compat.score + maint.score)
+  // OSV scan failed — preserve the last good security component (if any) and
+  // skip CVE-derived columns, to avoid overwriting good data with an inflated
+  // "no CVEs found" result from a transient API outage.
+  const merged = mergeScoresOnOsvFailure(server, {
+    scan_status: security.scan_status,
+    security_score: security.score,
+    other_score_total: efficiency.score + docs.score + compat.score + maint.score,
+  })
 
   // 3. Save scores
   await supabase
     .from('servers')
     .update({
-      score_total: total,
-      score_security: security.score,
+      score_total: merged.score_total,
+      score_security: merged.score_security,
       score_maintenance: maint.score,
       score_documentation: docs.score,
       score_compatibility: compat.score,
       score_efficiency: efficiency.score,
       score_computed_at: new Date().toISOString(),
       has_authentication: security.has_authentication,
-      cve_count: security.cve_count,
+      ...(merged.osv_failed ? {} : {
+        cve_count: security.cve_count,
+        security_evidence: security.evidence,
+      }),
       security_scan_status: security.scan_status,
       last_security_scan: new Date().toISOString(),
-      security_evidence: security.evidence,
       has_code_execution: security.evidence.some(e => e.id === 'tool-safety' && e.pass === false),
       has_injection_risk: security.evidence.some(e => (e.id === 'injection' || e.id === 'tool-poisoning') && e.pass === false),
       dangerous_pattern_count: security.evidence.find(e => e.id === 'tool-safety')?.points !== undefined
@@ -209,9 +219,12 @@ export async function POST(
     }
   }
 
+  // Report the scan outcome: on a failed OSV scan the caller is looking at a
+  // preserved (or CVE-blind) security component, not a fresh verdict.
   return NextResponse.json({
-    score_total: total,
-    score_security: security.score,
+    score_total: merged.score_total,
+    score_security: merged.score_security,
+    security_scan: security.scan_status,
     score_maintenance: maint.score,
     score_documentation: docs.score,
     score_compatibility: compat.score,

@@ -20,6 +20,7 @@ import {
   scoreMaintenance,
   SCORE_WEIGHTS,
 } from '../lib/scoring'
+import { mergeScoresOnOsvFailure } from '../lib/score-merge'
 import type { Tool } from '../lib/types'
 
 const supabase = createAdminClient('bot-compute-scores')
@@ -144,24 +145,28 @@ async function main() {
     )
     console.log(`  Maintenance: ${maint.score}/${SCORE_WEIGHTS.maintenance}`)
 
-    const total = Math.min(100, security.score + efficiency.score + docs.score + compat.score + maint.score)
-    console.log(`  TOTAL: ${total}/100\n`)
+    // OSV scan failed — preserve the last good security component (if any) and
+    // skip CVE-derived columns, to avoid overwriting good data with an inflated
+    // "no CVEs found" result from a transient API outage.
+    const merged = mergeScoresOnOsvFailure(server, {
+      scan_status: security.scan_status,
+      security_score: security.score,
+      other_score_total: efficiency.score + docs.score + compat.score + maint.score,
+    })
+    const osvFailed = merged.osv_failed
+    console.log(`  TOTAL: ${merged.score_total}/100\n`)
 
     const oldTotal = server.score_total ?? 0
-    if (Math.abs(total - oldTotal) >= 2) {
+    if (Math.abs(merged.score_total - oldTotal) >= 2) {
       movedSlugs.add(server.slug)
     }
-
-    // OSV scan failed — skip CVE-derived columns to avoid overwriting good data
-    // with an inflated "no CVEs found" result from a transient API outage.
-    const osvFailed = security.scan_status === 'failed'
 
     // Update server record
     const { error: updateError } = await supabase
       .from('servers')
       .update({
-        score_total: osvFailed ? total - security.score + (server.score_security ?? 0) : total,
-        score_security: osvFailed ? (server.score_security ?? security.score) : security.score,
+        score_total: merged.score_total,
+        score_security: merged.score_security,
         score_maintenance: maint.score,
         score_documentation: docs.score,
         score_compatibility: compat.score,
