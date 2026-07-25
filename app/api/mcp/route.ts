@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createHash } from 'node:crypto'
+import { createHash, timingSafeEqual } from 'node:crypto'
 import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { CATEGORIES, CATEGORY_LABELS } from '@/lib/constants'
@@ -54,6 +54,22 @@ const ALLOWED_CATEGORIES = new Set([
 
 const ALLOWED_SORTS = new Set(['score', 'stars', 'newest'])
 
+// Every action the switch below handles. `increment_mcp_usage` writes one
+// mcp_api_usage row per distinct (date, action) and nothing prunes the table, so
+// an unauthenticated caller must never be able to name the bucket: usage is
+// counted only after `action` passes this allow-list. The `never` assignment in
+// the switch's default branch keeps the two in sync — dropping a case here (or
+// adding one the switch doesn't handle) is a typecheck error.
+const KNOWN_ACTIONS = [
+  'search', 'details', 'security', 'compare',
+  'install', 'trending', 'categories', 'changes',
+] as const
+type McpAction = (typeof KNOWN_ACTIONS)[number]
+
+function isKnownAction(action: string): action is McpAction {
+  return (KNOWN_ACTIONS as readonly string[]).includes(action)
+}
+
 // Sanitize user input for use in Supabase .or() filters — strip anything that could inject filter syntax
 function sanitizeQuery(input: string): string {
   // Only allow alphanumeric, spaces, hyphens, and basic punctuation
@@ -65,11 +81,13 @@ function isValidSlug(s: string): boolean {
   return typeof s === 'string' && s.length > 0 && s.length <= 200 && /^[a-z0-9\-_.]+$/.test(s)
 }
 
-// Safe integer parser
+// Safe integer parser. A finite non-integer is ROUNDED, not discarded: falling
+// back silently turned `min_score: 62.5` into "no score floor at all" and
+// returned servers scoring 4/100 as if they had passed the filter.
 function safeInt(val: unknown, fallback: number, min: number, max: number): number {
   const n = Number(val)
-  if (!Number.isFinite(n) || !Number.isInteger(n)) return fallback
-  return Math.min(Math.max(n, min), max)
+  if (!Number.isFinite(n)) return fallback
+  return Math.min(Math.max(Math.round(n), min), max)
 }
 
 // Build a response with a strong ETag derived from the payload. Honors
@@ -96,8 +114,35 @@ function etagJson(
   return new NextResponse(body, { status: 200, headers })
 }
 
+// The hosted /mcp endpoint calls this route over the public internet, so every
+// one of its requests presents the same lambda egress IP and would share a
+// single rate-limit bucket. It forwards the real caller's IP instead, proven
+// internal by a shared secret — Vercel rewrites `x-forwarded-for` on the way
+// in, so an ordinary forwarding header could not survive the hop anyway, and a
+// direct caller cannot forge this one without MCP_INTERNAL_KEY. With the key
+// unset (local dev, preview) nothing is trusted and we key on the socket IP.
+function resolveRateLimitIp(request: Request): string {
+  const expected = process.env.MCP_INTERNAL_KEY
+  const presented = request.headers.get('x-mcppedia-internal-key')
+  const forwarded = request.headers.get('x-mcppedia-client-ip')
+
+  if (expected && presented && forwarded && secretMatches(presented, expected)) {
+    return forwarded.trim().slice(0, 64) || 'unknown'
+  }
+  return getClientIp(request)
+}
+
+// Constant-time compare over digests so the secrets' differing lengths don't
+// leak through timingSafeEqual's equal-length requirement.
+function secretMatches(a: string, b: string): boolean {
+  return timingSafeEqual(
+    createHash('sha256').update(a).digest(),
+    createHash('sha256').update(b).digest()
+  )
+}
+
 export async function POST(request: Request) {
-  const ip = getClientIp(request)
+  const ip = resolveRateLimitIp(request)
   // Everyone gets the same rate limit — no fake API key bypass
   // Future: validate real API keys against a database table
   const rl = await checkRateLimit(`mcp:${ip}`, 60, 60_000)
@@ -119,6 +164,9 @@ export async function POST(request: Request) {
   const { action, params } = body
   if (!action || typeof action !== 'string') {
     return NextResponse.json({ error: 'Missing action' }, { status: 400 })
+  }
+  if (!isKnownAction(action)) {
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
   }
 
   const supabase = await createClient()
@@ -153,6 +201,11 @@ export async function POST(request: Request) {
           sort_by: 'relevance',
           page_size: limit,
           page_offset: 0,
+          // Filter inside the RPC so `page_size` slices the already-filtered
+          // set. Filtering after the LIMIT returned an empty array whenever
+          // the top-N relevance hits all scored below min_score, even though
+          // plenty of qualifying servers existed further down the ranking.
+          min_score_filter: minScore ?? null,
         })
 
         let servers = rpcData
@@ -174,10 +227,6 @@ export async function POST(request: Request) {
 
           const { data } = await q
           servers = data
-        }
-
-        if (minScore && servers) {
-          servers = servers.filter((s: Record<string, unknown>) => (s.score_total as number) >= minScore)
         }
 
         return NextResponse.json({ data: servers || [] }, {
@@ -358,8 +407,12 @@ export async function POST(request: Request) {
         )
       }
 
-      default:
-        return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+      default: {
+        // Unreachable — `action` is narrowed to McpAction above. This assignment
+        // is what makes KNOWN_ACTIONS and the cases above one source of truth.
+        const unhandled: never = action
+        throw new Error(`Unhandled action: ${String(unhandled)}`)
+      }
     }
   } catch {
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })

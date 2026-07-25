@@ -24,3 +24,22 @@ One line per cycle: `- YYYY-MM-DD <ID>: <friction observed> → <action or M-row
   QA bar green, build confirmed compare pages dropped ~701→0. For changes this small the full
   6-agent pipeline is heavier than the change; the lean path (inline research, implementer, 2
   relevant review lenses + qa) fit well.
+- 2026-07-24 discover: 5 bug-hunters (api-security, bots data-integrity, scoring correctness,
+  pages performance, MCP correctness) returned 23 findings; CEO spot-verified 6 of the
+  highest-severity against the code and prod before filing, all held. Filed S23-S45 + M3/M4.
+  Friction: the skill's `discover fix` path says "wait for the records-only PR to be merged by
+  the human", but a cycle can never merge — so `discover fix` structurally cannot self-continue
+  in one session. Resolved by CEO decision (standing instruction to decide): file the
+  records-only PR, then open FIX PRs off the same discovery branch's base (`main`), keeping
+  finding and fixing in separate diffs as the bright line requires. Filed as M5.
+- 2026-07-25 batch 1 (S24, S25/S34, S27/S28, S29): the review board earned its keep — QA was
+  GREEN on all four diffs and the board still found 5 CONFIRMED defects, including one both the
+  correctness and regression lenses caught independently (a score-merge predicate keyed on a
+  column the same UPDATE overwrites, which would have inflated fleet-wide security scores on the
+  second day of any OSV outage — strictly worse than the bug it replaced). Lesson recorded: a
+  green gate says "nothing I assert is broken", not "the change is right"; never ship a
+  verified-but-unreviewed diff. Second lesson: an implementer's "flagged but out of scope" note
+  in a hand-back should be routed as an acceptance-criteria check, not filed as future work — the
+  /servers search-branch gap was already covered by the AC wording and was found by review after
+  being volunteered by the builder. Friction: none from agents or skills beyond M5 (already
+  filed); the worktree-parallel + one-serialized-QA shape worked well at 4 concurrent items.

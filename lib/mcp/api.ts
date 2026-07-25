@@ -1,4 +1,22 @@
+import { AsyncLocalStorage } from "node:async_hooks";
+
 const DEFAULT_BASE_URL = "https://mcppedia.org";
+
+// ─── Caller identity propagation ────────────────────────────
+// Every tool call is a real HTTPS round trip to /api/mcp, which rate-limits by
+// client IP. Called from the hosted /mcp endpoint that IP is the lambda's own
+// egress address, so every user of the hosted endpoint shares a single bucket.
+// The hosted route stashes the real caller's IP here and we forward it on the
+// internal request. Async-local rather than a module-level variable because one
+// lambda instance serves overlapping requests. /api/mcp only honours the
+// forwarded IP when MCP_INTERNAL_KEY matches, so it is not spoofable from
+// outside; with the key unset nothing is sent and behaviour is unchanged.
+
+const callerIpStore = new AsyncLocalStorage<string>();
+
+export function runWithCallerIp<T>(ip: string, fn: () => T): T {
+  return callerIpStore.run(ip, fn);
+}
 
 function getConfig(): { baseUrl: string } {
   const baseUrl = (process.env.MCPPEDIA_API_URL || DEFAULT_BASE_URL).replace(
@@ -91,6 +109,13 @@ export async function mcpApiCall(
   try {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (cached?.etag) headers["If-None-Match"] = cached.etag;
+
+    const callerIp = callerIpStore.getStore();
+    const internalKey = process.env.MCP_INTERNAL_KEY;
+    if (callerIp && internalKey) {
+      headers["x-mcppedia-client-ip"] = callerIp;
+      headers["x-mcppedia-internal-key"] = internalKey;
+    }
 
     res = await fetch(url, {
       method: "POST",
