@@ -11,12 +11,11 @@ const TOP_SERVER_LIMIT = 150
  * Wall-clock budget for the top-servers query.
  *
  * Next allows 60s per static-export attempt and this route is prerendered at
- * build time, so an unbounded query here fails the production deploy. It is not
- * a cheap query — ordering 41k non-archived rows by `score_total` measures
- * 13–17s against prod even warm, and during a build three export workers
- * contend over the same Postgres while generating ~2k pages, which is what
- * pushed it past 60s and broke the deploy. 30s stays inside the route budget
- * while comfortably covering the normal case.
+ * build time, so an unbounded query here fails the production deploy — it did,
+ * three attempts in a row, when the query below still sorted the whole table.
+ * With the index-friendly ordering it returns in ~172ms, so this budget is a
+ * backstop against a future regression or a genuinely sick database rather than
+ * something the normal path approaches.
  */
 const TOP_SERVERS_BUDGET_MS = 30_000
 
@@ -104,7 +103,22 @@ ${CATEGORIES.map(c => `- ${CATEGORY_LABELS[c]}: ${SITE_URL}/category/${c}`).join
         .from('servers')
         .select('slug, name, tagline, score_total, categories')
         .eq('is_archived', false)
-        .order('score_total', { ascending: false, nullsFirst: false })
+        // Excluding nulls instead of asking for `nullsFirst: false` is what makes
+        // this ride `servers_score_active_idx (score_total DESC) WHERE
+        // is_archived = false` (20260417210424_hot_query_indexes.sql:22-24).
+        // PostgreSQL's DESC default is NULLS FIRST, which is what the index
+        // stores, so `NULLS LAST` is unsatisfiable by it and forces a full sort of
+        // the table: measured against prod, 15s versus 172ms for the same 150
+        // rows. No non-archived row has a null `score_total`, and a null could
+        // never outrank a scored row in the old ordering anyway, so the result is
+        // identical — verified set- and order-equal against the old query.
+        // Same trap, same remedy as lib/sitemap-shared.ts:229-237.
+        .not('score_total', 'is', null)
+        .order('score_total', { ascending: false })
+        // 43 servers tie at the current 150th-place score, so without a unique
+        // tiebreak the cut is arbitrary and the file's contents churn between
+        // regenerations for no real change.
+        .order('slug', { ascending: true })
         .limit(TOP_SERVER_LIMIT)
         .then(({ data, error }) => {
           if (error) throw new Error(`llms-full: top servers fetch failed: ${error.message}`)
