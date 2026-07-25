@@ -189,6 +189,19 @@ async function main() {
         console.log(`  { source: '/s/${m.dupe}', destination: '/s/${m.keeper}', permanent: true },`)
       }
     }
+    // A run that left duplicates un-merged is not a success. The cron is weekly,
+    // so "the next run retries" is seven days away — long enough that even a
+    // transient failure deserves to show up in the workflow-failure alerting
+    // instead of a green run with a detail buried in the summary. run.fail()
+    // persists the summary above and sets a non-zero exit code.
+    if (reparentFailures.length > 0) {
+      await run.fail(
+        `${reparentFailures.length} duplicate(s) left un-archived because re-parenting failed: ` +
+        reparentFailures.map(f => `${f.dupe} (${f.tables.join(', ')})`).join('; ')
+      )
+      return
+    }
+
     await run.finish()
   } catch (err) {
     await run.fail(String(err))

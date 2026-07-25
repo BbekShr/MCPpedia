@@ -42,7 +42,9 @@ function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
   return { owner: match[1], repo: match[2].replace(/\.git$/, '') }
 }
 
-async function extractToolsWithHaiku(readme: string): Promise<Extraction> {
+// Returns null when the model answered but its JSON didn't match the schema —
+// the caller skips that server rather than writing or guessing.
+async function extractToolsWithHaiku(readme: string): Promise<Extraction | null> {
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY
   if (!ANTHROPIC_API_KEY) {
     console.warn('No ANTHROPIC_API_KEY — falling back to regex extraction')
@@ -105,8 +107,13 @@ ${readme.slice(0, 8000)}`,
 
   const parsed = extractionSchema.safeParse(raw)
   if (!parsed.success) {
-    console.warn(`  Model returned a non-conforming shape (${parsed.error.issues[0]?.message}) — falling back to regex`)
-    return extractToolsWithRegex(readme)
+    // Deliberately NOT the regex fallback: a mis-shaped response is evidence the
+    // model answered badly, not that the README is regex-parseable. The regex
+    // patterns happily turn a `## Installation` heading into a tool named
+    // "Installation", which then renders on /s/[slug] and counts toward
+    // scanned_servers. Skipping leaves `tools = '[]'` so the next run retries.
+    console.warn(`  Model returned a non-conforming shape (${parsed.error.issues[0]?.message}) — skipping`)
+    return null
   }
   return parsed.data
 }
@@ -166,6 +173,7 @@ async function main() {
 
   let extracted = 0
   let failed = 0
+  let skipped = 0
 
   for (const server of servers) {
     // One bad README/API response must not abort the whole batch — without this
@@ -182,11 +190,13 @@ async function main() {
         continue
       }
 
-      const { tools, resources, prompts } = await extractToolsWithHaiku(readme)
+      const extraction = await extractToolsWithHaiku(readme)
+      if (!extraction) skipped++
 
       // Write only what was actually extracted: always sending all three keys
       // blanks any existing resources/prompts on a row selected purely for
       // having `tools = '[]'`.
+      const { tools, resources, prompts } = extraction ?? {}
       const updates: Record<string, unknown> = {}
       if (tools?.length) updates.tools = tools
       if (resources?.length) updates.resources = resources
@@ -217,8 +227,8 @@ async function main() {
 
   run.addProcessed(servers.length)
   run.addUpdated(extracted)
-  run.setSummary({ extracted, failed })
-  console.log(`\nDone. Extracted schemas for ${extracted} servers (${failed} failed).`)
+  run.setSummary({ extracted, failed, skipped })
+  console.log(`\nDone. Extracted schemas for ${extracted} servers (${failed} failed, ${skipped} skipped on a bad model response).`)
   await run.finish()
   } catch (err) {
     await run.fail(String(err))
