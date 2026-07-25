@@ -7,6 +7,10 @@ import path from 'path'
 
 export const SERVER_CHUNK_SIZE = 10000
 
+// Floor on the number of server sitemaps. Chunks 1-3 have been in Search Console
+// for months; never publish fewer than that even if the count read below fails.
+const MIN_SERVER_CHUNKS = 3
+
 export interface SitemapEntry {
   url: string
   lastModified?: Date | string
@@ -139,6 +143,40 @@ export function buildStaticEntries(): SitemapEntry[] {
     ...skillEntries,
     ...comparisonEntries,
   ]
+}
+
+// Non-archived server count, used only to size the sitemap shard set.
+// Deliberately NOT `count: 'exact'` — an exact count over the whole servers
+// table is a full scan and has taken the catalog down twice (S20/S28). The
+// daily home_stats snapshot already holds this number (same source the /servers
+// header uses); the planner estimate is the fallback if the snapshot is missing.
+async function fetchServerTotal(): Promise<number> {
+  const { createPublicClient } = await import('./supabase/public')
+  const supabase = createPublicClient()
+
+  const { data } = await supabase.rpc('home_stats')
+  const snapshotTotal = (data as { total_servers?: number } | null)?.total_servers
+  if (snapshotTotal) return snapshotTotal
+
+  const { count } = await supabase
+    .from('servers')
+    .select('id', { count: 'estimated', head: true })
+    .eq('is_archived', false)
+  return count ?? 0
+}
+
+// How many /sitemap-servers-<n>.xml shards to publish. Derived from the catalog
+// size, never hardcoded: three fixed chunk routes silently hid every server past
+// position 30,000 once the catalog outgrew them (S29).
+export async function getServerChunkCount(): Promise<number> {
+  // The sitemap index must never 500 just because this count is unavailable —
+  // fall back to the floor, which is what shipped before this was derived.
+  const total = await fetchServerTotal().catch(() => 0)
+  // One chunk of headroom: the total comes from a daily snapshot (or an
+  // estimate), so it lags the real catalog. The extra shard keeps newly added
+  // servers covered until the next refresh; if it turns out to be empty it just
+  // renders an empty <urlset>, which is valid.
+  return Math.max(MIN_SERVER_CHUNKS, Math.ceil(total / SERVER_CHUNK_SIZE) + 1)
 }
 
 // Fetch a chunk of servers ordered by score_total descending.
