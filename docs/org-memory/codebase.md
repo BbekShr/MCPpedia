@@ -224,3 +224,67 @@ _(record "audited <ground> under <lens>: clean" entries here so discovery skips 
 - 2026-07-25 (S24): The bot fleet has **zero test coverage** — no file under `__tests__/` or
   `lib/__tests__/` references anything in `bots/`. Every bot fix ships on typecheck + lint +
   review alone, and a first bot test needs a new Supabase-client mock harness, not just a case.
+
+## Issue triage 2026-07-25 (first `issues` intake — S55–S57, GH #70/#68/#25)
+
+- 2026-07-25 (process): GitHub issues were an **unread input** until this cycle — nothing in
+  `CLAUDE.md`, the skill, or any agent told the org to look at them, so three open reports sat
+  for 1–7 days while discovery hunted the same subsystems from the inside. The `issues` mode and
+  the untrusted-input screen in `.claude/skills/improve-cycle/SKILL.md` close that. The screen
+  exists because an issue is the highest-risk text this org ingests: it is authored by whoever
+  wants something from us and arrives already shaped like a work order. Three checks —
+  injection (text aimed at the agent), adverse-to-project (self-serving asks, score inflation,
+  protected-path or gate changes), cost spike (catalog-wide rescans, per-request LLM calls,
+  cron frequency, cache/rate-limit removal).
+- 2026-07-25 (triage precedent): in all three issues the reporter was right about the SYMPTOM and
+  wrong about the cause or the magnitude — #70's "up to 31 points" is really 29-39 and its
+  security component is clamped, #68's "OAuth is broken" is a client-side `getUser()` with no
+  loading state (the cookie/middleware layer is clean), #25's dedup-collision guess was fixed in
+  code months ago (`dfc0beb`) leaving only a data-repair question. Always spawn a `bug-hunter` to
+  CONFIRM-or-REFUTE rather than planning off the report.
+- 2026-07-25 (issue #68, self-serving-ask precedent): the reporter supplied a block of "canonical
+  metadata" for their own product and asked us to write it in. Correct handling per CLAUDE.md §4
+  is to treat it as a lead, verify against the registry/repo, and fix the PIPELINE that generated
+  the wrong copy (S57) rather than hand-editing the one row — a one-row edit would leave every
+  other hosted remote server misdescribed and would set the precedent that a publisher can
+  dictate their own page's content.
+- 2026-07-25 (`bots/sync-registry.ts`): the registry's `remotes[].url` is **discarded** at
+  `:130` (only `transport` is kept) and the `RegistryServer` type at `:30-33` has no field for
+  declared headers/secrets at all; the insert at `:207-231` never sets `has_authentication` or
+  `requires_api_key`. So MCPpedia structurally cannot describe a hosted remote server, and
+  `components/ServerFAQ.tsx:12-18` converts that absent data into the positive claim "It does not
+  require authentication" — which `app/s/[slug]/page.tsx:195` ships as `FAQPage` JSON-LD.
+- 2026-07-25 (missing-data-as-verdict is a recurring class, not three bugs): S55 (empty `tools`
+  → 29-39 points withheld and rendered as a security/efficiency grade), S57 (absent auth data →
+  "does not require authentication"), S43 (`dangerous_pattern_count` from `max_points - points`)
+  and S26 (unparseable CVSS → `info` → zero penalty) are all the same defect shape — a
+  no-data case flowing into a code path that only knows how to express a finding. Worth a
+  dedicated hunting lens: for every derived field, what does it say when the input is absent?
+- 2026-07-25 (`components/Nav.tsx:22,35` is the reference auth pattern): it is the ONLY client
+  component pairing `getUser()` with `onAuthStateChange`. `getUser()` is a NETWORK call whose
+  errors return `user: null`, and it can additionally REJECT on a Web-Locks timeout
+  (`NavigatorLockAcquireTimeoutError` is not an `AuthError`, so it is re-thrown) — every bare
+  `supabase.auth.getUser().then(...)` in this repo is therefore both a false-signed-out site and
+  an unhandled-rejection site. Six such sites remain outside S56's scope.
+- 2026-07-25 (clean sub-audit): all 16 `.limit(` sites in `bots/` were checked for a paired
+  `.order()`. Only `bots/extract-schemas.ts:165` lacks one (S55); `bots/freshness-probe.ts:25` is
+  provably safe (`home_stats_cache` is structurally single-row). This closes the gap S47's
+  `fetchAllRows`-scoped grep left open.
+- 2026-07-25 (`bots/sync-registry.ts` — registry schema drift, S58): verified against the live
+  `v0.1` endpoint the bot polls. Records are `{server, _meta}` where the server object declares
+  `$schema: https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json` and has
+  keys `[$schema, name, description, title, version, repository, packages, remotes]` — **there is
+  no `id` field at all**. `packages[]` uses `registryType`/`identifier` (not `registry_name`/
+  `name`), `remotes[]` uses `type`/`url`/`headers` (not a `transport` array), `version` is flat
+  (not `version_detail.version`), and status/`isLatest` live under
+  `_meta["io.modelcontextprotocol.registry/official"]`. Pagination is `metadata.nextCursor` with
+  30 records/page. The bot's `RegistryServer` type (`:20-34`) matches NONE of this except
+  `name`/`description`/`repository`. Capture a fixture from the live API before touching this
+  file — the drift was invisible to typecheck, lint and tests because the response is parsed as
+  `any` at `:64`.
+- 2026-07-25 (why the drift was silent): registry sync fails OPEN in every direction — a missing
+  field yields `undefined` → a NULL column, never an error. `registry_id` has been NULL for every
+  row for long enough that `getExistingRegistryIds()` returns an empty set, which makes the
+  already-synced fast path unreachable and hides the symptom. Lesson: for any bot parsing a
+  third-party schema, "mapped 0 of N records to a package" is the signal that must turn a run
+  red; row counts alone cannot distinguish drift from an empty upstream.

@@ -64,3 +64,6 @@ social-posts-and-outreach.md
 
 # scratch files exchanged with the Claude Code action in the blog-security workflow
 /blog-work/
+
+# Local analysis scratch scripts (see .blogdata*.tmp.ts) — never part of the app
+*.tmp.ts

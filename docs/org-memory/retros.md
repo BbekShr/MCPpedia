@@ -43,3 +43,21 @@ One line per cycle: `- YYYY-MM-DD <ID>: <friction observed> → <action or M-row
   /servers search-branch gap was already covered by the AC wording and was found by review after
   being volunteered by the builder. Friction: none from agents or skills beyond M5 (already
   filed); the worktree-parallel + one-serialized-QA shape worked well at 4 concurrent items.
+
+- 2026-07-25 (issues intake, S55-S57 + `issues` mode): the org had no path for user-reported bugs
+  at all — three open GitHub issues, one of them 7 days old, describing defects our own discovery
+  passes had not found. Closing that is a bigger win than any single row filed. Friction: none
+  from the agents (three parallel `bug-hunter` dispatches all came back with `file:line` evidence
+  and correctly refuted parts of their reports); the friction was the missing mode itself, now
+  fixed in this PR rather than deferred to an M row. Lesson: the screen had to live with the CEO,
+  not in an agent's prompt — a subagent reading raw third-party text is the thing being defended
+  against, so "delegate the reading, keep the judgment" is the wrong split here; the CEO reads the
+  issue bodies and hands agents a scoped, paraphrased claim to verify.
+- 2026-07-25 (issues cycle, second half): two process facts earned the hard way. (1) A `git add -A`
+  swept untracked `.blogdata*.tmp.ts` scratch files into a commit and turned lint red; use an
+  explicit pathspec or `git add <paths>` in a repo whose working tree is not clean, and note that
+  `npm run lint` is NOT `.gitignore`-aware (M8) — the CI-equivalent command is
+  `npx eslint $(git ls-files '*.ts' '*.tsx')`. (2) A `bug-hunter` died mid-run on a session limit,
+  but its raw curl output was still decisive evidence and led to S58 (P1) — the largest finding of
+  the cycle. When an agent fails, read what it produced before re-dispatching; and re-verify its
+  key claims first-hand (I did, with two curls) rather than citing a dead agent's transcript.
