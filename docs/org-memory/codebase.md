@@ -270,3 +270,21 @@ _(record "audited <ground> under <lens>: clean" entries here so discovery skips 
   `.order()`. Only `bots/extract-schemas.ts:165` lacks one (S55); `bots/freshness-probe.ts:25` is
   provably safe (`home_stats_cache` is structurally single-row). This closes the gap S47's
   `fetchAllRows`-scoped grep left open.
+- 2026-07-25 (`bots/sync-registry.ts` — registry schema drift, S58): verified against the live
+  `v0.1` endpoint the bot polls. Records are `{server, _meta}` where the server object declares
+  `$schema: https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json` and has
+  keys `[$schema, name, description, title, version, repository, packages, remotes]` — **there is
+  no `id` field at all**. `packages[]` uses `registryType`/`identifier` (not `registry_name`/
+  `name`), `remotes[]` uses `type`/`url`/`headers` (not a `transport` array), `version` is flat
+  (not `version_detail.version`), and status/`isLatest` live under
+  `_meta["io.modelcontextprotocol.registry/official"]`. Pagination is `metadata.nextCursor` with
+  30 records/page. The bot's `RegistryServer` type (`:20-34`) matches NONE of this except
+  `name`/`description`/`repository`. Capture a fixture from the live API before touching this
+  file — the drift was invisible to typecheck, lint and tests because the response is parsed as
+  `any` at `:64`.
+- 2026-07-25 (why the drift was silent): registry sync fails OPEN in every direction — a missing
+  field yields `undefined` → a NULL column, never an error. `registry_id` has been NULL for every
+  row for long enough that `getExistingRegistryIds()` returns an empty set, which makes the
+  already-synced fast path unreachable and hides the symptom. Lesson: for any bot parsing a
+  third-party schema, "mapped 0 of N records to a package" is the signal that must turn a run
+  red; row counts alone cannot distinguish drift from an empty upstream.
