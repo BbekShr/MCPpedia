@@ -203,9 +203,67 @@ export async function getServerChunkCount(): Promise<number> {
   )
 }
 
+type SitemapClient = ReturnType<typeof import('./supabase/admin').createAdminClient>
+
+// One row of the sitemap ordering: (score_total desc, slug asc), nulls last.
+type ChunkCursor = { score_total: number | null; slug: string }
+
+const PAGE = 1000
+const ROW_FIELDS = 'slug, updated_at, score_total'
+
+type ServerRow = { slug: string; updated_at: string; score_total: number | null }
+
+// PostgREST filter values are comma/paren separated, so a value is double-quoted
+// and its quotes/backslashes escaped. Slugs are generated as [a-z0-9-] and these
+// values come from the database rather than a request, but quoting keeps the
+// filter well-formed regardless of what a slug turns out to contain.
+function quoteFilterValue(value: string): string {
+  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+}
+
+// Locate the row at an absolute position in the sitemap ordering. Shards are
+// defined by absolute position (chunk N = rows N*10000 …), so a keyset walk still
+// needs one seek to find where a chunk begins — but ONE one-row probe instead of
+// the ten deep-offset page queries the walk used to issue per shard.
+//
+// The first probe stays inside the scored rows so it can ride
+// `servers_score_active_idx (score_total DESC) WHERE is_archived = false`
+// (supabase/migrations/20260417210424_hot_query_indexes.sql:22-24): PostgreSQL's
+// DESC default is NULLS FIRST, which is what that index stores, so asking for
+// `nullsFirst: false` — as the old walk did on every page — makes the ordering
+// unsatisfiable by the index and forces a full sort of the whole table. Positions
+// below the scored-row count are identical in both orderings, so this is only a
+// cheaper way to ask the same question. If it comes up empty the position lies in
+// the null-score tail, and only then do we pay the unindexed ordering.
+async function fetchCursorAt(supabase: SitemapClient, position: number): Promise<ChunkCursor | null> {
+  const scored = await supabase
+    .from('servers')
+    .select('slug, score_total')
+    .eq('is_archived', false)
+    .not('score_total', 'is', null)
+    .order('score_total', { ascending: false })
+    .order('slug', { ascending: true })
+    .range(position, position)
+  if (scored.data?.length) return scored.data[0] as ChunkCursor
+
+  const all = await supabase
+    .from('servers')
+    .select('slug, score_total')
+    .eq('is_archived', false)
+    .order('score_total', { ascending: false, nullsFirst: false })
+    .order('slug', { ascending: true })
+    .range(position, position)
+  return (all.data?.[0] as ChunkCursor | undefined) ?? null
+}
+
 // Fetch a chunk of servers ordered by score_total descending.
 // Higher-scored servers go in chunk 0 so Google's first-pass crawl prioritizes
 // the better content. Paginated through Supabase to bypass the default 1k limit.
+//
+// Pagination is keyset, not OFFSET (S11): the old `.range()` walk re-scanned and
+// re-sorted everything before the page on each of its ten requests, which is
+// O(n²) across a shard and blew Vercel's 60s per-route prerender budget as soon
+// as a fourth shard pushed the last one to offset 30,000.
 export async function fetchServerChunk(chunkIndex: number): Promise<SitemapEntry[]> {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return []
@@ -214,24 +272,19 @@ export async function fetchServerChunk(chunkIndex: number): Promise<SitemapEntry
   const supabase = createAdminClient('sitemap')
 
   const startOffset = chunkIndex * SERVER_CHUNK_SIZE
-  const endOffset = startOffset + SERVER_CHUNK_SIZE - 1
 
-  const PAGE = 1000
+  // Exclusive cursor: the last row of the previous chunk. Chunk 0 starts at the
+  // top with no cursor; a chunk whose predecessor row does not exist starts past
+  // the end of the catalog and is empty.
+  let cursor: ChunkCursor | null = null
+  if (startOffset > 0) {
+    cursor = await fetchCursorAt(supabase, startOffset - 1)
+    if (!cursor) return []
+  }
+
   const out: SitemapEntry[] = []
-  let offset = startOffset
-  while (offset <= endOffset) {
-    const upper = Math.min(offset + PAGE - 1, endOffset)
-    const { data } = await supabase
-      .from('servers')
-      .select('slug, updated_at')
-      .eq('is_archived', false)
-      .order('score_total', { ascending: false, nullsFirst: false })
-      .order('slug', { ascending: true })
-      .range(offset, upper)
-
-    if (!data || data.length === 0) break
-
-    for (const s of data) {
+  const push = (rows: ServerRow[]) => {
+    for (const s of rows) {
       out.push({
         url: `${SITE_URL}/s/${s.slug}`,
         lastModified: new Date(s.updated_at),
@@ -239,8 +292,76 @@ export async function fetchServerChunk(chunkIndex: number): Promise<SitemapEntry
         priority: 0.8,
       })
     }
-    if (data.length < PAGE) break
-    offset += data.length
   }
+
+  // Phase 1 — scored rows, (score_total desc, slug asc). Nulls are excluded here
+  // and swept up in phase 2, which is what keeps the emitted order identical to
+  // the old `nullsFirst: false` ordering while letting phase 1 use the index.
+  // `score_total` has only `default 0`, no NOT NULL constraint
+  // (supabase/migrations/20260402010000_scores_security_registry.sql:6), so the
+  // null tail is unlikely but not impossible — and a null can neither satisfy nor
+  // fail `score_total < cursor`, so a single-phase walk would drop it silently.
+  let scoreCursor = cursor?.score_total ?? null
+  let slugCursor = cursor?.slug ?? ''
+  let inNullTail = cursor !== null && cursor.score_total === null
+
+  while (!inNullTail && out.length < SERVER_CHUNK_SIZE) {
+    const limit = Math.min(PAGE, SERVER_CHUNK_SIZE - out.length)
+    let query = supabase
+      .from('servers')
+      .select(ROW_FIELDS)
+      .eq('is_archived', false)
+      .not('score_total', 'is', null)
+      .order('score_total', { ascending: false })
+      .order('slug', { ascending: true })
+      .limit(limit)
+
+    if (scoreCursor !== null) {
+      // `.lte` is redundant with the `.or()` below, but it is the part the planner
+      // can turn into an index range — an OR alone degrades into a bitmap scan
+      // plus a sort, which is the cost this rewrite exists to remove.
+      query = query
+        .lte('score_total', scoreCursor)
+        .or(
+          `score_total.lt.${scoreCursor},and(score_total.eq.${scoreCursor},slug.gt.${quoteFilterValue(slugCursor)})`,
+        )
+    }
+
+    const { data } = await query
+    const rows = (data ?? []) as ServerRow[]
+    push(rows)
+
+    // Short page: the scored rows are exhausted, so this chunk continues into the
+    // null tail (if any) from its start.
+    if (rows.length < limit) {
+      inNullTail = true
+      slugCursor = ''
+      break
+    }
+    const last = rows[rows.length - 1]
+    scoreCursor = last.score_total
+    slugCursor = last.slug
+  }
+
+  // Phase 2 — the null-score tail, ordered by slug asc, reached either by running
+  // out of scored rows above or by starting inside it.
+  while (inNullTail && out.length < SERVER_CHUNK_SIZE) {
+    const limit = Math.min(PAGE, SERVER_CHUNK_SIZE - out.length)
+    let query = supabase
+      .from('servers')
+      .select(ROW_FIELDS)
+      .eq('is_archived', false)
+      .is('score_total', null)
+      .order('slug', { ascending: true })
+      .limit(limit)
+    if (slugCursor) query = query.gt('slug', slugCursor)
+
+    const { data } = await query
+    const rows = (data ?? []) as ServerRow[]
+    push(rows)
+    if (rows.length < limit) break
+    slugCursor = rows[rows.length - 1].slug
+  }
+
   return out
 }
