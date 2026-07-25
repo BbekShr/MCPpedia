@@ -137,6 +137,7 @@ async function main() {
       .from('servers')
       .select('id, slug, name, tagline, github_url, npm_package, pip_package, install_configs, transport, categories')
       .not('github_url', 'is', null)
+      .order('id')
   )
 
   // Process servers that need install info OR have no categories

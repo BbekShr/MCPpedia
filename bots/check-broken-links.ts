@@ -65,6 +65,7 @@ async function main() {
         .select('id, slug, github_url')
         .not('github_url', 'is', null)
         .eq('is_archived', false)
+        .order('id')
     )
 
     console.log(`Checking ${servers.length} servers...\n`)

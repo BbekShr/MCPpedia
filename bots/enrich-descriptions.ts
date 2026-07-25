@@ -82,6 +82,7 @@ async function main() {
         .not('github_url', 'is', null)
         .eq('is_archived', false)
         .neq('description_source', 'human')
+        .order('id')
     )
 
     const needsDesc = servers.filter(s => !s.description || s.description.length < 30)

@@ -70,8 +70,8 @@ export function registerTools(server: McpServer): void {
       inputSchema: {
         query: z.string().describe("Keyword(s) to search for."),
         category: z.string().optional(),
-        min_score: z.number().min(0).max(100).optional(),
-        limit: z.number().min(1).max(20).optional(),
+        min_score: z.number().int().min(0).max(100).optional(),
+        limit: z.number().int().min(1).max(20).optional(),
       },
       outputSchema: {
         count: z.number(),
@@ -152,8 +152,10 @@ export function registerTools(server: McpServer): void {
             `- Tool poisoning: ${s.has_tool_poisoning ? "YES — " + arr<string>(s.tool_poisoning_flags).join(", ") : "None detected"}`,
             `- Code execution: ${s.has_code_execution ? "YES" : "No"}`,
             `- Injection risk: ${s.has_injection_risk ? "YES" : "No"}`,
-            `- Dangerous patterns: ${num(s.dangerous_pattern_count)}`,
-            `- Dep health: ${s.dep_health_score != null ? `${s.dep_health_score}/100` : "Not scanned"}`,
+            // Both columns are 0-3 point tallies from the security evidence, and
+            // null when that check could not run — never render them as /100.
+            `- Dangerous patterns: ${s.dangerous_pattern_count != null ? num(s.dangerous_pattern_count) : "Not analyzed"}`,
+            `- Dep health: ${s.dep_health_score != null ? `${num(s.dep_health_score)}/3` : "Not scanned"}`,
             `- Auth required: ${s.has_authentication ? "Yes" : "No"}`,
             `- License: ${str(s.license) || "None found"}`,
             "",
@@ -430,16 +432,30 @@ export function registerTools(server: McpServer): void {
 
         const s = data as Server;
         const configs = (s.install_configs as Record<string, unknown>) || {};
-        const config =
-          configs[targetClient] ||
-          configs["default"] ||
-          configs[Object.keys(configs)[0]];
+        // Track WHICH key we fell back to, not just the value: install_configs is
+        // written keyed 'claude-desktop' only, so most requests land on a config
+        // that is not client-specific and an agent must not be told otherwise.
+        const configKey = [targetClient, "default", Object.keys(configs)[0]].find(
+          (k) => k != null && configs[k] != null
+        );
+        const config = configKey ? configs[configKey] : undefined;
+        const compatible = arr<string>(s.compatible_clients);
 
         const sections: string[] = [
           `# Install: ${sanitize(s.name)}`,
           `Target client: ${targetClient}`,
-          "",
         ];
+        if (configKey && configKey !== targetClient) {
+          sections.push(
+            `Note: no ${targetClient}-specific config is on record — the config below is the stored "${sanitize(configKey)}" config and may need adjusting for ${targetClient}.`
+          );
+        }
+        if (compatible.length) {
+          sections.push(
+            `Clients this server lists as compatible: ${compatible.map((c) => sanitize(c)).join(", ")}`
+          );
+        }
+        sections.push("");
 
         const prereqs = arr<string>(s.prerequisites);
         if (prereqs.length) {
@@ -508,7 +524,7 @@ export function registerTools(server: McpServer): void {
       inputSchema: {
         category: z.string().optional(),
         sort: z.enum(["score", "stars", "newest"]).optional(),
-        limit: z.number().min(1).max(20).optional(),
+        limit: z.number().int().min(1).max(20).optional(),
       },
       outputSchema: {
         count: z.number(),
@@ -608,7 +624,7 @@ export function registerTools(server: McpServer): void {
         since: z
           .string()
           .describe("ISO-8601 timestamp, e.g. 2026-04-01T00:00:00Z"),
-        limit: z.number().min(1).max(50).optional(),
+        limit: z.number().int().min(1).max(50).optional(),
       },
     },
     async ({ since, limit }) =>
