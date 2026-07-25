@@ -168,17 +168,20 @@ export async function POST(
       score_efficiency: efficiency.score,
       score_computed_at: new Date().toISOString(),
       has_authentication: security.has_authentication,
+      // Every column derived from `security.evidence` moves together with the
+      // evidence array itself — writing fresh flags beside a stale evidence
+      // list makes the row self-contradictory where ScorePanel renders both.
       ...(merged.osv_failed ? {} : {
         cve_count: security.cve_count,
         security_evidence: security.evidence,
+        has_code_execution: security.evidence.some(e => e.id === 'tool-safety' && e.pass === false),
+        has_injection_risk: security.evidence.some(e => (e.id === 'injection' || e.id === 'tool-poisoning') && e.pass === false),
+        dangerous_pattern_count: security.evidence.find(e => e.id === 'tool-safety')?.points !== undefined
+          ? (security.evidence.find(e => e.id === 'tool-safety')!.max_points - security.evidence.find(e => e.id === 'tool-safety')!.points)
+          : 0,
       }),
       security_scan_status: security.scan_status,
       last_security_scan: new Date().toISOString(),
-      has_code_execution: security.evidence.some(e => e.id === 'tool-safety' && e.pass === false),
-      has_injection_risk: security.evidence.some(e => (e.id === 'injection' || e.id === 'tool-poisoning') && e.pass === false),
-      dangerous_pattern_count: security.evidence.find(e => e.id === 'tool-safety')?.points !== undefined
-        ? (security.evidence.find(e => e.id === 'tool-safety')!.max_points - security.evidence.find(e => e.id === 'tool-safety')!.points)
-        : 0,
       dep_health_score: security.evidence.find(e => e.id === 'dep-health')?.points ?? null,
       has_tool_poisoning: security.has_tool_poisoning,
       tool_poisoning_flags: security.tool_poisoning_flags,

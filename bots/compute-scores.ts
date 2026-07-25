@@ -172,19 +172,23 @@ async function main() {
         score_compatibility: compat.score,
         score_efficiency: efficiency.score,
         score_computed_at: new Date().toISOString(),
-        // Security fields — always write non-CVE ones; skip CVE-derived when scan failed
+        // Security fields — always write non-CVE ones; skip CVE-derived when scan
+        // failed. Every column derived from `security.evidence` moves together
+        // with the evidence array itself — writing fresh flags beside a stale
+        // evidence list makes the row self-contradictory where ScorePanel
+        // renders both.
         has_authentication: security.has_authentication,
         ...(osvFailed ? {} : {
           cve_count: security.cve_count,
           security_evidence: security.evidence,
+          has_code_execution: security.evidence.some(e => e.id === 'tool-safety' && e.pass === false),
+          has_injection_risk: security.evidence.some(e => e.id === 'injection' && e.pass === false),
+          dangerous_pattern_count: security.evidence.find(e => e.id === 'tool-safety')?.points !== undefined
+            ? (security.evidence.find(e => e.id === 'tool-safety')!.max_points - security.evidence.find(e => e.id === 'tool-safety')!.points)
+            : 0,
         }),
         security_scan_status: security.scan_status,
         last_security_scan: new Date().toISOString(),
-        has_code_execution: security.evidence.some(e => e.id === 'tool-safety' && e.pass === false),
-        has_injection_risk: security.evidence.some(e => e.id === 'injection' && e.pass === false),
-        dangerous_pattern_count: security.evidence.find(e => e.id === 'tool-safety')?.points !== undefined
-          ? (security.evidence.find(e => e.id === 'tool-safety')!.max_points - security.evidence.find(e => e.id === 'tool-safety')!.points)
-          : 0,
         dep_health_score: security.evidence.find(e => e.id === 'dep-health')?.points ?? null,
         dependency_count: null, // deps.dev doesn't reliably return this yet
         has_tool_poisoning: security.has_tool_poisoning,

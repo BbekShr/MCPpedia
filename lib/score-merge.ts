@@ -14,7 +14,6 @@ import type { SecurityScanResult } from './scoring'
 /** The stored row being updated — only the columns the merge depends on. */
 export interface PreviousSecurityState {
   score_security?: number | null
-  security_scan_status?: string | null
   last_security_scan?: string | null
 }
 
@@ -41,13 +40,21 @@ export function mergeScoresOnOsvFailure(
 
   // `score_security` is `integer default 0` (not nullable), so a null check
   // can't tell "never scanned" from "scanned, scored 0" — a fresh import whose
-  // first OSV query 429s would otherwise be pinned at 0/30. Key off the scan
-  // itself instead: only a previously SUCCESSFUL scan is worth preserving.
+  // first OSV query 429s would otherwise be pinned at 0/30. `last_security_scan`
+  // is the honest "was this row ever scanned" signal: null on a fresh import,
+  // set once any scan has run.
+  //
+  // Deliberately NOT also requiring `security_scan_status === 'success'`: every
+  // writer stamps `security_scan_status` and `last_security_scan` on EVERY run,
+  // failures included, so run N of an outage would flip the status to 'failed'
+  // and run N+1 would stop trusting the value run N just preserved — the score
+  // would jump to the CVE-blind "no vulns found" number on the second
+  // consecutive failure. The preserved component must survive an outage of any
+  // length. Do not "tighten" this predicate with the status column.
   const priorScore = previous?.score_security
   const hasTrustedPrior =
     osvFailed &&
     previous?.last_security_scan != null &&
-    previous.security_scan_status === 'success' &&
     typeof priorScore === 'number'
 
   const scoreSecurity = hasTrustedPrior ? priorScore : fresh.security_score
