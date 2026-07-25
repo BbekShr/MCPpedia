@@ -27,6 +27,26 @@ import type { Tool } from '../lib/types'
 
 const supabase = createAdminClient('bot-compute-scores')
 
+// Every column the scoring loop reads, plus the two mergeScoresOnOsvFailure
+// needs off the previous row (`score_security`, `last_security_scan`). This was
+// `select('*')`, which shipped `resources`, `prompts` and every other unread
+// column for the whole catalog on every daily run — the largest single source
+// of Supabase egress on the account.
+//
+// This list is load-bearing: a field missing here reads as `undefined` in the
+// loop and silently scores the server wrong rather than failing. Adding a
+// `server.<field>` reference below means adding the column here.
+const SCORING_FIELDS = [
+  'id', 'slug',
+  'tools', 'install_configs', 'transport', 'compatible_clients',
+  'description', 'tagline', 'api_name', 'homepage_url', 'github_url',
+  'npm_package', 'pip_package', 'license',
+  'github_last_commit', 'github_stars', 'github_open_issues', 'npm_weekly_downloads',
+  'is_archived', 'verified', 'security_verified', 'has_authentication',
+  'tool_definition_hash',
+  'score_total', 'score_security', 'last_security_scan',
+].join(', ')
+
 function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
   const match = url.match(/github\.com\/([\w.-]+)\/([\w.-]+)/)
   if (!match) return null
@@ -114,18 +134,30 @@ async function main() {
   console.log('=== MCPpedia Score Computation ===')
   console.log(new Date().toISOString())
 
-  // Supabase returns max 1000 rows by default — paginate to get all.
+  // Supabase returns max 1000 rows by default — paginate to get the full order.
   // Stalest-first ordering pairs with the wall-clock deadline below: if a run
   // can't finish every server before the GitHub Actions 6h job limit, it exits
   // cleanly and the next run picks up the servers it didn't reach.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const servers: any[] = []
+  //
+  // Ids only, deliberately. This walk used to be `select('*')`, which pulled
+  // every column — `tools`, `resources`, `prompts`, `install_configs` — of all
+  // ~46k servers on every daily run, and then the deadline below stopped the
+  // loop after a few thousand, so most of that download was never read. On a
+  // 5 GB/month egress plan that single query was the baseline that eventually
+  // got the project restricted. Full rows are now hydrated a chunk at a time
+  // inside the loop, where the deadline stops the fetching too.
+  //
+  // The order is captured up front rather than walked lazily because the loop
+  // writes `score_computed_at`: an OFFSET walk over the live ordering would
+  // re-sort processed rows to the back underneath itself and skip a page's
+  // worth of servers every time it advanced.
+  const ids: string[] = []
   let page = 0
   const PAGE_SIZE = 1000
   while (true) {
     const { data: batch, error: batchError } = await supabase
       .from('servers')
-      .select('*')
+      .select('id')
       .order('score_computed_at', { ascending: true, nullsFirst: true })
       .order('id', { ascending: true }) // stable tiebreak for pagination
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
@@ -135,17 +167,45 @@ async function main() {
       throw new Error(batchError.message)
     }
     if (!batch || batch.length === 0) break
-    servers.push(...batch)
+    ids.push(...batch.map(r => r.id as string))
     if (batch.length < PAGE_SIZE) break
     page++
   }
 
-  if (servers.length === 0) {
+  if (ids.length === 0) {
     await run.fail('No servers found')
     throw new Error('No servers found')
   }
 
-  console.log(`Computing scores for ${servers.length} servers...\n`)
+  console.log(`Computing scores for ${ids.length} servers...\n`)
+
+  // Hydrate in chunks so that breaking out of the loop below stops the reads.
+  // 100 keeps the per-chunk payload small while staying well inside PostgREST's
+  // URL length budget for an `in` filter of uuids.
+  const HYDRATE_CHUNK = 100
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async function* hydrate(): AsyncGenerator<any> {
+    for (let i = 0; i < ids.length; i += HYDRATE_CHUNK) {
+      const chunkIds = ids.slice(i, i + HYDRATE_CHUNK)
+      const { data: rows, error: chunkError } = await supabase
+        .from('servers')
+        .select(SCORING_FIELDS)
+        .in('id', chunkIds)
+
+      if (chunkError) {
+        console.error(`  Error hydrating servers ${i}-${i + chunkIds.length - 1}: ${chunkError.message}`)
+        continue
+      }
+      // `in` does not preserve argument order; re-emit in the stalest-first
+      // order the id walk established. A row missing here was deleted between
+      // the two reads, which is not an error.
+      const byId = new Map((rows ?? []).map(r => [(r as unknown as { id: string }).id, r]))
+      for (const id of chunkIds) {
+        const row = byId.get(id)
+        if (row) yield row
+      }
+    }
+  }
 
   // Wall-clock budget: GitHub Actions kills jobs at 6h, which was cancelling
   // most runs mid-flight (no BotRun.finish, no cache revalidation). Stop
@@ -160,12 +220,12 @@ async function main() {
   // for compare pages; individual /s/{slug} pages accept up to 7-day lag).
   const movedSlugs = new Set<string>()
 
-  for (const server of servers) {
+  for await (const server of hydrate()) {
     if (Date.now() - startedAt > DEADLINE_MS) {
-      console.warn(`\nDeadline (5h) reached after ${processed}/${servers.length} servers — exiting cleanly. Next run resumes with the stalest.`)
+      console.warn(`\nDeadline (5h) reached after ${processed}/${ids.length} servers — exiting cleanly. Next run resumes with the stalest.`)
       break
     }
-    console.log(`[${processed + 1}/${servers.length}] ${server.slug}`)
+    console.log(`[${processed + 1}/${ids.length}] ${server.slug}`)
 
     // 2. EFFICIENCY — measure actual tool schema tokens (compute tools early, security needs it)
     const tools = (server.tools || []) as Tool[]
