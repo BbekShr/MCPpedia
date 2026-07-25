@@ -1,0 +1,48 @@
+-- Drop the stale duplicate UPDATE policy on `profiles`.
+--
+-- 20260404010000_restrict_profile_role_update.sql:4 dropped
+--   "Users can update own profile"
+-- and created
+--   "Users can update own profile except role"        -- i.e. a RENAME
+-- whose WITH CHECK freezes only `role` and `created_at`.
+--
+-- 20260610000000_security_hardening.sql:55 then dropped
+--   "Users can update own profile"                    -- a name that no longer existed
+-- (a silent no-op — `if exists`) and re-created it at :57 with a hardened
+-- WITH CHECK that additionally freezes `karma`, `edits_approved`,
+-- `servers_submitted` and `discussions_count`.
+--
+-- Nothing ever dropped the 20260404 policy, so after an in-order apply BOTH
+-- policies exist on profiles FOR UPDATE. Postgres ORs PERMISSIVE policies for
+-- the same command, so the WEAKEST one decides: a signed-in user PATCHing
+-- /rest/v1/profiles?id=eq.<self> with {"karma": 999999, "edits_approved": 99}
+-- is rejected by the hardened policy but accepted by the 20260404 one (role and
+-- created_at are unchanged), and the OR lets the write through. `edits_approved`
+-- is only ever incremented by trigger (20260421000000_sync_profile_counters.sql)
+-- and never recomputed, so a forged value persists and clears the auto-approve
+-- trust gate in app/api/edit/route.ts — after which low-risk edits bypass
+-- moderator review entirely.
+--
+-- Same class as the S21 stale `search_servers` overload
+-- (20260719150000_drop_stale_search_servers_overload.sql): a later migration's
+-- CREATE did not supersede the earlier object because the IDENTIFIER changed —
+-- an argument signature there, a policy name here. When hardening an existing
+-- policy, drop it under EVERY name it has ever had, or a weaker sibling
+-- survives and the permissive OR hands it the decision.
+--
+-- Unaffected: "Admins can update any profile", recreated under its own name by
+-- 20260417210403_tighten_admin_rls.sql:7-16 (the path used by
+-- app/api/admin/role/route.ts:45-47), and the surviving hardened
+-- "Users can update own profile", which still permits the app's legitimate
+-- self-update path at app/api/username/route.ts:70-72 (username /
+-- username_set). The one other self-write, the display-only discussions_count
+-- recount at app/api/discuss/route.ts:81-83, is a column the hardening
+-- migration deliberately froze; it is already blocked by the hardened policy
+-- and only reaches Postgres today because this stale policy ORs it in. Its
+-- error is swallowed at the call site, so it degrades to a stale counter, not
+-- a user-visible failure — see the PR notes for the follow-up.
+--
+-- Idempotent: `if exists` makes this a no-op wherever the stale policy was
+-- already removed by hand.
+
+DROP POLICY IF EXISTS "Users can update own profile except role" ON profiles;
