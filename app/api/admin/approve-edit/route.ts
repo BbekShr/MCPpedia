@@ -86,6 +86,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, action: 'rejected' })
   }
 
+  // Approval requires a SECOND pair of eyes — no self-approval, for ANY role.
+  // ALLOWED_FIELDS covers identity/install fields (name, homepage_url, npm_package,
+  // pip_package) that LOW_RISK_FIELDS in lib/validators.ts deliberately excludes from
+  // auto-apply precisely because a swapped package leaves dead links and broken installs
+  // in the wild. Without this check, one account could queue such an edit via /api/edit
+  // and immediately approve it here — the DB's `status='pending'` INSERT policy
+  // ("prevent self-approval farming") only stops the one-step version.
+  // An admin approving their own identity edit defeats the review exactly as much as an
+  // editor doing so, so do NOT relax this to `editor`-only: another reviewer can approve
+  // it, or an admin can use the direct admin edit path. Self-REJECTION stays permitted
+  // above (withdrawing your own pending edit is legitimate).
+  if (edit.user_id === user.id) {
+    return NextResponse.json(
+      { error: 'Cannot approve your own edit' },
+      { status: 403 },
+    )
+  }
+
   if (!ALLOWED_FIELDS.includes(edit.field_name as typeof ALLOWED_FIELDS[number])) {
     return NextResponse.json({ error: 'Field not allowed' }, { status: 400 })
   }

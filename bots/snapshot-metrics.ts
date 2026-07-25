@@ -14,21 +14,42 @@ import { BotRun } from './lib/bot-run'
 
 const supabase = createAdminClient('bot-snapshot-metrics')
 
+// Walks the ENTIRE non-archived servers table. Keyset (cursor) pagination on the
+// indexed `id` primary key, matching app/analytics/page.tsx — NOT offset `.range()`:
+// an unordered offset walk has no stable row order, so pages can both duplicate and
+// skip rows, and at 19k+ rows OFFSET makes Postgres scan and discard every prior row
+// (that scan is what blew the statement timeout in S12). `.gt('id', cursor)` is an
+// index seek regardless of table size.
+// Deliberately excludes the `tools` jsonb — the heaviest column in the table, and
+// exactly what S12 removed from the analytics page for exceeding the statement
+// timeout at this size. `total_tools` now sums the denormalized `tool_count`
+// generated column instead (migration 20260719130000_tool_count_column), which is
+// `jsonb_array_length(tools)` maintained by Postgres — same number, no jsonb egress.
 async function fetchAllServers() {
-  const fields = 'categories,health_status,author_type,api_pricing,transport,compatible_clients,score_total,score_security,score_maintenance,score_documentation,score_compatibility,score_efficiency,token_efficiency_grade,github_stars,npm_weekly_downloads,cve_count,has_authentication,tools,created_at'
+  const fields = 'id,categories,health_status,author_type,api_pricing,transport,compatible_clients,score_total,score_security,score_maintenance,score_documentation,score_compatibility,score_efficiency,token_efficiency_grade,github_stars,npm_weekly_downloads,cve_count,has_authentication,tool_count,created_at'
   const pageSize = 1000
   let servers: Record<string, unknown>[] = []
-  let from = 0
+  let cursor: string | null = null
   while (true) {
-    const { data } = await supabase
+    let query = supabase
       .from('servers')
       .select(fields)
       .eq('is_archived', false)
-      .range(from, from + pageSize - 1)
+      .order('id', { ascending: true })
+      .limit(pageSize)
+    if (cursor) query = query.gt('id', cursor)
+    const { data, error } = await query
+    // Fail loud instead of silently snapshotting a partial catalog. Swallowing the
+    // error here would `break` mid-walk and upsert a truncated row into
+    // daily_metrics, which /analytics reads back for its 90-day trends and every
+    // 7-day delta arrow — a bad row poisons history permanently.
+    if (error) {
+      throw new Error(`Failed to fetch servers after cursor ${cursor}: ${error.message}`)
+    }
     if (!data || data.length === 0) break
     servers = servers.concat(data)
     if (data.length < pageSize) break
-    from += pageSize
+    cursor = data[data.length - 1].id as string
   }
   return servers
 }
@@ -155,8 +176,54 @@ async function main() {
     todayStart.setUTCHours(0, 0, 0, 0)
     const serversAddedToday = all.filter(s => new Date(s.created_at as string) >= todayStart).length
 
-    // 12. Upsert the snapshot
+    // 12. Sanity guard — never overwrite history with a truncated catalog.
+    // Mirrors the guard in app/analytics/page.tsx: a double-digit day-over-day
+    // DROP in total_servers is not a real ecosystem event, it's a partial fetch.
+    // The upsert below is keyed on snapshot_date, so a bad row is permanent, and
+    // /analytics picks the ~7-day-ago row for every delta arrow it shows.
+    //
+    // The comparison snapshot must be BEFORE today (so a same-day re-run doesn't
+    // validate itself against a bad row it wrote an hour ago) but no older than
+    // GUARD_LOOKBACK_DAYS. That upper bound is what makes the guard SELF-RELEASING,
+    // and it is load-bearing — do not "simplify" it away:
+    //
+    // A legitimate mass shrink is possible (detect-duplicates bulk-archives merged
+    // duplicates; next.config.ts already carries merged-duplicate redirects). With an
+    // unbounded lookback, day 1 of such a shrink throws, and because nothing was
+    // written, day 2 compares against the SAME pre-shrink snapshot and throws again —
+    // forever. daily_metrics would stop growing permanently, /analytics trends would
+    // flatline, and the S19 workflow-failure alert would fire daily with no path to
+    // clear itself. Pre-guard, the bot always wrote and self-corrected; a permanent
+    // wedge is worse than the corruption the guard exists to prevent.
+    //
+    // Three days = three consecutive daily runs failing loudly (long enough for the
+    // S19 alert to reach a human) before the newest surviving snapshot ages out of
+    // the window, the lookup returns nothing, and the bot resumes writing. Chosen
+    // over a manual override env var: nobody is on call for a bot, and an override
+    // that needs a human is just a wedge with extra steps.
+    const GUARD_LOOKBACK_DAYS = 3
     const snapshotDate = new Date().toISOString().slice(0, 10)
+    const guardCutoff = new Date(Date.now() - GUARD_LOOKBACK_DAYS * 86400000).toISOString().slice(0, 10)
+    const { data: prevSnapshot, error: prevError } = await supabase
+      .from('daily_metrics')
+      .select('snapshot_date, total_servers')
+      .lt('snapshot_date', snapshotDate)
+      .gte('snapshot_date', guardCutoff)
+      .order('snapshot_date', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (prevError) throw new Error(`Previous snapshot lookup failed: ${prevError.message}`)
+
+    if (prevSnapshot && prevSnapshot.total_servers > 100 && total < prevSnapshot.total_servers * 0.8) {
+      throw new Error(
+        `Refusing to write snapshot: counted ${total} servers but ${prevSnapshot.snapshot_date} ` +
+        `recorded ${prevSnapshot.total_servers} — dataset is likely truncated. If the drop is ` +
+        `real, this clears itself once that snapshot is more than ${GUARD_LOOKBACK_DAYS} days old.`
+      )
+    }
+
+    // 13. Upsert the snapshot
     const row = {
       snapshot_date: snapshotDate,
       total_servers: total,
@@ -169,7 +236,7 @@ async function main() {
       avg_score_efficiency: avg('score_efficiency'),
       total_github_stars: sum('github_stars'),
       total_npm_weekly_downloads: sum('npm_weekly_downloads'),
-      total_tools: all.reduce((s, x) => s + ((x.tools as unknown[])?.length || 0), 0),
+      total_tools: sum('tool_count'),
       servers_with_cves: all.filter(s => ((s.cve_count as number) || 0) > 0).length,
       servers_with_auth: all.filter(s => s.has_authentication === true).length,
       open_cves: openCves || 0,

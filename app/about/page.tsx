@@ -14,10 +14,15 @@ export const metadata: Metadata = {
 
 export default async function AboutPage() {
   const supabase = createPublicClient()
-  const { count: serverCount } = await supabase
-    .from('servers')
-    .select('*', { count: 'exact', head: true })
-    .eq('is_archived', false)
+
+  // Catalog total comes from the shared daily home_stats snapshot — the same
+  // source as the homepage hero and the /servers headline — so the number can
+  // never disagree between pages. An exact count over the ~46k-row table
+  // exceeds anon's 3s statement timeout, and the swallowed error rendered a
+  // bare "0 servers".
+  const { data: statsData, error: statsError } = await supabase.rpc('home_stats')
+  if (statsError) console.error('[about] home_stats failed', statsError)
+  const serverCount = (statsData as { total_servers?: number } | null)?.total_servers ?? null
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
@@ -46,7 +51,7 @@ export default async function AboutPage() {
               <span className="text-accent font-bold shrink-0 w-5">1.</span>
               <div>
                 <strong>Discover.</strong>
-                <span className="text-text-muted"> Bots search the official MCP Registry, GitHub, and npm daily for new servers. Currently tracking <strong className="text-text-primary">{(serverCount || 0).toLocaleString()}</strong> servers and counting.</span>
+                <span className="text-text-muted"> Bots search the official MCP Registry, GitHub, and npm daily for new servers.{serverCount !== null && <> Currently tracking <strong className="text-text-primary">{serverCount.toLocaleString()}</strong> servers and counting.</>}</span>
               </div>
             </div>
             <div className="flex gap-3">

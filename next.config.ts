@@ -10,6 +10,15 @@ const nextConfig: NextConfig = {
       { hostname: '*.githubusercontent.com' },
     ],
   },
+  async rewrites() {
+    return [
+      // Keep the indexed /sitemap-servers-<n>.xml URLs pointing at the dynamic
+      // shard route. Next only treats a whole folder name as a dynamic segment,
+      // so the route lives at /sitemap-servers/<n> and this maps the public
+      // shape onto it. Digits only, so nothing else can fall into the route.
+      { source: '/sitemap-servers-:chunk(\\d{1,})\\.xml', destination: '/sitemap-servers/:chunk' },
+    ]
+  },
   async redirects() {
     return [
       // Merged duplicates: keep the historical URL working as a 301 to the canonical entry.

@@ -55,7 +55,7 @@ async function main() {
   while (true) {
     const { data: batch, error: batchError } = await supabase
       .from('servers')
-      .select('id, slug, github_url, npm_package, is_archived')
+      .select('id, slug, github_url, npm_package, is_archived, license')
       .not('github_url', 'is', null)
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
@@ -117,6 +117,16 @@ async function main() {
       npm_weekly_downloads: downloads,
     }
     if (shouldAutoArchive) updates.is_archived = true
+
+    // Backfill the license. Only discover.ts ever sets it, so servers that
+    // arrived through sync-registry (the registry payload has no license
+    // field) keep license = null forever and lose 3 security points for a
+    // repo that is in fact licensed. Fill a NULL only — never overwrite a
+    // value someone curated, and skip NOASSERTION since scoring treats it
+    // as no license anyway.
+    if (!server.license && repo.license?.spdx_id && repo.license.spdx_id !== 'NOASSERTION') {
+      updates.license = repo.license.spdx_id
+    }
 
     const { error: updateError } = await supabase
       .from('servers')

@@ -14,6 +14,11 @@ import {
   type Server,
 } from "./format";
 
+// How long to wait for an `elicitation/create` reply before giving up and
+// using a default. See the call site in `get_install_config` for why this must
+// stay well under the hosted route's 30s maxDuration.
+const ELICITATION_TIMEOUT_MS = 5_000;
+
 // ─── Shared output shapes ───────────────────────────────────
 
 const scoresShape = {
@@ -370,6 +375,15 @@ export function registerTools(server: McpServer): void {
         // Elicit the client if not provided and the client supports it.
         if (!targetClient) {
           try {
+            // The explicit timeout is load-bearing, do not remove it. The
+            // hosted /mcp endpoint runs the Streamable HTTP transport in
+            // stateless mode (a fresh McpServer per request), so an
+            // elicitation reply arrives on a *different* instance and never
+            // resolves this pending request. Without a timeout the SDK waits
+            // DEFAULT_REQUEST_TIMEOUT_MSEC (60s), long past the route's
+            // maxDuration of 30s, and the tool call hangs until the function
+            // is killed. 5s keeps stdio clients responsive while guaranteeing
+            // the hosted path falls back to the default client instead.
             const result = await extra.sendRequest(
               {
                 method: "elicitation/create",
@@ -391,7 +405,8 @@ export function registerTools(server: McpServer): void {
               z.object({
                 action: z.string(),
                 content: z.object({ client: z.string() }).optional(),
-              })
+              }),
+              { timeout: ELICITATION_TIMEOUT_MS }
             );
             if (result.action === "accept" && result.content?.client) {
               const allowed = ["claude-desktop", "cursor", "claude-code", "windsurf"] as const;
@@ -400,7 +415,8 @@ export function registerTools(server: McpServer): void {
               }
             }
           } catch {
-            // Client doesn't support elicitation — fall through to default.
+            // Client doesn't support elicitation, or the reply timed out —
+            // fall through to default.
           }
           targetClient = targetClient ?? "claude-desktop";
         }
