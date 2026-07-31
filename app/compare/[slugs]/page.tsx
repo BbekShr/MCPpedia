@@ -16,6 +16,28 @@ export const revalidate = 604800 // 7d; on-demand revalidate triggers on edits a
 const MIN_SERVERS = 2
 const MAX_SERVERS = 4
 
+// How many curated pairs to prerender at build time. The rest are ISR'd on
+// first request — see generateStaticParams.
+const PRERENDERED_PAIRS = 50
+
+// The comparison table and ScoreCard read most of a server row, but not all of
+// it. Subtracting the unread columns rather than listing the wanted ones keeps
+// this in step with PUBLIC_SERVER_FIELDS: a column added there shows up here
+// automatically, and only a deliberate entry below removes it.
+//
+// `tools`, `install_configs`, `security_evidence` and `description` are heavy
+// and must stay — ScoreCard renders all four, and dropping one makes the tool
+// and token rows silently read 0 rather than fail.
+const COMPARE_OMITTED_FIELDS = new Set([
+  'resources', 'prompts',
+  'env_instructions', 'prerequisites',
+  'tool_poisoning_flags', 'tool_definition_hash',
+])
+const COMPARE_SERVER_FIELDS = PUBLIC_SERVER_FIELDS
+  .split(', ')
+  .filter(f => !COMPARE_OMITTED_FIELDS.has(f))
+  .join(', ')
+
 // ---------- Static Params (pre-generate comparison pages for SEO) ----------
 
 interface ComparisonPair {
@@ -41,10 +63,18 @@ export async function generateStaticParams() {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return []
   }
-  // Only pre-render the curated 2-server pairs. N≥3 routes are ISR'd on demand —
-  // generating every 3- or 4-tuple of 17k servers would explode.
+  // Only pre-render the highest-value curated 2-server pairs. N≥3 routes are
+  // ISR'd on demand — generating every 3- or 4-tuple of 17k servers would
+  // explode — and so is every pair past the cut.
+  //
+  // Prerendering all ~723 pairs meant fetching ~1,450 full server rows from
+  // Supabase on every deploy, preview builds included, which on a 5 GB/month
+  // egress plan is a cost paid per push rather than per reader. The pairs are
+  // written score-descending (bots/generate-comparisons.ts pairs the top 30
+  // servers), so the first N are the ones traffic actually lands on; the tail
+  // renders on first request and then caches for the same 7 days.
   const pairs = loadComparisonPairs()
-  return pairs.map(p => ({
+  return pairs.slice(0, PRERENDERED_PAIRS).map(p => ({
     slugs: `${p.slugA}-vs-${p.slugB}`,
   }))
 }
@@ -166,7 +196,7 @@ export default async function ComparePage({
   const supabase = createPublicClient()
   const results = await Promise.all(
     slugs.map(s =>
-      supabase.from('servers').select(PUBLIC_SERVER_FIELDS).eq('slug', s).single()
+      supabase.from('servers').select(COMPARE_SERVER_FIELDS).eq('slug', s).single()
     )
   )
   if (results.some(r => !r.data)) notFound()

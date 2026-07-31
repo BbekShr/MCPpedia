@@ -134,10 +134,55 @@ async function main() {
   console.log('=== MCPpedia Score Computation ===')
   console.log(new Date().toISOString())
 
+  // Only servers whose score has gone stale are walked and hydrated. The daily
+  // run used to take the whole catalog (65,744 rows as of July 2026) as its
+  // working set and let the 5h deadline decide how much of it got scored; at
+  // ~10-20 KB of hydrated JSONB per server that was the single largest line
+  // item on a 5 GB/month egress plan, and most of it re-derived a score that
+  // had not changed. Measured against prod when this landed, the filter cut the
+  // working set to ~1,000 servers.
+  //
+  // Two tiers, because "stale" is not the same for a live server as for an
+  // archived one: live servers rotate on SCORE_STALE_DAYS (7 by default),
+  // archived ones on 30. Archived servers are deliberately still scored — the
+  // formula penalises `is_archived` and their pages still render — they just
+  // don't need weekly attention.
+  //
+  // The `created_at` arm is the important one. A newly discovered server is
+  // scored the same day (score_computed_at IS NULL sorts first) but BEFORE
+  // extract-install-info and enrich-descriptions have filled in its
+  // `npm_package`, `install_configs` and `description`, so that first score is
+  // computed on a half-empty row: no package to scan means 'pending' security
+  // and a `cve_count` of 0. Without this arm the corrective rescore would wait
+  // a full week, leaving a server that may well have a real CVE advertising
+  // "no CVEs found". Three days of daily rescoring covers the enrichment
+  // pipeline's Mon/Thu cadence.
+  //
+  // Cost of the window: a score, its CVE count and its advisory reconciliation
+  // can lag reality by up to SCORE_STALE_DAYS. That matches the lag /s/{slug}
+  // already accepts (see the comment on movedSlugs below).
+  //
+  // Note the 7-day echo: every server scored on day D falls due again on D+7
+  // together, so daily batch sizes replay whatever distribution exists today
+  // rather than smoothing to catalog/7. Stalest-first ordering plus the
+  // deadline absorb the peaks — a spike just means some servers wait a day.
+  const SCORE_STALE_DAYS = Number(process.env.SCORE_STALE_DAYS) || 7
+  const ARCHIVED_STALE_DAYS = 30
+  const NEW_SERVER_DAYS = 3
+  const daysAgo = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000).toISOString()
+  // Safe unquoted inside an `or` tree: toISOString() is always Z-suffixed and
+  // contains none of PostgREST's reserved characters (, ( ) ").
+  const staleFilter = [
+    'score_computed_at.is.null',
+    `and(is_archived.not.is.true,score_computed_at.lt.${daysAgo(SCORE_STALE_DAYS)})`,
+    `and(is_archived.is.true,score_computed_at.lt.${daysAgo(ARCHIVED_STALE_DAYS)})`,
+    `created_at.gt.${daysAgo(NEW_SERVER_DAYS)}`,
+  ].join(',')
+
   // Supabase returns max 1000 rows by default — paginate to get the full order.
   // Stalest-first ordering pairs with the wall-clock deadline below: if a run
-  // can't finish every server before the GitHub Actions 6h job limit, it exits
-  // cleanly and the next run picks up the servers it didn't reach.
+  // can't finish every stale server before the GitHub Actions 6h job limit, it
+  // exits cleanly and the next run picks up the servers it didn't reach.
   //
   // Ids only, deliberately. This walk used to be `select('*')`, which pulled
   // every column — `tools`, `resources`, `prompts`, `install_configs` — of all
@@ -158,6 +203,7 @@ async function main() {
     const { data: batch, error: batchError } = await supabase
       .from('servers')
       .select('id')
+      .or(staleFilter)
       .order('score_computed_at', { ascending: true, nullsFirst: true })
       .order('id', { ascending: true }) // stable tiebreak for pagination
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
@@ -172,12 +218,32 @@ async function main() {
     page++
   }
 
+  // An empty result is now AMBIGUOUS, so it can't be blanket-fatal the way it
+  // was before the staleness filter above existed. "Every server was scored
+  // recently" is the healthy steady state and has to finish clean: failing here
+  // would skip refreshHomeStatsCache() below, and two consecutive skips take
+  // freshness-probe (48h threshold) red and open an alert issue for a fleet
+  // that is perfectly up to date.
+  //
+  // An empty *table*, on the other hand, is still a catastrophe worth shouting
+  // about. A head-only count distinguishes the two for zero row egress.
   if (ids.length === 0) {
-    await run.fail('No servers found')
-    throw new Error('No servers found')
-  }
+    const { count, error: countError } = await supabase
+      .from('servers')
+      .select('*', { count: 'exact', head: true })
 
-  console.log(`Computing scores for ${ids.length} servers...\n`)
+    if (countError) {
+      await run.fail(`Failed to count servers: ${countError.message}`)
+      throw new Error(countError.message)
+    }
+    if (!count) {
+      await run.fail('No servers found')
+      throw new Error('No servers found')
+    }
+    console.log(`No stale servers — all ${count} scored within the window. Refreshing caches only.\n`)
+  } else {
+    console.log(`Computing scores for ${ids.length} stale servers...\n`)
+  }
 
   // Hydrate in chunks so that breaking out of the loop below stops the reads.
   // 100 keeps the per-chunk payload small while staying well inside PostgREST's

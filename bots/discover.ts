@@ -42,20 +42,31 @@ function computeHealth(pushedAt: string | null, archived: boolean): string {
   return 'abandoned'
 }
 
-// These four loaders build the dedupe sets that are the ONLY thing stopping this
-// bot from inserting duplicate rows — there is no unique index on github_url, slug,
-// npm_package or pip_package. So every page error must abort the run: a swallowed
-// error truncates the set, and every already-known server past that point gets
+interface DedupeSets {
+  urls: Set<string>
+  slugs: Set<string>
+  npmPkgs: Set<string>
+  pipPkgs: Set<string>
+}
+
+// The dedupe sets are the ONLY thing stopping this bot from inserting duplicate
+// rows — there is no unique index on github_url, slug, npm_package or
+// pip_package. So every page error must abort the run: a swallowed error
+// truncates a set, and every already-known server past that point gets
 // re-inserted as a duplicate.
-async function getExistingGithubUrls(): Promise<Set<string>> {
-  const urls: string[] = []
+//
+// One walk, four sets. This used to be four separate paginated walks; since the
+// slug walk was already unfiltered it read the whole table anyway, so asking for
+// the other three columns in the same pass costs a few bytes per row and saves
+// three full passes over a 65k-row table every run.
+async function getDedupeSets(): Promise<DedupeSets> {
+  const sets: DedupeSets = { urls: new Set(), slugs: new Set(), npmPkgs: new Set(), pipPkgs: new Set() }
   let from = 0
   const PAGE = 1000
   while (true) {
     const { data, error } = await supabase
       .from('servers')
-      .select('github_url')
-      .not('github_url', 'is', null)
+      .select('slug, github_url, npm_package, pip_package')
       // Order by the `id` primary key — a UNIQUE tiebreak, which offset paging
       // requires. Without one, Postgres may return rows in a different order per
       // page, so a row can be skipped entirely; a skipped row means an already-
@@ -64,72 +75,18 @@ async function getExistingGithubUrls(): Promise<Set<string>> {
       // that up then falls to detect-duplicates, which can archive the wrong row.
       .order('id', { ascending: true })
       .range(from, from + PAGE - 1)
-    if (error) throw new Error(`Failed to load existing github_urls at offset ${from}: ${error.message}`)
+    if (error) throw new Error(`Failed to load dedupe sets at offset ${from}: ${error.message}`)
     if (!data || data.length === 0) break
-    urls.push(...data.map(s => s.github_url?.toLowerCase()))
+    for (const s of data) {
+      if (s.slug) sets.slugs.add(s.slug)
+      if (s.github_url) sets.urls.add(s.github_url.toLowerCase())
+      if (s.npm_package) sets.npmPkgs.add(s.npm_package)
+      if (s.pip_package) sets.pipPkgs.add(s.pip_package)
+    }
     if (data.length < PAGE) break
     from += PAGE
   }
-  return new Set(urls)
-}
-
-async function getExistingSlugs(): Promise<Set<string>> {
-  const slugs: string[] = []
-  let from = 0
-  const PAGE = 1000
-  while (true) {
-    const { data, error } = await supabase
-      .from('servers')
-      .select('slug')
-      .order('id', { ascending: true })
-      .range(from, from + PAGE - 1)
-    if (error) throw new Error(`Failed to load existing slugs at offset ${from}: ${error.message}`)
-    if (!data || data.length === 0) break
-    slugs.push(...data.map(s => s.slug))
-    if (data.length < PAGE) break
-    from += PAGE
-  }
-  return new Set(slugs)
-}
-
-async function getExistingNpmPackages(): Promise<Set<string>> {
-  const pkgs: string[] = []
-  let from = 0
-  const PAGE = 1000
-  while (true) {
-    const { data, error } = await supabase
-      .from('servers')
-      .select('npm_package')
-      .not('npm_package', 'is', null)
-      .order('id', { ascending: true })
-      .range(from, from + PAGE - 1)
-    if (error) throw new Error(`Failed to load existing npm_packages at offset ${from}: ${error.message}`)
-    if (!data || data.length === 0) break
-    pkgs.push(...data.map(s => s.npm_package))
-    if (data.length < PAGE) break
-    from += PAGE
-  }
-  return new Set(pkgs)
-}
-
-async function getExistingPipPackages(): Promise<Set<string>> {
-  const pkgs: string[] = []
-  let from = 0
-  const PAGE = 1000
-  while (true) {
-    const { data, error } = await supabase
-      .from('servers')
-      .select('pip_package')
-      .not('pip_package', 'is', null)
-      .order('id', { ascending: true })
-      .range(from, from + PAGE - 1)
-    if (error) throw new Error(`Failed to load existing pip_packages at offset ${from}: ${error.message}`)
-    if (!data || data.length === 0) break
-    pkgs.push(...data.map(s => s.pip_package))
-    if (data.length < PAGE) break
-    from += PAGE
-  }
-  return new Set(pkgs)
+  return sets
 }
 
 // ---- GitHub Discovery ----
@@ -556,12 +513,12 @@ async function main() {
     console.log(new Date().toISOString())
 
     // Load existing data
-    const [existingUrls, existingSlugs, existingNpmPkgs, existingPipPkgs] = await Promise.all([
-      getExistingGithubUrls(),
-      getExistingSlugs(),
-      getExistingNpmPackages(),
-      getExistingPipPackages(),
-    ])
+    const {
+      urls: existingUrls,
+      slugs: existingSlugs,
+      npmPkgs: existingNpmPkgs,
+      pipPkgs: existingPipPkgs,
+    } = await getDedupeSets()
     console.log(`Existing: ${existingUrls.size} GitHub URLs, ${existingSlugs.size} slugs, ${existingNpmPkgs.size} npm, ${existingPipPkgs.size} pip\n`)
 
     let totalInserted = 0

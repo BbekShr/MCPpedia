@@ -266,11 +266,22 @@ async function getTrendingServers() {
     .slice(0, 15)
 }
 
+/**
+ * Advisories worth alerting on — windowed on DISCOVERY time, not publish time.
+ *
+ * `published_at` is OSV's date, which is only a proxy for "new to us" while
+ * every server is rescanned every day or two. compute-scores now rotates the
+ * fleet on a staleness window, so a CVE published the morning after a server's
+ * scan isn't seen until that server comes round again — by which point its
+ * `published_at` can already be older than this cutoff and the alert would be
+ * silently dropped, exactly when it matters most. `created_at` is the row's
+ * insert time, i.e. the moment MCPpedia learned about it.
+ */
 async function getSecurityAlerts() {
   const { data, error } = await supabase
     .from('security_advisories')
     .select('id, cve_id, severity, title, description, published_at, server_id, servers(slug, name)')
-    .gte('published_at', daysAgo(7))
+    .gte('created_at', daysAgo(7))
     .in('severity', ['critical', 'high'])
     .order('published_at', { ascending: false })
     .limit(10)
