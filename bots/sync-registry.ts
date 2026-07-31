@@ -22,15 +22,31 @@ interface RegistryServer {
   description?: string
   repository?: { url: string; source: string }
   version_detail?: { version: string }
+  // The registry renamed both of these fields. The payload the API serves today
+  // (schema 2025-07-09) uses `registryType` + `identifier`; older entries used
+  // `registry_name` + `name`. Reading only the old pair silently imported every
+  // registry server with npm_package/pip_package = null, which then costs the
+  // listing its adoption signal and its install config.
   packages?: Array<{
-    registry_name: string
-    name: string
-    version: string
+    registryType?: string
+    registry_name?: string
+    identifier?: string
+    name?: string
+    version?: string
   }>
   remotes?: Array<{
     transport: string[]
     url: string
   }>
+}
+
+/** Package identifier for a registry ecosystem, across both payload shapes. */
+function findPackageIdentifier(
+  packages: RegistryServer['packages'],
+  registry: string
+): string | undefined {
+  const hit = packages?.find(p => (p.registryType ?? p.registry_name) === registry)
+  return hit?.identifier ?? hit?.name
 }
 
 function slugify(name: string): string {
@@ -125,8 +141,8 @@ async function main() {
 
   for (const rs of registryServers) {
     const githubUrl = normalizeGithubUrl(rs.repository?.url)
-    const npmPackage = normalizePackageName(rs.packages?.find(p => p.registry_name === 'npm')?.name)
-    const pipPackage = normalizePackageName(rs.packages?.find(p => p.registry_name === 'pypi')?.name)
+    const npmPackage = normalizePackageName(findPackageIdentifier(rs.packages, 'npm'))
+    const pipPackage = normalizePackageName(findPackageIdentifier(rs.packages, 'pypi'))
     const transport = rs.remotes?.flatMap(r => r.transport) || ['stdio']
 
     // Check if already synced
