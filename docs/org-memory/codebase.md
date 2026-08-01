@@ -6,6 +6,11 @@ falsified; promote hardened facts to CLAUDE.md via human-approved PR. Keep ~120 
 
 ## Gates & environment
 
+- 2026-08-01 (S58): **Supersedes the 2026-07-16 bootstrap baseline below, which is stale.** The
+  green bar on this branch is `npx tsc --noEmit` (0 errors), `npm run lint` (0 errors, **1**
+  warning), `npm test` (**186** in ~1.2s across **13** files). The single lint warning is the
+  load-bearing `app/admin/page.tsx:245` directive (S2/S7). Anyone using "97 tests / 11 warnings"
+  as a regression check is comparing against the wrong figures.
 - 2026-07-16 (bootstrap): The full local bar is green on main — `npx tsc --noEmit` (0 errors),
   `npm run lint` (0 errors, 11 warnings), `npm test` (97/97 in ~1.2s across 9 files).
 - 2026-07-17 (S1): CI (`.github/workflows/ci.yml`) runs typecheck → lint → test → build. The
@@ -300,3 +305,85 @@ _(record "audited <ground> under <lens>: clean" entries here so discovery skips 
 - 2026-08-01 (S59): `bots/lib/categorize.ts:325` never returns an empty array (`['other']` fallback) and costs **zero API calls** (pure keyword matching, no LLM). So any categorize walk converges and repeated operator clicks are safe and cheap.
 - 2026-08-01 (S59): **An SSE client that treats stream-end as success cannot see a `maxDuration` kill.** `app/admin/page.tsx`'s reader loop broke on `done` and re-enabled the button, leaving `catResult` null and the progress bar frozen — server-side bounding alone does not fix this; the client must track whether a terminal (`done`/`error`) frame actually arrived. Applies to any future SSE route written this way.
 - 2026-08-01 (S59): **`maxDuration` above the Vercel Hobby ceiling fails the VERCEL build, not the local one** — it would block all deploys off `main` (the S50 incident shape). It IS checkable locally without deploying: `.next/server/functions-config-manifest.json` carries the compiled per-route value. 60 is legal on every plan; grep that artifact rather than trusting the source export.
+
+## Advisories & the OSV scan path (2026-08-01, S51)
+
+- 2026-08-01 (S51): **`scan_status: 'failed'` does NOT imply an empty advisory array.** `anyFailed` ORs the npm and PyPI query statuses (`lib/scoring.ts:853`) while `collectAdvisories` processes whichever `osvResults` entry is non-null (`:315-316`), so a DUAL-PACKAGE server whose npm query succeeds and PyPI query fails returns `'failed'` WITH real advisories. Any "on failure there's nothing to write" shortcut is wrong for that shape.
+- 2026-08-01 (S51): **The advisory upsert is a CLOSING operation, not only an appending one.** `collectAdvisories` sets `status: fixedEvent?.fixed ? 'fixed' : 'open'` (`lib/scoring.ts:309`) and the upsert uses `ignoreDuplicates:false` on `(server_id, cve_id)`, so an upsert can flip an existing `open` row to `fixed`. "Upsert-only is safe" is FALSE for this table — a `scanStatus === 'failed'` guard must sit above the upsert, not merely above the `.update()`.
+- 2026-08-01 (S51): **`scan_status: 'pending'` is USER-reachable, not a bot-only state.** With both packages null `scanSecurity` issues zero OSV queries (`lib/scoring.ts:849-854`), and `app/s/[slug]/edit/page.tsx:157,264-272` lets a maintainer write `npm_package` straight from the browser under the blanket RLS policy. Treat `'pending'` as "no evidence", never as "cleared", on any user-triggered path. This is why `lib/advisories.ts` takes a required `closeOn` policy: routes pass `'success'`, only the unattended bot passes `'success-or-pending'`.
+- 2026-08-01 (S51): **`/s/[slug]` renders open-CVE counts from the advisory ROWS, not from `servers.cve_count`** — `components/server/Hero.tsx:36` filters `status === 'open'` while `components/server/SecurityPanel.tsx:138` reads `server.cve_count`. A writer that updates one without the other makes a single page contradict itself. `home_stats.open_cves`, `/security`, the homepage feed and `daily_metrics.open_cves` all follow the rows.
+- 2026-08-01 (S51): `security_advisories` carries **only a SELECT RLS policy** (`20260402010000_scores_security_registry.sql:58-61`) and has **no audit trigger** — every write is service-role-only and unattributed. `refresh-score` stamps `score_computed_at` (`route.ts:171`), removing the row from `bots/compute-scores.ts`'s stale filter for `SCORE_STALE_DAYS` = 7, so "the bot will fix it tomorrow" is false for anything that route touches.
+- 2026-08-01 (S51): After this cycle there is exactly ONE advisory writer, `lib/advisories.ts`; every other `security_advisories` touch in `app/`/`bots/`/`lib/` is a read. The exception is `scripts/apply-classifications.ts:263` (hand-curation), whose curated `severity`/`status` are silently clobbered by the next scan's upsert — pre-existing, unfiled.
+
+## Build & gate recipes (2026-08-01, S51)
+
+- 2026-08-01 (S51): **`env -u VAR npm run build` does NOT suppress `.env.local` — it ENABLES it.** `@next/env` skips a dotenv key only when that key is already defined in the initial process env, so unsetting it hands control back to the dotenv file. Measured three ways: plain and `env -u` both yield the real 40-char Supabase URL; only empty-string assignment yields `''`. **The only correct env-less recipe is `NEXT_PUBLIC_SUPABASE_URL= NEXT_PUBLIC_SUPABASE_ANON_KEY= SUPABASE_SERVICE_ROLE_KEY= SUPABASE_URL= npm run build`.** Using the wrong one costs real Supabase egress against the 5 GB free-plan ceiling.
+- 2026-08-01 (S51): **Cheap post-hoc proof a build was truly env-less:** `.next/prerender-manifest.json` must show 0 `/s/` and 0 `/compare/` routes while `/blog` (~62) and `/skills` (~91) still enumerate — those two are the only DB-derived param sets. Env-less totals this run: 259 static pages / 210 manifest routes in ~14s. (Supersedes the older "262 pages" figure.)
+- 2026-08-01 (S51): `lib/advisories.ts` is runtime-dependency-free — its `./scoring` imports are `import type` only — so it can be loaded standalone via `node_modules/jiti` from a scratchpad `.cjs` with a fake recording client. The repo has no `tsx`/`ts-node`; `jiti`, `tsc` and `vitest` are the available loaders. This is how the `scanStatus`/`closeOn` policy matrix was verified empirically without adding a repo file.
+
+## Registry sync & the MCP registry API (2026-08-01, S58)
+
+- 2026-08-01 (S58): The official registry serves schema `2025-12-11` at
+  `https://registry.modelcontextprotocol.io/v0.1/servers?version=latest`. The server object has
+  **no `id`** — the only stable identity is the bare `name` (e.g. `ac.inference.sh/mcp`), which
+  `servers.registry_id` now stores. `version` is flat (not `version_detail.version`);
+  `remotes[].type` is a STRING (not `transport: string[]`); `packages[]` uses
+  `registryType`/`identifier`; and `_meta["io.modelcontextprotocol.registry/official"]` carries
+  `status` + `isLatest`. Measured over 180-240 live records: page size 30, status distribution
+  `{active: 178, deprecated: 2}`, `isLatest === false` NEVER appears under `?version=latest`,
+  transports skew http ~135 / stdio ~48 / sse ~4, and ~25% of records carry a mappable npm/pip
+  package. A future run showing a non-empty `unmappedTransports` or any `not-latest` skip is
+  genuine upstream drift.
+- 2026-08-01 (S58): **The registry's stdio signal lives at `packages[].transport = {"type":"stdio"}`,
+  not in `remotes[]`.** Missing this is why the old parser defaulted everything to `['stdio']`.
+- 2026-08-01 (S58): Roughly **half of live registry records carry no `repository.url`** (3 of 6 in
+  `lib/__tests__/fixtures/registry-servers.json`). Combined with `main`'s dead `registry_id` fast
+  path, `main` inserts a duplicate row per repo-less entry per night up to `slug-4`. The repo-less
+  case is the MAJORITY path in this bot, not an edge case.
+- 2026-08-01 (S58): `bots/sync-registry.ts` is the **sole writer** of `servers.registry_id` and
+  `registry_verified` in the whole repo — every other hit is a read (`lib/types.ts:79,81`,
+  `components/server/Hero.tsx:175`, `components/server/ScorePanel.tsx:94`). Registry-identity
+  reasoning only has to trace one file.
+- 2026-08-01 (S58): The `is_archived` read filters in `bots/sync-registry.ts` are **asymmetric on
+  purpose**: filter on the `registry_id` map read, NONE on the two `github_url` reads. Filtering
+  both drops still-listed archived servers into the INSERT branch (the slug probe has no archived
+  filter either) and resurrects them as `-2`/`-3`/`-4` night after night; filtering neither binds
+  registry identities to invisible duplicate rows, because `bots/detect-duplicates.ts:255` archives
+  by setting `is_archived` ALONE (the row keeps `github_url`/`registry_id`) and
+  `lib/curated-merge.ts` `CURATED_FIELDS` does not carry `registry_id` to the keeper. Two S58
+  review rounds each broke one half of this. `is_archived` has four independent writers:
+  `detect-duplicates.ts:255`, `update-metadata.ts:122`, `check-broken-links.ts:88`,
+  `app/api/admin/archive/route.ts:45` — and an archived row often has NO live twin.
+- 2026-08-01 (S58): `servers.registry_id` has **no index and no unique constraint**
+  (`supabase/migrations/20260402010000_scores_security_registry.sql:28`, plain nullable `text`), and
+  `servers.github_url` has **no index of any kind** (the trigram indexes at
+  `20260417210424_hot_query_indexes.sql:10-18` cover only `name`/`tagline`/`description`). So
+  `.ilike('github_url','%…%')` is a full seq scan of ~63k rows per call, and "two live rows share
+  one registry_id" is a silent self-perpetuating state rather than a caught error — `new Map(...)`
+  resolves the collision by whichever UUID sorts last. See S61.
+
+## Language & tooling traps (2026-08-01, S58)
+
+- 2026-08-01 (S58): A `Record<string, X>` **object-literal** lookup keyed by untrusted input returns
+  inherited members, and TypeScript types the result as `X`: `MAP['constructor']` is truthy and
+  passes an `if (hit)` guard. Any string→enum map fed by third-party text needs `Object.hasOwn` or
+  `Object.create(null)`. Found live in `deriveTransports` — a hostile `remotes[].type: "constructor"`
+  wrote `{NULL}` into the `transport` text[].
+- 2026-08-01 (S58): The prototype guard is only half the fix — the **fallback** is the other half.
+  "No type string was read" and "nothing was declared" are different facts, and only the second
+  justifies defaulting to `['stdio']`. Defaulting on the first fabricates a LOCAL server for a
+  remote-only entry, worth +4 in BOTH scorers (`lib/scoring.ts:1104`,
+  `20260402010000_scores_security_registry.sql:155`), invisible to a package-based drift guard.
+- 2026-08-01 (S58): The Supabase JS client **resolves rather than throws** on a failed `.update()`,
+  so a bot that does not destructure `error` reports optimistic counters as fact. `sync-registry`
+  reported up to ~39k "updated" per night with no evidence any write landed. See S66.
+- 2026-08-01 (S58): `npx tsx -e` cannot run top-level `await` (esbuild emits CJS and hard-errors),
+  and a scratch `.ts` under the session scratchpad is outside the repo's `type: module` scope so it
+  fails identically. Wrap probe scripts in `async function main(){...} main()`, or use `.mts`.
+  Vitest 4 also swallows `console.log` by default — `--silent=false --reporter=verbose` to see it.
+- 2026-08-01 (S58): Bot logic becomes testable by extracting the **decision** into `lib/`, not by
+  restructuring the bot: every bot builds an admin client and calls `main()` at module scope, so it
+  cannot be imported. `lib/registry-schema.ts` is the first testable seam in the bot fleet (which
+  previously had zero coverage), following the `lib/curated-merge.ts` ← `bots/detect-duplicates.ts`
+  precedent. `app/api/admin/bots/route.ts` references bots by string workflow name, never by import,
+  so bot-adjacent `lib/` modules stay out of the `next build` surface — re-confirm per commit.

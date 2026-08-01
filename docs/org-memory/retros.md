@@ -81,3 +81,41 @@ One line per cycle: `- YYYY-MM-DD <ID>: <friction observed> → <action or M-row
   ceiling and would fail the VERCEL build — invisible to a local build, and exactly the S50 deploy-block
   shape. Lowering to 60 cost nothing because the run is idempotent. Good catch by the agent, and the
   right instinct to flag rather than silently ship.
+- 2026-08-01 (S51, advisory reconcile helper): shipped clean, but TWO of the three CONFIRMED defects were
+  my own dispatch errors, the same failure mode as the S58 cycle immediately before it. (1) I told the
+  architect to place the `scanStatus === 'failed'` early return AFTER the upsert loop, justified by a
+  claim I did not verify — that `scanSecurity` returns no advisories on failure. It is false for
+  dual-package servers, and worse, the upsert itself can CLOSE a row (`status: adv.status` +
+  `ignoreDuplicates:false`), so the ordering I specified made "never close on a failed scan" unachievable.
+  The implementer flagged the drift honestly and implemented as instructed, which is correct behavior —
+  the error was mine to catch. (2) I approved reconciliation on `scan_status: 'pending'` by importing
+  S33's "the package was cleared by a bot" assumption into a user-triggered route, where a maintainer can
+  clear the package themselves and choose the target; the security lens traced it to a full CVE-suppression
+  chain. Lessons: (a) when a plan's justification contains a factual claim about OTHER code ("X returns
+  empty on failure"), that claim is a research question, not a design premise — verify it or mark it
+  unverified in the dispatch; (b) porting a guard between an unattended and a user-triggered caller
+  requires re-asking who can reach each input state, because the same predicate has different trust
+  properties on the two paths; (c) the review board caught the CEO twice in two cycles — that is the
+  system working, and it argues for keeping three lenses on anything touching a public trust signal even
+  when the diff looks small. Also: I overruled the implementer's `process.exitCode = 1` addition, whose
+  general principle was right but which would have pinned the nightly bot red via a known-reachable
+  trigger (S68) — filed as M10 rather than settled by fiat. Process note: two consecutive cycles opened by
+  finding badly stale backlog statuses; filed as M11.
+- 2026-08-01 (S58, registry schema drift): the cycle's lesson is about REVIEW CONVERGENCE, not the
+  bug. Round 1 review found 13 CONFIRMED issues; the fix commit introduced 4 NEW ones; that fix
+  introduced 4 MORE — all three rounds concentrated in the same area, the existing-row
+  LINKING/identity logic, which touches four independent `is_archived` writers, a 9-URL monorepo
+  allow-list, and a missing unique index. Two of the new defects were caused by MY OWN dispatch
+  instructions (I specified `isIngestable` as a deny-list and then wrote allow-list semantics; I
+  ordered `.eq('is_archived', false)` onto reads where it turned archived servers into a nightly
+  re-insert loop). Rather than iterate a fourth time I CUT SCOPE: deleted the linking rework
+  wholesale, kept the schema-parse fix, and filed the deferred pieces as S63–S65/S67. Lessons:
+  (1) when successive fix rounds keep producing new defects in one area, that area is the finding —
+  stop fixing and split it out; (2) a scope reduction is a much safer final round than another
+  feature round because it DELETES code, and it converged first try; (3) the right question to ask
+  the last reviewer is not "is this correct?" but "is this strictly safe relative to `main`?" —
+  that reframing is what made the ship/no-ship call obvious, and it surfaced that `main` itself
+  inserts a duplicate row nightly for the ~50% of registry entries that have no `repository.url`;
+  (4) writing a CEO decision into a dispatch does not make it right — both of my bad instructions
+  were stated confidently and implemented faithfully, and only an adversarial reviewer caught them,
+  so "the reviewer checks the CEO too" is load-bearing, not ceremony.
