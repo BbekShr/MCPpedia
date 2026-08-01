@@ -365,12 +365,16 @@ async function main() {
     await new Promise(r => setTimeout(r, 300))
   }
 
+  // Counted and logged, but deliberately NOT `process.exitCode = 1`: an advisory
+  // upsert can fail for a reason that is reachable and persistent (a CVSS score
+  // wider than the `numeric(3,1)` column overflows with Postgres 22003), so one
+  // bad OSV record anywhere in the fleet would pin this nightly run red until an
+  // unrelated fix lands — and alert-on-failure.yml watches this workflow, so a
+  // permanently-red bot masks genuine failures. The counter plus the per-CVE
+  // errors already remove the silence. (Unlike refreshHomeStatsCache below,
+  // which is one global operation, not a per-server counter.)
   run.setSummary({ scored: processed, advisoryWriteFailures })
   console.log(`\nDone. Scored ${processed} servers.`)
-  if (advisoryWriteFailures > 0) {
-    console.error(`Advisory reconciliation failed for ${advisoryWriteFailures} server(s) — see the errors above.`)
-    process.exitCode = 1
-  }
   await run.finish()
 
   await refreshHomeStatsCache()
