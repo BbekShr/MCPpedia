@@ -1,0 +1,213 @@
+{
+  "servers": [
+    {
+      "server": {
+        "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+        "name": "ac.inference.sh/mcp",
+        "description": "run any ai model. compose agents, stack knowledge, connect tools. one api, pay per run.",
+        "title": "inference.sh",
+        "version": "2.0.1",
+        "remotes": [
+          {
+            "type": "streamable-http",
+            "url": "https://api.inference.sh/mcp"
+          }
+        ]
+      },
+      "_meta": {
+        "io.modelcontextprotocol.registry/official": {
+          "status": "active",
+          "statusChangedAt": "2026-07-27T10:44:51.359634Z",
+          "publishedAt": "2026-07-27T10:44:51.359634Z",
+          "updatedAt": "2026-07-27T10:44:51.359634Z",
+          "isLatest": true
+        }
+      }
+    },
+    {
+      "server": {
+        "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+        "name": "agency.kesey/pretrip",
+        "description": "Screen regulated-health marketing copy against source-cited rulesets, all 50 states.",
+        "title": "Pre-Trip compliance scanner",
+        "version": "1.0.1",
+        "websiteUrl": "https://scan.kesey.agency/developers/",
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "pretrip-mcp",
+            "version": "1.0.1",
+            "transport": {
+              "type": "stdio"
+            }
+          }
+        ]
+      },
+      "_meta": {
+        "io.modelcontextprotocol.registry/official": {
+          "status": "active",
+          "statusChangedAt": "2026-07-26T18:03:21.463557Z",
+          "publishedAt": "2026-07-26T18:03:21.463557Z",
+          "updatedAt": "2026-07-26T18:03:21.463557Z",
+          "isLatest": true
+        }
+      }
+    },
+    {
+      "server": {
+        "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+        "name": "ai.agenticaffiliate/affiliate-networks-mcp",
+        "description": "Affiliate network reporting in your AI client. Bring your own keys. Most adapters experimental.",
+        "title": "Affiliate Networks MCP",
+        "repository": {
+          "url": "https://github.com/bobberrisford/affiliatemcp",
+          "source": "github"
+        },
+        "version": "0.19.0",
+        "websiteUrl": "https://agenticaffiliate.ai",
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "affiliate-networks-mcp",
+            "version": "0.19.0",
+            "runtimeHint": "npx",
+            "transport": {
+              "type": "stdio"
+            }
+          }
+        ],
+        "remotes": [
+          {
+            "type": "streamable-http",
+            "url": "https://mcp.agenticaffiliate.ai/mcp"
+          }
+        ]
+      },
+      "_meta": {
+        "io.modelcontextprotocol.registry/official": {
+          "status": "active",
+          "statusChangedAt": "2026-07-29T07:26:14.414867Z",
+          "publishedAt": "2026-07-29T07:26:14.414867Z",
+          "updatedAt": "2026-07-29T07:26:14.414867Z",
+          "isLatest": true
+        }
+      }
+    },
+    {
+      "server": {
+        "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
+        "name": "ai.agentrapay/agentra",
+        "description": "Identity oracle and trust layer for autonomous AI agents. Bidirectional KYA and trust scoring.",
+        "repository": {},
+        "version": "1.0.0",
+        "remotes": [
+          {
+            "type": "sse",
+            "url": "https://api.agentrapay.ai/mcp"
+          }
+        ]
+      },
+      "_meta": {
+        "io.modelcontextprotocol.registry/official": {
+          "status": "active",
+          "statusChangedAt": "2026-03-22T18:16:07.628131Z",
+          "publishedAt": "2026-03-22T18:16:07.628131Z",
+          "updatedAt": "2026-03-22T18:16:07.628131Z",
+          "isLatest": true
+        }
+      }
+    },
+    {
+      "server": {
+        "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+        "name": "ai.anomalyarmor/armor-mcp",
+        "description": "Data observability tools for engineering teams: alerts, freshness, schema drift, lineage, quality.",
+        "title": "AnomalyArmor",
+        "repository": {
+          "url": "https://github.com/anomalyarmor/agents",
+          "source": "github",
+          "subfolder": "armor-mcp"
+        },
+        "version": "0.6.1",
+        "websiteUrl": "https://www.anomalyarmor.ai",
+        "packages": [
+          {
+            "registryType": "pypi",
+            "identifier": "armor-mcp",
+            "version": "0.6.1",
+            "transport": {
+              "type": "stdio"
+            },
+            "environmentVariables": [
+              {
+                "description": "AnomalyArmor API key (aa_live_*). Generate at https://app.anomalyarmor.ai/settings/api-keys.",
+                "isRequired": true,
+                "isSecret": true,
+                "name": "ARMOR_API_KEY"
+              }
+            ]
+          }
+        ],
+        "remotes": [
+          {
+            "type": "streamable-http",
+            "url": "https://mcp.anomalyarmor.ai/mcp"
+          }
+        ]
+      },
+      "_meta": {
+        "io.modelcontextprotocol.registry/official": {
+          "status": "active",
+          "statusChangedAt": "2026-04-18T00:51:37.350253Z",
+          "publishedAt": "2026-04-18T00:51:37.350253Z",
+          "updatedAt": "2026-04-18T00:51:37.350253Z",
+          "isLatest": true
+        }
+      }
+    },
+    {
+      "server": {
+        "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+        "name": "io.github.kaitoInfra/twitterapi-io-mcp-server",
+        "description": "Official MCP server for twitterapi.io — Twitter/X data (tweets, users, followers, trends).",
+        "repository": {
+          "url": "https://github.com/kaitoInfra/twitterapi-io-mcp-server",
+          "source": "github"
+        },
+        "version": "0.1.2",
+        "packages": [
+          {
+            "registryType": "npm",
+            "identifier": "@kaitoinfra/twitterapi-io-mcp-server",
+            "version": "0.1.2",
+            "transport": {
+              "type": "stdio"
+            },
+            "environmentVariables": [
+              {
+                "description": "Your twitterapi.io API key — get from https://twitterapi.io dashboard",
+                "isRequired": true,
+                "format": "string",
+                "isSecret": true,
+                "name": "TWITTERAPI_IO_API_KEY"
+              }
+            ]
+          }
+        ]
+      },
+      "_meta": {
+        "io.modelcontextprotocol.registry/official": {
+          "status": "active",
+          "statusChangedAt": "2026-05-23T11:59:30.349415Z",
+          "publishedAt": "2026-05-23T11:59:30.349415Z",
+          "updatedAt": "2026-05-23T11:59:30.349415Z",
+          "isLatest": true
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "nextCursor": "ai.agentrapay/agentra:1.0.0",
+    "count": 25
+  }
+}
