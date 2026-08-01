@@ -43,11 +43,19 @@ export async function POST(request: Request) {
   // (>=AUTO_APPROVE_EDITS_THRESHOLD prior approvals) editing a low-risk field
   // get an instant write — the proposal still gets recorded as 'approved' so
   // the history page shows it, just without the pending → approved transition.
-  const { data: profile } = await supabase
+  const { data: profile, error: profileErr } = await supabase
     .from('profiles')
     .select('username, role')
     .eq('id', user.id)
     .single()
+
+  if (profileErr) {
+    // Fail closed, exactly like the trust count below: without the profile we
+    // cannot tell a privileged role from a stranger, and `profile` being null
+    // would otherwise fall straight through to the count branch and auto-apply.
+    // The edit queues for moderation, which is a working outcome.
+    console.error('edit profile read failed; queuing for review:', profileErr.code, profileErr.message)
+  }
 
   const isPrivilegedRole = profile?.role === 'editor' || profile?.role === 'maintainer' || profile?.role === 'admin'
   const isLowRisk = (LOW_RISK_FIELDS as readonly string[]).includes(data.field_name)
@@ -64,12 +72,24 @@ export async function POST(request: Request) {
   // complete even if that policy is later tightened to owner-only, and it keeps
   // service-role usage confined to the two writes that genuinely need a bypass.
   let meetsTrustThreshold = false
-  if (isLowRisk && !isPrivilegedRole) {
+  if (isLowRisk && !isPrivilegedRole && !profileErr) {
+    // `reviewed_by is not null` is what keeps the trust count from feeding
+    // itself: this route's own auto-approved insert writes status 'approved'
+    // with `reviewed_by: null`, so an unfiltered count would let every edit it
+    // waves through raise the very threshold that authorized it — trust would
+    // become self-sustaining and irrevocable, since abusive edits never queue
+    // for a moderator to act on. The count must be of approvals granted by
+    // SOMEONE ELSE (approve-edit/route.ts:125 stamps `reviewed_by: user.id`),
+    // never of rows this route minted for the caller. No legitimate user is
+    // demoted by it: reaching the threshold requires three prior approvals, and
+    // the first three necessarily came from a moderator. It also stops an edit
+    // stranded at 'approved' by a failed revert below from inflating the gate.
     const { count, error: countErr } = await supabase
       .from('edits')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .eq('status', 'approved')
+      .not('reviewed_by', 'is', null)
     if (countErr) {
       // Fail closed: the edit queues for moderation, which is a working outcome.
       console.error('edit trust count failed; queuing for review:', countErr.code, countErr.message)
@@ -77,7 +97,7 @@ export async function POST(request: Request) {
       meetsTrustThreshold = (count ?? 0) >= AUTO_APPROVE_EDITS_THRESHOLD
     }
   }
-  const shouldAutoApprove = isLowRisk && (isPrivilegedRole || meetsTrustThreshold)
+  const shouldAutoApprove = !profileErr && isLowRisk && (isPrivilegedRole || meetsTrustThreshold)
 
   const status: 'pending' | 'approved' = shouldAutoApprove ? 'approved' : 'pending'
 
@@ -146,6 +166,13 @@ export async function POST(request: Request) {
         .eq('id', edit.id)
       if (revertErr) {
         console.error('auto-approve revert failed; edit left approved:', revertErr.code, revertErr.message)
+        // Do NOT claim it was queued: the row is still 'approved', and the
+        // moderation queue only shows and counts 'pending' rows
+        // (app/admin/page.tsx:207-210,630), so no moderator can ever see it.
+        return NextResponse.json(
+          { error: 'Auto-apply failed and the edit could not be re-queued; it was recorded but not applied and needs operator attention' },
+          { status: 500 },
+        )
       }
       return NextResponse.json({ error: 'Auto-apply failed; edit queued for review' }, { status: 500 })
     }

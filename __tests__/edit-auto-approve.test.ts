@@ -47,6 +47,7 @@ function makeBuilder(client: ClientKind, table: string) {
     insert(...args: unknown[]) { writeOp = 'insert'; return builder._record('insert', args) },
     update(...args: unknown[]) { writeOp = 'update'; return builder._record('update', args) },
     eq(...args: unknown[]) { return builder._record('eq', args) },
+    not(...args: unknown[]) { return builder._record('not', args) },
     single() { return resolveFor(`${table}:${writeOp ?? 'single'}`) },
     then(resolve: (value: unknown) => unknown) {
       return resolveFor(`${table}:${writeOp ?? 'await'}`).then(resolve)
@@ -235,6 +236,66 @@ describe('POST /api/edit — auto-approve client routing', () => {
     expect(inserts[0].client).toBe('authed')
     expect(inserts[0].args[0]).toMatchObject({ status: 'pending' })
     expect(serversUpdated()).toHaveLength(0)
+  })
+
+  // The other half of the `isLowRisk` gate: every case above posts 'tagline', so a
+  // refactor dropping isLowRisk from shouldAutoApprove would let a privileged role
+  // push an npm_package swap through the service role with the suite still green.
+  it('never auto-approves a NON-low-risk field, even for a privileged role', async () => {
+    queued['profiles:single'] = { role: 'admin', username: 'eve' }
+
+    const res = await postEdit('npm_package')
+    expect(res.status).toBe(201)
+
+    const inserts = editInserts()
+    expect(inserts).toHaveLength(1)
+    expect(inserts[0].client).toBe('authed')
+    expect(inserts[0].args[0]).toMatchObject({ status: 'pending' })
+    expect(serversUpdated()).toHaveLength(0)
+    expect(adminClientArgs).toEqual([])
+  })
+
+  // The trust count must exclude this route's own self-issued approvals
+  // (status 'approved' with reviewed_by null), or auto-approve feeds itself.
+  it('counts only moderator-reviewed approvals toward the trust threshold', async () => {
+    await postEdit()
+
+    const countRead = calls.findIndex(
+      c => c.table === 'edits' && c.op === 'select' && (c.args[1] as { count?: string } | undefined)?.count,
+    )
+    expect(countRead).toBeGreaterThanOrEqual(0)
+    expect(calls).toContainEqual({
+      client: 'authed',
+      table: 'edits',
+      op: 'not',
+      args: ['reviewed_by', 'is', null],
+    })
+  })
+
+  it('stays pending when only self-issued approvals exist', async () => {
+    queuedCounts = { 'edits:await': 0 }
+
+    const res = await postEdit()
+    expect(res.status).toBe(201)
+
+    const inserts = editInserts()
+    expect(inserts[0].client).toBe('authed')
+    expect(inserts[0].args[0]).toMatchObject({ status: 'pending' })
+    expect(serversUpdated()).toHaveLength(0)
+  })
+
+  it('fails CLOSED when the profile read errors', async () => {
+    queuedErrors['profiles:single'] = { code: '57014', message: 'statement timeout' }
+    queuedCounts = { 'edits:await': 3 }
+
+    const res = await postEdit()
+    expect(res.status).toBe(201)
+
+    const inserts = editInserts()
+    expect(inserts[0].client).toBe('authed')
+    expect(inserts[0].args[0]).toMatchObject({ status: 'pending' })
+    expect(serversUpdated()).toHaveLength(0)
+    expect(console.error).toHaveBeenCalled()
   })
 
   it('rejects an anonymous caller with 401 and touches nothing', async () => {
