@@ -21,9 +21,9 @@ import type { Server } from '@/lib/types'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { unstable_cache } from 'next/cache'
+import { withRetry } from '@/lib/retry'
 import BlinkLogo from '@/components/BlinkLogo'
-
-export const revalidate = 60
 
 // Cap the reachable offset at the same 10k the public API uses
 // (app/api/v1/servers/route.ts:10). Past it Postgres has to walk the whole
@@ -55,6 +55,55 @@ export async function generateMetadata({
     ...(parsePage(params.page) > 1 ? { robots: { index: false, follow: true } } : {}),
   }
 }
+
+// Cache the listing round-trip for 1h. This page awaits `searchParams`, so it
+// is fully dynamic and a route-level `revalidate` export never applies — that
+// is why the `export const revalidate = 60` that used to sit above was inert
+// and every crawler hit ran a live anon query against the 3s statement timeout.
+//
+// `unstable_cache` keys on the stringified argument object in addition to the
+// key prefix below, so that SINGLE object must carry every input that changes
+// the result set. Adding a filter to the fetch without adding it to
+// `ServersListingParams` would serve one filter's results for another.
+//
+// Unlike /category/[category], the argument is normalized through
+// lib/servers-query.ts first: this page reads nine params, five of them
+// free-form, and an unvalidated tail would let a crawler mint unbounded cache
+// entries — defeating the cache in exactly the scenario it exists for.
+//
+// Throwing inside the cached function is what stops a transient Supabase blip
+// from pinning an empty catalog for the full hour (unstable_cache stores only
+// successful returns), and withRetry absorbs a one-off failure before the
+// caller degrades.
+//
+// Invalidation is TIME-BASED ONLY. `revalidateTag` is called nowhere in this
+// repo — the tag below exists for a future on-demand path; today the only
+// refresh is the 1h TTL. Cost of that: the header count and `totalPages` can
+// lag reality by up to an hour.
+const getServersListing = unstable_cache(
+  (params: ServersListingParams) => withRetry(() => fetchServersListing(params)),
+  ['servers-page-listing-v1'],
+  { revalidate: 3600, tags: ['servers-listing'] },
+)
+
+// Zero arguments, so ONE entry serves every filter/sort/page permutation — the
+// largest per-request win on this page. 24h matches the same snapshot's TTL on
+// / (app/page.tsx:100) and /security (app/security/page.tsx:124).
+const getServersCatalogStats = unstable_cache(
+  () =>
+    withRetry(async () => {
+      const supabase = createPublicClient()
+      const { data, error } = await supabase.rpc('home_stats')
+      if (error || !data) {
+        console.error('[servers] home_stats failed — refusing to cache', error)
+        throw new Error(`home_stats failed: ${error?.message || 'no data'}`)
+      }
+      // `home_stats()` returns a single jsonb object, never a set.
+      return data as { total_servers?: number }
+    }),
+  ['servers-page-stats-v1'],
+  { revalidate: 86400, tags: ['home-stats'] },
+)
 
 async function fetchServersListing(
   p: ServersListingParams,
@@ -170,13 +219,15 @@ export default async function ServersPage({
   if (page > MAX_PAGE) notFound()
   const offset = (page - 1) * ITEMS_PER_PAGE
 
-  const supabase = createPublicClient()
-
-  // Start the shared home_stats snapshot now so it overlaps the listing query
+  // Start the shared home_stats snapshot now so it overlaps the listing fetch
   // below instead of costing a second serial round trip (it is awaited after
-  // the branch). `supabase.rpc()` is lazy — the request only fires when the
-  // builder is `then`-ed — so wrap it to kick it off here.
-  const statsPromise = Promise.resolve(supabase.rpc('home_stats'))
+  // the branch). Unlike the listing, this one degrades SOFTLY: a missing
+  // snapshot only costs the headline number, so fall back to the live count
+  // rather than rendering the whole catalog as failed.
+  const statsPromise = getServersCatalogStats().catch(err => {
+    console.error('[servers] home_stats unavailable — falling back to the live count', err)
+    return null
+  })
 
   // An out-of-range filter value (`?status=zzz`) matches zero rows by
   // construction, so it falls through with the zero defaults: no DB round trip,
@@ -192,7 +243,7 @@ export default async function ServersPage({
   let loadFailed = false
   if (normalized.kind === 'query') {
     try {
-      const listing = await fetchServersListing(normalized.params)
+      const listing = await getServersListing(normalized.params)
       servers = listing.servers
       totalCount = listing.totalCount
     } catch (err) {
@@ -210,10 +261,10 @@ export default async function ServersPage({
   // (and badly whenever compute-scores fails to refresh the snapshot). Source
   // the catalog headline from the SAME snapshot so the numbers always agree.
   // The live `totalCount` above still drives pagination and filtered/search
-  // result counts, which must stay exact.
-  const { data: statsData } = await statsPromise
-  const catalogTotal =
-    (statsData as { total_servers?: number } | null)?.total_servers ?? totalCount
+  // result counts, which must stay exact. The snapshot is cached for 24h here,
+  // the same TTL / and /security use for it.
+  const statsData = await statsPromise
+  const catalogTotal = statsData?.total_servers ?? totalCount
 
   const hasFilters = Boolean(
     q || category || status || pricing || author || transport || minScore > 0,
