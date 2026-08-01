@@ -40,16 +40,29 @@
  * state rather than an OSV verdict: `security_advisories` has no write policy
  * for any authenticated principal, but a maintainer has blanket RLS UPDATE on
  * `servers` (20260417210403_tighten_admin_rls.sql:19-26) and the edit page
- * writes `npm_package` straight from the browser (app/s/[slug]/edit/page.tsx:157).
+ * writes `npm_package` straight from the browser (app/s/[slug]/edit/page.tsx:271).
  * Null both package columns and `scanSecurity` issues ZERO OSV queries and
- * returns `advisories: []` + 'pending' (lib/scoring.ts:849-854) — so an
- * unconditional close on 'pending' would let any maintainer erase any server's
- * public CVE record through refresh-score, whose gate is role-only.
+ * returns `advisories: []` + 'pending' (lib/scoring.ts:849-854).
  *  - 'success-or-pending' — for the unattended bot: nobody chose the moment or
  *    the target, and a package-less row genuinely cannot carry a CVE.
  *  - 'success' — for the two user-triggered routes: OSV actually answered.
  *    Still covers the case this helper exists for (OSV withdrew the entry →
  *    'success' with an empty array → close).
+ *
+ * SCOPE — what `closeOn: 'success'` does and does NOT buy. It blocks only the
+ * PACKAGE-LESS variant above: null the package columns, no OSV query runs, the
+ * scan is 'pending', the routes decline to close. It does NOT block the
+ * substituted-package variant — set `npm_package` to a vuln-free or nonexistent
+ * package and OSV answers 200 with `vulns: []` (lib/scoring.ts:61-63), so
+ * `anyFailed` is false, `hasPackageToScan` is true (:853,:894) and the scan is a
+ * genuine 'success' with `advisories: []`. Both guards pass, every open row
+ * closes, and SecurityPanel.tsx:138 renders the affirmative
+ * "0 known CVEs. N previously resolved."
+ *
+ * So this NARROWS THE TIMING, NOT THE CAPABILITY: on main the nightly bot closed
+ * those rows within <= 7 days anyway; `closeOn` only stops a user from picking
+ * the instant and doing it without any OSV query at all. The real fix is a
+ * per-server ownership check on refresh-score, filed as S69.
  *
  * Returns false if any write failed or threw, so the unattended bot can surface
  * it; the routes ignore it. Fail-soft: it never throws, because two of its
@@ -104,6 +117,17 @@ export async function reconcileAdvisories(
   try {
     // FIRST, before the upsert: a failed scan is evidence about nothing, and
     // the upsert itself writes `adv.status` and so can close a row. See header.
+    //
+    // A DELIBERATE TRADE, not a free win. On main the two routes upserted here;
+    // now a partially-failed dual-package scan (npm returns CVE-X, PyPI 502s →
+    // 'failed' with `advisories: [CVE-X]`) writes nothing, and those rows are
+    // OSV-confirmed data — the only ones it could have CLOSED are the ones OSV
+    // explicitly reported a fixed version for (lib/scoring.ts:309). So real
+    // information is briefly lost. Accepted because the loss is confined to
+    // dual-package servers during a partial OSV outage, is fully self-healing on
+    // the next successful scan (advisories are re-fetched wholesale, not
+    // incrementally), and it makes the routes match the bot, which already
+    // skipped this path on `osvFailed`.
     if (scanStatus === 'failed') return ok
 
     for (const adv of advisories) {

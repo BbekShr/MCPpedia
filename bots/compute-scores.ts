@@ -206,8 +206,10 @@ async function main() {
   const startedAt = Date.now()
 
   let processed = 0
-  // Servers whose advisory reconciliation logged an error. The helper is
-  // fail-soft by design, so this counter is the only thing that reaches the
+  // Servers whose advisory reconciliation logged an error. Broader than the
+  // name: any reconcile failure counts here — a failed upsert, the open-rows
+  // READ (lib/advisories.ts:173-176), the close, or a thrown client. The helper
+  // is fail-soft by design, so this counter is the only thing that reaches the
   // run summary.
   let advisoryWriteFailures = 0
   // Slugs whose total score shifted ≥ 2 points this run. Used after the loop
