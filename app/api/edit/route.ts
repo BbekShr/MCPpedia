@@ -79,7 +79,7 @@ export async function POST(request: Request) {
     // waves through raise the very threshold that authorized it — trust would
     // become self-sustaining and irrevocable, since abusive edits never queue
     // for a moderator to act on. The count must be of approvals granted by
-    // SOMEONE ELSE (approve-edit/route.ts:125 stamps `reviewed_by: user.id`),
+    // SOMEONE ELSE (approve-edit/route.ts:152 stamps `reviewed_by: user.id`),
     // never of rows this route minted for the caller. No legitimate user is
     // demoted by it: reaching the threshold requires three prior approvals, and
     // the first three necessarily came from a moderator. It also stops an edit

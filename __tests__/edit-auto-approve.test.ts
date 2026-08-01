@@ -272,7 +272,10 @@ describe('POST /api/edit — auto-approve client routing', () => {
     })
   })
 
-  it('stays pending when only self-issued approvals exist', async () => {
+  // Companion to the call-shape assertion above. The stub resolves counts from
+  // `queuedCounts` and so cannot distinguish a filtered read from an unfiltered
+  // one — this pins only the below-threshold branch, not the filter itself.
+  it('stays pending when the trust count is below the threshold', async () => {
     queuedCounts = { 'edits:await': 0 }
 
     const res = await postEdit()
