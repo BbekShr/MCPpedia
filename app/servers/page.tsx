@@ -3,7 +3,14 @@ import ServerCard from '@/components/ServerCard'
 import SearchBar from '@/components/SearchBar'
 import FilterBar from '@/components/FilterBar'
 import ScoreFilterPills from '@/components/ScoreFilterPills'
-import { ITEMS_PER_PAGE, PUBLIC_CARD_FIELDS, SITE_URL } from '@/lib/constants'
+import {
+  ITEMS_PER_PAGE,
+  PUBLIC_CARD_FIELDS,
+  PUBLIC_CARD_FIELD_LIST,
+  SITE_URL,
+  projectFields,
+} from '@/lib/constants'
+import { normalizeServersQuery, type ServersListingParams } from '@/lib/servers-query'
 import {
   JsonLdScript,
   generateItemListJsonLd,
@@ -49,6 +56,103 @@ export async function generateMetadata({
   }
 }
 
+async function fetchServersListing(
+  p: ServersListingParams,
+): Promise<{ servers: Server[]; totalCount: number }> {
+  const supabase = createPublicClient()
+
+  if (p.mode === 'search') {
+    // Fetch one page of search results from Supabase RPC with DB-side pagination.
+    // ALL filters (incl. min_score/transport/author) run in the RPC so
+    // pagination and hasNextPage are computed over the already-filtered set.
+    // We request one extra row to detect if there's a next page.
+    const { data, error } = await supabase.rpc('search_servers', {
+      search_query: p.q,
+      category_filter: p.category || null,
+      status_filter: p.status || null,
+      pricing_filter: p.pricing || null,
+      sort_by: p.sort,
+      page_size: ITEMS_PER_PAGE + 1,
+      page_offset: p.offset,
+      min_score_filter: p.minScore > 0 ? p.minScore : null,
+      transport_filter: p.transport || null,
+      author_filter: p.author || null,
+    })
+    if (error) {
+      console.error('[servers] search query failed', error)
+      throw new Error(`Servers search query failed: ${error.message}`)
+    }
+    // A null payload with no error used to render as a silently empty page;
+    // caching would pin that empty result set for the full TTL.
+    if (!data) throw new Error('Servers search query returned no data')
+
+    const results = data as Server[]
+    const hasNextPage = results.length > ITEMS_PER_PAGE
+    const page = results.slice(0, ITEMS_PER_PAGE)
+    // Approximate total for search: show current offset + results fetched
+    const totalCount = hasNextPage
+      ? p.offset + ITEMS_PER_PAGE + 1
+      : p.offset + page.length
+    // `search_servers` is `returns setof servers`, so its rows carry EVERY
+    // column (submitted_by/claimed_by/fts included) and no `.select()`
+    // allow-list applies to an RPC. Project before anything caches them (S30).
+    return {
+      servers: projectFields(
+        page as unknown as Record<string, unknown>[],
+        PUBLIC_CARD_FIELD_LIST,
+      ) as unknown as Server[],
+      totalCount,
+    }
+  }
+
+  // Direct query — hide archived by default
+  // `estimated` (planner row-count), NOT `exact`: an exact window-count over
+  // the ~46k-row servers table exceeds anon's 3s statement timeout, which
+  // returned `canceling statement due to statement timeout` and rendered an
+  // empty "No servers found" catalog. An approximate total is fine for paging.
+  let query = supabase
+    .from('servers')
+    .select(PUBLIC_CARD_FIELDS, { count: 'estimated' })
+    .eq('is_archived', false)
+
+  if (p.category) query = query.contains('categories', [p.category])
+  if (p.status) query = query.eq('health_status', p.status)
+  if (p.pricing) query = query.eq('api_pricing', p.pricing)
+  if (p.author) query = query.eq('author_type', p.author)
+  if (p.transport) query = query.contains('transport', [p.transport])
+  if (p.minScore > 0) query = query.gte('score_total', p.minScore)
+
+  switch (p.sort) {
+    case 'stars':
+      query = query.order('github_stars', { ascending: false })
+      break
+    case 'downloads':
+      query = query.order('npm_weekly_downloads', { ascending: false })
+      break
+    case 'commit':
+      query = query.order('github_last_commit', { ascending: false, nullsFirst: false })
+      break
+    case 'newest':
+      query = query.order('created_at', { ascending: false })
+      break
+    case 'name':
+      query = query.order('name', { ascending: true })
+      break
+    default:
+      // Default: score descending
+      query = query.order('score_total', { ascending: false })
+  }
+
+  query = query.range(p.offset, p.offset + ITEMS_PER_PAGE - 1)
+
+  const { data, count, error } = await query
+  if (error) {
+    console.error('[servers] catalog query failed', error)
+    throw new Error(`Servers catalog query failed: ${error.message}`)
+  }
+  return { servers: (data as Server[]) || [], totalCount: count || 0 }
+}
+
 export default async function ServersPage({
   searchParams,
 }: {
@@ -61,7 +165,6 @@ export default async function ServersPage({
   const pricing = params.pricing || ''
   const author = params.author || ''
   const transport = params.transport || ''
-  const sort = params.sort || ''
   const minScore = parseInt(params.min_score || '0', 10)
   const page = parsePage(params.page)
   if (page > MAX_PAGE) notFound()
@@ -75,86 +178,27 @@ export default async function ServersPage({
   // builder is `then`-ed — so wrap it to kick it off here.
   const statsPromise = Promise.resolve(supabase.rpc('home_stats'))
 
+  // An out-of-range filter value (`?status=zzz`) matches zero rows by
+  // construction, so it falls through with the zero defaults: no DB round trip,
+  // `loadFailed` stays false, and the "No servers found" panel below renders —
+  // the same output the live query produced.
+  const normalized = normalizeServersQuery(params, offset)
+
+  // Degrade instead of 500ing: the fetch THROWS on a Supabase error (the 3s
+  // statement timeout during the S20 outage) so nothing hollow is ever cached,
+  // and the "try again" panel below renders instead of an error page.
   let servers: Server[] = []
   let totalCount = 0
   let loadFailed = false
-
-  if (q) {
-    // Fetch one page of search results from Supabase RPC with DB-side pagination.
-    // ALL filters (incl. min_score/transport/author) run in the RPC so
-    // pagination and hasNextPage are computed over the already-filtered set.
-    // We request one extra row to detect if there's a next page.
-    const { data, error } = await supabase.rpc('search_servers', {
-      search_query: q,
-      category_filter: category || null,
-      status_filter: status || null,
-      pricing_filter: pricing || null,
-      sort_by: sort || 'relevance',
-      page_size: ITEMS_PER_PAGE + 1,
-      page_offset: offset,
-      min_score_filter: minScore > 0 ? minScore : null,
-      transport_filter: transport || null,
-      author_filter: author || null,
-    })
-    // Same contract as the catalog branch below: a failed RPC must be logged
-    // and surfaced as a degraded state, never rendered as "no results".
-    if (error) console.error('[servers] search query failed', error)
-    loadFailed = Boolean(error)
-    if (!error && data) {
-      const results = data as Server[]
-      const hasNextPage = results.length > ITEMS_PER_PAGE
-      servers = results.slice(0, ITEMS_PER_PAGE)
-      // Approximate total for search: show current offset + results fetched
-      totalCount = hasNextPage ? offset + ITEMS_PER_PAGE + 1 : offset + servers.length
+  if (normalized.kind === 'query') {
+    try {
+      const listing = await fetchServersListing(normalized.params)
+      servers = listing.servers
+      totalCount = listing.totalCount
+    } catch (err) {
+      console.error('[servers] listing unavailable — rendering degraded', err)
+      loadFailed = true
     }
-  } else {
-    // Direct query — hide archived by default
-    // `estimated` (planner row-count), NOT `exact`: an exact window-count over
-    // the ~46k-row servers table exceeds anon's 3s statement timeout, which
-    // returned `canceling statement due to statement timeout` and rendered an
-    // empty "No servers found" catalog. An approximate total is fine for paging.
-    let query = supabase
-      .from('servers')
-      .select(PUBLIC_CARD_FIELDS, { count: 'estimated' })
-      .eq('is_archived', false)
-
-    if (category) query = query.contains('categories', [category])
-    if (status) query = query.eq('health_status', status)
-    if (pricing) query = query.eq('api_pricing', pricing)
-    if (author) query = query.eq('author_type', author)
-    if (transport) query = query.contains('transport', [transport])
-    if (minScore > 0) query = query.gte('score_total', minScore)
-
-    switch (sort) {
-      case 'stars':
-        query = query.order('github_stars', { ascending: false })
-        break
-      case 'downloads':
-        query = query.order('npm_weekly_downloads', { ascending: false })
-        break
-      case 'commit':
-        query = query.order('github_last_commit', { ascending: false, nullsFirst: false })
-        break
-      case 'newest':
-        query = query.order('created_at', { ascending: false })
-        break
-      case 'name':
-        query = query.order('name', { ascending: true })
-        break
-      default:
-        // Default: score descending
-        query = query.order('score_total', { ascending: false })
-    }
-
-    query = query.range(offset, offset + ITEMS_PER_PAGE - 1)
-
-    const { data, count, error } = await query
-    // Degrade gracefully (revalidate=60 re-tries within a minute) but never fail
-    // silently again — log so a recurrence is visible instead of a blank catalog.
-    if (error) console.error('[servers] catalog query failed', error)
-    loadFailed = Boolean(error)
-    servers = (data as Server[]) || []
-    totalCount = count || 0
   }
 
   // Clamped to MAX_PAGE so "Next" never links to a page that now 404s.
