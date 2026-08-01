@@ -1,12 +1,25 @@
 /**
- * Normalizes /servers listing search params into a finite cache-key space.
+ * Normalizes /servers listing search params into a mostly-finite shape.
  *
  * `app/servers/page.tsx` caches its listing round-trip with `unstable_cache`,
- * which keys on the stringified argument object. The page reads NINE params,
- * five of them free-form, so keying on the raw values would let a crawler mint
- * an unbounded number of cache entries and defeat the cache entirely — in
- * exactly the scenario the cache exists for. Everything a request can vary is
- * collapsed here into a bounded, allow-listed shape first.
+ * which keys on the stringified argument object, so an unvalidated tail would
+ * let a crawler mint unbounded cache entries — in exactly the scenario the
+ * cache exists for. What this module actually bounds:
+ *
+ *   - the five filters (`category`/`status`/`pricing`/`author`/`transport`)
+ *     collapse to an allow-list member, '' or `kind: 'empty'`;
+ *   - `sort` collapses to a member of the branch's own table (`CATALOG_SORTS`
+ *     for the catalog, `SEARCH_SORTS` for the RPC) or to that table's real
+ *     fallback;
+ *   - `minScore` is clamped to 0..`MAX_SCORE`, and `isCacheableQuery` narrows
+ *     it further to the four tiers the UI actually emits;
+ *   - `offset` is capped by the caller (`MAX_PAGE`) and narrowed again by
+ *     `CACHEABLE_MAX_OFFSET`.
+ *
+ * `q` is deliberately NOT collapsed — it is free text passed verbatim to the
+ * `search_servers` RPC, so its key space is unbounded. That is precisely why
+ * `isCacheableQuery` returns false for the search branch: the search results
+ * are never written to the Data Cache, so an unbounded key cannot reach it.
  *
  * NOTE: `app/category/[category]/page.tsx` still keys on raw values and should
  * adopt this later — deliberately not changed here.
@@ -46,6 +59,53 @@ export const SEARCH_SORTS = ['relevance', 'stars', 'newest', 'name', 'downloads'
 
 export const MAX_SCORE = 100
 
+/** Deepest offset whose result is worth a Data Cache entry. */
+export const CACHEABLE_MAX_OFFSET = 200
+/** The only `min_score` values the UI emits (components/ScoreFilterPills.tsx:6-10). */
+export const CACHEABLE_MIN_SCORES = [0, 40, 60, 80] as const
+
+/**
+ * Whether this request's result may be written to (and read from) the Data
+ * Cache. Everything else runs live.
+ *
+ * Caching is worth its write cost only where the key space is small AND the
+ * repeat rate is plausible, and three inputs fail that test:
+ *
+ *   - the SEARCH branch: `q` is free text with a near-zero repeat rate and an
+ *     unbounded key space, and /servers has no rate limiting, so an anonymous
+ *     client could mint entries at request rate and evict the ~30 hot catalog
+ *     keys the cache exists to hold. `/api/search` already serves the same
+ *     `search_servers` RPC behind `s-maxage=900` for the traffic that repeats.
+ *   - DEEP offsets: `MAX_PAGE` is 500 and the Prev/Next chain means one crawl
+ *     pass would write 500 entries nobody reads back — and those are the
+ *     expensive index-defeating queries, so they are the most costly to store.
+ *   - off-tier `min_score`: the param accepts 101 distinct integers while the
+ *     pills emit only four, so anything else is hand-crafted, non-repeating.
+ */
+export function isCacheableQuery(p: ServersListingParams): boolean {
+  return (
+    p.mode === 'catalog' &&
+    p.offset <= CACHEABLE_MAX_OFFSET &&
+    (CACHEABLE_MIN_SCORES as readonly number[]).includes(p.minScore)
+  )
+}
+
+/**
+ * Next hands `searchParams` a `string[]` for a REPEATED key (`?q=a&q=b`), so
+ * every read has to collapse it before the value reaches Supabase — an array
+ * passed as the RPC's `text` `search_query` errors on every attempt.
+ *
+ * First-wins is a deliberate, small behavior change versus `main` for
+ * hand-crafted URLs only: there `?category=a&category=b` reached
+ * `.contains('categories', [['a','b']])` → `cs.{a,b}`, an accidental
+ * AND-of-two-values. No UI emits repeated keys (`FilterBar` and
+ * `ScoreFilterPills` both use `params.set`), so first-wins is the predictable
+ * replacement.
+ */
+export function first(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value
+}
+
 // Plain-array `includes`, never a Record lookup: an object-literal map keyed by
 // untrusted input returns inherited members (`MAP['constructor']` is truthy) —
 // the prototype trap recorded under S58.
@@ -61,23 +121,23 @@ function filter(raw: string | undefined, allowed: readonly string[]): string | n
 }
 
 export function normalizeServersQuery(
-  raw: Record<string, string | undefined>,
+  raw: Record<string, string | string[] | undefined>,
   offset: number,
 ): NormalizedServersQuery {
   // Verbatim, no trim: `?q=%20%20` is truthy today and selects the search
   // branch. Trimming would flip it to the catalog branch — a behavior change.
-  const q = raw.q || ''
+  const q = first(raw.q) || ''
   const mode: ServersListingParams['mode'] = q ? 'search' : 'catalog'
 
   // A bogus filter value is NOT equivalent to an absent one: `?status=zzz` runs
   // `.eq('health_status','zzz')` and matches zero rows, while `?status=`
   // returns the whole catalog. Collapsing it to '' would silently turn a
   // typo into "show everything", so short-circuit instead.
-  const category = filter(raw.category, CATEGORIES)
-  const status = filter(raw.status, HEALTH_STATUSES)
-  const pricing = filter(raw.pricing, API_PRICING_OPTIONS)
-  const author = filter(raw.author, AUTHOR_TYPES)
-  const transport = filter(raw.transport, TRANSPORTS)
+  const category = filter(first(raw.category), CATEGORIES)
+  const status = filter(first(raw.status), HEALTH_STATUSES)
+  const pricing = filter(first(raw.pricing), API_PRICING_OPTIONS)
+  const author = filter(first(raw.author), AUTHOR_TYPES)
+  const transport = filter(first(raw.transport), TRANSPORTS)
   if (
     category === null ||
     status === null ||
@@ -88,7 +148,7 @@ export function normalizeServersQuery(
     return { kind: 'empty' }
   }
 
-  const parsed = parseInt(raw.min_score || '0', 10)
+  const parsed = parseInt(first(raw.min_score) || '0', 10)
   const minScore = Number.isNaN(parsed) || parsed < 0 ? 0 : parsed
   // `SCORE_WEIGHTS` sums to 100 (lib/scoring.ts:12-18), so `score_total` can
   // never exceed 100 — a `min_score` above it is provably empty.
@@ -101,7 +161,7 @@ export function normalizeServersQuery(
   // arm (20260719120000_search_servers_filters.sql:38-44); an unrecognized
   // `sort_by` there falls through to the trailing `s.github_stars desc nulls
   // last`, i.e. exactly 'stars'.
-  const rawSort = raw.sort || ''
+  const rawSort = first(raw.sort) || ''
   const sort =
     mode === 'catalog'
       ? member(rawSort, CATALOG_SORTS)

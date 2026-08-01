@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { normalizeServersQuery } from '../servers-query'
+import {
+  CACHEABLE_MAX_OFFSET,
+  isCacheableQuery,
+  normalizeServersQuery,
+} from '../servers-query'
 
-function params(raw: Record<string, string | undefined>, offset = 0) {
+function params(raw: Record<string, string | string[] | undefined>, offset = 0) {
   const n = normalizeServersQuery(raw, offset)
   if (n.kind !== 'query') throw new Error('expected a query, got empty')
   return n.params
@@ -108,5 +112,56 @@ describe('normalizeServersQuery — cache-key space', () => {
       JSON.stringify(params({ category: 'finance' })),
     )
     expect(JSON.stringify(params({}, 0))).not.toBe(JSON.stringify(params({}, 20)))
+  })
+})
+
+describe('isCacheableQuery', () => {
+  it('never caches the search branch — q is unbounded free text', () => {
+    expect(isCacheableQuery(params({ q: 'x' }))).toBe(false)
+    expect(isCacheableQuery(params({ q: 'x', sort: 'stars' }, 0))).toBe(false)
+  })
+
+  it('caches the catalog branch up to and including the offset ceiling', () => {
+    expect(CACHEABLE_MAX_OFFSET).toBe(200)
+    expect(isCacheableQuery(params({}, 0))).toBe(true)
+    expect(isCacheableQuery(params({}, 200))).toBe(true)
+  })
+
+  it('does not cache past the offset ceiling', () => {
+    expect(isCacheableQuery(params({}, 220))).toBe(false)
+  })
+
+  it('caches only the four min_score tiers the UI emits', () => {
+    for (const tier of ['0', '40', '60', '80']) {
+      expect(isCacheableQuery(params({ min_score: tier }))).toBe(true)
+    }
+    expect(isCacheableQuery(params({ min_score: '41' }))).toBe(false)
+    expect(isCacheableQuery(params({ min_score: '100' }))).toBe(false)
+  })
+})
+
+describe('normalizeServersQuery — repeated keys collapse first-wins', () => {
+  it('takes the first q and still selects the search branch', () => {
+    const p = params({ q: ['a', 'b'] })
+    expect(p.q).toBe('a')
+    expect(p.mode).toBe('search')
+  })
+
+  it('takes the first filter value instead of erroring on the whole array', () => {
+    // `['active','zzz']` must round-trip as the valid first value, NOT collapse
+    // to `kind: 'empty'` on the second.
+    expect(params({ status: ['active', 'zzz'] }).status).toBe('active')
+  })
+
+  it('takes the first sort', () => {
+    expect(params({ sort: ['name', 'zzz'] }).sort).toBe('name')
+  })
+
+  it('takes the first min_score', () => {
+    expect(params({ min_score: ['80', '40'] }).minScore).toBe(80)
+  })
+
+  it('leaves the single-value path identical to the array-of-one path', () => {
+    expect(params({ category: ['data'] })).toEqual(params({ category: 'data' }))
   })
 })
