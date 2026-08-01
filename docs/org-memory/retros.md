@@ -61,3 +61,23 @@ One line per cycle: `- YYYY-MM-DD <ID>: <friction observed> → <action or M-row
   but its raw curl output was still decisive evidence and led to S58 (P1) — the largest finding of
   the cycle. When an agent fails, read what it produced before re-dispatching; and re-verify its
   key claims first-hand (I did, with two curls) rather than citing a dead agent's transcript.
+- 2026-08-01 (S59, admin categorize predicate): a three-line fix that needed three rounds, and the reason
+  is worth keeping. The item read as trivial — swap `[]` for `{}` — but the predicate had been erroring
+  since the endpoint shipped, so the entire processing body below it was DEAD CODE that my fix would
+  wake up: an unbounded serial write loop with no `maxDuration`, and `if (!error) updated++` swallowing
+  every per-row write failure into a green "Categorized 0 servers". Round 2 bounded the server side but
+  the review board then found the frozen-progress-bar symptom was STILL present, because the SSE client
+  treats stream-end as success — server-side bounding cannot fix a client that never checks for a
+  terminal frame. Round 3 replaced the offset walk with a single `cap + 1` read, which killed three
+  findings at once (the exact-boundary "more remain" lie, the short-page trim hazard, and the
+  mutable-predicate skip). Lessons: (a) **a predicate-level fix is never a one-line change** — scope the
+  body it activates, and say so in the dispatch; (b) when bounding a runaway, check the CLIENT's failure
+  handling too, not just the server's, or you fix the cause and keep the symptom; (c) simplifying beat
+  patching — the single bounded read removed more defects than the three targeted fixes it replaced;
+  (d) I twice accepted an unmeasured performance constant (~20ms/row) that the reviewer overturned with
+  concrete evidence (the `servers_audit` per-row trigger `to_jsonb`ing the whole row), so a latency
+  number in a comment needs either a measurement or an explicit "budgeted, not measured" label. Also a
+  near-miss worth recording: the implementer flagged that `maxDuration = 300` exceeds the Vercel Hobby
+  ceiling and would fail the VERCEL build — invisible to a local build, and exactly the S50 deploy-block
+  shape. Lowering to 60 cost nothing because the run is idempotent. Good catch by the agent, and the
+  right instinct to flag rather than silently ship.
