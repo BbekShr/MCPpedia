@@ -23,12 +23,38 @@
  * bug this helper exists to fix.
  *
  * `scanStatus` decides whether closing is safe:
- *  - 'failed'  — the OSV query itself failed, so zero advisories means
- *    "unreachable", not "gone". Reconciling would mark every real CVE in the
- *    fleet 'fixed' in a single run. Upsert only, never close.
- *  - 'pending' — no npm/pip package left to scan. Trustworthy: with no package
- *    there is no CVE to carry, so the open rows are what's left inconsistent.
+ *  - 'failed'  — do nothing. A 'failed' scan is not evidence about ANY
+ *    ecosystem: with two packages one OSV query can succeed while the other
+ *    fails and `anyFailed` still reports 'failed' (lib/scoring.ts:853) while
+ *    `collectAdvisories` processes the surviving result (:315-316), so the
+ *    array is NOT necessarily empty here. And because the upsert writes
+ *    `adv.status` — which `collectAdvisories` sets to 'fixed' whenever OSV
+ *    reports a fixed version (:309) — upserting on this path can itself close
+ *    a row. "Upsert only, never close" is therefore unachievable; the guard
+ *    must run before the upsert loop.
+ *  - 'pending' — no npm/pip package left to scan. Whether that is trustworthy
+ *    depends on WHO cleared the package, which is what `closeOn` encodes.
  *  - 'success' — reconcile.
+ *
+ * `closeOn` is required, per call site, because 'pending' is attacker-reachable
+ * state rather than an OSV verdict: `security_advisories` has no write policy
+ * for any authenticated principal, but a maintainer has blanket RLS UPDATE on
+ * `servers` (20260417210403_tighten_admin_rls.sql:19-26) and the edit page
+ * writes `npm_package` straight from the browser (app/s/[slug]/edit/page.tsx:157).
+ * Null both package columns and `scanSecurity` issues ZERO OSV queries and
+ * returns `advisories: []` + 'pending' (lib/scoring.ts:849-854) — so an
+ * unconditional close on 'pending' would let any maintainer erase any server's
+ * public CVE record through refresh-score, whose gate is role-only.
+ *  - 'success-or-pending' — for the unattended bot: nobody chose the moment or
+ *    the target, and a package-less row genuinely cannot carry a CVE.
+ *  - 'success' — for the two user-triggered routes: OSV actually answered.
+ *    Still covers the case this helper exists for (OSV withdrew the entry →
+ *    'success' with an empty array → close).
+ *
+ * Returns false if any write failed or threw, so the unattended bot can surface
+ * it; the routes ignore it. Fail-soft: it never throws, because two of its
+ * three call sites are not wrapped in a try/catch and a scoring run must not
+ * die on an advisory write.
  *
  * Shared by all three score writers: bots/compute-scores.ts,
  * /api/server/[slug]/refresh-score and /api/submit.
@@ -59,20 +85,29 @@ export function selectStaleAdvisoryIds(
   return (openRows || []).filter(r => r.cve_id && !fresh.has(r.cve_id)).map(r => r.id)
 }
 
+/** Which scan statuses this call site trusts enough to close rows on. */
+export type AdvisoryCloseOn = 'success' | 'success-or-pending'
+
 /**
- * Upsert the fresh advisories, then close the stale open rows. Fail-soft: it
- * never throws, because two of its three call sites are not wrapped in a
- * try/catch and a scoring run must not die on an advisory write.
+ * Upsert the fresh advisories, then close the stale open rows. See the module
+ * header for the `scanStatus`/`closeOn` rules. Returns false if any write
+ * failed or threw.
  */
 export async function reconcileAdvisories(
   client: SupabaseClient,
   serverId: string,
   advisories: Advisory[],
-  scanStatus: AdvisoryScanStatus
-): Promise<void> {
+  scanStatus: AdvisoryScanStatus,
+  closeOn: AdvisoryCloseOn
+): Promise<boolean> {
+  let ok = true
   try {
+    // FIRST, before the upsert: a failed scan is evidence about nothing, and
+    // the upsert itself writes `adv.status` and so can close a row. See header.
+    if (scanStatus === 'failed') return ok
+
     for (const adv of advisories) {
-      await client
+      const { error: upsertError } = await client
         .from('security_advisories')
         .upsert(
           {
@@ -90,12 +125,18 @@ export async function reconcileAdvisories(
           },
           { onConflict: 'server_id,cve_id', ignoreDuplicates: false }
         )
+
+      // The only fail-UNSAFE branch in this helper: supabase-js RETURNS errors
+      // rather than throwing, so an unlogged failure here silently drops the
+      // advisory while the caller reports success.
+      if (upsertError) {
+        ok = false
+        console.error(`  Error upserting advisory ${adv.cve_id}: ${upsertError.message}`)
+      }
     }
 
-    // Closing happens only on a trustworthy scan — see the scanStatus rules in
-    // the module header. (`scanSecurity` returns no advisories on failure, so
-    // the loop above is empty on this path anyway.)
-    if (scanStatus === 'failed') return
+    // Closing happens only on a status this call site trusts — see the header.
+    if (closeOn === 'success' && scanStatus !== 'success') return ok
 
     // Read AFTER the upsert so anything this scan just refreshed (including
     // advisories it downgraded to 'fixed') is already out of the open set.
@@ -107,11 +148,11 @@ export async function reconcileAdvisories(
 
     if (readError) {
       console.error(`  Error reading advisories: ${readError.message}`)
-      return
+      return false
     }
 
     const stale = selectStaleAdvisoryIds(openRows, advisories)
-    if (stale.length === 0) return
+    if (stale.length === 0) return ok
 
     const { error: closeError } = await client
       .from('security_advisories')
@@ -119,11 +160,14 @@ export async function reconcileAdvisories(
       .in('id', stale)
 
     if (closeError) {
+      ok = false
       console.error(`  Error closing stale advisories: ${closeError.message}`)
     } else {
       console.log(`  Closed ${stale.length} stale advisor${stale.length === 1 ? 'y' : 'ies'}`)
     }
   } catch (e) {
+    ok = false
     console.error(`  Error reconciling advisories: ${(e as Error).message}`)
   }
+  return ok
 }

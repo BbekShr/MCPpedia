@@ -74,6 +74,7 @@ type Call = { table: string; op: string; args: unknown[] }
 function makeStubClient(options: {
   openRows?: OpenAdvisoryRow[]
   readError?: { message: string }
+  writeError?: { message: string }
   throwOn?: string
 } = {}) {
   const calls: Call[] = []
@@ -106,10 +107,12 @@ function makeStubClient(options: {
       return this
     },
     then(resolve: (value: unknown) => unknown) {
+      // The awaited value serves both the upsert/update writes and the open-row
+      // read; `writeError` and `readError` are mutually exclusive in practice
+      // because no test needs both at once.
+      const error = options.readError ?? options.writeError ?? null
       return Promise.resolve(
-        options.readError
-          ? { data: null, error: options.readError }
-          : { data: options.openRows ?? [], error: null }
+        error ? { data: null, error } : { data: options.openRows ?? [], error: null }
       ).then(resolve)
     },
   }
@@ -126,18 +129,50 @@ describe('reconcileAdvisories', () => {
     vi.restoreAllMocks()
   })
 
+  it("does NOTHING on a 'failed' scan that still carries advisories", async () => {
+    // The guard must sit ABOVE the upsert loop, not below it: with two packages
+    // one OSV query can fail while the other succeeds (lib/scoring.ts:853), so
+    // 'failed' arrives with a POPULATED array — and the upsert writes
+    // `adv.status`, so upserting here can itself flip an open row to 'fixed'.
+    const { client, calls } = makeStubClient({ openRows: [{ id: 'a1', cve_id: 'CVE-OLD' }] })
+    await reconcileAdvisories(client, 'srv-1', [advisory()], 'failed', 'success-or-pending')
+    expect(calls).toEqual([])
+  })
+
   it("never reads or closes when the scan status is 'failed'", async () => {
     const { client, calls } = makeStubClient({ openRows: [{ id: 'a1', cve_id: 'CVE-OLD' }] })
-    await reconcileAdvisories(client, 'srv-1', [], 'failed')
+    await reconcileAdvisories(client, 'srv-1', [], 'failed', 'success-or-pending')
     expect(calls.filter(c => c.op === 'select')).toHaveLength(0)
     expect(calls.filter(c => c.op === 'update')).toHaveLength(0)
+  })
+
+  it("closes nothing on a 'pending' scan under closeOn 'success'", async () => {
+    // 'pending' means both package columns are null — reachable by any
+    // maintainer through the edit page, so the user-triggered routes must not
+    // treat it as an OSV verdict.
+    const { client, calls } = makeStubClient({ openRows: [{ id: 'a1', cve_id: 'CVE-OLD' }] })
+    await reconcileAdvisories(client, 'srv-1', [], 'pending', 'success')
+    expect(calls.filter(c => c.op === 'select')).toHaveLength(0)
+    expect(calls.filter(c => c.op === 'update')).toHaveLength(0)
+  })
+
+  it("closes stale rows on a 'success' scan with no advisories under BOTH policies", async () => {
+    for (const closeOn of ['success', 'success-or-pending'] as const) {
+      const { client, calls } = makeStubClient({ openRows: [{ id: 'a1', cve_id: 'CVE-OLD' }] })
+      await reconcileAdvisories(client, 'srv-1', [], 'success', closeOn)
+      expect(calls).toContainEqual({
+        table: 'security_advisories',
+        op: 'in',
+        args: ['id', ['a1']],
+      })
+    }
   })
 
   it("closes stale rows on a 'pending' scan with no advisories", async () => {
     const { client, calls } = makeStubClient({
       openRows: [{ id: 'a1', cve_id: 'CVE-OLD' }, { id: 'a2', cve_id: 'CVE-GONE' }],
     })
-    await reconcileAdvisories(client, 'srv-1', [], 'pending')
+    await reconcileAdvisories(client, 'srv-1', [], 'pending', 'success-or-pending')
     expect(calls).toContainEqual({
       table: 'security_advisories',
       op: 'update',
@@ -152,7 +187,7 @@ describe('reconcileAdvisories', () => {
 
   it('upserts the full advisory payload on the (server_id, cve_id) conflict key', async () => {
     const { client, calls } = makeStubClient()
-    await reconcileAdvisories(client, 'srv-1', [advisory()], 'success')
+    await reconcileAdvisories(client, 'srv-1', [advisory()], 'success', 'success')
 
     const upsert = calls.find(c => c.op === 'upsert')
     expect(upsert).toBeDefined()
@@ -166,15 +201,30 @@ describe('reconcileAdvisories', () => {
     expect(opts).toEqual({ onConflict: 'server_id,cve_id', ignoreDuplicates: false })
   })
 
-  it('returns quietly when the open-advisory read errors', async () => {
+  it('reports failure when the open-advisory read errors, and closes nothing', async () => {
     const { client, calls } = makeStubClient({ readError: { message: 'read failed' } })
-    await expect(reconcileAdvisories(client, 'srv-1', [], 'success')).resolves.toBeUndefined()
+    await expect(reconcileAdvisories(client, 'srv-1', [], 'success', 'success')).resolves.toBe(false)
     expect(calls.filter(c => c.op === 'update')).toHaveLength(0)
   })
 
-  it('returns quietly when the client throws', async () => {
+  it('reports failure when the client throws', async () => {
     const { client } = makeStubClient({ throwOn: 'upsert' })
-    await expect(reconcileAdvisories(client, 'srv-1', [advisory()], 'success'))
-      .resolves.toBeUndefined()
+    await expect(reconcileAdvisories(client, 'srv-1', [advisory()], 'success', 'success'))
+      .resolves.toBe(false)
+  })
+
+  it('logs and reports failure when an upsert errors — the one fail-UNSAFE branch', async () => {
+    const { client } = makeStubClient({ writeError: { message: 'numeric field overflow' } })
+    await expect(reconcileAdvisories(client, 'srv-1', [advisory()], 'success', 'success'))
+      .resolves.toBe(false)
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringContaining('CVE-2026-1')
+    )
+  })
+
+  it('reports success on a clean reconcile', async () => {
+    const { client } = makeStubClient({ openRows: [] })
+    await expect(reconcileAdvisories(client, 'srv-1', [advisory()], 'success', 'success'))
+      .resolves.toBe(true)
   })
 })

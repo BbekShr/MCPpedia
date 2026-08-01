@@ -206,6 +206,10 @@ async function main() {
   const startedAt = Date.now()
 
   let processed = 0
+  // Servers whose advisory reconciliation logged an error. The helper is
+  // fail-soft by design, so this counter is the only thing that reaches the
+  // run summary.
+  let advisoryWriteFailures = 0
   // Slugs whose total score shifted ≥ 2 points this run. Used after the loop
   // to revalidate /compare/... pages containing them (score-driven freshness
   // for compare pages; individual /s/{slug} pages accept up to 7-day lag).
@@ -343,8 +347,15 @@ async function main() {
 
     // Upsert this scan's advisories and close the ones it no longer reports.
     // The helper decides what is safe to close from `scan_status` — see the
-    // rules in lib/advisories.ts.
-    await reconcileAdvisories(supabase, server.id, security.advisories, security.scan_status)
+    // rules in lib/advisories.ts. 'success-or-pending' because this run is
+    // unattended: nobody picked the moment or the target, so a package-less
+    // ('pending') row genuinely carries no CVE. The helper is fail-soft, so
+    // count its failures here — an unattended bot must not report success on a
+    // run where advisory writes were silently dropped.
+    const reconciled = await reconcileAdvisories(
+      supabase, server.id, security.advisories, security.scan_status, 'success-or-pending'
+    )
+    if (!reconciled) advisoryWriteFailures++
 
     processed++
     run.addProcessed()
@@ -354,8 +365,12 @@ async function main() {
     await new Promise(r => setTimeout(r, 300))
   }
 
-  run.setSummary({ scored: processed })
+  run.setSummary({ scored: processed, advisoryWriteFailures })
   console.log(`\nDone. Scored ${processed} servers.`)
+  if (advisoryWriteFailures > 0) {
+    console.error(`Advisory reconciliation failed for ${advisoryWriteFailures} server(s) — see the errors above.`)
+    process.exitCode = 1
+  }
   await run.finish()
 
   await refreshHomeStatsCache()

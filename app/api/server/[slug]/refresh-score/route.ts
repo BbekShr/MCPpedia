@@ -159,7 +159,7 @@ export async function POST(
   })
 
   // 3. Save scores
-  await supabase
+  const { error: updateError } = await supabase
     .from('servers')
     .update({
       score_total: merged.score_total,
@@ -201,10 +201,21 @@ export async function POST(
     })
     .eq('id', server.id)
 
-  // Unconditional: an EMPTY advisory list is the signal that every open row for
-  // this server is stale (package cleared, or OSV withdrew the entry). Guarding
-  // this on `advisories.length > 0` is exactly the append-only bug S33 fixed.
-  await reconcileAdvisories(supabase, server.id, security.advisories, security.scan_status)
+  // Not guarded on `advisories.length > 0`: an EMPTY advisory list is the signal
+  // that every open row for this server is stale (OSV withdrew the entry), and
+  // guarding it is exactly the append-only bug S33 fixed. It IS guarded on the
+  // scores landing — a failed UPDATE (e.g. statement timeout 57014) with a
+  // zero-advisory scan would otherwise close every row while `cve_count` and
+  // `score_security` keep the old CVE penalty, i.e. a green verdict on a row
+  // that still counts CVEs.
+  if (updateError) {
+    console.error(`refresh-score: server update failed for ${slug}: ${updateError.message}`)
+  } else {
+    // 'success' only: a 'pending' scan just means both package columns are
+    // null, and a maintainer can null them from the edit page — see the
+    // closeOn rationale in lib/advisories.ts.
+    await reconcileAdvisories(supabase, server.id, security.advisories, security.scan_status, 'success')
+  }
 
   // Report the scan outcome: on a failed OSV scan the caller is looking at a
   // preserved (or CVE-blind) security component, not a fresh verdict.

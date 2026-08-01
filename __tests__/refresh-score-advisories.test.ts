@@ -50,11 +50,14 @@ function resolveFor(key: string) {
   return Promise.resolve({ data: key in queued ? queued[key] : [], error: null })
 }
 
+/** Signed-in user the `createClient` stub reports; null exercises the 401 path. */
+const authUser = vi.hoisted(() => ({ current: { id: 'user-1' } as { id: string } | null }))
+
 function makeStub() {
   return {
     from: (table: string) => makeBuilder(table),
     auth: {
-      getUser: async () => ({ data: { user: { id: 'user-1' } }, error: null }),
+      getUser: async () => ({ data: { user: authUser.current }, error: null }),
     },
   } as unknown as SupabaseClient
 }
@@ -123,9 +126,29 @@ async function postRefresh() {
   })
 }
 
+function advisory(overrides: Partial<Advisory> = {}): Advisory {
+  return {
+    cve_id: 'CVE-2026-1',
+    severity: 'high',
+    cvss_score: 7.5,
+    title: 'Example advisory',
+    description: 'desc',
+    affected_versions: '<1.2.3',
+    fixed_version: '1.2.3',
+    source_url: 'https://osv.dev/GHSA-xxxx',
+    status: 'open',
+    published_at: '2026-01-01T00:00:00.000Z',
+    ...overrides,
+  }
+}
+
+/** The score write. Its presence proves the handler ran past the auth gates. */
+const serversUpdated = () => calls.filter(c => c.table === 'servers' && c.op === 'update')
+
 describe('POST /api/server/[slug]/refresh-score — advisory reconciliation', () => {
   beforeEach(() => {
     calls.length = 0
+    authUser.current = { id: 'user-1' }
     queued = {
       'profiles:single': { role: 'admin' },
       'servers:single': { ...SERVER_ROW },
@@ -164,5 +187,52 @@ describe('POST /api/server/[slug]/refresh-score — advisory reconciliation', ()
     expect(res.status).toBe(200)
 
     expect(calls.filter(c => c.table === 'security_advisories')).toEqual([])
+    // Teeth: without this the assertion above would pass even if the
+    // reconcileAdvisories call were deleted from the route entirely.
+    expect(serversUpdated()).toHaveLength(1)
+  })
+
+  it('touches the advisory table at ALL on a failed scan that carries advisories', async () => {
+    // A dual-package server where one OSV query failed and the other succeeded
+    // reports 'failed' WITH a populated array (lib/scoring.ts:853, :315-316).
+    // The upsert writes `adv.status`, so running it here could itself close a
+    // row — hence not one call, not even an upsert.
+    scanResult.current = makeScan({ scan_status: 'failed', advisories: [advisory()] })
+
+    const res = await postRefresh()
+    expect(res.status).toBe(200)
+
+    expect(calls.filter(c => c.table === 'security_advisories')).toEqual([])
+    expect(serversUpdated()).toHaveLength(1)
+  })
+
+  it("closes nothing on a 'pending' scan — a maintainer can null both packages", async () => {
+    scanResult.current = makeScan({ scan_status: 'pending', advisories: [] })
+
+    const res = await postRefresh()
+    expect(res.status).toBe(200)
+
+    expect(calls.filter(c => c.table === 'security_advisories' && c.op === 'update')).toEqual([])
+    expect(serversUpdated()).toHaveLength(1)
+  })
+
+  it('rejects a contributor with 403 and never touches the advisory table', async () => {
+    queued['profiles:single'] = { role: 'contributor' }
+    scanResult.current = makeScan({ scan_status: 'success', advisories: [] })
+
+    const res = await postRefresh()
+    expect(res.status).toBe(403)
+    expect(calls.filter(c => c.table === 'security_advisories')).toEqual([])
+    expect(serversUpdated()).toHaveLength(0)
+  })
+
+  it('rejects an anonymous caller with 401 and never touches the advisory table', async () => {
+    authUser.current = null
+    scanResult.current = makeScan({ scan_status: 'success', advisories: [] })
+
+    const res = await postRefresh()
+    expect(res.status).toBe(401)
+    expect(calls.filter(c => c.table === 'security_advisories')).toEqual([])
+    expect(serversUpdated()).toHaveLength(0)
   })
 })

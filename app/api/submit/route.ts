@@ -281,7 +281,7 @@ export async function POST(request: Request) {
     // The close half is a provable no-op here — the row was just inserted, so it
     // has no open advisories to go stale. The call exists so this upsert has ONE
     // implementation shared with the bot and the refresh-score route, not three.
-    await reconcileAdvisories(admin, server.id, security.advisories, security.scan_status)
+    await reconcileAdvisories(admin, server.id, security.advisories, security.scan_status, 'success')
 
     server.score_total = merged.score_total
   } catch (e) {
