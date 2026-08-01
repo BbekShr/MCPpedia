@@ -3,13 +3,16 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { categorize } from '@/bots/lib/categorize'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 300
+// 60s is legal on every Vercel plan; a higher value fails the VERCEL build on Hobby —
+// which a local `next build` cannot catch and which would block all deploys off main.
+export const maxDuration = 60
 
-// Rows are updated one serial round trip each, so the run duration scales with the row
-// count. Cap the work per invocation well below `maxDuration`; the run is idempotent
-// (`categorize` never returns an empty array, so every processed row leaves the
-// uncategorized predicate) and the operator continues by clicking again.
-const MAX_PER_RUN = 5000
+// Rows are updated one serial round trip each (~20ms), so the run duration scales with
+// the row count — 2000 rows ≈ 40s, inside the budget with headroom for the fetch walk.
+// Being conservative is nearly free: the run is idempotent (`categorize` never returns
+// an empty array, so every processed row leaves the uncategorized predicate), so a
+// smaller chunk just means the operator clicks again.
+const MAX_PER_RUN = 2000
 
 // SSE endpoint — streams progress as categorization runs
 export async function GET() {
