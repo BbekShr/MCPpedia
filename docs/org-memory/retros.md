@@ -119,3 +119,32 @@ One line per cycle: `- YYYY-MM-DD <ID>: <friction observed> → <action or M-row
   (4) writing a CEO decision into a dispatch does not make it right — both of my bad instructions
   were stated confidently and implemented faithfully, and only an adversarial reviewer caught them,
   so "the reviewer checks the CEO too" is load-bearing, not ceremony.
+
+- **2026-08-01 (test residuals S34/S37/S39/S43/S44, interrupted by a live incident).**
+  (1) **The picking step found a systemic gap the backlog was hiding.** Seven rows sat `open` with
+  complete, correct production code, missing only their required test — all from two commits that
+  added zero test files. That is not seven small oversights, it is one process hole, and it was
+  costing real safety: a naive-sum mutation of `refresh-score/route.ts:165` left the whole suite
+  green, meaning the exact harm S34 exists to prevent was shippable past a fully green bar. Filed as
+  M13. Worth generalizing: **when several rows fail the same way, stop fixing them one at a time and
+  file the shared cause.**
+  (2) **Cheap batch re-verification beat careful single-row picking.** One read-only agent checking
+  four rows against their full criteria cost a fraction of one cycle and reclassified all four. The
+  previous two cycles each paid this discovery cost one row at a time. Re-verify in batches.
+  (3) **The lighter review board was the right call and still caught the important thing.** For a
+  test-only diff I ran correctness + QA instead of all four lenses, and the correctness lens found a
+  surviving mutation the implementer's own 13-row table had missed — because I explicitly asked it to
+  hunt "assertions a mutation might MISS" rather than re-run the mutations QA was already running.
+  Giving two reviewers genuinely different jobs beats giving them the same job twice.
+  (4) **A user-reported prod incident interrupted the cycle, and the interrupt was correct.** The
+  homepage had been serving a degraded shell to every visitor and NOTHING in the org noticed — no
+  gate, no bot, no probe. S19's freshness probe watches `home_stats_cache` staleness, not page
+  health. The diagnosis took four probes (per-page, per-query, concurrent, then a head-count for
+  nulls) and the decisive one was the cheapest: asking "are there actually any null `published_at`
+  rows?" before assuming the `nullsFirst: false` was load-bearing. Answer: zero, out of 27,405.
+  **The degraded copy said "the database is not reachable" and that was simply wrong** — the DB was
+  fine and every other page worked. Component fallback text is a guess, not a diagnosis; probe before
+  believing it.
+  (5) Process note: three PRs are now open off an unchanged `main`, and each cycle appends to
+  `BACKLOG.md`, so they conflict on append location. I chose non-overlapping ID ranges so the IDs
+  never collide, but the queue depth is now the binding constraint on this loop, not throughput.
