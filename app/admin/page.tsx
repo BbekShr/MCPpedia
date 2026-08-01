@@ -123,6 +123,7 @@ export default function AdminPage() {
   const [catRunning, setCatRunning] = useState(false)
   const [catProgress, setCatProgress] = useState<{ processed: number; total: number; updated: number; pct: number; sample: string } | null>(null)
   const [catResult, setCatResult] = useState<string | null>(null)
+  const [catError, setCatError] = useState(false)
 
   const PAGE_SIZE = 50
 
@@ -312,13 +313,18 @@ export default function AdminPage() {
     setCatRunning(true)
     setCatProgress(null)
     setCatResult(null)
+    setCatError(false)
     try {
       const res = await fetch('/api/admin/categorize')
-      if (!res.ok || !res.body) { setCatResult('Failed to start'); setCatRunning(false); return }
+      if (!res.ok || !res.body) { setCatResult('Failed to start'); setCatError(true); setCatRunning(false); return }
 
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
       let buffer = ''
+      // The stream ending is not by itself success: when Vercel kills the function at
+      // maxDuration the body just ends mid-run, with no terminal frame. Without this the
+      // bar would sit frozen at its last percentage with the button re-enabled.
+      let sawTerminal = false
 
       while (true) {
         const { done, value } = await reader.read()
@@ -336,16 +342,29 @@ export default function AdminPage() {
             if (data.type === 'progress') {
               setCatProgress({ processed: data.processed, total: data.total, updated: data.updated, pct: data.pct, sample: data.sample })
             } else if (data.type === 'done') {
+              sawTerminal = true
               setCatResult(data.message)
+              setCatError(Boolean(data.failed))
               setCatProgress(null)
             } else if (data.type === 'error') {
+              sawTerminal = true
               setCatResult(`Error: ${data.message}`)
+              setCatError(true)
+              setCatProgress(null)
             }
           } catch { /* skip bad JSON */ }
         }
       }
+
+      if (!sawTerminal) {
+        setCatResult('Run ended before finishing (server timeout?) — click again to continue')
+        setCatError(true)
+        setCatProgress(null)
+      }
     } catch (err) {
       setCatResult(`Network error: ${String(err)}`)
+      setCatError(true)
+      setCatProgress(null)
     }
     setCatRunning(false)
   }
@@ -689,7 +708,7 @@ export default function AdminPage() {
                 {catRunning ? 'Categorizing...' : 'Categorize all servers'}
               </button>
               {catResult && (
-                <span className="text-sm text-green">{catResult}</span>
+                <span className={`text-sm ${catError ? 'text-red' : 'text-green'}`}>{catResult}</span>
               )}
             </div>
             {catProgress && (
