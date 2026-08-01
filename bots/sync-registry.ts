@@ -130,12 +130,34 @@ async function main() {
   console.log('=== MCPpedia Registry Sync ===')
   console.log(new Date().toISOString())
 
-  const { servers: registryServers } = await fetchRegistryServers()
+  const { servers: registryServers, skipped, fetchFailed } = await fetchRegistryServers()
   console.log(`Fetched ${registryServers.length} servers from official registry`)
   run.addProcessed(registryServers.length)
 
-  if (registryServers.length === 0) {
-    console.log('No servers returned from registry. Exiting.')
+  // `mapped 0 of N` is the schema-drift signature, so it has to be measured over
+  // every parsed record — not accumulated inside the write loop, where the fast
+  // path and the duplicate path both `continue` before reaching it.
+  const mappedPackages = registryServers.filter(s => s.hasMappedPackage).length
+
+  const skippedCounts = {
+    skippedNotLatest: skipped['not-latest'],
+    skippedInactive: skipped['inactive-status'],
+    skippedNoName: skipped['no-name'],
+  }
+
+  // This used to be a bare `return` inside the try, which skipped both
+  // setSummary and finish() — leaving an orphaned bot_runs row stuck at
+  // status:'running', exit code 0 and a green workflow. A total registry outage
+  // read as a healthy night. `run.fail` sets process.exitCode = 1
+  // (bots/lib/bot-run.ts:71), which turns the Registry Sync workflow red for
+  // .github/workflows/alert-on-failure.yml to pick up.
+  if (fetchFailed || registryServers.length === 0) {
+    const reason = fetchFailed
+      ? 'registry fetch failed — see the logged status/error above'
+      : 'registry returned 0 ingestable servers'
+    console.error(`${reason}. Failing the run.`)
+    run.setSummary({ fetchFailed, fetched: registryServers.length, ...skippedCounts })
+    await run.fail(reason)
     return
   }
 
@@ -270,7 +292,31 @@ async function main() {
   // The SQL compute_all_scores() function uses simpler heuristics and different weights,
   // so we don't call it here to avoid overwriting accurate scores.
 
-  run.setSummary({ new: synced, updated, duplicates, insertFailures })
+  const summary = {
+    new: synced,
+    updated,
+    duplicates,
+    insertFailures,
+    mappedPackages,
+    ...skippedCounts,
+  }
+
+  // Row counts alone cannot tell schema drift from a quiet upstream: a renamed
+  // package field yields N records and 0 packages, which every count-based check
+  // reads as success. This one needs NO self-releasing age bound (unlike the
+  // >20% guard in bots/snapshot-metrics.ts) because it compares against the live
+  // payload rather than a stored row — a fixed upstream releases it on the next
+  // run automatically. Until then, failing nightly is the correct behaviour for
+  // a drift signature nobody is watching for.
+  if (registryServers.length > 0 && mappedPackages === 0) {
+    const reason = `mapped 0 npm/pip packages across ${registryServers.length} registry records — schema drift`
+    console.error(`\n${reason}`)
+    run.setSummary(summary)
+    await run.fail(reason)
+    return
+  }
+
+  run.setSummary(summary)
   run.addUpdated(synced + updated)
   console.log(`\nDone. New: ${synced}, Updated: ${updated}, Duplicates: ${duplicates}, Failures: ${insertFailures}`)
   await run.finish()
