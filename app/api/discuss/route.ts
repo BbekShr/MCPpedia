@@ -71,21 +71,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to create discussion' }, { status: 500 })
   }
 
-  // Update profile discussion count (non-critical, display-only)
-  try {
-    const { count } = await supabase
-      .from('discussions')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-    await supabase
-      .from('profiles')
-      .update({ discussions_count: count || 0 })
-      .eq('id', user.id)
-  } catch {
-    // Non-critical — rate limiting uses real-time count, not this field
-  }
-
-  // DB trigger awards karma for the post; surface it on the profile.
+  // DB triggers maintain profiles.discussions_count and award karma for the
+  // post; surface both on the profile.
   const { data: poster } = await supabase
     .from('profiles')
     .select('username')
