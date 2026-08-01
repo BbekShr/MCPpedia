@@ -12,6 +12,7 @@ import {
 } from '@/lib/scoring'
 import { deriveDangerousPatternCount, deriveInjectionRisk } from '@/lib/security-columns'
 import { mergeScoresOnOsvFailure } from '@/lib/score-merge'
+import { reconcileAdvisories } from '@/lib/advisories'
 import type { Tool } from '@/lib/types'
 
 async function fetchNpmDownloads(packageName: string): Promise<number> {
@@ -200,29 +201,10 @@ export async function POST(
     })
     .eq('id', server.id)
 
-  // Upsert security advisories
-  if (security.advisories.length > 0) {
-    for (const adv of security.advisories) {
-      await supabase
-        .from('security_advisories')
-        .upsert(
-          {
-            server_id: server.id,
-            cve_id: adv.cve_id,
-            severity: adv.severity,
-            cvss_score: adv.cvss_score,
-            title: adv.title,
-            description: adv.description,
-            affected_versions: adv.affected_versions,
-            fixed_version: adv.fixed_version,
-            source_url: adv.source_url,
-            status: adv.status,
-            published_at: adv.published_at,
-          },
-          { onConflict: 'server_id,cve_id', ignoreDuplicates: false }
-        )
-    }
-  }
+  // Unconditional: an EMPTY advisory list is the signal that every open row for
+  // this server is stale (package cleared, or OSV withdrew the entry). Guarding
+  // this on `advisories.length > 0` is exactly the append-only bug S33 fixed.
+  await reconcileAdvisories(supabase, server.id, security.advisories, security.scan_status)
 
   // Report the scan outcome: on a failed OSV scan the caller is looking at a
   // preserved (or CVE-blind) security component, not a fresh verdict.

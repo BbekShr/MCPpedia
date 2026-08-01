@@ -13,6 +13,7 @@ import {
 } from '@/lib/scoring'
 import { deriveDangerousPatternCount, deriveInjectionRisk } from '@/lib/security-columns'
 import { mergeScoresOnOsvFailure } from '@/lib/score-merge'
+import { reconcileAdvisories } from '@/lib/advisories'
 import { revalidateServer, revalidateProfile } from '@/lib/revalidate'
 import { normalizeGithubUrl, normalizePackageName } from '@/lib/normalize'
 import type { Tool } from '@/lib/types'
@@ -277,28 +278,10 @@ export async function POST(request: Request) {
       })
       .eq('id', server.id)
 
-    if (security.advisories.length > 0) {
-      for (const adv of security.advisories) {
-        await admin
-          .from('security_advisories')
-          .upsert(
-            {
-              server_id: server.id,
-              cve_id: adv.cve_id,
-              severity: adv.severity,
-              cvss_score: adv.cvss_score,
-              title: adv.title,
-              description: adv.description,
-              affected_versions: adv.affected_versions,
-              fixed_version: adv.fixed_version,
-              source_url: adv.source_url,
-              status: adv.status,
-              published_at: adv.published_at,
-            },
-            { onConflict: 'server_id,cve_id', ignoreDuplicates: false }
-          )
-      }
-    }
+    // The close half is a provable no-op here — the row was just inserted, so it
+    // has no open advisories to go stale. The call exists so this upsert has ONE
+    // implementation shared with the bot and the refresh-score route, not three.
+    await reconcileAdvisories(admin, server.id, security.advisories, security.scan_status)
 
     server.score_total = merged.score_total
   } catch (e) {
