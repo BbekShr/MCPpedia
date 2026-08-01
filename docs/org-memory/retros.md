@@ -61,3 +61,21 @@ One line per cycle: `- YYYY-MM-DD <ID>: <friction observed> → <action or M-row
   but its raw curl output was still decisive evidence and led to S58 (P1) — the largest finding of
   the cycle. When an agent fails, read what it produced before re-dispatching; and re-verify its
   key claims first-hand (I did, with two curls) rather than citing a dead agent's transcript.
+- 2026-08-01 (S58, registry schema drift): the cycle's lesson is about REVIEW CONVERGENCE, not the
+  bug. Round 1 review found 13 CONFIRMED issues; the fix commit introduced 4 NEW ones; that fix
+  introduced 4 MORE — all three rounds concentrated in the same area, the existing-row
+  LINKING/identity logic, which touches four independent `is_archived` writers, a 9-URL monorepo
+  allow-list, and a missing unique index. Two of the new defects were caused by MY OWN dispatch
+  instructions (I specified `isIngestable` as a deny-list and then wrote allow-list semantics; I
+  ordered `.eq('is_archived', false)` onto reads where it turned archived servers into a nightly
+  re-insert loop). Rather than iterate a fourth time I CUT SCOPE: deleted the linking rework
+  wholesale, kept the schema-parse fix, and filed the deferred pieces as S63–S65/S67. Lessons:
+  (1) when successive fix rounds keep producing new defects in one area, that area is the finding —
+  stop fixing and split it out; (2) a scope reduction is a much safer final round than another
+  feature round because it DELETES code, and it converged first try; (3) the right question to ask
+  the last reviewer is not "is this correct?" but "is this strictly safe relative to `main`?" —
+  that reframing is what made the ship/no-ship call obvious, and it surfaced that `main` itself
+  inserts a duplicate row nightly for the ~50% of registry entries that have no `repository.url`;
+  (4) writing a CEO decision into a dispatch does not make it right — both of my bad instructions
+  were stated confidently and implemented faithfully, and only an adversarial reviewer caught them,
+  so "the reviewer checks the CEO too" is load-bearing, not ceremony.
