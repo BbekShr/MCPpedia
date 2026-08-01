@@ -35,11 +35,21 @@ export async function GET() {
         let page = 0
         const PAGE_SIZE = 1000
         while (true) {
-          const { data: batch } = await admin
+          // `categories` is text[], so the empty-array literal is `{}` — `[]` is malformed
+          // and makes the whole filter fail. `.order('id')` on the unique PK keeps the
+          // offset walk stable so pages neither skip nor duplicate rows.
+          const { data: batch, error } = await admin
             .from('servers')
             .select('id, slug, name, tagline, description')
-            .or('categories.is.null,categories.eq.[]')
+            .or('categories.is.null,categories.eq.{}')
+            .order('id')
             .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
+
+          if (error) {
+            send({ type: 'error', message: `Failed to load uncategorized servers: ${error.message}` })
+            controller.close()
+            return
+          }
 
           if (!batch || batch.length === 0) break
           servers.push(...batch)
