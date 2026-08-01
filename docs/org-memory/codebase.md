@@ -7,9 +7,11 @@ falsified; promote hardened facts to CLAUDE.md via human-approved PR. Keep ~120 
 ## Gates & environment
 
 - 2026-08-01 (S58): **Supersedes the 2026-07-16 bootstrap baseline below, which is stale.** The
-  green bar on this branch is `npx tsc --noEmit` (0 errors), `npm run lint` (0 errors, **1**
-  warning), `npm test` (**186** in ~1.2s across **13** files). The single lint warning is the
-  load-bearing `app/admin/page.tsx:245` directive (S2/S7). Anyone using "97 tests / 11 warnings"
+  green bar is `npx tsc --noEmit` (0 errors), `npm run lint` (0 errors, **1** warning),
+  `npm test` (**221** in ~1.2s across **16** files as of S48, 2026-08-01 — was 186/13 at S58 and
+  208/15 on `main` before S48; this figure moves most cycles, so re-measure rather than trust it).
+  The single lint warning is the load-bearing `app/admin/page.tsx:**246**` directive (S2/S7) —
+  the line moved from `:245`, recorded here because an off-by-one reads as a new finding. Anyone using "97 tests / 11 warnings"
   as a regression check is comparing against the wrong figures.
 - 2026-07-16 (bootstrap): The full local bar is green on main — `npx tsc --noEmit` (0 errors),
   `npm run lint` (0 errors, 11 warnings), `npm test` (97/97 in ~1.2s across 9 files).
@@ -387,3 +389,55 @@ _(record "audited <ground> under <lens>: clean" entries here so discovery skips 
   previously had zero coverage), following the `lib/curated-merge.ts` ← `bots/detect-duplicates.ts`
   precedent. `app/api/admin/bots/route.ts` references bots by string workflow name, never by import,
   so bot-adjacent `lib/` modules stay out of the `next build` surface — re-confirm per commit.
+
+## Edits, auto-approve & the trust gate (2026-08-01, S48)
+
+- The converged `edits` RLS set is exactly four policies and — unlike `profiles` (S23) or
+  `search_servers` (S21) — carries **no permissive-OR hazard**: SELECT `using (true)`
+  (`20260402000000_initial_schema.sql:316-317`), ONE INSERT pinning
+  `auth.uid() = user_id AND status = 'pending'` (`20260610000000_security_hardening.sql:28-35`),
+  ONE UPDATE for `editor|admin|maintainer` with `WITH CHECK … AND status IN ('approved','rejected')`
+  (`20260417210403_tighten_admin_rls.sql:28-37`), and **no DELETE policy at all**. Both hardening
+  re-`CREATE`s reused the exact prior policy name, so no weaker sibling survives.
+- Corollary nobody had recorded: that UPDATE `WITH CHECK` makes writing `status = 'pending'`
+  **impossible for every role**. Any "return this edit to the moderation queue" recovery path on
+  a user-scoped client is dead code whatever its role gate — it must use the service role.
+- **A trust count derived from a table the trusting route itself writes to is self-feeding unless
+  it filters on WHO granted the approval.** `reviewed_by` is that discriminator here:
+  `app/api/edit/route.ts` writes `null` on the auto path, `app/api/admin/approve-edit/route.ts:152`
+  writes `user.id` on the moderator path. Without `.not('reviewed_by','is',null)` every
+  auto-approved edit raises the very threshold that authorized it, so trust becomes irrevocable —
+  a moderator cannot withdraw it, because abusive edits never queue.
+- `/api/admin/verify` and `/api/admin/archive` write `status:'approved'` audit rows into `edits`
+  credited to the **acting maintainer** (`verify/route.ts:52-62`, `archive/route.ts:60-70`). Any
+  query reading "approved edits by user X" as "contributions X made that were reviewed"
+  over-counts for anyone who has ever held `maintainer`/`admin` — including
+  `sync_edits_approved` and the `20260725000000:232-240` backfill.
+- An `edits` INSERT with `status='approved'` fires **two** triggers in one statement and awards
+  **+6** karma, not +5: `trg_award_edit_events` emits `edit_proposed` (+1) *and* `edit_approved`
+  (+5) on the INSERT arm (`20260421030000_karma.sql:121-129`), while `trg_sync_edits_approved`
+  bumps `profiles.edits_approved` (`20260421000000_sync_profile_counters.sql:66-71`). A
+  status→`pending` UPDATE reverses exactly −5/−1, so insert+revert nets the same +1 as an
+  ordinary proposal. Both triggers are `SECURITY DEFINER` and key on `NEW.user_id`, never
+  `auth.uid()` — which is the precondition that makes moving an `edits` write to the service
+  role attribution-safe.
+- The S23 stale `profiles` UPDATE policy **froze `role` and `created_at`** and leaked only the
+  counter columns (`20260725000000:14-36`). So `profiles.role` was NOT forgeable under either
+  RLS state — reasoning that lumps `role` in with `karma`/`edits_approved` as "S23-forgeable"
+  is wrong.
+- `edits` is **append-only** (eleven `from('edits')` sites across `app/`/`lib/`/`bots/`/`scripts/`,
+  zero deletes) and unindexed on `user_id` (only `edits_server_idx`, `edits_status_idx` —
+  `20260402000000_initial_schema.sql:131-132`), so any `.eq('user_id', …)` predicate on it is
+  O(table) forever. Filed as S75. `edits.user_id` has **two** FKs — the second,
+  `edits_user_id_profile_fkey → public.profiles` (`20260502120000:10-13`), exists solely so
+  PostgREST can embed, which makes a `profiles → edits(count)` embedded count available for
+  folding per-user aggregates into an existing round trip.
+- `app/admin/page.tsx:155` is the *only* moderation-queue fetch and has **no status filter** —
+  `select('*') … order(created_at desc).limit(50)` over all of `edits`. Any writer that adds
+  non-`pending` rows silently shrinks the visible queue while the sidebar badge (`:206-212`, an
+  exact count on `status='pending'`) stays right; the two disagreeing is the symptom. Filed as S73.
+- `head: true` genuinely sends no body — supabase-js sets `method = 'HEAD'` and parses the count
+  from the `content-range` response header, so a head-only count costs ~300-500 B of response
+  headers and zero row egress. Conversely `count: 'planned'`/`'estimated'` on a column with no
+  index and no per-value stats returns a **table-wide average**, which for a per-user gate would
+  hand a brand-new user everyone else's average — an exactness requirement, not a preference.
