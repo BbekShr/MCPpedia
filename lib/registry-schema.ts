@@ -85,11 +85,18 @@ export type ParsedRegistryServer = {
   npmPackage: string | null
   pipPackage: string | null
   transports: Transport[]
+  /** Raw transport type strings we could not map — the transport-drift signal. */
+  unmappedTransports: string[]
   remoteUrls: string[]
   hasMappedPackage: boolean
 }
 
-export type SkipReason = 'not-latest' | 'inactive-status' | 'no-name'
+/**
+ * `malformed` is never returned by `parseRegistryEntry` — it is the bucket the
+ * bot's per-entry try/catch uses for a record that throws anyway, so one bad
+ * record costs one record instead of the whole run.
+ */
+export type SkipReason = 'not-latest' | 'inactive-status' | 'no-name' | 'malformed'
 
 export type ParseResult =
   | { kind: 'ok'; server: ParsedRegistryServer }
@@ -120,13 +127,31 @@ export function unwrapRegistryEntry(
   return { server, meta: (official as RegistryOfficialMeta) ?? {} }
 }
 
+/** The declared `packages`, or `[]` if upstream sent something that is not a list. */
+function packageList(server: RegistryServer): RegistryPackage[] {
+  return Array.isArray(server.packages)
+    ? server.packages.filter((p): p is RegistryPackage => isRecord(p))
+    : []
+}
+
+/** The declared `remotes`, or `[]` if upstream sent something that is not a list. */
+function remoteList(server: RegistryServer): RegistryRemote[] {
+  return Array.isArray(server.remotes)
+    ? server.remotes.filter((r): r is RegistryRemote => isRecord(r))
+    : []
+}
+
 /** Package identifier for a registry ecosystem, across both payload shapes. */
 export function findPackageIdentifier(
   packages: RegistryServer['packages'],
   registry: string
 ): string | undefined {
-  const hit = packages?.find(p => (p.registryType ?? p.registry_name) === registry)
-  return hit?.identifier ?? hit?.name
+  const list = Array.isArray(packages)
+    ? packages.filter((p): p is RegistryPackage => isRecord(p))
+    : []
+  const hit = list.find(p => (p.registryType ?? p.registry_name) === registry)
+  const id = hit?.identifier ?? hit?.name
+  return typeof id === 'string' ? id : undefined
 }
 
 const REMOTE_TYPE_MAP: Record<string, Transport> = {
@@ -145,43 +170,73 @@ const REMOTE_TYPE_MAP: Record<string, Transport> = {
  * scorers, the search RPC and every filter UI — widening it is a five-surface
  * change, not a one-line one. So an unrecognized upstream transport is dropped
  * here rather than passed through to become a value nothing downstream can
- * render or filter on.
+ * render or filter on. The dropped strings come back in `unmapped` so the bot
+ * can report a rename instead of absorbing it.
  *
- * The old code did `remotes.flatMap(r => r.transport)` against a field that no
- * longer exists, which wrote `[undefined]` and landed in Postgres as `{NULL}`.
- * Hence the empty-set fallback: every server gets at least one real transport.
+ * Two traps this walks around:
+ *  - `stdio` is NOT a safe default. Both scorers award +4 for
+ *    `'stdio' = any(transport)` (`lib/scoring.ts:1104`,
+ *    `supabase/migrations/20260402010000_scores_security_registry.sql:155`), so
+ *    fabricating it for a remote-only server whose type upstream renamed would
+ *    inflate compatibility scores catalog-wide and stay invisible to the
+ *    `mappedPackages` drift guard. It is emitted only when the server declares
+ *    no remotes and no packages at all — the genuine local-server shape.
+ *    Otherwise the array is empty, which the column allows
+ *    (`transport text[] default '{}'`).
+ *  - The lookup must be own-property only. `REMOTE_TYPE_MAP['constructor']`
+ *    resolves up the prototype chain to a truthy function that the index
+ *    signature types as `Transport`, and it serializes into the `text[]` column
+ *    as `{NULL}` — the exact bug this module exists to fix.
  */
-export function deriveTransports(server: RegistryServer): Transport[] {
-  const out: Transport[] = []
+export function deriveTransports(
+  server: RegistryServer
+): { transports: Transport[]; unmapped: string[] } {
+  const transports: Transport[] = []
+  const unmapped: string[] = []
 
   const add = (raw: unknown) => {
     if (typeof raw !== 'string') return
-    const hit = REMOTE_TYPE_MAP[raw.trim().toLowerCase()]
-    if (hit && !out.includes(hit)) out.push(hit)
+    const key = raw.trim().toLowerCase()
+    if (!key) return
+    if (Object.hasOwn(REMOTE_TYPE_MAP, key)) {
+      const hit = REMOTE_TYPE_MAP[key]
+      if (!transports.includes(hit)) transports.push(hit)
+    } else if (!unmapped.includes(key)) {
+      unmapped.push(key)
+    }
   }
 
-  for (const remote of server.remotes ?? []) add(remote?.type)
-  for (const pkg of server.packages ?? []) add(pkg?.transport?.type)
+  const remotes = remoteList(server)
+  const packages = packageList(server)
+  for (const remote of remotes) add(remote.type)
+  for (const pkg of packages) add(isRecord(pkg.transport) ? pkg.transport.type : undefined)
 
-  return out.length > 0 ? out : ['stdio']
+  if (transports.length === 0 && remotes.length === 0 && packages.length === 0) {
+    return { transports: ['stdio'], unmapped }
+  }
+  return { transports, unmapped }
 }
+
+/** Statuses that positively mean "not in the catalog". Everything else is kept. */
+const EXCLUDED_STATUSES = new Set(['deleted', 'deprecated', 'removed'])
 
 /**
  * Whether an entry belongs in the catalog.
  *
- * This is a deny-list on purpose. An allow-list ("keep only status `active`")
- * would let a single new upstream status value silently skip the entire
- * catalog — which is the exact fail-shape S58 exists to fix. So we skip only
- * what we positively recognize as excluded, and an absent field always keeps
- * the record.
+ * This is a deny-list on purpose, and it has to actually be one. The first cut
+ * of this function read `status !== 'active'`, which is an ALLOW-list wearing a
+ * deny-list's comment: an upstream rename of `active` (or a capitalized
+ * `Active`) would skip EVERY record, empty the fetch, and turn the nightly run
+ * red until a human shipped code — the exact fail-shape S58 exists to fix. So
+ * we skip only what we positively recognize as excluded; an unrecognized or
+ * absent status always keeps the record.
  */
 export function isIngestable(
   meta: RegistryOfficialMeta
 ): { ok: true } | { ok: false; reason: SkipReason } {
   if (meta.isLatest === false) return { ok: false, reason: 'not-latest' }
-  if (typeof meta.status === 'string' && meta.status !== 'active') {
-    return { ok: false, reason: 'inactive-status' }
-  }
+  const status = typeof meta.status === 'string' ? meta.status.trim().toLowerCase() : ''
+  if (EXCLUDED_STATUSES.has(status)) return { ok: false, reason: 'inactive-status' }
   return { ok: true }
 }
 
@@ -197,20 +252,29 @@ export function parseRegistryEntry(entry: unknown): ParseResult {
 
   const npmPackage = normalizePackageName(findPackageIdentifier(server.packages, 'npm'))
   const pipPackage = normalizePackageName(findPackageIdentifier(server.packages, 'pypi'))
+  const { transports, unmapped } = deriveTransports(server)
+
+  // `repository` and `description` are read through typeof guards for the same
+  // reason the lists are read through Array.isArray: a `repository.url` of `123`
+  // would throw inside normalizeGithubUrl's `.trim()`, and that throw escapes
+  // into the bot's fetch catch, where it reads as a network outage.
+  const repository = isRecord(server.repository) ? server.repository : undefined
+  const repoUrl = typeof repository?.url === 'string' ? repository.url : undefined
 
   return {
     kind: 'ok',
     server: {
       registryId: name,
       name,
-      description: server.description ?? null,
-      githubUrl: normalizeGithubUrl(server.repository?.url),
+      description: typeof server.description === 'string' ? server.description : null,
+      githubUrl: normalizeGithubUrl(repoUrl),
       version: typeof server.version === 'string' ? server.version : null,
       npmPackage,
       pipPackage,
-      transports: deriveTransports(server),
-      remoteUrls: (server.remotes ?? [])
-        .map(r => r?.url)
+      transports,
+      unmappedTransports: unmapped,
+      remoteUrls: remoteList(server)
+        .map(r => r.url)
         .filter((u): u is string => typeof u === 'string' && u.length > 0),
       hasMappedPackage: npmPackage !== null || pipPackage !== null,
     },
@@ -228,7 +292,11 @@ export function parseRegistryPage(
   const entries = Array.isArray(list) ? list : []
 
   const metadata = isRecord(payload.metadata) ? payload.metadata : undefined
-  const cursor = metadata?.nextCursor ?? payload.cursor
+  // `||`, not `??`: an empty-string `nextCursor` must fall through to the legacy
+  // top-level `cursor` field. `??` only falls through on null/undefined, which
+  // truncated pagination at the first page that reported an empty cursor.
+  const metaCursor = metadata?.nextCursor
+  const cursor = typeof metaCursor === 'string' && metaCursor ? metaCursor : payload.cursor
 
   return { entries, nextCursor: typeof cursor === 'string' && cursor ? cursor : null }
 }

@@ -29,6 +29,20 @@ describe('parseRegistryPage (live fixture)', () => {
     expect(parseRegistryPage({ servers: [] }).nextCursor).toBeNull()
     expect(parseRegistryPage(null).entries).toEqual([])
   })
+
+  it('falls through an empty-string metadata cursor to the top-level one', () => {
+    expect(
+      parseRegistryPage({ servers: [], metadata: { nextCursor: '' }, cursor: 'abc' }).nextCursor
+    ).toBe('abc')
+  })
+
+  it('reports a non-array servers field as no entries, cursor intact', () => {
+    // The bot treats "0 entries but a nextCursor" as a fetch failure; that only
+    // works if the cursor survives the shape that produces the empty list.
+    const page = parseRegistryPage({ servers: null, metadata: { nextCursor: 'next' } })
+    expect(page.entries).toEqual([])
+    expect(page.nextCursor).toBe('next')
+  })
 })
 
 describe('parseRegistryEntry (live fixture)', () => {
@@ -59,25 +73,72 @@ describe('parseRegistryEntry (live fixture)', () => {
     expect(mapped).toBeGreaterThan(0)
   })
 
-  it('never emits an empty or null-bearing transport array', () => {
+  it('never emits a null-bearing transport array, and maps every live type', () => {
     for (const r of parsed) {
       if (r.kind !== 'ok') continue
       expect(r.server.transports.length).toBeGreaterThan(0)
       for (const t of r.server.transports) {
         expect(TRANSPORTS).toContain(t)
       }
+      // Live records must map cleanly; anything here is a transport rename.
+      expect(r.server.unmappedTransports).toEqual([])
     }
+  })
+})
+
+describe('parseRegistryEntry (defensive reads)', () => {
+  it('survives every field arriving as the wrong type', () => {
+    // These used to throw out of the per-entry call into the bot's fetch catch,
+    // where one bad record reported a registry outage and wrote nothing.
+    const result = parseRegistryEntry(
+      entry({
+        name: 'a/b',
+        description: 42,
+        version: { major: 1 },
+        repository: { url: 123 },
+        packages: {},
+        remotes: {},
+      })
+    )
+    expect(result.kind).toBe('ok')
+    if (result.kind !== 'ok') return
+    expect(result.server.description).toBeNull()
+    expect(result.server.githubUrl).toBeNull()
+    expect(result.server.version).toBeNull()
+    expect(result.server.npmPackage).toBeNull()
+    expect(result.server.remoteUrls).toEqual([])
+    // No remotes and no packages readable -> the genuine local-server shape.
+    expect(result.server.transports).toEqual(['stdio'])
+  })
+
+  it('survives non-object members inside the packages and remotes lists', () => {
+    const result = parseRegistryEntry(
+      entry({ name: 'a/b', packages: [null, 'nope', { registryType: 'npm', identifier: 'x' }], remotes: [null, 7] })
+    )
+    expect(result.kind === 'ok' && result.server.npmPackage).toBe('x')
+  })
+
+  it('does not let a prototype-keyed transport reach the column', () => {
+    const result = parseRegistryEntry(
+      entry({ name: 'a/b', remotes: [{ type: 'constructor', url: 'https://x.test/mcp' }] })
+    )
+    expect(result.kind).toBe('ok')
+    if (result.kind !== 'ok') return
+    expect(result.server.transports).toEqual([])
+    expect(result.server.unmappedTransports).toEqual(['constructor'])
   })
 })
 
 describe('deriveTransports', () => {
   it('maps remote types to the stored vocabulary', () => {
-    expect(deriveTransports({ remotes: [{ type: 'streamable-http' }] })).toEqual(['http'])
-    expect(deriveTransports({ remotes: [{ type: 'sse' }] })).toEqual(['sse'])
+    expect(deriveTransports({ remotes: [{ type: 'streamable-http' }] }).transports).toEqual(['http'])
+    expect(deriveTransports({ remotes: [{ type: 'sse' }] }).transports).toEqual(['sse'])
   })
 
   it('reads stdio off packages[].transport.type', () => {
-    expect(deriveTransports({ packages: [{ transport: { type: 'stdio' } }] })).toEqual(['stdio'])
+    expect(deriveTransports({ packages: [{ transport: { type: 'stdio' } }] }).transports).toEqual([
+      'stdio',
+    ])
   })
 
   it('unions remotes and packages, first-seen order', () => {
@@ -85,13 +146,36 @@ describe('deriveTransports', () => {
       deriveTransports({
         remotes: [{ type: 'streamable-http' }],
         packages: [{ transport: { type: 'stdio' } }],
-      })
+      }).transports
     ).toEqual(['http', 'stdio'])
   })
 
-  it('drops transports the catalog cannot express, and defaults to stdio', () => {
-    expect(deriveTransports({ remotes: [{ type: 'websocket' }] })).toEqual(['stdio'])
-    expect(deriveTransports({})).toEqual(['stdio'])
+  it('defaults to stdio ONLY when nothing is declared', () => {
+    expect(deriveTransports({}).transports).toEqual(['stdio'])
+    expect(deriveTransports({ remotes: [], packages: [] }).transports).toEqual(['stdio'])
+  })
+
+  it('returns an empty set — never a fabricated stdio — when nothing maps', () => {
+    // Claiming stdio for a remote-only server whose type upstream renamed would
+    // hand it the +4 'stdio' = any(transport) compatibility point in both
+    // scorers, inflating scores catalog-wide behind a passing drift guard.
+    const remoteOnly = deriveTransports({ remotes: [{ type: 'websocket' }] })
+    expect(remoteOnly.transports).toEqual([])
+    expect(remoteOnly.unmapped).toEqual(['websocket'])
+
+    const pkgOnly = deriveTransports({ packages: [{ transport: { type: 'quic' } }] })
+    expect(pkgOnly.transports).toEqual([])
+    expect(pkgOnly.unmapped).toEqual(['quic'])
+  })
+
+  it('does not resolve prototype keys into the transport array', () => {
+    // A plain-object lookup answers 'constructor' with Object itself — truthy,
+    // typed as Transport by the index signature, and stored as {NULL}.
+    for (const type of ['constructor', '__proto__', 'toString', 'hasOwnProperty']) {
+      const out = deriveTransports({ remotes: [{ type }] })
+      expect(out.transports).toEqual([])
+      for (const t of out.transports) expect(TRANSPORTS).toContain(t)
+    }
   })
 })
 
@@ -102,12 +186,19 @@ describe('isIngestable', () => {
     expect(isIngestable({})).toEqual({ ok: true })
   })
 
-  it('skips any status it recognizes as non-active, but never an absent one', () => {
+  it('skips only the statuses it recognizes as excluded', () => {
     expect(isIngestable({ status: 'deleted' })).toEqual({ ok: false, reason: 'inactive-status' })
-    expect(isIngestable({ status: 'some-future-value' })).toEqual({
-      ok: false,
-      reason: 'inactive-status',
-    })
+    expect(isIngestable({ status: 'deprecated' })).toEqual({ ok: false, reason: 'inactive-status' })
+    expect(isIngestable({ status: ' Deleted ' })).toEqual({ ok: false, reason: 'inactive-status' })
+  })
+
+  it('KEEPS an unrecognized status — a deny-list, not an allow-list', () => {
+    // The allow-list this replaces (`status !== 'active'`) meant one upstream
+    // rename of `active` would skip every record and red the run nightly until
+    // a human shipped code. An unknown status must never empty the catalog.
+    expect(isIngestable({ status: 'some-future-value' })).toEqual({ ok: true })
+    expect(isIngestable({ status: 'published' })).toEqual({ ok: true })
+    expect(isIngestable({ status: 'Active' })).toEqual({ ok: true })
     expect(isIngestable({ status: 'active' })).toEqual({ ok: true })
     expect(isIngestable({})).toEqual({ ok: true })
   })

@@ -18,6 +18,9 @@ import {
   type SkipReason,
 } from '../lib/registry-schema'
 
+/** Mirrors the per-page retry in bots/lib/supabase.ts `fetchAllRows`. */
+const PAGE_FETCH_ATTEMPTS = 3
+
 const supabase = createAdminClient('bot-sync-registry')
 
 const REGISTRY_API = 'https://registry.modelcontextprotocol.io/v0.1'
@@ -34,6 +37,36 @@ type FetchResult = {
   servers: ParsedRegistryServer[]
   skipped: Record<SkipReason, number>
   fetchFailed: boolean
+  unmappedTransports: string[]
+}
+
+/**
+ * One page, retried on transient failure, or `null` once the attempts run out.
+ *
+ * A full sync is hundreds of sequential pages (25 records each), so a single
+ * flaky response is close to certain over a run. Without this retry any one of
+ * them aborted the whole fetch, which turned "syncs most nights" into "syncs
+ * only on a perfectly clean night". Backoff shape mirrors `fetchAllRows`
+ * (bots/lib/supabase.ts:52-63).
+ */
+async function fetchRegistryPage(url: string): Promise<unknown | null> {
+  for (let attempt = 1; ; attempt++) {
+    let failure: string
+    try {
+      const res = await fetch(url, { headers: { Accept: 'application/json' } })
+      if (res.ok) return await res.json()
+      failure = `HTTP ${res.status}`
+    } catch (err) {
+      failure = String(err)
+    }
+    if (attempt >= PAGE_FETCH_ATTEMPTS) {
+      console.error(`Registry page failed after ${attempt} attempts (${failure}): ${url}`)
+      return null
+    }
+    const backoffMs = 2000 * 2 ** (attempt - 1) // 2s, 4s
+    console.warn(`  Registry page failed (${failure}) — retrying in ${backoffMs / 1000}s (attempt ${attempt}/${PAGE_FETCH_ATTEMPTS})`)
+    await new Promise(r => setTimeout(r, backoffMs))
+  }
 }
 
 async function fetchRegistryServers(): Promise<FetchResult> {
@@ -42,56 +75,77 @@ async function fetchRegistryServers(): Promise<FetchResult> {
     'not-latest': 0,
     'inactive-status': 0,
     'no-name': 0,
+    malformed: 0,
   }
+  const unmappedTransports = new Set<string>()
   // Both failure paths below used to swallow into a bare `[]`, so main() read a
   // total registry outage as "the registry is empty" and exited green. Report
-  // the outage separately from the count so the caller can tell them apart.
+  // the outage separately from the count so the caller can tell them apart — and
+  // so a PARTIAL failure can still write the pages that did arrive.
   let fetchFailed = false
   let cursor: string | null = null
 
-  try {
-    while (true) {
-      const fetchUrl: string = cursor
-        ? `${REGISTRY_API}/servers?version=latest&cursor=${encodeURIComponent(cursor)}`
-        : `${REGISTRY_API}/servers?version=latest`
+  while (true) {
+    const fetchUrl: string = cursor
+      ? `${REGISTRY_API}/servers?version=latest&cursor=${encodeURIComponent(cursor)}`
+      : `${REGISTRY_API}/servers?version=latest`
 
-      const res: Response = await fetch(fetchUrl, {
-        headers: { Accept: 'application/json' },
-      })
-
-      if (!res.ok) {
-        console.error(`Registry API returned ${res.status}`)
-        fetchFailed = true
-        break
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data: any = await res.json()
-      const { entries, nextCursor } = parseRegistryPage(data)
-      // Break on empty ENTRIES, not on parsed servers: a page where every record
-      // is superseded or inactive is still a valid page, and stopping there
-      // would truncate pagination and silently drop the rest of the catalog.
-      if (entries.length === 0) break
-
-      for (const entry of entries) {
-        const parsed = parseRegistryEntry(entry)
-        if (parsed.kind === 'ok') all.push(parsed.server)
-        else skipped[parsed.reason]++
-      }
-      console.log(`  Fetched ${all.length} servers so far...`)
-
-      // Check for pagination cursor
-      cursor = nextCursor
-      if (!cursor) break
-
-      await new Promise(r => setTimeout(r, 200))
+    const data = await fetchRegistryPage(fetchUrl)
+    if (data === null) {
+      fetchFailed = true
+      break
     }
-  } catch (err) {
-    console.error('Failed to fetch from registry:', err)
-    fetchFailed = true
+
+    const { entries, nextCursor } = parseRegistryPage(data)
+    // Break on empty ENTRIES, not on parsed servers: a page where every record
+    // is superseded or inactive is still a valid page, and stopping there
+    // would truncate pagination and silently drop the rest of the catalog.
+    if (entries.length === 0) {
+      // ...but an empty page that still advertises a next cursor is not the end
+      // of the catalog. parseRegistryPage also returns `entries: []` when
+      // `servers` is present but not an array, so this shape is how a mid-run
+      // payload change would otherwise write SUCCESS having read 0.2% of it.
+      if (nextCursor) {
+        console.error(`Registry returned 0 entries but a nextCursor (${nextCursor}) — treating as a failure`)
+        fetchFailed = true
+      }
+      break
+    }
+
+    for (const entry of entries) {
+      // Belt and braces with the typeof guards inside parseRegistryEntry: an
+      // uncaught throw here would escape into a "registry outage" that is
+      // really one malformed record, and it would repeat nightly.
+      try {
+        const parsed = parseRegistryEntry(entry)
+        if (parsed.kind !== 'ok') {
+          skipped[parsed.reason]++
+          continue
+        }
+        all.push(parsed.server)
+        for (const t of parsed.server.unmappedTransports) unmappedTransports.add(t)
+      } catch (err) {
+        console.warn(`  Skipped a malformed registry record: ${String(err)}`)
+        skipped.malformed++
+      }
+    }
+    console.log(`  Fetched ${all.length} servers so far...`)
+
+    // Check for pagination cursor
+    if (!nextCursor) break
+    // A cursor that does not advance is an infinite loop with unbounded memory
+    // growth; the workflow carries no timeout-minutes to stop it.
+    if (nextCursor === cursor) {
+      console.error(`Registry repeated cursor ${nextCursor} — aborting pagination`)
+      fetchFailed = true
+      break
+    }
+    cursor = nextCursor
+
+    await new Promise(r => setTimeout(r, 200))
   }
 
-  return { servers: all, skipped, fetchFailed }
+  return { servers: all, skipped, fetchFailed, unmappedTransports: [...unmappedTransports] }
 }
 
 /**
@@ -105,12 +159,38 @@ async function fetchRegistryServers(): Promise<FetchResult> {
  *
  * No backfill script is needed to populate `registry_id`: the GitHub-URL link
  * branch already writes it, so one nightly run self-heals every existing row.
+ *
+ * Archived rows are excluded. bots/detect-duplicates.ts ARCHIVES duplicates
+ * instead of deleting them, and `CURATED_FIELDS` (lib/curated-merge.ts) does not
+ * carry `registry_id`/`registry_verified` over to the keeper — so without this
+ * filter an entry binds permanently to an invisible row, refreshing its
+ * `registry_synced_at` nightly while the live keeper never gets the badge.
  */
-async function getExistingRegistryRowIds(): Promise<Map<string, string>> {
-  const rows = await fetchAllRows<{ id: string; registry_id: string }>(
-    supabase.from('servers').select('id, registry_id').not('registry_id', 'is', null).order('id')
+type ExistingRegistryRow = { id: string; githubUrl: string | null }
+
+async function getExistingRegistryRowIds(): Promise<Map<string, ExistingRegistryRow>> {
+  const rows = await fetchAllRows<{ id: string; registry_id: string; github_url: string | null }>(
+    supabase
+      .from('servers')
+      .select('id, registry_id, github_url')
+      .not('registry_id', 'is', null)
+      .eq('is_archived', false)
+      .order('id')
   )
-  return new Map(rows.map(s => [s.registry_id, s.id]))
+  return new Map(rows.map(s => [s.registry_id, { id: s.id, githubUrl: s.github_url }]))
+}
+
+/**
+ * Escape LIKE metacharacters so an interpolated URL is matched literally.
+ *
+ * `%`/`_` in a stored or registry-supplied URL would otherwise widen the pattern
+ * — in the `%` case to a catalog-wide match that PostgREST truncates at 1000
+ * rows, so the exact-equality `find` below misses and the link is silently
+ * dropped while still being counted. The `.ilike` is only a prefilter; the
+ * `find` is the real filter.
+ */
+function escapeLikeValue(value: string): string {
+  return value.replace(/[\\%_]/g, m => `\\${m}`)
 }
 
 async function getExistingGithubUrls(): Promise<Set<string>> {
@@ -130,7 +210,18 @@ async function main() {
   console.log('=== MCPpedia Registry Sync ===')
   console.log(new Date().toISOString())
 
-  const { servers: registryServers, skipped, fetchFailed } = await fetchRegistryServers()
+  const { servers: fetched, skipped, fetchFailed, unmappedTransports } = await fetchRegistryServers()
+
+  // `registryId` is the registry `name`, which can legitimately repeat within a
+  // run (page-boundary overlap, or every version of a server if `isLatest` ever
+  // stops being emitted). `existingRowIds` is snapshotted before the write loop,
+  // so a repeat would insert a SECOND row with the same registry_id and the next
+  // run's `new Map(...)` would keep only one — freezing the other forever.
+  const byRegistryId = new Map<string, ParsedRegistryServer>()
+  for (const s of fetched) if (!byRegistryId.has(s.registryId)) byRegistryId.set(s.registryId, s)
+  const registryServers = [...byRegistryId.values()]
+  const duplicateEntries = fetched.length - registryServers.length
+
   console.log(`Fetched ${registryServers.length} servers from official registry`)
   run.addProcessed(registryServers.length)
 
@@ -139,10 +230,16 @@ async function main() {
   // path and the duplicate path both `continue` before reaching it.
   const mappedPackages = registryServers.filter(s => s.hasMappedPackage).length
 
-  const skippedCounts = {
+  const baseSummary = {
+    fetchFailed,
+    fetched: registryServers.length,
+    duplicateEntries,
+    mappedPackages,
+    unmappedTransports: unmappedTransports.join(',') || null,
     skippedNotLatest: skipped['not-latest'],
     skippedInactive: skipped['inactive-status'],
     skippedNoName: skipped['no-name'],
+    skippedMalformed: skipped.malformed,
   }
 
   // This used to be a bare `return` inside the try, which skipped both
@@ -151,12 +248,35 @@ async function main() {
   // read as a healthy night. `run.fail` sets process.exitCode = 1
   // (bots/lib/bot-run.ts:71), which turns the Registry Sync workflow red for
   // .github/workflows/alert-on-failure.yml to pick up.
-  if (fetchFailed || registryServers.length === 0) {
+  //
+  // Only a TOTAL fetch failure aborts here. A partial one falls through to the
+  // write loop and fails after it: nothing in the loop is destructive (no
+  // deletes, no archiving), so committing the pages that did arrive is strictly
+  // better than discarding a night's work over one bad page.
+  if (registryServers.length === 0) {
     const reason = fetchFailed
       ? 'registry fetch failed — see the logged status/error above'
       : 'registry returned 0 ingestable servers'
     console.error(`${reason}. Failing the run.`)
-    run.setSummary({ fetchFailed, fetched: registryServers.length, ...skippedCounts })
+    run.setSummary(baseSummary)
+    await run.fail(reason)
+    return
+  }
+
+  // Row counts alone cannot tell schema drift from a quiet upstream: a renamed
+  // package field yields N records and 0 packages, which every count-based check
+  // reads as success. This guard runs BEFORE the catalog walk and the write loop
+  // — everything it needs is known at parse time, and on a drift night the loop
+  // would otherwise insert thousands of the corrupt NULL-package rows the guard
+  // exists to prevent, then fail, then repeat tomorrow.
+  //
+  // It needs NO self-releasing age bound (unlike the >20% guard in
+  // bots/snapshot-metrics.ts) because it compares against the live payload
+  // rather than a stored row — a fixed upstream releases it on the next run.
+  if (mappedPackages === 0) {
+    const reason = `mapped 0 npm/pip packages across ${registryServers.length} registry records — schema drift`
+    console.error(`\n${reason}`)
+    run.setSummary(baseSummary)
     await run.fail(reason)
     return
   }
@@ -165,6 +285,7 @@ async function main() {
   const existingUrls = await getExistingGithubUrls()
   let synced = 0
   let updated = 0
+  let linkMisses = 0
   let duplicates = 0
   let insertFailures = 0
 
@@ -172,13 +293,18 @@ async function main() {
     const githubUrl = parsed.githubUrl
 
     // Check if already synced
-    const existingRowId = existingRowIds.get(parsed.registryId)
-    if (existingRowId) {
-      // Update registry_synced_at
+    const existingRow = existingRowIds.get(parsed.registryId)
+    // A repo transfer moves the entry to a DIFFERENT row: the publisher's new
+    // URL may already have its own row here, and taking the fast path would keep
+    // refreshing the stale one forever while the new row never gets the badge.
+    // So the fast path only applies when the entry's URL still matches the row's.
+    if (existingRow && (!githubUrl || normalizeGithubUrl(existingRow.githubUrl) === githubUrl)) {
+      // `registry_verified` is written here too, not just on first link: it was
+      // otherwise set exactly once, so any row that missed it stayed stuck.
       await supabase
         .from('servers')
-        .update({ registry_synced_at: new Date().toISOString() })
-        .eq('id', existingRowId)
+        .update({ registry_synced_at: new Date().toISOString(), registry_verified: true })
+        .eq('id', existingRow.id)
       updated++
       continue
     }
@@ -190,7 +316,7 @@ async function main() {
       const { data: matches } = await supabase
         .from('servers')
         .select('id, github_url')
-        .ilike('github_url', `%${githubUrl.replace(/^https:\/\//, '')}%`)
+        .ilike('github_url', `%${escapeLikeValue(githubUrl.replace(/^https:\/\//, ''))}%`)
 
       const target = (matches || []).find(m => normalizeGithubUrl(m.github_url) === githubUrl)
       if (target) {
@@ -202,8 +328,14 @@ async function main() {
             registry_verified: true,
           })
           .eq('id', target.id)
+        existingRowIds.set(parsed.registryId, { id: target.id, githubUrl })
+        updated++
+      } else {
+        // The URL is in `existingUrls` but no row survived exact-equality
+        // matching. Counting this as "updated" hid a nightly no-op that still
+        // pays a full seq scan of ~63k rows.
+        linkMisses++
       }
-      updated++
       continue
     }
 
@@ -248,8 +380,10 @@ async function main() {
     // Auto-categorize from name + description
     const categories = categorize(parsed.name || slug, parsed.description ?? undefined)
 
-    // Insert new server
-    const { error } = await supabase.from('servers').insert({
+    // Insert new server. The id comes back so `existingRowIds` can absorb it —
+    // the map was snapshotted before the loop, and a registry `name` repeating
+    // later in the same run would otherwise insert a second row for it.
+    const { data: inserted, error } = await supabase.from('servers').insert({
       slug,
       name: parsed.name || slug,
       tagline: parsed.description || null,
@@ -266,7 +400,7 @@ async function main() {
       registry_synced_at: new Date().toISOString(),
       registry_verified: true,
       verified: false,
-    })
+    }).select('id').single()
 
     if (error) {
       // 23505 = unique_violation. With the dedup indexes, this means a parallel
@@ -281,6 +415,7 @@ async function main() {
       }
     } else {
       console.log(`  New: ${slug}`)
+      if (inserted) existingRowIds.set(parsed.registryId, { id: inserted.id, githubUrl })
       synced++
     }
 
@@ -292,33 +427,25 @@ async function main() {
   // The SQL compute_all_scores() function uses simpler heuristics and different weights,
   // so we don't call it here to avoid overwriting accurate scores.
 
-  const summary = {
+  run.setSummary({
+    ...baseSummary,
     new: synced,
     updated,
+    linkMisses,
     duplicates,
     insertFailures,
-    mappedPackages,
-    ...skippedCounts,
-  }
+  })
+  run.addUpdated(synced + updated)
+  console.log(`\nDone. New: ${synced}, Updated: ${updated}, Link misses: ${linkMisses}, Duplicates: ${duplicates}, Failures: ${insertFailures}`)
 
-  // Row counts alone cannot tell schema drift from a quiet upstream: a renamed
-  // package field yields N records and 0 packages, which every count-based check
-  // reads as success. This one needs NO self-releasing age bound (unlike the
-  // >20% guard in bots/snapshot-metrics.ts) because it compares against the live
-  // payload rather than a stored row — a fixed upstream releases it on the next
-  // run automatically. Until then, failing nightly is the correct behaviour for
-  // a drift signature nobody is watching for.
-  if (registryServers.length > 0 && mappedPackages === 0) {
-    const reason = `mapped 0 npm/pip packages across ${registryServers.length} registry records — schema drift`
-    console.error(`\n${reason}`)
-    run.setSummary(summary)
+  // A partial fetch still alarms — but only now that the pages that did arrive
+  // have been written.
+  if (fetchFailed) {
+    const reason = 'registry fetch was partial — see the logged status/error above'
+    console.error(reason)
     await run.fail(reason)
     return
   }
-
-  run.setSummary(summary)
-  run.addUpdated(synced + updated)
-  console.log(`\nDone. New: ${synced}, Updated: ${updated}, Duplicates: ${duplicates}, Failures: ${insertFailures}`)
   await run.finish()
   } catch (err) {
     await run.fail(String(err))
