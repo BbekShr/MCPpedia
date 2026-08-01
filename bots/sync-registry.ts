@@ -17,9 +17,25 @@ import {
   type ParsedRegistryServer,
   type SkipReason,
 } from '../lib/registry-schema'
+import { planRegistryRowWrite } from '../lib/registry-sync-plan'
 
 /** Mirrors the per-page retry in bots/lib/supabase.ts `fetchAllRows`. */
 const PAGE_FETCH_ATTEMPTS = 3
+
+/**
+ * Hard ceiling on pages per run — the last stop against a looping cursor.
+ *
+ * The no-progress check below only catches an immediate self-repeat; an
+ * alternating `A→B→A→B` cursor walks past it forever with `all` growing
+ * unbounded. `.github/workflows/sync-registry.yml` sets no `timeout-minutes`,
+ * so GitHub's 6-hour default is otherwise the only thing that stops it. At 25-30
+ * records a page this is ~50k records, well past the live catalog.
+ */
+const MAX_REGISTRY_PAGES = 2000
+
+/** Bounds on the publisher-controlled strings echoed into the run summary. */
+const MAX_UNMAPPED_TRANSPORTS = 20
+const MAX_UNMAPPED_TRANSPORT_LEN = 64
 
 const supabase = createAdminClient('bot-sync-registry')
 
@@ -85,7 +101,12 @@ async function fetchRegistryServers(): Promise<FetchResult> {
   let fetchFailed = false
   let cursor: string | null = null
 
-  while (true) {
+  for (let page = 1; ; page++) {
+    if (page > MAX_REGISTRY_PAGES) {
+      console.error(`Registry pagination exceeded ${MAX_REGISTRY_PAGES} pages — aborting`)
+      fetchFailed = true
+      break
+    }
     const fetchUrl: string = cursor
       ? `${REGISTRY_API}/servers?version=latest&cursor=${encodeURIComponent(cursor)}`
       : `${REGISTRY_API}/servers?version=latest`
@@ -101,11 +122,14 @@ async function fetchRegistryServers(): Promise<FetchResult> {
     // is superseded or inactive is still a valid page, and stopping there
     // would truncate pagination and silently drop the rest of the catalog.
     if (entries.length === 0) {
-      // ...but an empty page that still advertises a next cursor is not the end
+      // ...but an empty page that still advertises a NEW cursor is not the end
       // of the catalog. parseRegistryPage also returns `entries: []` when
       // `servers` is present but not an array, so this shape is how a mid-run
       // payload change would otherwise write SUCCESS having read 0.2% of it.
-      if (nextCursor) {
+      // An empty terminal page that merely ECHOES the cursor we sent is not a
+      // fault, and the no-progress check below cannot rescue it (it only runs
+      // when entries arrived) — so it would have reddened every healthy run.
+      if (nextCursor && nextCursor !== cursor) {
         console.error(`Registry returned 0 entries but a nextCursor (${nextCursor}) — treating as a failure`)
         fetchFailed = true
       }
@@ -123,7 +147,14 @@ async function fetchRegistryServers(): Promise<FetchResult> {
           continue
         }
         all.push(parsed.server)
-        for (const t of parsed.server.unmappedTransports) unmappedTransports.add(t)
+        // `remote.type` is free text from a third party and this set is joined
+        // into the `bot_runs.summary` jsonb, whose write is not error-checked
+        // (bots/lib/bot-run.ts:57-63) — an oversized summary would fail the
+        // write silently. A rename needs a handful of samples, not every value.
+        for (const t of parsed.server.unmappedTransports) {
+          if (unmappedTransports.size >= MAX_UNMAPPED_TRANSPORTS) break
+          unmappedTransports.add(t.slice(0, MAX_UNMAPPED_TRANSPORT_LEN))
+        }
       } catch (err) {
         console.warn(`  Skipped a malformed registry record: ${String(err)}`)
         skipped.malformed++
@@ -133,8 +164,10 @@ async function fetchRegistryServers(): Promise<FetchResult> {
 
     // Check for pagination cursor
     if (!nextCursor) break
-    // A cursor that does not advance is an infinite loop with unbounded memory
-    // growth; the workflow carries no timeout-minutes to stop it.
+    // A cursor that repeats the one we just sent is an infinite loop with
+    // unbounded memory growth. This catches only the immediate self-repeat —
+    // an alternating cursor slips past it, which is what MAX_REGISTRY_PAGES
+    // above is for.
     if (nextCursor === cursor) {
       console.error(`Registry repeated cursor ${nextCursor} — aborting pagination`)
       fetchFailed = true
@@ -193,15 +226,51 @@ function escapeLikeValue(value: string): string {
   return value.replace(/[\\%_]/g, m => `\\${m}`)
 }
 
+/**
+ * Every repo URL held by a LIVE row, normalized.
+ *
+ * Archived rows are excluded for the same reason `getExistingRegistryRowIds`
+ * excludes them, and the exclusion has to be on BOTH reads to do anything:
+ * bots/detect-duplicates.ts archives the loser by setting `is_archived` and
+ * nothing else (`detect-duplicates.ts:253-256`), so the archived row keeps a
+ * `github_url` identical to the keeper's. With archived rows in this set — and
+ * in the `.ilike` prefilter that follows — PostgREST returns both rows in an
+ * unordered result and `.find` binds to whichever came first, re-stamping an
+ * invisible row on roughly half of all nights and paying the ~63k-row scan
+ * again the next.
+ */
 async function getExistingGithubUrls(): Promise<Set<string>> {
   const rows = await fetchAllRows<{ github_url: string }>(
-    supabase.from('servers').select('github_url').not('github_url', 'is', null).order('id')
+    supabase
+      .from('servers')
+      .select('github_url')
+      .not('github_url', 'is', null)
+      .eq('is_archived', false)
+      .order('id')
   )
   return new Set(
     rows
       .map(s => normalizeGithubUrl(s.github_url))
       .filter((u): u is string => !!u)
   )
+}
+
+/**
+ * The LIVE row whose `github_url` normalizes to `githubUrl`, or null.
+ *
+ * The `.ilike` is only a prefilter — older rows may store an un-normalized URL
+ * form, so the exact match is the `find`. It excludes archived rows for the
+ * reason spelled out on `getExistingGithubUrls`: an archived duplicate keeps the
+ * keeper's URL verbatim, and PostgREST returns the two in no defined order.
+ */
+async function findLiveRowByGithubUrl(githubUrl: string): Promise<{ id: string } | null> {
+  const { data: matches } = await supabase
+    .from('servers')
+    .select('id, github_url')
+    .eq('is_archived', false)
+    .ilike('github_url', `%${escapeLikeValue(githubUrl.replace(/^https:\/\//, ''))}%`)
+
+  return (matches || []).find(m => normalizeGithubUrl(m.github_url) === githubUrl) ?? null
 }
 
 async function main() {
@@ -274,7 +343,12 @@ async function main() {
   // bots/snapshot-metrics.ts) because it compares against the live payload
   // rather than a stored row — a fixed upstream releases it on the next run.
   if (mappedPackages === 0) {
-    const reason = `mapped 0 npm/pip packages across ${registryServers.length} registry records — schema drift`
+    // On a partial fetch the sample is whatever arrived before the failure, so
+    // "0 packages" may just be a short read. Name that first: `fetchFailed` is
+    // in the summary, but `error_message` is what a human reads.
+    const reason = fetchFailed
+      ? `registry fetch was partial AND mapped 0 npm/pip packages across the ${registryServers.length} records that arrived — treat the partial fetch as the cause first`
+      : `mapped 0 npm/pip packages across ${registryServers.length} registry records — schema drift`
     console.error(`\n${reason}`)
     run.setSummary(baseSummary)
     await run.fail(reason)
@@ -292,49 +366,57 @@ async function main() {
   for (const parsed of registryServers) {
     const githubUrl = parsed.githubUrl
 
-    // Check if already synced
-    const existingRow = existingRowIds.get(parsed.registryId)
-    // A repo transfer moves the entry to a DIFFERENT row: the publisher's new
-    // URL may already have its own row here, and taking the fast path would keep
-    // refreshing the stale one forever while the new row never gets the badge.
-    // So the fast path only applies when the entry's URL still matches the row's.
-    if (existingRow && (!githubUrl || normalizeGithubUrl(existingRow.githubUrl) === githubUrl)) {
-      // `registry_verified` is written here too, not just on first link: it was
-      // otherwise set exactly once, so any row that missed it stayed stuck.
-      await supabase
-        .from('servers')
-        .update({ registry_synced_at: new Date().toISOString(), registry_verified: true })
-        .eq('id', existingRow.id)
-      updated++
-      continue
-    }
+    // Which row this entry belongs on. The rule the plan enforces: an entry we
+    // can already identify by `registry_id` NEVER reaches the insert below.
+    const plan = await planRegistryRowWrite({
+      githubUrl,
+      existingRow: existingRowIds.get(parsed.registryId),
+      urlInCatalog: !!githubUrl && existingUrls.has(githubUrl),
+      normalizeUrl: normalizeGithubUrl,
+      findRowByUrl: findLiveRowByGithubUrl,
+    })
 
-    // Check if we already have this by GitHub URL (normalized)
-    if (githubUrl && existingUrls.has(githubUrl)) {
-      // Link existing server to registry. Match against any URL form that
-      // normalizes to ours, since older rows may not be normalized yet.
-      const { data: matches } = await supabase
-        .from('servers')
-        .select('id, github_url')
-        .ilike('github_url', `%${escapeLikeValue(githubUrl.replace(/^https:\/\//, ''))}%`)
-
-      const target = (matches || []).find(m => normalizeGithubUrl(m.github_url) === githubUrl)
-      if (target) {
-        await supabase
-          .from('servers')
-          .update({
-            registry_id: parsed.registryId,
-            registry_synced_at: new Date().toISOString(),
-            registry_verified: true,
-          })
-          .eq('id', target.id)
-        existingRowIds.set(parsed.registryId, { id: target.id, githubUrl })
-        updated++
-      } else {
-        // The URL is in `existingUrls` but no row survived exact-equality
-        // matching. Counting this as "updated" hid a nightly no-op that still
-        // pays a full seq scan of ~63k rows.
-        linkMisses++
+    if (plan.kind !== 'insert') {
+      const stamp = { registry_synced_at: new Date().toISOString(), registry_verified: true }
+      switch (plan.kind) {
+        case 'refresh':
+          // `registry_verified` is written here too, not just on first link: it
+          // was otherwise set exactly once, so any row that missed it stayed stuck.
+          await supabase.from('servers').update(stamp).eq('id', plan.id)
+          updated++
+          break
+        case 'adopt':
+          await supabase
+            .from('servers')
+            .update({ ...stamp, github_url: plan.githubUrl })
+            .eq('id', plan.id)
+          existingRowIds.set(parsed.registryId, { id: plan.id, githubUrl: plan.githubUrl })
+          updated++
+          break
+        case 'relink':
+          // Clear the identity off the old row FIRST. `registry_id` has no unique
+          // index, so leaving it on both rows lets the next run's `new Map(...)`
+          // pick the stale one back up and re-link forever.
+          if (plan.clearRegistryIdOn) {
+            await supabase
+              .from('servers')
+              .update({ registry_id: null, registry_verified: false })
+              .eq('id', plan.clearRegistryIdOn)
+          }
+          await supabase
+            .from('servers')
+            .update({ ...stamp, registry_id: parsed.registryId })
+            .eq('id', plan.targetId)
+          existingRowIds.set(parsed.registryId, { id: plan.targetId, githubUrl })
+          updated++
+          break
+        case 'linkMiss':
+          // The URL is in `existingUrls` but no row survived exact-equality
+          // matching. Counting this as "updated" hid a nightly no-op that still
+          // pays a full seq scan of ~63k rows.
+          if (plan.refreshId) await supabase.from('servers').update(stamp).eq('id', plan.refreshId)
+          linkMisses++
+          break
       }
       continue
     }

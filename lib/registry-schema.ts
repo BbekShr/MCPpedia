@@ -174,15 +174,21 @@ const REMOTE_TYPE_MAP: Record<string, Transport> = {
  * can report a rename instead of absorbing it.
  *
  * Two traps this walks around:
- *  - `stdio` is NOT a safe default. Both scorers award +4 for
- *    `'stdio' = any(transport)` (`lib/scoring.ts:1104`,
+ *  - `stdio` is NOT a safe default *once a type has been declared*. Both scorers
+ *    award +4 for `'stdio' = any(transport)` (`lib/scoring.ts:1104`,
  *    `supabase/migrations/20260402010000_scores_security_registry.sql:155`), so
  *    fabricating it for a remote-only server whose type upstream renamed would
  *    inflate compatibility scores catalog-wide and stay invisible to the
- *    `mappedPackages` drift guard. It is emitted only when the server declares
- *    no remotes and no packages at all — the genuine local-server shape.
- *    Otherwise the array is empty, which the column allows
- *    (`transport text[] default '{}'`).
+ *    `mappedPackages` drift guard. So the fallback keys on whether any transport
+ *    type STRING was declared, not on whether packages/remotes were declared:
+ *    the legacy package shape documented above (`registryType`/`identifier` with
+ *    no `transport` sub-object, still live upstream) declares no type at all and
+ *    is the genuine local-server shape, while a declared-but-unrecognized type
+ *    yields an empty array — which the column allows
+ *    (`transport text[] default '{}'`) — plus an `unmapped` entry so the bot
+ *    reports the rename. Gating on `packages.length === 0` instead made those
+ *    two cases indistinguishable and silently dropped stdio from every
+ *    legacy-shaped record.
  *  - The lookup must be own-property only. `REMOTE_TYPE_MAP['constructor']`
  *    resolves up the prototype chain to a truthy function that the index
  *    signature types as `Transport`, and it serializes into the `text[]` column
@@ -193,11 +199,13 @@ export function deriveTransports(
 ): { transports: Transport[]; unmapped: string[] } {
   const transports: Transport[] = []
   const unmapped: string[] = []
+  let sawType = false
 
   const add = (raw: unknown) => {
     if (typeof raw !== 'string') return
     const key = raw.trim().toLowerCase()
     if (!key) return
+    sawType = true
     if (Object.hasOwn(REMOTE_TYPE_MAP, key)) {
       const hit = REMOTE_TYPE_MAP[key]
       if (!transports.includes(hit)) transports.push(hit)
@@ -206,14 +214,10 @@ export function deriveTransports(
     }
   }
 
-  const remotes = remoteList(server)
-  const packages = packageList(server)
-  for (const remote of remotes) add(remote.type)
-  for (const pkg of packages) add(isRecord(pkg.transport) ? pkg.transport.type : undefined)
+  for (const remote of remoteList(server)) add(remote.type)
+  for (const pkg of packageList(server)) add(isRecord(pkg.transport) ? pkg.transport.type : undefined)
 
-  if (transports.length === 0 && remotes.length === 0 && packages.length === 0) {
-    return { transports: ['stdio'], unmapped }
-  }
+  if (!sawType) return { transports: ['stdio'], unmapped }
   return { transports, unmapped }
 }
 

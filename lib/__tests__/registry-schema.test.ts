@@ -116,6 +116,9 @@ describe('parseRegistryEntry (defensive reads)', () => {
       entry({ name: 'a/b', packages: [null, 'nope', { registryType: 'npm', identifier: 'x' }], remotes: [null, 7] })
     )
     expect(result.kind === 'ok' && result.server.npmPackage).toBe('x')
+    // The legacy package shape declares no `transport` at all — that is a local
+    // stdio server, not a server whose transport failed to map.
+    expect(result.kind === 'ok' && result.server.transports).toEqual(['stdio'])
   })
 
   it('does not let a prototype-keyed transport reach the column', () => {
@@ -150,9 +153,25 @@ describe('deriveTransports', () => {
     ).toEqual(['http', 'stdio'])
   })
 
-  it('defaults to stdio ONLY when nothing is declared', () => {
+  it('defaults to stdio when no transport TYPE is declared', () => {
     expect(deriveTransports({}).transports).toEqual(['stdio'])
     expect(deriveTransports({ remotes: [], packages: [] }).transports).toEqual(['stdio'])
+  })
+
+  it('defaults to stdio for the legacy package shape that has no transport object', () => {
+    // Gating the fallback on `packages.length === 0` made this indistinguishable
+    // from a declared-but-unmapped type: it returned `[]` with an empty
+    // `unmapped`, so the row lost the +4 stdio compatibility point in both
+    // scorers AND dropped out of the stdio filter, with no drift signal at all.
+    // This shape (registryType/identifier, no `transport`) is live upstream.
+    const legacy = deriveTransports({ packages: [{ registryType: 'npm', identifier: 'x' }] })
+    expect(legacy.transports).toEqual(['stdio'])
+    expect(legacy.unmapped).toEqual([])
+
+    // An explicit stdio declaration must land on the same value.
+    expect(deriveTransports({ packages: [{ transport: { type: 'stdio' } }] }).transports).toEqual([
+      'stdio',
+    ])
   })
 
   it('returns an empty set — never a fabricated stdio — when nothing maps', () => {
