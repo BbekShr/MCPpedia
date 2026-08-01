@@ -103,11 +103,21 @@ export async function generateStaticParams() {
 
   try {
     const supabase = createAdminClient('static-params')
+    // Only the very top of the catalog is prerendered. Every page not built
+    // here is still served — `dynamicParams` renders it on first request and
+    // ISR then holds it for `revalidate` (7d), with on-demand revalidation on
+    // approved edits — so this number trades one cold render per page per week
+    // against build cost. It was 1000, and since each page pulls a full server
+    // row (including the heavy `tools` JSONB) plus its changelogs, advisories
+    // and 4 related cards, that meant re-downloading a large slice of the
+    // catalog on every preview AND production deploy. On a 5 GB/month egress
+    // plan a busy PR day was worth gigabytes; this is what restricted the
+    // project on 2026-07-25 and took production down with it.
     const { data } = await supabase
       .from('servers')
       .select('slug')
       .order('github_stars', { ascending: false })
-      .limit(1000)
+      .limit(50)
 
     return (data || []).map(s => ({ slug: s.slug }))
   } catch {
@@ -140,11 +150,15 @@ export default async function ServerDetailPage({
       .eq('server_id', s.id)
       .order('detected_at', { ascending: false })
       .limit(10),
+    // Bounded: this was unbounded, so a server with a pathological advisory
+    // history dictated the size of its own page response. Newest-first, so the
+    // cap drops the oldest — 100 is far above any real server's count.
     supabase
       .from('security_advisories')
       .select('*')
       .eq('server_id', s.id)
-      .order('published_at', { ascending: false }),
+      .order('published_at', { ascending: false })
+      .limit(100),
     supabase
       .from('servers')
       .select(PUBLIC_CARD_FIELDS)

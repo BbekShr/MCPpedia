@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { SITE_URL, SITE_NAME } from '@/lib/constants'
 import { createPublicClient } from '@/lib/supabase/public'
+import { liveDataOrNull } from '@/lib/degrade'
 import type { Metadata } from 'next'
 import BadgePreview from '@/components/BadgePreview'
 
@@ -83,26 +84,41 @@ function SecurityBadgeSVG({ secScore, cves }: { secScore: number; cves: number }
 }
 
 export default async function BadgePage() {
-  const supabase = createPublicClient()
+  // Time-bounded because this page IS prerendered, unlike / and /security: an
+  // unreachable database left these two awaits hanging until Next's 60s
+  // per-page prerender budget killed them, which failed the whole build. The
+  // page already renders correctly without either value, so a bounded miss
+  // costs a degraded /badge until the next revalidate — a deploy costs
+  // everything.
+  const live = await liveDataOrNull(async () => {
+    const supabase = createPublicClient()
 
-  // Catalog total comes from the shared daily home_stats snapshot — the same
-  // source as the homepage hero and the /servers headline — so the number can
-  // never disagree between pages. An exact count over the ~46k-row table
-  // exceeds anon's 3s statement timeout; this page used to swallow that error
-  // and fall back to a hardcoded 17,000, which is what it served for days. No
-  // hardcoded fallback: if the snapshot is unreachable, say nothing.
-  const { data: statsData, error: statsError } = await supabase.rpc('home_stats')
-  if (statsError) console.error('[badge] home_stats failed', statsError)
-  const serverCount = (statsData as { total_servers?: number } | null)?.total_servers ?? null
+    // Catalog total comes from the shared daily home_stats snapshot — the same
+    // source as the homepage hero and the /servers headline — so the number can
+    // never disagree between pages. An exact count over the ~46k-row table
+    // exceeds anon's 3s statement timeout; this page used to swallow that error
+    // and fall back to a hardcoded 17,000, which is what it served for days. No
+    // hardcoded fallback: if the snapshot is unreachable, say nothing.
+    const { data: statsData, error: statsError } = await supabase.rpc('home_stats')
+    if (statsError) console.error('[badge] home_stats failed', statsError)
 
-  // Fetch a few popular servers for "Try it" examples
-  const { data: popularServers } = await supabase
-    .from('servers')
-    .select('slug, name, score_total')
-    .eq('is_archived', false)
-    .gt('score_total', 70)
-    .order('npm_weekly_downloads', { ascending: false })
-    .limit(6)
+    // A few popular servers for the "Try it" examples.
+    const { data: servers } = await supabase
+      .from('servers')
+      .select('slug, name, score_total')
+      .eq('is_archived', false)
+      .gt('score_total', 70)
+      .order('npm_weekly_downloads', { ascending: false })
+      .limit(6)
+
+    return {
+      serverCount: (statsData as { total_servers?: number } | null)?.total_servers ?? null,
+      popularServers: servers,
+    }
+  })
+
+  const serverCount = live?.serverCount ?? null
+  const popularServers = live?.popularServers ?? []
 
   const jsonLd = {
     '@context': 'https://schema.org',

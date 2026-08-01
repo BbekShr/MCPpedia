@@ -131,12 +131,35 @@ async function main() {
   console.log('=== MCPpedia Install Info Extractor ===')
   console.log(new Date().toISOString())
 
-  // Get all servers with a GitHub URL
+  // Server-side form of the `needsUpdate` filter below. That filter reduces to
+  // "empty install_configs OR known-wrong npm_package OR empty categories", so
+  // asking Postgres the same question first is behaviour-preserving — it just
+  // stops the whole catalog's `install_configs` JSONB crossing the wire every
+  // run so that JS can discard nearly all of it.
+  //
+  // Deliberately NOT filtered on is_archived: the query never was, archived
+  // servers' pages still render this data, and `is_archived` is nullable, so
+  // eq(false) would also drop rows that simply never had the flag set.
+  //
+  // Each skip-list value is quoted because a raw `or` string gets no quoting
+  // from supabase-js, and one future entry containing a comma would otherwise
+  // silently truncate the list.
+  const skipList = [...NPX_SKIP_PACKAGES].map(p => `"${p}"`).join(',')
+  const candidateFilter = [
+    'install_configs.is.null',
+    'install_configs.eq.{}',
+    'categories.is.null',
+    'categories.eq.{}',
+    `npm_package.in.(${skipList})`,
+  ].join(',')
+
+  // Servers with a GitHub URL that may need install info or categories.
   const servers = await fetchAllRows<{ id: string; slug: string; name: string; tagline: string | null; github_url: string; npm_package: string | null; pip_package: string | null; install_configs: Record<string, unknown> | null; transport: string[] | null; categories: string[] | null }>(
     supabase
       .from('servers')
       .select('id, slug, name, tagline, github_url, npm_package, pip_package, install_configs, transport, categories')
       .not('github_url', 'is', null)
+      .or(candidateFilter)
       .order('id')
   )
 
@@ -152,7 +175,9 @@ async function main() {
     || !s.categories || s.categories.length === 0
   )
 
-  console.log(`${needsUpdate.length} servers need install info or categories (out of ${servers.length} total)\n`)
+  // `servers.length` is the candidate count the query returned, not the catalog
+  // size — the filter above already excluded servers that need nothing.
+  console.log(`${needsUpdate.length} servers need install info or categories (out of ${servers.length} candidates)\n`)
 
   let updated = 0
   let skipped = 0

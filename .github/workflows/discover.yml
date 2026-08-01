@@ -2,7 +2,7 @@ name: Discovery Bot
 
 on:
   schedule:
-    - cron: '0 5 * * *'  # Daily at 5am UTC / 12am CST
+    - cron: '0 5 * * 1,4'  # Mon+Thu at 5am UTC / 12am CST (egress budget; runs with the enrichment pipeline)
   workflow_dispatch:
 
 jobs:

@@ -13,7 +13,16 @@ import { getServerChunkCount, renderSitemapIndex, SITEMAP_HEADERS } from '@/lib/
 // hardcoded entries, which left every server past position 30,000 out of every
 // sitemap once the catalog grew past that (S29).
 
-export const revalidate = 86400 // 1d
+// Rendered per request rather than prerendered, for the same reason the shard
+// route dropped its `generateStaticParams`: `getServerChunkCount()` reads the
+// database, and a prerendered route handler reads it during `next build`, so a
+// database blip failed the deploy (S8). `SITEMAP_HEADERS` already carries
+// `s-maxage=86400, stale-while-revalidate=604800`, so the CDN gives this the
+// same once-a-day origin hit that `revalidate` did — and on a failed refresh it
+// keeps serving the last good index for a week instead of publishing a
+// truncated one. The fail-loud throw in `fetchServerTotal` is unchanged: a count
+// failure must never be answered with the MIN_SERVER_CHUNKS floor.
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
   const now = new Date().toISOString()

@@ -75,6 +75,17 @@ async function main() {
     console.log('=== MCPpedia Description Enricher ===')
     console.log(new Date().toISOString())
 
+    // Ask Postgres for the short ones instead of downloading every description
+    // in the catalog to measure it here. A LIKE pattern of N underscores plus %
+    // matches "at least N characters", so negating it selects exactly the rows
+    // shorter than the threshold; NULLs never match LIKE either way, hence the
+    // explicit is.null arm.
+    const MIN_DESCRIPTION_LENGTH = 30
+    const shortOrMissing = [
+      'description.is.null',
+      `description.not.like.${'_'.repeat(MIN_DESCRIPTION_LENGTH)}%`,
+    ].join(',')
+
     const servers = await fetchAllRows<{ id: string; slug: string; github_url: string; description: string | null; description_source: string | null }>(
       supabase
         .from('servers')
@@ -82,11 +93,15 @@ async function main() {
         .not('github_url', 'is', null)
         .eq('is_archived', false)
         .neq('description_source', 'human')
+        .or(shortOrMissing)
         .order('id')
     )
 
-    const needsDesc = servers.filter(s => !s.description || s.description.length < 30)
-    console.log(`${needsDesc.length} servers need descriptions (out of ${servers.length})\n`)
+    // Kept as the authority on what counts as short. Postgres counts characters
+    // and JS counts UTF-16 units, so the query is a superset for descriptions
+    // containing astral characters — a handful of extra rows, filtered here.
+    const needsDesc = servers.filter(s => !s.description || s.description.length < MIN_DESCRIPTION_LENGTH)
+    console.log(`${needsDesc.length} servers need descriptions (out of ${servers.length} candidates)\n`)
     run.addProcessed(needsDesc.length)
 
     let enriched = 0
