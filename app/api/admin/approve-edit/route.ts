@@ -86,13 +86,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, action: 'rejected' })
   }
 
-  // Approval requires a SECOND pair of eyes — no self-approval, for ANY role.
-  // ALLOWED_FIELDS covers identity/install fields (name, homepage_url, npm_package,
-  // pip_package) that LOW_RISK_FIELDS in lib/validators.ts deliberately excludes from
-  // auto-apply precisely because a swapped package leaves dead links and broken installs
-  // in the wild. Without this check, one account could queue such an edit via /api/edit
-  // and immediately approve it here — the DB's `status='pending'` INSERT policy
-  // ("prevent self-approval farming") only stops the one-step version.
+  // Approval THROUGH THIS ROUTE requires a second pair of eyes — no self-approval,
+  // for ANY role. Note this is no longer a site-wide invariant: /api/edit has a
+  // one-step self-approval path (S48), where a trusted contributor's or a privileged
+  // role's edit is written as 'approved' and applied in the same request. That path
+  // is bounded to LOW_RISK_FIELDS (lib/validators.ts) — the prose fields tagline,
+  // description, api_name, api_pricing, api_rate_limits — and everything outside that
+  // set is still governed by the stricter block below.
+  // ALLOWED_FIELDS here covers identity/install fields (name, homepage_url, npm_package,
+  // pip_package) that LOW_RISK_FIELDS deliberately excludes from auto-apply precisely
+  // because a swapped package leaves dead links and broken installs in the wild. Without
+  // this check, one account could queue such an edit via /api/edit and immediately
+  // approve it here; the DB's `status='pending'` INSERT policy ("prevent self-approval
+  // farming") no longer blocks a one-step insert either, since /api/edit's auto-approve
+  // path inserts through the service role.
   // An admin approving their own identity edit defeats the review exactly as much as an
   // editor doing so, so do NOT relax this to `editor`-only: another reviewer can approve
   // it, or an admin can use the direct admin edit path. Self-REJECTION stays permitted
