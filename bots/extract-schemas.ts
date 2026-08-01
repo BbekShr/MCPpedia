@@ -150,18 +150,43 @@ function extractToolsWithRegex(readme: string): Extraction {
   return { tools: unique, resources: [], prompts: [] }
 }
 
+/**
+ * Records that this row has been through the extractor, together with whatever
+ * was extracted (if anything).
+ *
+ * Every row pulled off the queue must be stamped, including the attempts that
+ * produced nothing. Ordering by `tools_extracted_at NULLS FIRST` only rotates
+ * the queue if a fruitless attempt still counts: a row we skip silently
+ * (unparseable URL, missing README, malformed model response) keeps sorting to
+ * the front and re-starves everything behind it — the same failure as #70, just
+ * with a different 200 rows.
+ */
+async function markAttempted(id: string, updates: Record<string, unknown> = {}) {
+  const { error } = await supabase
+    .from('servers')
+    .update({ ...updates, tools_extracted_at: new Date().toISOString() })
+    .eq('id', id)
+  return error
+}
+
 async function main() {
   const run = await BotRun.start('extract-schemas')
   try {
   console.log('=== MCPpedia Schema Extractor ===')
   console.log(new Date().toISOString())
 
-  // Get servers that need tool extraction (empty tools array)
+  // Get servers that need tool extraction (empty tools array), oldest attempt
+  // first. Without the ordering Postgres was free to return the same 200 rows
+  // every run, so anything outside that window starved for good once the
+  // empty-tools backlog grew past the batch size (#70). Same queue pattern
+  // compute-scores uses with `score_computed_at`.
   const { data: servers } = await supabase
     .from('servers')
     .select('id, slug, github_url, tools')
     .not('github_url', 'is', null)
     .filter('tools', 'eq', '[]')
+    .order('tools_extracted_at', { ascending: true, nullsFirst: true })
+    .order('id', { ascending: true }) // stable tiebreak within the same stamp
     .limit(200)
 
   if (!servers || servers.length === 0) {
@@ -180,13 +205,17 @@ async function main() {
     // the remaining servers of the 200-row batch are dropped for the day.
     try {
       const parsed = parseGitHubUrl(server.github_url)
-      if (!parsed) continue
+      if (!parsed) {
+        await markAttempted(server.id)
+        continue
+      }
 
       console.log(`  Processing ${server.slug}...`)
 
       const readme = await getReadme(parsed.owner, parsed.repo)
       if (!readme) {
         console.warn(`  No README found for ${server.slug}`)
+        await markAttempted(server.id)
         continue
       }
 
@@ -202,23 +231,20 @@ async function main() {
       if (resources?.length) updates.resources = resources
       if (prompts?.length) updates.prompts = prompts
 
-      if (Object.keys(updates).length > 0) {
-        const { error } = await supabase
-          .from('servers')
-          .update(updates)
-          .eq('id', server.id)
-
-        if (error) {
-          console.error(`  Error updating ${server.slug}: ${error.message}`)
-          failed++
-        } else {
-          console.log(`  Extracted ${tools?.length ?? 0} tools, ${resources?.length ?? 0} resources, ${prompts?.length ?? 0} prompts`)
-          extracted++
-        }
+      const error = await markAttempted(server.id, updates)
+      if (error) {
+        console.error(`  Error updating ${server.slug}: ${error.message}`)
+        failed++
+      } else if (Object.keys(updates).length > 0) {
+        console.log(`  Extracted ${tools?.length ?? 0} tools, ${resources?.length ?? 0} resources, ${prompts?.length ?? 0} prompts`)
+        extracted++
       }
     } catch (err) {
       console.error(`  Exception for ${server.slug}: ${String(err).slice(0, 200)}`)
       failed++
+      // Stamp failures too, otherwise a row that throws on every run holds the
+      // head of the queue forever.
+      await markAttempted(server.id)
     }
 
     // Rate limit
