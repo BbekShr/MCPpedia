@@ -12,9 +12,10 @@
   ],
   "lastCategoryDeepDive": null,
   "lastCategoryDeepDiveDate": null,
-  "lastSeoTopicIndex": -1,
+  "lastSeoTopicIndex": 3,
   "publishedSeoTopics": [
-    "MCP vs API what is the difference"
+    "MCP vs API what is the difference",
+    "is MCP server safe security risks"
   ],
   "publishedCveIds": [
     "CVE-2026-55447",
