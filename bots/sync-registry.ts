@@ -10,44 +10,17 @@ config({ path: '.env.local' })
 import { createAdminClient, fetchAllRows } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
 import { categorize, inferAuthorType, inferCompatibleClients, inferPricing } from './lib/categorize'
-import { normalizeGithubUrl, normalizePackageName } from '../lib/normalize'
+import { normalizeGithubUrl } from '../lib/normalize'
+import {
+  parseRegistryPage,
+  parseRegistryEntry,
+  type ParsedRegistryServer,
+  type SkipReason,
+} from '../lib/registry-schema'
 
 const supabase = createAdminClient('bot-sync-registry')
 
 const REGISTRY_API = 'https://registry.modelcontextprotocol.io/v0.1'
-
-interface RegistryServer {
-  id: string
-  name: string
-  description?: string
-  repository?: { url: string; source: string }
-  version_detail?: { version: string }
-  // The registry renamed both of these fields. The payload the API serves today
-  // (schema 2025-07-09) uses `registryType` + `identifier`; older entries used
-  // `registry_name` + `name`. Reading only the old pair silently imported every
-  // registry server with npm_package/pip_package = null, which then costs the
-  // listing its adoption signal and its install config.
-  packages?: Array<{
-    registryType?: string
-    registry_name?: string
-    identifier?: string
-    name?: string
-    version?: string
-  }>
-  remotes?: Array<{
-    transport: string[]
-    url: string
-  }>
-}
-
-/** Package identifier for a registry ecosystem, across both payload shapes. */
-function findPackageIdentifier(
-  packages: RegistryServer['packages'],
-  registry: string
-): string | undefined {
-  const hit = packages?.find(p => (p.registryType ?? p.registry_name) === registry)
-  return hit?.identifier ?? hit?.name
-}
 
 function slugify(name: string): string {
   return name
@@ -57,8 +30,23 @@ function slugify(name: string): string {
     .replace(/^-|-$/g, '')
 }
 
-async function fetchRegistryServers(): Promise<RegistryServer[]> {
-  const all: RegistryServer[] = []
+type FetchResult = {
+  servers: ParsedRegistryServer[]
+  skipped: Record<SkipReason, number>
+  fetchFailed: boolean
+}
+
+async function fetchRegistryServers(): Promise<FetchResult> {
+  const all: ParsedRegistryServer[] = []
+  const skipped: Record<SkipReason, number> = {
+    'not-latest': 0,
+    'inactive-status': 0,
+    'no-name': 0,
+  }
+  // Both failure paths below used to swallow into a bare `[]`, so main() read a
+  // total registry outage as "the registry is empty" and exited green. Report
+  // the outage separately from the count so the caller can tell them apart.
+  let fetchFailed = false
   let cursor: string | null = null
 
   try {
@@ -73,37 +61,56 @@ async function fetchRegistryServers(): Promise<RegistryServer[]> {
 
       if (!res.ok) {
         console.error(`Registry API returned ${res.status}`)
+        fetchFailed = true
         break
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const data: any = await res.json()
-      const raw = data.servers || data.items || (Array.isArray(data) ? data : [])
-      // Registry wraps each entry in { server, _meta } — unwrap
-      const servers = raw.map((entry: { server?: RegistryServer }) => entry.server || entry).filter(Boolean)
-      if (servers.length === 0) break
+      const { entries, nextCursor } = parseRegistryPage(data)
+      // Break on empty ENTRIES, not on parsed servers: a page where every record
+      // is superseded or inactive is still a valid page, and stopping there
+      // would truncate pagination and silently drop the rest of the catalog.
+      if (entries.length === 0) break
 
-      all.push(...servers)
+      for (const entry of entries) {
+        const parsed = parseRegistryEntry(entry)
+        if (parsed.kind === 'ok') all.push(parsed.server)
+        else skipped[parsed.reason]++
+      }
       console.log(`  Fetched ${all.length} servers so far...`)
 
       // Check for pagination cursor
-      cursor = data.metadata?.nextCursor || data.cursor || null
+      cursor = nextCursor
       if (!cursor) break
 
       await new Promise(r => setTimeout(r, 200))
     }
   } catch (err) {
     console.error('Failed to fetch from registry:', err)
+    fetchFailed = true
   }
 
-  return all
+  return { servers: all, skipped, fetchFailed }
 }
 
-async function getExistingRegistryIds(): Promise<Set<string>> {
-  const rows = await fetchAllRows<{ registry_id: string }>(
-    supabase.from('servers').select('registry_id').not('registry_id', 'is', null).order('id')
+/**
+ * Map registry_id -> servers.id for every already-synced row.
+ *
+ * Keyed on the primary key rather than `registry_id` because `servers.registry_id`
+ * has NO index (plain nullable text,
+ * `supabase/migrations/20260402010000_scores_security_registry.sql:28`). Now that
+ * the fast path below is reachable for the first time, an update filtered on
+ * `registry_id` would seq-scan a ~39k-row table once per already-synced server.
+ *
+ * No backfill script is needed to populate `registry_id`: the GitHub-URL link
+ * branch already writes it, so one nightly run self-heals every existing row.
+ */
+async function getExistingRegistryRowIds(): Promise<Map<string, string>> {
+  const rows = await fetchAllRows<{ id: string; registry_id: string }>(
+    supabase.from('servers').select('id, registry_id').not('registry_id', 'is', null).order('id')
   )
-  return new Set(rows.map(s => s.registry_id))
+  return new Map(rows.map(s => [s.registry_id, s.id]))
 }
 
 async function getExistingGithubUrls(): Promise<Set<string>> {
@@ -123,7 +130,7 @@ async function main() {
   console.log('=== MCPpedia Registry Sync ===')
   console.log(new Date().toISOString())
 
-  const registryServers = await fetchRegistryServers()
+  const { servers: registryServers } = await fetchRegistryServers()
   console.log(`Fetched ${registryServers.length} servers from official registry`)
   run.addProcessed(registryServers.length)
 
@@ -132,26 +139,24 @@ async function main() {
     return
   }
 
-  const existingIds = await getExistingRegistryIds()
+  const existingRowIds = await getExistingRegistryRowIds()
   const existingUrls = await getExistingGithubUrls()
   let synced = 0
   let updated = 0
   let duplicates = 0
   let insertFailures = 0
 
-  for (const rs of registryServers) {
-    const githubUrl = normalizeGithubUrl(rs.repository?.url)
-    const npmPackage = normalizePackageName(findPackageIdentifier(rs.packages, 'npm'))
-    const pipPackage = normalizePackageName(findPackageIdentifier(rs.packages, 'pypi'))
-    const transport = rs.remotes?.flatMap(r => r.transport) || ['stdio']
+  for (const parsed of registryServers) {
+    const githubUrl = parsed.githubUrl
 
     // Check if already synced
-    if (rs.id && existingIds.has(rs.id)) {
+    const existingRowId = existingRowIds.get(parsed.registryId)
+    if (existingRowId) {
       // Update registry_synced_at
       await supabase
         .from('servers')
         .update({ registry_synced_at: new Date().toISOString() })
-        .eq('registry_id', rs.id)
+        .eq('id', existingRowId)
       updated++
       continue
     }
@@ -170,7 +175,7 @@ async function main() {
         await supabase
           .from('servers')
           .update({
-            registry_id: rs.id,
+            registry_id: parsed.registryId,
             registry_synced_at: new Date().toISOString(),
             registry_verified: true,
           })
@@ -181,8 +186,8 @@ async function main() {
     }
 
     // New server from registry
-    if (!rs.name && !rs.id) continue
-    const baseSlug = slugify(rs.name || rs.id || 'unknown')
+    if (!parsed.name) continue
+    const baseSlug = slugify(parsed.name)
 
     // Resolve a free slug. A bare slug collision is NOT treated as "the same
     // server": GitHub-URL matches were already linked above, so anything
@@ -219,23 +224,23 @@ async function main() {
     slug = resolvedSlug
 
     // Auto-categorize from name + description
-    const categories = categorize(rs.name || slug, rs.description)
+    const categories = categorize(parsed.name || slug, parsed.description ?? undefined)
 
     // Insert new server
     const { error } = await supabase.from('servers').insert({
       slug,
-      name: rs.name || slug,
-      tagline: rs.description || null,
+      name: parsed.name || slug,
+      tagline: parsed.description || null,
       github_url: githubUrl,
-      npm_package: npmPackage,
-      pip_package: pipPackage,
-      transport,
+      npm_package: parsed.npmPackage,
+      pip_package: parsed.pipPackage,
+      transport: parsed.transports,
       compatible_clients: inferCompatibleClients(),
-      api_pricing: inferPricing(null, rs.name || slug, rs.description),
+      api_pricing: inferPricing(null, parsed.name || slug, parsed.description ?? undefined),
       author_type: inferAuthorType(githubUrl ? githubUrl.split('/').slice(-2, -1)[0] : null, githubUrl),
       categories,
       source: 'import',
-      registry_id: rs.id,
+      registry_id: parsed.registryId,
       registry_synced_at: new Date().toISOString(),
       registry_verified: true,
       verified: false,
