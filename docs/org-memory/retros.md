@@ -119,3 +119,28 @@ One line per cycle: `- YYYY-MM-DD <ID>: <friction observed> → <action or M-row
   (4) writing a CEO decision into a dispatch does not make it right — both of my bad instructions
   were stated confidently and implemented faithfully, and only an adversarial reviewer caught them,
   so "the reviewer checks the CEO too" is load-bearing, not ceremony.
+
+- **2026-08-01 (S60, `/servers` listing cache).** Three things worth keeping.
+  (1) **A backlog row can specify an unachievable test.** S60's criteria said "verified by
+  `x-vercel-cache` no longer reporting MISS" — structurally impossible for a data cache on a dynamic
+  route, and S35 carries the same wording. The research step caught it before any code was written,
+  which is the only reason nobody spent the cycle chasing a header or, worse, "fixed" it by adding
+  back the dead `revalidate` knob the item exists to remove. **Read acceptance criteria adversarially
+  at the research step, not at the QA step** — a criterion is a claim about reality and can be wrong.
+  Cycles may not edit criteria, so the honest move is: ship the fix, append a note, hand the re-word
+  to the human.
+  (2) **The board overturned my design, correctly, twice.** I approved caching both branches; all four
+  lenses independently found that free-text `q` made the key space unbounded on an unrate-limited
+  page — so the "cache" was an attacker-writable write amplifier that would evict the very entries it
+  existed to hold, while the module docstring asserted the opposite. And bare `withRetry` on a render
+  path turned a ~3s honest failure into a ~13.75s one plus a 4x retry storm into an already-failing
+  database. Neither was in the plan; both were in the diff. The narrowing (cache the catalog branch
+  only, gated on a bounded-shape predicate) came from the reviews, not from me.
+  (3) **The architect corrected my dispatch on a point of fact**, which is the second cycle running
+  that a downstream agent caught a confidently-stated CEO instruction. I said collapsing an
+  out-of-allow-list `?status=zzz` onto `''` was result-preserving; it is the opposite — it turns
+  "matches nothing" into "show everything". Worth stating as a standing expectation rather than a
+  pleasant surprise: **agents are expected to refuse a wrong instruction and say why.**
+  (4) Friction, minor: four backlog rows (S30/S32/S34/S37) were `open` but already shipped, found
+  incidentally while picking. Three needed only their required test. A cheap batch re-verification is
+  worth doing periodically — the picking step currently pays that cost one row at a time.

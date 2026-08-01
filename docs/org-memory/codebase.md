@@ -387,3 +387,65 @@ _(record "audited <ground> under <lens>: clean" entries here so discovery skips 
   previously had zero coverage), following the `lib/curated-merge.ts` ← `bots/detect-duplicates.ts`
   precedent. `app/api/admin/bots/route.ts` references bots by string workflow name, never by import,
   so bot-adjacent `lib/` modules stay out of the `next build` surface — re-confirm per commit.
+
+## Caching, listings & the retry envelope (2026-08-01, S60)
+
+- **`unstable_cache` caches DATA, not the rendered response, so it can never move `x-vercel-cache` off
+  `MISS`.** A page that awaits `searchParams` is dynamic (`node_modules/next/dist/docs/01-app/
+  03-api-reference/03-file-conventions/page.md:119`) and dynamic pages are served
+  `private, no-cache, no-store, max-age=0, must-revalidate` (`.../02-guides/cdn-caching.md:24`).
+  Internally `unstable-cache.js:135-141` handles `workUnitStore.type === 'request'` with a bare
+  `break`, propagating no `revalidate` to the work store. The `/category` fix (PR #82, `6042fc1`)
+  left `await searchParams` at `:153` BEFORE the cached call at `:174` and is still dynamic.
+  Acceptance criteria phrased as "verify via `x-vercel-cache`" for this pattern are unmeetable by
+  construction — the live wording in BACKLOG rows S35 and S60 is flagged for a human re-word.
+- **The house cache pattern is a three-layer sandwich and the middle layer is the safety property:**
+  `unstable_cache(args => withRetry(() => fetch(args)), ['key-vN'], {revalidate, tags})`, where
+  `fetch` THROWS on any Supabase error and the caller degrades in a `try/catch`. `unstable_cache`
+  only persists successful returns (`unstable-cache.js:206,214`), so a fetcher that returns `[]` on
+  error pins the degraded empty page for the whole TTL. Converting a "set `loadFailed`, return
+  empty" page to a cached one is therefore never just a wrap — **the error contract must invert
+  first**. Documented at `lib/retry.ts:1-15`, `app/security/page.tsx:85-88`.
+- **Normalizing the argument shape is necessary but NOT sufficient for cache safety.** The key is
+  `cb.toString() + keyParts + JSON.stringify(args)` (`unstable-cache.js:55,81`), so a single
+  free-text field left in the args object reopens unbounded, attacker-writable key minting on an
+  unrate-limited page route. The second gate must be a **predicate at the call site** deciding
+  whether the cache is entered at all — `isCacheableQuery` in `lib/servers-query.ts`, applied in
+  `app/servers/page.tsx`. `/servers` and `/category` have NO rate limiting; `/api/search` limits the
+  same `search_servers` RPC to 30/min/IP.
+- **Cache-key normalization is only safe when it is result-preserving.** An out-of-allow-list FILTER
+  value means "matches nothing", not "no filter" — `?status=zzz` becomes `.eq('health_status','zzz')`
+  → zero rows, while `?status=` returns the whole catalog. Collapsing unknown filter values onto `''`
+  would silently turn a typo into "show everything". Sort is different (unknown ≡ default) but must be
+  **branch-aware**: `search_servers` has NO `commit` arm and every unrecognized `sort_by` falls
+  through to the trailing `s.github_stars desc nulls last`
+  (`20260719120000_search_servers_filters.sql:38-44`), so in the search branch `{commit, unknown} ≡
+  'stars'` and `'' ≡ 'relevance'`, while the catalog branch's arms are a different set entirely.
+- **`count: 'estimated'` is a planner estimate, not a row count.** A PostgREST-filtered query matching
+  zero rows can still return a large `count`, which `/servers` and `/category` turn into a phantom
+  header total plus a live pagination block above an empty list. "Zero rows ⇒ `totalCount === 0`" is
+  wrong on both pages. Filed as S80.
+- **`withDeadline` takes a `PromiseLike`, not a thunk** (`lib/retry.ts:28`), which is what makes
+  `withDeadline(withRetry(fn, opts), ms, label)` the correct idiom rather than an accident — the retry
+  promise is constructed eagerly and then raced, so the deadline bounds the ENTIRE retry loop. Bare
+  `withRetry` defaults to 4 attempts + 1.75s of backoff and does not distinguish transient from
+  permanent failures; against the 3s anon statement timeout that is a ~13.75s worst case AND a 4x
+  retry storm into an already-failing database. Remaining bare sites filed as S78.
+- **A sibling `loading.tsx` changes what a slow server fetch MEANS.** Next commits 200 + shell and
+  streams, so an overrun is a permanently stuck skeleton, not a 504, and `app/error.tsx` can no longer
+  fire — the in-page degraded panel only renders if the render COMPLETES. `app/servers/loading.tsx`
+  exists, which is why the latency budget there is a correctness constraint, not a perf one.
+- **Next hands `searchParams` a `string[]` for repeated query keys**, but the pages type it
+  `Record<string, string | undefined>` — a runtime lie. An array reaching `.contains(col, [param])`
+  becomes `cs.{a,b}` (an accidental AND-of-two-values); an array reaching a `text` RPC param errors
+  outright. `lib/servers-query.ts`'s `first()` is the first fix of this class in the repo.
+- **`.next/prerender-manifest.json` has TWO route maps** and the difference is exactly 7 here:
+  `routes` = 210 concrete prerendered paths, `dynamicRoutes` = 7 ISR *templates* (`/best/[category]`,
+  `/best-for/[usecase]`, `/blog/[slug]`, `/compare/[slugs]`, `/guides/[slug]`, `/s/[slug]`,
+  `/skills/[slug]`). Templates are emitted for every ISR segment regardless of whether
+  `generateStaticParams` returned anything, so `/s/[slug]` and `/compare/[slugs]` appear there even in
+  a provably env-less build with zero concrete children. **The env-less proof must count `routes`
+  only** — `routes + dynamicRoutes` reads as 217 and looks like 7 phantom DB-derived pages.
+- `revalidateTag` is called **nowhere** in this repo — every `tags:` array on the four `unstable_cache`
+  sites is decorative. The only invalidation is `revalidatePath` in `lib/revalidate.ts` and
+  `app/api/revalidate/route.ts` (defaults `['/', '/security']`). Listings are time-based only.
