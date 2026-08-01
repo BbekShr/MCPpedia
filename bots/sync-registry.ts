@@ -17,7 +17,6 @@ import {
   type ParsedRegistryServer,
   type SkipReason,
 } from '../lib/registry-schema'
-import { planRegistryRowWrite } from '../lib/registry-sync-plan'
 
 /** Mirrors the per-page retry in bots/lib/supabase.ts `fetchAllRows`. */
 const PAGE_FETCH_ATTEMPTS = 3
@@ -193,24 +192,33 @@ async function fetchRegistryServers(): Promise<FetchResult> {
  * No backfill script is needed to populate `registry_id`: the GitHub-URL link
  * branch already writes it, so one nightly run self-heals every existing row.
  *
- * Archived rows are excluded. bots/detect-duplicates.ts ARCHIVES duplicates
- * instead of deleting them, and `CURATED_FIELDS` (lib/curated-merge.ts) does not
- * carry `registry_id`/`registry_verified` over to the keeper — so without this
- * filter an entry binds permanently to an invisible row, refreshing its
- * `registry_synced_at` nightly while the live keeper never gets the badge.
+ * Archived rows are excluded HERE and only here. bots/detect-duplicates.ts
+ * ARCHIVES duplicates instead of deleting them, and `CURATED_FIELDS`
+ * (lib/curated-merge.ts) does not carry `registry_id`/`registry_verified` over to
+ * the keeper — so without this filter an entry binds permanently to an invisible
+ * row, refreshing its `registry_synced_at` nightly while the live keeper never
+ * gets the badge.
+ *
+ * The GitHub-URL reads below deliberately do NOT filter on `is_archived`. Four
+ * independent writers archive rows (update-metadata, check-broken-links,
+ * detect-duplicates, the admin archive route); hiding an archived row's URL from
+ * them would drop a still-listed archived server into the INSERT branch, and the
+ * slug lookup there has no `is_archived` filter either — so it would resurrect as
+ * a fresh live row, be re-archived that night, and repeat as `-2`, `-3`, `-4`.
+ * Filtering only here is non-destructive: an entry whose only row is archived
+ * finds no `existingRow`, falls to the URL branch, and re-stamps that archived
+ * row. Cosmetic churn, no new rows.
  */
-type ExistingRegistryRow = { id: string; githubUrl: string | null }
-
-async function getExistingRegistryRowIds(): Promise<Map<string, ExistingRegistryRow>> {
-  const rows = await fetchAllRows<{ id: string; registry_id: string; github_url: string | null }>(
+async function getExistingRegistryRowIds(): Promise<Map<string, string>> {
+  const rows = await fetchAllRows<{ id: string; registry_id: string }>(
     supabase
       .from('servers')
-      .select('id, registry_id, github_url')
+      .select('id, registry_id')
       .not('registry_id', 'is', null)
       .eq('is_archived', false)
       .order('id')
   )
-  return new Map(rows.map(s => [s.registry_id, { id: s.id, githubUrl: s.github_url }]))
+  return new Map(rows.map(s => [s.registry_id, s.id]))
 }
 
 /**
@@ -227,17 +235,11 @@ function escapeLikeValue(value: string): string {
 }
 
 /**
- * Every repo URL held by a LIVE row, normalized.
+ * Every repo URL held by ANY row, archived included, normalized.
  *
- * Archived rows are excluded for the same reason `getExistingRegistryRowIds`
- * excludes them, and the exclusion has to be on BOTH reads to do anything:
- * bots/detect-duplicates.ts archives the loser by setting `is_archived` and
- * nothing else (`detect-duplicates.ts:253-256`), so the archived row keeps a
- * `github_url` identical to the keeper's. With archived rows in this set — and
- * in the `.ilike` prefilter that follows — PostgREST returns both rows in an
- * unordered result and `.find` binds to whichever came first, re-stamping an
- * invisible row on roughly half of all nights and paying the ~63k-row scan
- * again the next.
+ * See `getExistingRegistryRowIds` for why archived rows must stay visible to
+ * this read: it is the only thing keeping a still-listed archived server out of
+ * the insert branch.
  */
 async function getExistingGithubUrls(): Promise<Set<string>> {
   const rows = await fetchAllRows<{ github_url: string }>(
@@ -245,7 +247,6 @@ async function getExistingGithubUrls(): Promise<Set<string>> {
       .from('servers')
       .select('github_url')
       .not('github_url', 'is', null)
-      .eq('is_archived', false)
       .order('id')
   )
   return new Set(
@@ -256,18 +257,17 @@ async function getExistingGithubUrls(): Promise<Set<string>> {
 }
 
 /**
- * The LIVE row whose `github_url` normalizes to `githubUrl`, or null.
+ * The row whose `github_url` normalizes to `githubUrl`, or null.
  *
  * The `.ilike` is only a prefilter — older rows may store an un-normalized URL
- * form, so the exact match is the `find`. It excludes archived rows for the
- * reason spelled out on `getExistingGithubUrls`: an archived duplicate keeps the
- * keeper's URL verbatim, and PostgREST returns the two in no defined order.
+ * form, so the exact match is the `find`. Archived rows stay in scope to match
+ * `getExistingGithubUrls`; the two reads must agree, or a URL found in the set
+ * but filtered out here becomes a permanent link miss.
  */
-async function findLiveRowByGithubUrl(githubUrl: string): Promise<{ id: string } | null> {
+async function findRowByGithubUrl(githubUrl: string): Promise<{ id: string } | null> {
   const { data: matches } = await supabase
     .from('servers')
     .select('id, github_url')
-    .eq('is_archived', false)
     .ilike('github_url', `%${escapeLikeValue(githubUrl.replace(/^https:\/\//, ''))}%`)
 
   return (matches || []).find(m => normalizeGithubUrl(m.github_url) === githubUrl) ?? null
@@ -362,61 +362,55 @@ async function main() {
   let linkMisses = 0
   let duplicates = 0
   let insertFailures = 0
+  let writeFailures = 0
 
   for (const parsed of registryServers) {
     const githubUrl = parsed.githubUrl
+    const stamp = { registry_synced_at: new Date().toISOString(), registry_verified: true }
 
-    // Which row this entry belongs on. The rule the plan enforces: an entry we
-    // can already identify by `registry_id` NEVER reaches the insert below.
-    const plan = await planRegistryRowWrite({
-      githubUrl,
-      existingRow: existingRowIds.get(parsed.registryId),
-      urlInCatalog: !!githubUrl && existingUrls.has(githubUrl),
-      normalizeUrl: normalizeGithubUrl,
-      findRowByUrl: findLiveRowByGithubUrl,
-    })
+    // Already linked: restamp and stop. `registry_verified` is written here too,
+    // not just on first link — it was otherwise set exactly once, so any row
+    // that missed it stayed stuck.
+    //
+    // KNOWN LIMITATION, deliberately deferred (own backlog row): once
+    // `registry_id` is populated, a later repo TRANSFER or org rename is never
+    // re-linked — this path just refreshes the stamp, so the row keeps the old
+    // `github_url`. Moving a registry identity between rows is what two review
+    // rounds found new bugs in; the trade is a stale URL on a transferred repo
+    // against resurrected rows and identities handed to the wrong sibling.
+    const existingId = existingRowIds.get(parsed.registryId)
+    if (existingId) {
+      const { error } = await supabase.from('servers').update(stamp).eq('id', existingId)
+      // The counters used to increment regardless of the result, so a summary of
+      // "updated: 39000" could describe zero writes landing.
+      if (error) {
+        console.error(`  Error refreshing ${parsed.registryId}: ${error.message}`)
+        writeFailures++
+      } else {
+        updated++
+      }
+      continue
+    }
 
-    if (plan.kind !== 'insert') {
-      const stamp = { registry_synced_at: new Date().toISOString(), registry_verified: true }
-      switch (plan.kind) {
-        case 'refresh':
-          // `registry_verified` is written here too, not just on first link: it
-          // was otherwise set exactly once, so any row that missed it stayed stuck.
-          await supabase.from('servers').update(stamp).eq('id', plan.id)
-          updated++
-          break
-        case 'adopt':
-          await supabase
-            .from('servers')
-            .update({ ...stamp, github_url: plan.githubUrl })
-            .eq('id', plan.id)
-          existingRowIds.set(parsed.registryId, { id: plan.id, githubUrl: plan.githubUrl })
-          updated++
-          break
-        case 'relink':
-          // Clear the identity off the old row FIRST. `registry_id` has no unique
-          // index, so leaving it on both rows lets the next run's `new Map(...)`
-          // pick the stale one back up and re-link forever.
-          if (plan.clearRegistryIdOn) {
-            await supabase
-              .from('servers')
-              .update({ registry_id: null, registry_verified: false })
-              .eq('id', plan.clearRegistryIdOn)
-          }
-          await supabase
-            .from('servers')
-            .update({ ...stamp, registry_id: parsed.registryId })
-            .eq('id', plan.targetId)
-          existingRowIds.set(parsed.registryId, { id: plan.targetId, githubUrl })
-          updated++
-          break
-        case 'linkMiss':
-          // The URL is in `existingUrls` but no row survived exact-equality
-          // matching. Counting this as "updated" hid a nightly no-op that still
-          // pays a full seq scan of ~63k rows.
-          if (plan.refreshId) await supabase.from('servers').update(stamp).eq('id', plan.refreshId)
-          linkMisses++
-          break
+    // Not linked yet, but the repo URL is already in the catalog: link that row.
+    // The `.ilike` is a prefilter and the exact match may still miss (an
+    // un-normalizable stored form), which is a nightly no-op costing a full
+    // scan — counted separately rather than as an update.
+    if (githubUrl && existingUrls.has(githubUrl)) {
+      const target = await findRowByGithubUrl(githubUrl)
+      if (!target) {
+        linkMisses++
+        continue
+      }
+      const { error } = await supabase
+        .from('servers')
+        .update({ ...stamp, registry_id: parsed.registryId })
+        .eq('id', target.id)
+      if (error) {
+        console.error(`  Error linking ${parsed.registryId}: ${error.message}`)
+        writeFailures++
+      } else {
+        updated++
       }
       continue
     }
@@ -497,7 +491,7 @@ async function main() {
       }
     } else {
       console.log(`  New: ${slug}`)
-      if (inserted) existingRowIds.set(parsed.registryId, { id: inserted.id, githubUrl })
+      if (inserted) existingRowIds.set(parsed.registryId, inserted.id)
       synced++
     }
 
@@ -516,9 +510,10 @@ async function main() {
     linkMisses,
     duplicates,
     insertFailures,
+    writeFailures,
   })
   run.addUpdated(synced + updated)
-  console.log(`\nDone. New: ${synced}, Updated: ${updated}, Link misses: ${linkMisses}, Duplicates: ${duplicates}, Failures: ${insertFailures}`)
+  console.log(`\nDone. New: ${synced}, Updated: ${updated}, Link misses: ${linkMisses}, Duplicates: ${duplicates}, Insert failures: ${insertFailures}, Write failures: ${writeFailures}`)
 
   // A partial fetch still alarms — but only now that the pages that did arrive
   // have been written.

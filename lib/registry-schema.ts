@@ -154,6 +154,9 @@ export function findPackageIdentifier(
   return typeof id === 'string' ? id : undefined
 }
 
+/** Stand-in reported for a declared remote that carries no readable `type`. */
+export const MISSING_REMOTE_TYPE = '(remote-without-type)'
+
 const REMOTE_TYPE_MAP: Record<string, Transport> = {
   'streamable-http': 'http',
   http: 'http',
@@ -179,16 +182,16 @@ const REMOTE_TYPE_MAP: Record<string, Transport> = {
  *    `supabase/migrations/20260402010000_scores_security_registry.sql:155`), so
  *    fabricating it for a remote-only server whose type upstream renamed would
  *    inflate compatibility scores catalog-wide and stay invisible to the
- *    `mappedPackages` drift guard. So the fallback keys on whether any transport
- *    type STRING was declared, not on whether packages/remotes were declared:
- *    the legacy package shape documented above (`registryType`/`identifier` with
- *    no `transport` sub-object, still live upstream) declares no type at all and
- *    is the genuine local-server shape, while a declared-but-unrecognized type
- *    yields an empty array — which the column allows
- *    (`transport text[] default '{}'`) — plus an `unmapped` entry so the bot
- *    reports the rename. Gating on `packages.length === 0` instead made those
- *    two cases indistinguishable and silently dropped stdio from every
- *    legacy-shaped record.
+ *    `mappedPackages` drift guard. So the stdio fallback needs BOTH that no
+ *    transport type string was read AND that no remotes were declared: the
+ *    legacy package shape documented above (`registryType`/`identifier` with no
+ *    `transport` sub-object, still live upstream) is the genuine local-server
+ *    shape, while any remote-bearing record resolves to an empty array — which
+ *    the column allows (`transport text[] default '{}'`) — plus an `unmapped`
+ *    entry so the bot reports the rename. Gating on `packages.length === 0`
+ *    instead made those two cases indistinguishable and silently dropped stdio
+ *    from every legacy-shaped record; gating on the type string alone let a
+ *    type-less remote through as a fabricated local server.
  *  - The lookup must be own-property only. `REMOTE_TYPE_MAP['constructor']`
  *    resolves up the prototype chain to a truthy function that the index
  *    signature types as `Transport`, and it serializes into the `text[]` column
@@ -217,7 +220,20 @@ export function deriveTransports(
   for (const remote of remoteList(server)) add(remote.type)
   for (const pkg of packageList(server)) add(isRecord(pkg.transport) ? pkg.transport.type : undefined)
 
-  if (!sawType) return { transports: ['stdio'], unmapped }
+  if (!sawType) {
+    // A record that declared REMOTES but no readable type on any of them is not
+    // a local server — it is a remote whose `type` went missing, empty or
+    // non-string upstream. `sawType` alone cannot tell that apart from the
+    // legacy package shape, and defaulting to stdio here fabricates a local
+    // server for a remote-only entry: the +4 compatibility point, and no
+    // `unmapped` entry to ring the drift alarm. So remotes-without-a-type map
+    // to nothing and report themselves; packages carry no such risk, since the
+    // no-`transport` package shape IS the genuine stdio shape.
+    if (remoteList(server).length > 0) {
+      return { transports: [], unmapped: [...unmapped, MISSING_REMOTE_TYPE] }
+    }
+    return { transports: ['stdio'], unmapped }
+  }
   return { transports, unmapped }
 }
 

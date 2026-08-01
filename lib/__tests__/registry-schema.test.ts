@@ -187,6 +187,22 @@ describe('deriveTransports', () => {
     expect(pkgOnly.unmapped).toEqual(['quic'])
   })
 
+  it('reports a declared remote whose type is missing, empty or not a string', () => {
+    // The narrow miss this closes: `sawType` only flipped on a non-empty STRING,
+    // so any of these fell into the stdio fallback and fabricated a LOCAL server
+    // for a remote-only entry — the +4 'stdio' = any(transport) point in both
+    // scorers, with an EMPTY `unmapped`, i.e. no drift signal at all.
+    // Driven through parseRegistryEntry so the non-string case can be written
+    // as the untyped JSON it really is, without a cast.
+    for (const remote of [{ url: 'https://x.test/mcp' }, { type: '' }, { type: 123 }]) {
+      const result = parseRegistryEntry(entry({ name: 'a/b', remotes: [remote] }))
+      expect(result.kind).toBe('ok')
+      if (result.kind !== 'ok') continue
+      expect(result.server.transports).toEqual([])
+      expect(result.server.unmappedTransports.length).toBeGreaterThan(0)
+    }
+  })
+
   it('does not resolve prototype keys into the transport array', () => {
     // A plain-object lookup answers 'constructor' with Object itself — truthy,
     // typed as Transport by the index signature, and stored as {NULL}.
