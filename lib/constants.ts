@@ -96,7 +96,7 @@ export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://mcppedia.or
 // heavy JSONB (tools, resources, install_configs, description, security_evidence,
 // env_instructions) that only the detail page needs. Use this on any page that
 // renders ServerCard in a list to keep listing responses small.
-export const PUBLIC_CARD_FIELDS = [
+export const PUBLIC_CARD_FIELD_LIST = [
   'id', 'slug', 'name', 'tagline',
   'homepage_url', 'author_github', 'author_type',
   'transport', 'categories',
@@ -107,7 +107,9 @@ export const PUBLIC_CARD_FIELDS = [
   // Denormalized count instead of the heavy `tools` JSONB — cards only need the
   // number (see migration 20260719130000_tool_count_column).
   'tool_count',
-].join(', ')
+] as const
+
+export const PUBLIC_CARD_FIELDS = PUBLIC_CARD_FIELD_LIST.join(', ')
 
 // Public fields safe to expose in API responses (excludes internal scoring details, scan internals, claimed_by, etc.)
 export const PUBLIC_SERVER_FIELDS = [
@@ -132,3 +134,20 @@ export const PUBLIC_SERVER_FIELDS = [
   'publisher_verified', 'review_count', 'review_avg',
   'community_verification_count', 'community_verified',
 ].join(', ')
+
+// The `search_servers` RPC is declared `returns setof servers`, so its rows carry
+// EVERY column — including submitted_by/claimed_by auth UUIDs, scan internals and
+// the fts tsvector. A `.select()` allow-list can't be applied to an RPC result, so
+// callers that serialize those rows must project them here first (S30). Keep this
+// the single projection path so a newly-added column can't leak through one route.
+export function projectFields<T extends Record<string, unknown>>(
+  rows: readonly T[] | null | undefined,
+  fields: readonly string[]
+): Partial<T>[] {
+  if (!rows) return []
+  return rows.map((row) =>
+    Object.fromEntries(
+      fields.filter((f) => f in row).map((f) => [f, row[f]])
+    ) as Partial<T>
+  )
+}
