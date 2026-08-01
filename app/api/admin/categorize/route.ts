@@ -7,12 +7,16 @@ export const dynamic = 'force-dynamic'
 // which a local `next build` cannot catch and which would block all deploys off main.
 export const maxDuration = 60
 
-// Rows are updated one serial round trip each (~20ms), so the run duration scales with
-// the row count — 2000 rows ≈ 40s, inside the budget with headroom for the fetch walk.
-// Being conservative is nearly free: the run is idempotent (`categorize` never returns
-// an empty array, so every processed row leaves the uncategorized predicate), so a
-// smaller chunk just means the operator clicks again.
-const MAX_PER_RUN = 2000
+// Rows are updated one serial round trip each, and every one of those UPDATEs also fires
+// the `servers_audit` AFTER-UPDATE row trigger, which `to_jsonb`s the whole OLD and NEW
+// row and loops 23 audited fields — `categories` is one of them, so the audit INSERT
+// happens on every row here. The 60s budget also has to cover `auth.getUser()`, the
+// `profiles` read and the row fetch. This cap is BUDGETED, NOT MEASURED — the endpoint
+// has never run in production — so only raise it after a timed real run. Being
+// conservative is nearly free: the run is idempotent (`categorize` never returns an empty
+// array, so every processed row leaves the uncategorized predicate), so a smaller chunk
+// just means the operator clicks again.
+const MAX_PER_RUN = 500
 
 // SSE endpoint — streams progress as categorization runs
 export async function GET() {
@@ -40,41 +44,27 @@ export async function GET() {
       }
 
       try {
-        // Fetch all uncategorized servers (paginate)
-        const servers: { id: string; slug: string; name: string; tagline: string | null; description: string | null }[] = []
-        let page = 0
-        let capped = false
-        const PAGE_SIZE = 1000
-        while (true) {
-          // `categories` is text[], so the empty-array literal is `{}` — `[]` is malformed
-          // and makes the whole filter fail. `.order('id')` on the unique PK gives the
-          // offset walk a stable order within a snapshot; it does not make the walk exact,
-          // because the predicate is mutable — a row categorized by another writer between
-          // two page reads leaves the result set and shifts every later offset by one.
-          // Rows missed that way are picked up on the next run.
-          const { data: batch, error } = await admin
-            .from('servers')
-            .select('id, slug, name, tagline, description')
-            .or('categories.is.null,categories.eq.{}')
-            .order('id')
-            .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
+        // One bounded read, no offset walk: ask for exactly one row MORE than the cap, so
+        // the overflow row is what proves more remain rather than an inference from the
+        // count. `categories` is text[], so the empty-array literal is `{}` — `[]` is
+        // malformed and makes the whole filter fail. `.order('id')` on the unique PK makes
+        // the slice deterministic.
+        const { data: rows, error } = await admin
+          .from('servers')
+          .select('id, slug, name, tagline, description')
+          .or('categories.is.null,categories.eq.{}')
+          .order('id')
+          .range(0, MAX_PER_RUN)
 
-          if (error) {
-            send({ type: 'error', message: `Failed to load uncategorized servers: ${error.message}` })
-            controller.close()
-            return
-          }
-
-          if (!batch || batch.length === 0) break
-          servers.push(...batch)
-          if (batch.length < PAGE_SIZE) break
-          if (servers.length >= MAX_PER_RUN) {
-            servers.splice(MAX_PER_RUN)
-            capped = true
-            break
-          }
-          page++
+        if (error) {
+          send({ type: 'error', message: `Failed to load uncategorized servers: ${error.message}` })
+          controller.close()
+          return
         }
+
+        const servers = rows ?? []
+        const capped = servers.length > MAX_PER_RUN
+        if (capped) servers.length = MAX_PER_RUN
 
         const total = servers.length
         send({ type: 'start', total })

@@ -321,6 +321,10 @@ export default function AdminPage() {
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
       let buffer = ''
+      // The stream ending is not by itself success: when Vercel kills the function at
+      // maxDuration the body just ends mid-run, with no terminal frame. Without this the
+      // bar would sit frozen at its last percentage with the button re-enabled.
+      let sawTerminal = false
 
       while (true) {
         const { done, value } = await reader.read()
@@ -338,9 +342,12 @@ export default function AdminPage() {
             if (data.type === 'progress') {
               setCatProgress({ processed: data.processed, total: data.total, updated: data.updated, pct: data.pct, sample: data.sample })
             } else if (data.type === 'done') {
+              sawTerminal = true
               setCatResult(data.message)
+              setCatError(Boolean(data.failed))
               setCatProgress(null)
             } else if (data.type === 'error') {
+              sawTerminal = true
               setCatResult(`Error: ${data.message}`)
               setCatError(true)
               setCatProgress(null)
@@ -348,9 +355,16 @@ export default function AdminPage() {
           } catch { /* skip bad JSON */ }
         }
       }
+
+      if (!sawTerminal) {
+        setCatResult('Run ended before finishing (server timeout?) — click again to continue')
+        setCatError(true)
+        setCatProgress(null)
+      }
     } catch (err) {
       setCatResult(`Network error: ${String(err)}`)
       setCatError(true)
+      setCatProgress(null)
     }
     setCatRunning(false)
   }
