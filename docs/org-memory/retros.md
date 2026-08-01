@@ -61,3 +61,23 @@ One line per cycle: `- YYYY-MM-DD <ID>: <friction observed> → <action or M-row
   but its raw curl output was still decisive evidence and led to S58 (P1) — the largest finding of
   the cycle. When an agent fails, read what it produced before re-dispatching; and re-verify its
   key claims first-hand (I did, with two curls) rather than citing a dead agent's transcript.
+- 2026-08-01 (S51, advisory reconcile helper): shipped clean, but TWO of the three CONFIRMED defects were
+  my own dispatch errors, the same failure mode as the S58 cycle immediately before it. (1) I told the
+  architect to place the `scanStatus === 'failed'` early return AFTER the upsert loop, justified by a
+  claim I did not verify — that `scanSecurity` returns no advisories on failure. It is false for
+  dual-package servers, and worse, the upsert itself can CLOSE a row (`status: adv.status` +
+  `ignoreDuplicates:false`), so the ordering I specified made "never close on a failed scan" unachievable.
+  The implementer flagged the drift honestly and implemented as instructed, which is correct behavior —
+  the error was mine to catch. (2) I approved reconciliation on `scan_status: 'pending'` by importing
+  S33's "the package was cleared by a bot" assumption into a user-triggered route, where a maintainer can
+  clear the package themselves and choose the target; the security lens traced it to a full CVE-suppression
+  chain. Lessons: (a) when a plan's justification contains a factual claim about OTHER code ("X returns
+  empty on failure"), that claim is a research question, not a design premise — verify it or mark it
+  unverified in the dispatch; (b) porting a guard between an unattended and a user-triggered caller
+  requires re-asking who can reach each input state, because the same predicate has different trust
+  properties on the two paths; (c) the review board caught the CEO twice in two cycles — that is the
+  system working, and it argues for keeping three lenses on anything touching a public trust signal even
+  when the diff looks small. Also: I overruled the implementer's `process.exitCode = 1` addition, whose
+  general principle was right but which would have pinned the nightly bot red via a known-reachable
+  trigger (S68) — filed as M10 rather than settled by fiat. Process note: two consecutive cycles opened by
+  finding badly stale backlog statuses; filed as M11.
