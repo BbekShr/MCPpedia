@@ -182,7 +182,9 @@ describe('POST /api/mcp — unknown action is rejected before usage is counted (
     expect(callsTo('increment_mcp_usage')).toHaveLength(0)
   })
 
-  it('rejects an oversized action string without writing a usage row', async () => {
+  // The route has no length cap — a 5000-char action is just another unknown
+  // action hitting the same `isKnownAction` branch, which is what this pins.
+  it('rejects a very long unknown action string without writing a usage row', async () => {
     const res = await post({ action: 'x'.repeat(5000), params: {} })
 
     expect(res.status).toBe(400)

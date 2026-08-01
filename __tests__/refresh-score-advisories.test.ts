@@ -235,6 +235,19 @@ describe('POST /api/server/[slug]/refresh-score — advisory reconciliation', ()
     expect(payload).not.toHaveProperty('cve_count')
     expect(payload).not.toHaveProperty('security_evidence')
     expect(payload.score_security).toBe(20)
+    // The other four components are mocked at 10 each, so the total must carry
+    // the PRESERVED 20, not the fresh 30 — 60, never the inflated 70 that a
+    // naive local sum of this run's components would produce.
+    expect(payload.score_total).toBe(60)
+
+    // S34 also requires the route to REPORT the failure rather than silently
+    // returning the inflated score, so the caller can tell a preserved
+    // component from a fresh verdict.
+    await expect(res.json()).resolves.toMatchObject({
+      security_scan: 'failed',
+      score_security: 20,
+      score_total: 60,
+    })
   })
 
   it('writes the CVE-derived columns and the fresh component on a successful scan', async () => {
@@ -248,6 +261,8 @@ describe('POST /api/server/[slug]/refresh-score — advisory reconciliation', ()
     expect(payload.cve_count).toBe(4)
     expect(payload).toHaveProperty('security_evidence')
     expect(payload.score_security).toBe(30)
+    // Same four 10-point components, this time summed with the FRESH 30.
+    expect(payload.score_total).toBe(70)
   })
 
   it('rejects a contributor with 403 and never touches the advisory table', async () => {

@@ -156,7 +156,9 @@ describe('MCP security report — dep_health_score and dangerous_pattern_count',
 
   it('renders the count when the check did run', async () => {
     const text = await renderSecurityReport(SECURITY_ROW)
-    expect(text).toContain('- Dangerous patterns: 1')
+    // Trailing newline so the match is the WHOLE line — a bare prefix match
+    // would also pass for '12'.
+    expect(text).toContain('- Dangerous patterns: 1\n')
   })
 
   it('renders "Not scanned" for a null dep health score', async () => {
