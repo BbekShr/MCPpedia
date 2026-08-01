@@ -33,7 +33,7 @@ MCPpedia scores every server 0–100 across five dimensions. Security is deliber
 <ScoreRow label="Compatibility" points="10" description="Does it work with your client?" />
 </ScoreBreakdown>
 
-Those 30 security points come from **nine independent checks**. Every one of them runs automatically, on every server, with no manual overrides.
+Those 30 security points come from **nine independent checks**. Every one of them runs automatically, on every server. One check — repository signals — also reads a `security_verified` flag that MCPpedia staff set by hand; that is the only human input anywhere in the security score, and it can only add points, never remove them.
 
 ---
 
@@ -44,6 +44,8 @@ Those 30 security points come from **nine independent checks**. Every one of the
 The single heaviest check in the entire score. We look up the server's npm or PyPI package on [OSV.dev](https://osv.dev) and count **open** advisories — ones with no fixed version. Patched vulnerabilities don't count against a server, because a fixed CVE is evidence of a project that responds.
 
 Open ones cost real points: **−5 per critical or high**, **−3 per medium**, **−1 per low**, capped at −15. Three unpatched criticals zero out the biggest check on the board.
+
+There's a fourth bucket that matters more than its size suggests: an open advisory we **can't rate at all** — no computable score, no publisher label, no CVSS vector — is charged **−3, the medium weight**. That deliberately outweighs a known *low*, because an unknown deserves more suspicion than a rated minor issue. In practice this bucket is mostly `MAL-*` records: malicious or compromised packages that ship no severity data and no fix, so they stay open forever. An unrated advisory is not a missing-data problem; it's frequently the most serious thing we can tell you about a package.
 
 <Callout type="warning">A server with **no** published package scores **0 of 15 here — not 15**. "We couldn't scan it" is not the same as "it's clean," and we refuse to award points for unverifiability. This is the most common reason a perfectly nice-looking server has a mediocre security score.</Callout>
 
@@ -61,6 +63,9 @@ The indicators we flag, with their point costs:
 - **Directive keywords** (−2) — ALL-CAPS commands like `YOU MUST`, `BEFORE USING`, `NEVER TELL`
 - **Cross-tool manipulation** (−2) — "override the *X* tool", "when this tool is available…"
 - **Sensitive file references paired with exfiltration language** (−2) — `.env`, `.aws/credentials`, `mcp.json`, `id_rsa` next to "send" or "pass as parameter"
+- **Sensitive file references buried in the schema** (−2) — the same file paths appearing somewhere in the JSON schema rather than the description, flagged separately because that's the spot a human reviewer never reads
+- **Cross-tool references** (−1) — a long description that names another of the server's own tools without the outright manipulation phrasing above
+- **Exfiltration language** (−1) — send/POST/upload phrasing on its own, without a sensitive file to pair it with
 - **Suspicious unconstrained parameters** (−1) — a free-text `metadata`, `notes`, or `callback_url` field with no enum, pattern, or length limit is a ready-made exfiltration channel
 - **URLs in tool descriptions** (−1), **anomalously long descriptions** (−1, over 500 characters)
 
@@ -74,15 +79,17 @@ Requiring authentication **halves** this penalty — dangerous power behind a cr
 
 ### 4. Injection vectors — up to 3 points
 
-Prompt-injection and confused-deputy surface. The worst offender: an execution-shaped tool whose entire input is **one unconstrained string** (−3). Also flagged: safety-bypass language like "ignore previous instructions" or "system prompt" (−3), overly permissive promises like "run arbitrary code" (−2), tools literally named `bash`, `sh`, `sudo`, or `powershell` — shadowing system commands (−2), and undocumented tools (up to −2).
+Prompt-injection and confused-deputy surface. The worst offender: an execution-shaped tool whose entire input is **one unconstrained string** (−3). Also flagged: safety-bypass language like "ignore previous instructions" or "system prompt" (−3), overly permissive promises like "run arbitrary code" (−2), tools literally named `bash`, `sh`, `sudo`, or `powershell` — shadowing system commands (−2), unsafe markers in a description (−1), and undocumented tools (up to −2).
 
 ### 5. Tool definition stability — 1 point
 
 The rug-pull check. We hash every server's sorted tool definitions on each scan and compare against the last one. A server whose tools silently changed shape between scans loses this point — because "install once, trust forever" fails the moment a maintainer (or someone who took over the package) rewrites what the tools claim to do.
 
+Worth knowing when you're reading a brand-new listing: a server's **first** scan also scores 0 here, recorded as "baseline recorded". There's nothing to compare against yet. A freshly-indexed server missing this point hasn't failed anything — it just hasn't been scanned twice.
+
 ### 6. Dependency health — up to 3 points
 
-Via [deps.dev](https://deps.dev): does the package exist, does anything depend on it (10+ dependents earns a point), was it updated in the last 180 days? A bloated tree — over 200 related projects — loses a point back.
+Via [deps.dev](https://deps.dev): does the package exist, does anything depend on it (**more than 10** dependents earns a point), was it updated in the last 180 days? A bloated tree — over 200 related projects — loses a point back.
 
 ### 7. License — 3 points
 
@@ -94,7 +101,7 @@ Declared credentials, or inferred from tool metadata when we spot OAuth, bearer 
 
 ### 9. Repository signals — 2 points
 
-Active repo, or **−4 for archived**. Archived is the only check that can pull a server's security subtotal *down* past zero contribution. MCPpedia-verified servers earn +2.
+Active repo, or archived. The check starts at 2 points and archiving costs 4, but the result is clamped to the range −2…+2 — so an archived server nets **−2**, not −4. That still makes this the only check that can pull a server's security subtotal *down* rather than merely contributing nothing. MCPpedia-verified servers earn +2.
 
 ---
 
@@ -129,4 +136,4 @@ Every check above is **static analysis of what a server declares about itself**.
 
 Browse servers by [security score](/servers?sort=score), read the [full scoring methodology](/methodology) for all five dimensions, and see current [security advisories](/security) before you install anything with a shell.
 
-Thirty points, nine checks, no manual overrides. The number won't make a server safe — it'll just stop you from finding out the hard way.
+Thirty points, nine checks, every penalty automatic. The number won't make a server safe — it'll just stop you from finding out the hard way.
