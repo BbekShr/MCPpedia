@@ -502,3 +502,52 @@ _(record "audited <ground> under <lens>: clean" entries here so discovery skips 
 - `revalidateTag` is called **nowhere** in this repo — every `tags:` array on the four `unstable_cache`
   sites is decorative. The only invalidation is `revalidatePath` in `lib/revalidate.ts` and
   `app/api/revalidate/route.ts` (defaults `['/', '/security']`). Listings are time-based only.
+
+## Homepage degrade incident + test harnesses (2026-08-01, S34/S37/S39/S43/S44 + hotfix #100)
+
+- **A `liveDataOrNull` budget shorter than its fetcher's cold time is a PERMANENT degrade, not a slow
+  first request.** `lib/degrade.ts` used to claim a late success still populates the cache so the next
+  request serves the real page. That is a long-lived-Node property and is FALSE on Vercel serverless:
+  the instance is frozen once the response returns, so the in-flight fetch never completes,
+  `unstable_cache` never receives a successful return, and every request repeats the failure. This is
+  why `/` stayed degraded on 2026-08-01 instead of healing after one request. Corrected in PR #100.
+- **Measured homepage cold costs (2026-08-01, against prod).** `fetchHomeData` = 7 parallel round
+  trips: `home_stats` 0.15s, mcppedia card 0.21s, topScored 0.17s, trending 0.21s — all cheap;
+  `home_use_cases` **1.83s alone / 3.29s contended**, `home_category_counts` **1.39s / 3.29s
+  contended** (aggregate RPCs over ~46k servers); `security_advisories` **1.81s** vs **0.41s** without
+  `nullsFirst: false`. The two aggregates roughly DOUBLE when run concurrently with each other — so
+  `Promise.all` does not make them free, and total cold cost is far above the max of the parts.
+- **`security_advisories` has 27,405 rows, ZERO of them with a null `published_at`, and no index on
+  `published_at`.** So `.order('published_at', {ascending:false, nullsFirst:false})` bought nothing at
+  all while forcing a full sort — the S54 trap, at the exact call site S54 named as un-audited
+  (`app/page.tsx`). Confirming "are there actually any nulls?" before assuming `nullsFirst: false` is
+  load-bearing takes one head-count query and settled this in seconds.
+- **The DB being healthy and a page being degraded are entirely compatible.** During the incident
+  `/api/v1/servers` and `/api/search` returned real data in ~1s and `/servers`, `/security`,
+  `/analytics` all rendered — only `/` was broken. Probe per-page and per-query before concluding
+  "the database is down"; the degraded copy says "the database is not reachable" and that text is a
+  guess by the component, not a diagnosis.
+- **`registerTools` is a testable seam without exporting anything.** `lib/mcp/tools.ts`'s
+  `registerTools(server)` touches its argument ONLY via `server.registerTool` (7 call sites;
+  `lib/mcp/resources.ts` owns resources separately), and only `get_install_config`'s handler uses the
+  `extra` second arg. So passing a fake `McpServer` that captures handlers reaches every real tool
+  handler — the route into `lib/mcp/tools.ts`, which previously had zero direct coverage. Re-check the
+  invariant before adding any non-`registerTool` call.
+- **A route-level mock of a filtering RPC must model filter-then-limit ordering or it cannot detect the
+  bug class at all.** `search_servers` applies `min_score_filter` in the WHERE clause
+  (`20260719120000_search_servers_filters.sql:34`) and `limit page_size` afterwards (`:45-46`); a fake
+  returning a constant array passes identically against pre- and post-fix code. Same shape applies to
+  the still-untested `transport_filter`/`author_filter`.
+- **Pinning a pure helper's return value is NOT coverage of its call site.** `lib/score-merge.ts` was
+  fully unit-tested while `app/api/server/[slug]/refresh-score/route.ts:165` was free to ignore the
+  helper's `score_total` and recompute a naive sum — the whole suite stayed green under that mutation.
+  Route tests must assert the DERIVED fields in the write payload, not just the guarded spread.
+- **Route response bodies were entirely unasserted before 2026-08-01** — `refresh-score-advisories`
+  read only `res.status` across all six original cases. `await expect(res.json()).resolves
+  .toMatchObject({...})` works against a real `NextResponse` under vitest with no extra harness.
+- **Vitest 4.1.4 supports `--sequence.shuffle=true --sequence.seed=<n>`**, so order-independence of a
+  suite with module-level mutable state is directly verifiable rather than assumed. Four seeds
+  (1/42/1337/999) each produced a distinct ordering of `refresh-score-advisories.test.ts`, 8/8 green.
+- **A mutation harness must assert its anchor matched exactly once before writing.** Two of thirteen
+  mutations silently failed to anchor on an indentation mismatch; without a `count(old) == 1` assert
+  that reads as "mutation survived — the fix is unpinned", i.e. a false FAIL.

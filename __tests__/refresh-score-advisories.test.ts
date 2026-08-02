@@ -216,6 +216,55 @@ describe('POST /api/server/[slug]/refresh-score — advisory reconciliation', ()
     expect(serversUpdated()).toHaveLength(1)
   })
 
+  // S34: the "never lowers cve_count" clause lives in the conditional spread at
+  // refresh-score/route.ts:176-182, not in mergeScoresOnOsvFailure — the helper
+  // only reports `osv_failed`. SERVER_ROW is a trusted prior (score_security 20
+  // with last_security_scan set), so a failed scan must leave both the
+  // CVE-derived columns and the security component alone.
+  it('omits the CVE-derived columns and keeps the prior component on a failed scan', async () => {
+    scanResult.current = makeScan({ scan_status: 'failed', score: 30, cve_count: 0 })
+
+    const res = await postRefresh()
+    expect(res.status).toBe(200)
+
+    const [update] = serversUpdated()
+    // Teeth: an absence assertion is vacuous if the handler bailed early.
+    expect(serversUpdated()).toHaveLength(1)
+
+    const payload = update.args[0] as Record<string, unknown>
+    expect(payload).not.toHaveProperty('cve_count')
+    expect(payload).not.toHaveProperty('security_evidence')
+    expect(payload.score_security).toBe(20)
+    // The other four components are mocked at 10 each, so the total must carry
+    // the PRESERVED 20, not the fresh 30 — 60, never the inflated 70 that a
+    // naive local sum of this run's components would produce.
+    expect(payload.score_total).toBe(60)
+
+    // S34 also requires the route to REPORT the failure rather than silently
+    // returning the inflated score, so the caller can tell a preserved
+    // component from a fresh verdict.
+    await expect(res.json()).resolves.toMatchObject({
+      security_scan: 'failed',
+      score_security: 20,
+      score_total: 60,
+    })
+  })
+
+  it('writes the CVE-derived columns and the fresh component on a successful scan', async () => {
+    scanResult.current = makeScan({ scan_status: 'success', score: 30, cve_count: 4 })
+
+    const res = await postRefresh()
+    expect(res.status).toBe(200)
+    expect(serversUpdated()).toHaveLength(1)
+
+    const payload = serversUpdated()[0].args[0] as Record<string, unknown>
+    expect(payload.cve_count).toBe(4)
+    expect(payload).toHaveProperty('security_evidence')
+    expect(payload.score_security).toBe(30)
+    // Same four 10-point components, this time summed with the FRESH 30.
+    expect(payload.score_total).toBe(70)
+  })
+
   it('rejects a contributor with 403 and never touches the advisory table', async () => {
     queued['profiles:single'] = { role: 'contributor' }
     scanResult.current = makeScan({ scan_status: 'success', advisories: [] })
