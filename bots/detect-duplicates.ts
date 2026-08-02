@@ -8,8 +8,8 @@ config({ path: '.env.local' })
 
 import { createAdminClient, fetchAllRows } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
-import { normalizeGithubUrl } from '../lib/normalize'
 import { CURATED_FIELDS, pickCuratedBackfill } from '../lib/curated-merge'
+import { buildDuplicateGroups } from '../lib/duplicate-groups'
 
 const supabase = createAdminClient('bot-detect-duplicates')
 
@@ -150,31 +150,12 @@ async function main() {
     )
     run.addProcessed(servers.length)
 
-    // Known monorepos that contain multiple distinct MCP servers — skip these
-    const MONOREPO_URLS = new Set([
-      'https://github.com/modelcontextprotocol/servers',
-      'https://github.com/mintmcp/servers',
-      'https://github.com/ryudi84/sovereign-mcp-servers',
-      'https://github.com/dave-london/pare',
-      'https://github.com/mansurjisan/ocean-mcp',
-      'https://github.com/iowarp/clio-kit',
-      'https://github.com/martc03/gov-mcp-servers',
-      'https://github.com/la-rebelion/hapimcp',
-      'https://github.com/waystation-ai/mcp',
-    ].map(u => normalizeGithubUrl(u)).filter((u): u is string => !!u))
+    // Group by normalized GitHub URL, skipping known monorepos and any group
+    // that holds fewer than two DISTINCT ids. The keeper is the group's first
+    // element, which is only correct because of the ordering above.
+    const groups = buildDuplicateGroups(servers)
 
-    // Group by normalized GitHub URL
-    const byUrl = new Map<string, typeof servers>()
-
-    for (const server of servers) {
-      const url = normalizeGithubUrl(server.github_url)
-      if (!url) continue
-      if (MONOREPO_URLS.has(url)) continue
-      if (!byUrl.has(url)) byUrl.set(url, [])
-      byUrl.get(url)!.push(server)
-    }
-
-    let duplicateGroups = 0
+    const duplicateGroups = groups.length
     let archived = 0
     const merged: { keeper: string; dupe: string; url: string }[] = []
     const reparentFailures: { dupe: string; tables: string[] }[] = []
@@ -182,17 +163,8 @@ async function main() {
     const backfillFailures: { dupe: string; reason: string }[] = []
     const curatedReadFailures: string[] = []
 
-    for (const [url, rawGroup] of byUrl) {
-      // Defence in depth against the same row appearing twice: the `.order('id')`
-      // tiebreak above should make it impossible, but archiving is effectively
-      // irreversible (update-metadata is archive-forward only), so never trust the
-      // group's shape — dedupe by id BEFORE deciding whether this is a real group.
-      const group = [...new Map(rawGroup.map(s => [s.id, s])).values()]
-      if (group.length <= 1) continue
-
-      duplicateGroups++
-      const keep = group[0]
-      const dupes = group.slice(1)
+    for (const { url, keep, dupes } of groups) {
+      const group = [keep, ...dupes]
 
       console.log(`  Duplicates for ${url}:`)
       console.log(`    KEEP: ${keep.slug} (quality: ${keep.data_quality}, score: ${keep.score_total})`)
