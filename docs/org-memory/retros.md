@@ -230,3 +230,11 @@ One line per cycle: `- YYYY-MM-DD <ID>: <friction observed> → <action or M-row
   Asked to state plainly that nothing verifies SQL (M7), qa-verifier went and found a way — parsing
   migrations via `pg-query-emscripten` with no database and no Docker. Filed as M14. Asking an agent
   to name a gap explicitly is apparently a decent way to get the gap closed.
+  (6) **Backlog ID collision is now a recurring cost of the open-PR queue, and it bit twice in one
+  day.** This cycle appended `S83`; PR #103, open concurrently, had already claimed `S83` for the
+  aggregate-RPC prod outage — which is the very defect this cycle's PR #105 fixes. Renumbered to
+  `S84` after the fact. The previous retro already flagged this and the mitigation ("choose
+  non-overlapping ID ranges") only works if a cycle checks the OPEN PRs before picking IDs, not just
+  `BACKLOG.md` on disk. Concretely: `gh pr diff <n> | grep -E '^\+\| [SMRW][0-9]+'` across open PRs
+  before appending. Worth a real fix (append-with-timestamp IDs, or filing rows only against a
+  freshly-pulled `main`) rather than another round of manual care.

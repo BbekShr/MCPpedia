@@ -561,7 +561,7 @@ _(record "audited <ground> under <lens>: clean" entries here so discovery skips 
   `REVOKE … FROM PUBLIC; GRANT … TO service_role;` is therefore anon-callable over PostgREST —
   confirmed live on prod for `refresh_home_stats_cache` (`20260430160000:99`) and
   `cleanup_rate_limits` (`20260417210500:115`). The correct form names the roles:
-  `REVOKE ALL ON FUNCTION f() FROM PUBLIC, anon, authenticated;`. Filed repo-wide as S83.
+  `REVOKE ALL ON FUNCTION f() FROM PUBLIC, anon, authenticated;`. Filed repo-wide as S84.
 - **Default TABLE privileges are live too**, so "no GRANT written" never means "not reachable":
   `GET /rest/v1/rate_limits` returns `200 []` on a table with RLS on, zero policies and zero
   explicit grants (`20260417210500_rate_limits.sql:7-22`). RLS is the only thing actually holding.
