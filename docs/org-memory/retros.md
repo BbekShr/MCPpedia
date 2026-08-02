@@ -197,3 +197,36 @@ One line per cycle: `- YYYY-MM-DD <ID>: <friction observed> → <action or M-row
   (5) Process note: three PRs are now open off an unchanged `main`, and each cycle appends to
   `BACKLOG.md`, so they conflict on append location. I chose non-overlapping ID ranges so the IDs
   never collide, but the queue depth is now the binding constraint on this loop, not throughput.
+
+### 2026-08-01 — S81 (homepage aggregate snapshot)
+
+  (1) **Friction, fixed in this PR: the implementer handed back with the work UNCOMMITTED.** All four
+  review lenses and QA independently discovered that `git diff main...HEAD` contained only the
+  BACKLOG status flip, and each had to reconstruct the real change from `git status` and untracked
+  files. Four agents paid the same tax, and a less careful reviewer would have reviewed `main`. Fixed
+  by adding an explicit commit-before-hand-back requirement to `.claude/agents/implementer.md`.
+  (2) **The board earned its keep by DISAGREEING.** The regression lens filed "user-visible staleness
+  doubles 24h → 48h" as CONFIRMED; the correctness lens refuted it with evidence from Next internals
+  (`unstable-cache.js:152,231` pass `softTags: implicitTags`, so `revalidatePath('/')` does evict the
+  entry). Had I acted on the first report as it arrived I would have shipped an unnecessary
+  `revalidate` change. Waiting for all lenses before dispatching one fix batch was the right call and
+  should stay the default.
+  (3) **Two CEO design decisions were reversed by measurement, both mine.** I directed "both indexes"
+  (plain + partial on `status='open'`) without asking for a row count; the performance lens measured
+  362 open of 27,405 (1.3%), showed `/security` already returns in 0.15s unindexed, and showed the
+  partial index would newly make `open → fixed` updates HOT-blocking — a permanent write cost for a
+  measured ~zero benefit. I also chose "no code tolerance, use an apply-before-merge runbook" for the
+  migration-apply gap; two lenses then pointed at the repo's OWN rule 60 lines above the new code
+  (`bots/compute-scores.ts:369-377`, "a permanently-red bot masks genuine failures"), which made
+  tolerance the org-consistent answer rather than gate-weakening. **Lesson: do not decide index shape
+  or alarm policy from the armchair — the row counts and the existing rule were both one query and
+  one grep away.**
+  (4) **The row understated its own severity, and only a live probe caught it.** S81 read as "within
+  ~1-2s of degrading again"; the pre-fix baseline the implementer measured showed 9 of 10 anon calls
+  to both aggregate RPCs returning HTTP 500 `57014` right now. A cheap 5-run median against prod with
+  the `.env.local` anon key should be the default first step for any statement-timeout item, before
+  any design work — it re-verifies the row and sizes the fix in the same minute.
+  (5) **A capability the org lacked appeared as a side effect of a gate doing its job honestly.**
+  Asked to state plainly that nothing verifies SQL (M7), qa-verifier went and found a way — parsing
+  migrations via `pg-query-emscripten` with no database and no Docker. Filed as M14. Asking an agent
+  to name a gap explicitly is apparently a decent way to get the gap closed.
