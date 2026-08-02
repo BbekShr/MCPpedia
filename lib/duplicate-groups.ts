@@ -51,7 +51,10 @@ export function isMonorepoUrl(normalizedUrl: string): boolean {
   return NORMALIZED_MONOREPO_URLS.has(normalizedUrl)
 }
 
-type HasIdAndUrl = { id: string; github_url: string }
+// `github_url` is nullable in the schema, and the first guard below exists
+// precisely for the absent case — the bot only ever passes non-null rows because
+// of its own `.not('github_url','is',null)` filter.
+type HasIdAndUrl = { id: string; github_url: string | null | undefined }
 
 export type DuplicateGroup<T> = { url: string; keep: T; dupes: T[] }
 

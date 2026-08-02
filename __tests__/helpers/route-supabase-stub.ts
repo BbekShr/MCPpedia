@@ -9,8 +9,16 @@
  * - `trackClient` — record which client (`authed`/`admin`) made each call. Off by
  *   default so a recorded call deep-equals `{ table, op, args }`.
  * - `keyByWriteOp` — key a builder's resolved value by the write verb it saw
- *   (`edits:insert`) instead of `edits:await`. Needed only when one table is both
- *   read and written in the same request; turning it on changes existing keys.
+ *   (`edits:insert`) instead of `edits:await`. Needed only when ONE builder sees a
+ *   write verb before a `.single()`, i.e. an `insert().select().single()` chain
+ *   whose read would otherwise collide with a plain `:single` read of the same
+ *   table; turning it on changes existing keys.
+ *
+ * A key that is NOT queued resolves differently per terminator, mirroring real
+ * PostgREST: `.single()` misses resolve `data: null` (no rows), a plain `await`
+ * misses resolve `data: []` (empty set). That asymmetry is what makes a route's
+ * not-found branch reachable — `[]` is truthy, so a shared `[]` default would
+ * walk `if (!row) return 404` straight past into the next guard.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -36,7 +44,12 @@ export interface RouteSupabaseHarness {
   queuedCounts: Record<string, number>
   /** Errors injected at a given key so the failure branches are exercised. */
   queuedErrors: Record<string, { code: string; message: string }>
-  /** Clears the recordings and every injection map. Call from `beforeEach`. */
+  /**
+   * Clears the recordings, every injection map, and the signed-in user. Call
+   * from `beforeEach` — `authUser.current` is harness state like the rest, and
+   * a suite that flips it to null for a 401 case would otherwise leave every
+   * later test 401-ing with `calls` empty, passing its assertions vacuously.
+   */
   reset(): void
   createClient(): Promise<SupabaseClient>
   createAdminClient(...args: unknown[]): SupabaseClient
@@ -51,9 +64,9 @@ export function createRouteSupabaseHarness(
   const adminClientArgs: unknown[][] = []
   const authUser: { current: { id: string } | null } = { current: null }
 
-  function resolveFor(key: string) {
+  function resolveFor(key: string, singleRow: boolean) {
     return Promise.resolve({
-      data: key in harness.queued ? harness.queued[key] : [],
+      data: key in harness.queued ? harness.queued[key] : singleRow ? null : [],
       count: harness.queuedCounts[key] ?? null,
       error: harness.queuedErrors[key] ?? null,
     })
@@ -83,9 +96,9 @@ export function createRouteSupabaseHarness(
       eq(...args: unknown[]) { return builder._record('eq', args) },
       in(...args: unknown[]) { return builder._record('in', args) },
       not(...args: unknown[]) { return builder._record('not', args) },
-      single() { return resolveFor(key('single')) },
+      single() { return resolveFor(key('single'), true) },
       then(resolve: (value: unknown) => unknown) {
-        return resolveFor(key('await')).then(resolve)
+        return resolveFor(key('await'), false).then(resolve)
       },
     }
     return builder
@@ -110,6 +123,7 @@ export function createRouteSupabaseHarness(
     reset() {
       calls.length = 0
       adminClientArgs.length = 0
+      authUser.current = null
       harness.queued = {}
       harness.queuedCounts = {}
       harness.queuedErrors = {}

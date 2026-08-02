@@ -2,8 +2,11 @@ import { describe, it, expect } from 'vitest'
 import { buildDuplicateGroups, MONOREPO_URLS } from '../duplicate-groups'
 import { normalizeGithubUrl } from '../normalize'
 
-const row = (id: string, github_url: string, extra: Record<string, unknown> = {}) =>
-  ({ id, github_url, ...extra })
+const row = (
+  id: string,
+  github_url: string | null | undefined,
+  extra: Record<string, unknown> = {},
+) => ({ id, github_url, ...extra })
 
 describe('buildDuplicateGroups', () => {
   // S32: `fetchAllRows` paginates by offset, so without a unique tiebreak in the
@@ -50,8 +53,8 @@ describe('buildDuplicateGroups', () => {
 
   it('skips rows with no github_url', () => {
     const groups = buildDuplicateGroups([
-      row('srv-1', null as unknown as string),
-      row('srv-2', undefined as unknown as string),
+      row('srv-1', null),
+      row('srv-2', undefined),
       row('srv-3', '   '),
     ])
     expect(groups).toEqual([])

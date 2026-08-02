@@ -11,15 +11,16 @@
  * legitimate, and case (c) pins that the block did not creep above the reject
  * branch.
  *
- * `keyByWriteOp` is on because `edits` is both read (`:single`) and written
- * (`:update`) in one request, and `trackClient` because "which client performed
- * the write" is half of what case (b) asserts.
+ * `trackClient` is on because "which client performed the write" is half of what
+ * case (b) asserts. `keyByWriteOp` is NOT needed here: the harness builds a fresh
+ * builder per `from()` call, so the `edits` read and the `edits` write never share
+ * a resolve key.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRouteSupabaseHarness } from './helpers/route-supabase-stub'
 
-const harness = createRouteSupabaseHarness({ trackClient: true, keyByWriteOp: true })
+const harness = createRouteSupabaseHarness({ trackClient: true })
 const { calls, adminClientArgs, authUser } = harness
 
 vi.mock('@/lib/supabase/server', () => ({ createClient: harness.createClient }))
@@ -98,9 +99,11 @@ describe('POST /api/admin/approve-edit — self-approval block', () => {
     expect(res.status).toBe(200)
     await expect(res.json()).resolves.toMatchObject({ ok: true, action: 'approved' })
 
-    // The two-arg form is load-bearing: x-original-actor-id makes the audit
-    // trigger credit the proposer rather than the approving moderator.
-    expect(adminClientArgs[0]).toEqual(['approved-by:user-1', 'user-2'])
+    // The SECOND argument is the load-bearing one: x-original-actor-id makes the
+    // audit trigger credit the proposer rather than the approving moderator. The
+    // first is a free-text actor label, so it is deliberately not pinned.
+    expect(adminClientArgs).toHaveLength(1)
+    expect(adminClientArgs[0]?.[1]).toBe('user-2')
 
     const updates = serversUpdated()
     expect(updates).toHaveLength(1)
