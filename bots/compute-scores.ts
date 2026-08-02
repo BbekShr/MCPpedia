@@ -429,6 +429,23 @@ async function refreshHomeAggregatesCache() {
   try {
     const { error } = await supabase.rpc('refresh_home_aggregates_cache')
     if (error) {
+      // PGRST202 = function not in PostgREST's schema cache, i.e. the migration
+      // has not been applied yet. Migrations are applied by hand here (they do
+      // not auto-apply on deploy), so between merging this code and a human
+      // running the file there is a window where this RPC cannot exist. Failing
+      // it would pin this nightly run red for that whole window — and
+      // alert-on-failure.yml watches this workflow, so a permanently-red bot
+      // masks genuine failures (the rule already stated at :369-377 above). This
+      // tolerance covers ONLY that manual-apply gap; every other error still
+      // fails the run.
+      if (error.code === 'PGRST202') {
+        console.warn(
+          'refresh_home_aggregates_cache does not exist yet — apply ' +
+            'supabase/migrations/20260801120000_home_aggregates_snapshot_cache.sql. ' +
+            'Skipping the refresh; the homepage use-case and category sections stay empty until then.',
+        )
+        return
+      }
       console.error(
         `refresh_home_aggregates_cache failed — home_aggregates_cache is now stale: ${error.message}`,
       )

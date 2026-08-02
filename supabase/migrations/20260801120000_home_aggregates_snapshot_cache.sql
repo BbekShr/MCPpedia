@@ -18,7 +18,12 @@
 --
 -- ONE table for both aggregates: they are fetched in the same Promise.all by
 -- the same page, refreshed by the same bot step, and share a staleness
--- contract. Two tables would double the round trips for no benefit.
+-- contract. Note this does NOT reduce the round trips — app/page.tsx still
+-- issues two separate PostgREST RPCs that read the identical single row. What
+-- one table buys is a single refresh entry point for the bot to call, a single
+-- `refreshed_at` for bots/freshness-probe.ts to check, and an atomic write of
+-- both aggregates (they can never disagree about which run produced them).
+-- Folding the two reader RPCs into one is a separate change.
 --
 -- Rejected alternatives:
 --   (i)   Narrowing the top-3 lists in home_use_cases — snapshotting removes
@@ -34,8 +39,8 @@
 --   (iv)  Raising the liveDataOrNull budget — app/page.tsx:296-301 is already
 --         at 9s against a 10s platform function floor. There is no headroom.
 --
--- Also in this migration: the two security_advisories indexes the homepage
--- advisory feed and /security both need (see the bottom of this file).
+-- Also in this migration: the one security_advisories index the homepage
+-- advisory feed needs (see the bottom of this file).
 
 CREATE TABLE IF NOT EXISTS home_aggregates_cache (
   id boolean PRIMARY KEY DEFAULT true CHECK (id),
@@ -139,8 +144,37 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION refresh_home_aggregates_cache() FROM PUBLIC;
+-- `anon, authenticated` are named EXPLICITLY and are NOT redundant with PUBLIC —
+-- do not delete them. Supabase's bootstrap runs
+-- `ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO anon,
+-- authenticated, service_role`, which issues DIRECT per-role grants at CREATE
+-- time; revoking the PUBLIC pseudo-role does not touch a direct grant, so
+-- `REVOKE … FROM PUBLIC` alone leaves the function callable by anon over
+-- PostgREST. Verified live against prod with the anon key:
+-- `GET /rest/v1/rpc/refresh_home_stats_cache` returns 57014 (it EXECUTED and hit
+-- anon's 3s timeout), not 42501; `GET /rest/v1/rpc/cleanup_rate_limits` returns
+-- 25006 (it reached its DELETE). Without the explicit revokes this refresher
+-- would ship as an unauthenticated, unrate-limited endpoint running the exact
+-- ~3.3s full-catalog scan this migration exists to remove — and a caller landing
+-- one success every 48h would pin `refreshed_at` fresh, holding
+-- bots/freshness-probe.ts GREEN while compute-scores is dead (the S8 silent
+-- freeze the probe exists to catch).
+REVOKE ALL ON FUNCTION refresh_home_aggregates_cache() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION refresh_home_aggregates_cache() TO service_role;
+
+-- Same defect, live on prod today, for the two other service-role-only
+-- refreshers whose original migrations only revoked FROM PUBLIC
+-- (20260430160000_home_stats_snapshot_cache.sql:99, 20260417210500_rate_limits.sql:115).
+-- Both were confirmed anon-executable with the anon key (57014 / 25006 above).
+-- Idempotent and safe to re-run. Verified there is no non-service-role caller:
+-- `refresh_home_stats_cache` is called only from bots/compute-scores.ts:406,
+-- which uses createAdminClient (service role); `cleanup_rate_limits` has no
+-- caller anywhere in app/, lib/, bots/, scripts/ or components/.
+REVOKE ALL ON FUNCTION refresh_home_stats_cache() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION refresh_home_stats_cache() TO service_role;
+
+REVOKE ALL ON FUNCTION cleanup_rate_limits() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION cleanup_rate_limits() TO service_role;
 
 -- Reader replacements. Same names, same arity, same RETURNS jsonb — the two
 -- app/page.tsx call sites are unchanged.
@@ -175,38 +209,61 @@ $$;
 REVOKE ALL ON FUNCTION home_category_counts() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION home_category_counts() TO anon, authenticated;
 
--- security_advisories (27,405 rows) has no index on published_at at all, so the
--- homepage advisory feed (app/page.tsx:144) and /security (app/security/page.tsx:108)
--- each pay a full sort. CONCURRENTLY is not usable inside a migration
--- transaction (20260417210424_hot_query_indexes.sql:2-3).
---
--- Plain `DESC`, never `DESC NULLS LAST`: Postgres DESC defaults to NULLS FIRST,
--- and postgrest-js emits a bare `ORDER BY … DESC` when `nullsFirst` is omitted,
--- which is exactly what both call sites now do. A NULLS LAST index would match
--- neither ordering (the S54 trap). Zero rows have a null published_at anyway.
-CREATE INDEX IF NOT EXISTS security_advisories_published_at_idx
-  ON security_advisories (published_at DESC);
-
--- /security filters to open advisories before ordering; the partial index keeps
--- that path off the full table.
-CREATE INDEX IF NOT EXISTS security_advisories_open_published_at_idx
-  ON security_advisories (published_at DESC) WHERE status = 'open';
-
 -- Seed the snapshot so the first read after deploy succeeds instead of omitting
 -- two sections until the next nightly compute-scores run.
 --
--- `SET LOCAL` here IS effective, unlike the SECURITY DEFINER body case above:
--- this is a top-level SET on the migration's own transaction, applied before
--- the DO block's statement starts, so the timer for that statement is armed
--- with the raised value.
-SET LOCAL statement_timeout = '120s';
+-- Plain `SET` + `RESET`, NOT `SET LOCAL`: `SET LOCAL` is silently discarded
+-- outside an explicit transaction block (Postgres emits `WARNING: SET LOCAL can
+-- only be used in transaction blocks`), and there is no evidence this repo's
+-- migrations are applied inside one — no other migration here uses `SET LOCAL`,
+-- and both plausible appliers (`psql -f` without BEGIN, and the dashboard SQL
+-- editor) run the file statement-by-statement. `SET` + `RESET` is correct under
+-- both: session-scoped if there is no transaction, transaction-scoped-then-reset
+-- if the applier wrapped the file in one.
+SET statement_timeout = '120s';
 DO $$
 BEGIN
   PERFORM refresh_home_aggregates_cache();
-EXCEPTION WHEN OTHERS THEN
-  -- A statement timeout raises 57014 query_canceled, which plpgsql can trap, so
-  -- the DO block rolls back to its implicit savepoint and the migration COMMITS
-  -- with a warning rather than aborting the whole deploy on a slow scan.
-  RAISE WARNING 'home_aggregates_cache seed failed (%) — the homepage will omit the use-case and category sections until the next compute-scores run', SQLERRM;
+EXCEPTION WHEN query_canceled THEN
+  -- Narrowed to 57014 query_canceled ON PURPOSE. A statement timeout on a slow
+  -- scan is the one failure worth swallowing: the migration COMMITS with a
+  -- warning and the nightly compute-scores run fills the snapshot in. Any OTHER
+  -- error (42883 undefined_function, 42601 syntax_error, 42P01 undefined_table,
+  -- a type error in the body …) now ABORTS the migration loudly, because nothing
+  -- in CI parses or executes this SQL — a `WHEN OTHERS` handler here would let a
+  -- typo commit green with an empty snapshot and silently drop two homepage
+  -- sections until 08:00 UTC.
+  RAISE WARNING 'home_aggregates_cache seed timed out (%) — the homepage will omit the use-case and category sections until the next compute-scores run', SQLERRM;
 END;
 $$;
+RESET statement_timeout;
+
+-- Indexes AFTER the seed, deliberately: a non-CONCURRENTLY CREATE INDEX holds a
+-- SHARE lock on security_advisories until its transaction commits, so running it
+-- before the (up-to-120s) seed above would block every advisory write for that
+-- whole window and could exhaust the `withRetry` envelope of a concurrent
+-- compute-scores/sync-cves upsert. CONCURRENTLY is not usable inside a migration
+-- transaction (20260417210424_hot_query_indexes.sql:2-3).
+--
+-- security_advisories (27,405 rows) has no index on published_at at all, so the
+-- homepage advisory feed (app/page.tsx:144) pays a full sort — measured at
+-- 1.6-1.8s cold. This index is the one that matters.
+--
+-- Plain `DESC`, never `DESC NULLS LAST`: Postgres DESC defaults to NULLS FIRST,
+-- and postgrest-js emits a bare `ORDER BY … DESC` when `nullsFirst` is omitted,
+-- which is exactly what the call site now does. A NULLS LAST index would match
+-- neither ordering (the S54 trap). Zero of the 27,405 rows have a null
+-- published_at anyway.
+--
+-- A partial `(published_at DESC) WHERE status = 'open'` for /security was
+-- considered and DROPPED on measurement: only 362 of 27,405 rows are
+-- status='open' (1.3%), and /security's query already returns in 0.15s (ids) /
+-- 0.74s (full rows + embed) with no index at all — the 0.74s is dominated by
+-- `select=*` plus the `servers` embed, which no published_at index touches.
+-- `status` is currently an index predicate nowhere
+-- (20260402010000_scores_security_registry.sql:53-55 indexes only server_id,
+-- cve_id, severity), so adding it would make the daily scan's open -> fixed
+-- transitions HOT-blocking: a permanent write cost for a measured ~zero read
+-- benefit.
+CREATE INDEX IF NOT EXISTS security_advisories_published_at_idx
+  ON security_advisories (published_at DESC);

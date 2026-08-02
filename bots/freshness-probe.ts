@@ -31,6 +31,23 @@ async function checkSnapshot(
     .maybeSingle()
 
   if (error) {
+    // PGRST205 = relation not in PostgREST's schema cache; 42P01 = undefined_table.
+    // Either means the migration that creates this snapshot has not been applied
+    // yet. Migrations are applied by hand here (they do not auto-apply on
+    // deploy), so between merging a new snapshot table and a human running the
+    // file there is a window where the probe would go red four times a day. A
+    // permanently-red probe destroys the staleness signal for the OTHER table in
+    // the same run — the exact silent-freeze class (S8) this probe exists to
+    // catch — and alert-on-failure.yml watches this workflow, so a permanently
+    // red bot masks genuine failures (the rule stated at bots/compute-scores.ts:369-377).
+    // This tolerance covers ONLY the manual-apply gap: every other read error,
+    // the >48h stale case, and the never-been-built case still fail.
+    if (error.code === 'PGRST205' || error.code === '42P01') {
+      console.warn(
+        `freshness-probe: ${table} does not exist yet — its migration has not been applied. Skipping.`,
+      )
+      return true
+    }
     console.error(`freshness-probe: could not read ${table}: ${error.message}`)
     return false
   }
