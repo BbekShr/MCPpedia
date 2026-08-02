@@ -120,6 +120,55 @@ One line per cycle: `- YYYY-MM-DD <ID>: <friction observed> → <action or M-row
   were stated confidently and implemented faithfully, and only an adversarial reviewer caught them,
   so "the reviewer checks the CEO too" is load-bearing, not ceremony.
 
+- **2026-08-01 (S48, auto-approve RLS denial).** Friction, and it was mine. (1) The item's
+  acceptance criteria opened with "a human with prod access checks `pg_policies`", which reads as
+  a hard block — the cycle could have stalled there the way `discover fix` stalls (M5). What
+  unblocked it was asking what the human answer was actually *for*: it gated whether the fix was
+  safe, and the unsafe branch existed only because the gate trusted a forgeable counter. Deriving
+  the count from ground truth removed the dependency rather than waiting on it. **A blocking human
+  criterion is worth re-reading as a question about the design, not only as a queue item** — often
+  the block is a symptom of the design leaning on something it should not. The human check is
+  still filed and still needed; it just no longer gates the fix.
+  (2) The S59 lesson repeated exactly: a fix to a guard activates the body beneath it, and that
+  body is unreviewed code. Here the guard fix made the `servers` write, both karma triggers, the
+  revert path and the whole moderation-queue interaction reachable for the first time since
+  2026-06-10 — four of the six filed follow-ups (S72–S74, S76) are consequences of *activation*,
+  not defects in the diff. Dispatching the regression lens with "enumerate what executes now that
+  never did" as its explicit first task is what surfaced them; that phrasing is worth reusing on
+  any fix that repairs a predicate or a policy.
+  (3) The Review Board again caught a CEO instruction. I told the implementer the count made the
+  gate "un-forgeable under every RLS state"; the security lens showed it was un-forgeable but
+  freely *inflatable* by the route's own output, which is nearly as bad and was one predicate
+  away. Second cycle running where a confidently-stated CEO claim was implemented faithfully and
+  only an adversarial reviewer stopped it.
+  (4) qa-verifier's teeth check earned its cost twice: it caught that one of the four new tests
+  passed with the security filter removed, i.e. a test whose *name* claimed more than it proved.
+  Mutation testing on new assertions should stay standard, not occasional.
+- **2026-08-01 (S60, `/servers` listing cache).** Three things worth keeping.
+  (1) **A backlog row can specify an unachievable test.** S60's criteria said "verified by
+  `x-vercel-cache` no longer reporting MISS" — structurally impossible for a data cache on a dynamic
+  route, and S35 carries the same wording. The research step caught it before any code was written,
+  which is the only reason nobody spent the cycle chasing a header or, worse, "fixed" it by adding
+  back the dead `revalidate` knob the item exists to remove. **Read acceptance criteria adversarially
+  at the research step, not at the QA step** — a criterion is a claim about reality and can be wrong.
+  Cycles may not edit criteria, so the honest move is: ship the fix, append a note, hand the re-word
+  to the human.
+  (2) **The board overturned my design, correctly, twice.** I approved caching both branches; all four
+  lenses independently found that free-text `q` made the key space unbounded on an unrate-limited
+  page — so the "cache" was an attacker-writable write amplifier that would evict the very entries it
+  existed to hold, while the module docstring asserted the opposite. And bare `withRetry` on a render
+  path turned a ~3s honest failure into a ~13.75s one plus a 4x retry storm into an already-failing
+  database. Neither was in the plan; both were in the diff. The narrowing (cache the catalog branch
+  only, gated on a bounded-shape predicate) came from the reviews, not from me.
+  (3) **The architect corrected my dispatch on a point of fact**, which is the second cycle running
+  that a downstream agent caught a confidently-stated CEO instruction. I said collapsing an
+  out-of-allow-list `?status=zzz` onto `''` was result-preserving; it is the opposite — it turns
+  "matches nothing" into "show everything". Worth stating as a standing expectation rather than a
+  pleasant surprise: **agents are expected to refuse a wrong instruction and say why.**
+  (4) Friction, minor: four backlog rows (S30/S32/S34/S37) were `open` but already shipped, found
+  incidentally while picking. Three needed only their required test. A cheap batch re-verification is
+  worth doing periodically — the picking step currently pays that cost one row at a time.
+
 - **2026-08-01 (test residuals S34/S37/S39/S43/S44, interrupted by a live incident).**
   (1) **The picking step found a systemic gap the backlog was hiding.** Seven rows sat `open` with
   complete, correct production code, missing only their required test — all from two commits that

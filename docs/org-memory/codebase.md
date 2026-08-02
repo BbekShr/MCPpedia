@@ -7,9 +7,11 @@ falsified; promote hardened facts to CLAUDE.md via human-approved PR. Keep ~120 
 ## Gates & environment
 
 - 2026-08-01 (S58): **Supersedes the 2026-07-16 bootstrap baseline below, which is stale.** The
-  green bar on this branch is `npx tsc --noEmit` (0 errors), `npm run lint` (0 errors, **1**
-  warning), `npm test` (**186** in ~1.2s across **13** files). The single lint warning is the
-  load-bearing `app/admin/page.tsx:245` directive (S2/S7). Anyone using "97 tests / 11 warnings"
+  green bar is `npx tsc --noEmit` (0 errors), `npm run lint` (0 errors, **1** warning),
+  `npm test` (**221** in ~1.2s across **16** files as of S48, 2026-08-01 — was 186/13 at S58 and
+  208/15 on `main` before S48; this figure moves most cycles, so re-measure rather than trust it).
+  The single lint warning is the load-bearing `app/admin/page.tsx:**246**` directive (S2/S7) —
+  the line moved from `:245`, recorded here because an off-by-one reads as a new finding. Anyone using "97 tests / 11 warnings"
   as a regression check is comparing against the wrong figures.
 - 2026-07-16 (bootstrap): The full local bar is green on main — `npx tsc --noEmit` (0 errors),
   `npm run lint` (0 errors, 11 warnings), `npm test` (97/97 in ~1.2s across 9 files).
@@ -387,6 +389,119 @@ _(record "audited <ground> under <lens>: clean" entries here so discovery skips 
   previously had zero coverage), following the `lib/curated-merge.ts` ← `bots/detect-duplicates.ts`
   precedent. `app/api/admin/bots/route.ts` references bots by string workflow name, never by import,
   so bot-adjacent `lib/` modules stay out of the `next build` surface — re-confirm per commit.
+
+## Edits, auto-approve & the trust gate (2026-08-01, S48)
+
+- The converged `edits` RLS set is exactly four policies and — unlike `profiles` (S23) or
+  `search_servers` (S21) — carries **no permissive-OR hazard**: SELECT `using (true)`
+  (`20260402000000_initial_schema.sql:316-317`), ONE INSERT pinning
+  `auth.uid() = user_id AND status = 'pending'` (`20260610000000_security_hardening.sql:28-35`),
+  ONE UPDATE for `editor|admin|maintainer` with `WITH CHECK … AND status IN ('approved','rejected')`
+  (`20260417210403_tighten_admin_rls.sql:28-37`), and **no DELETE policy at all**. Both hardening
+  re-`CREATE`s reused the exact prior policy name, so no weaker sibling survives.
+- Corollary nobody had recorded: that UPDATE `WITH CHECK` makes writing `status = 'pending'`
+  **impossible for every role**. Any "return this edit to the moderation queue" recovery path on
+  a user-scoped client is dead code whatever its role gate — it must use the service role.
+- **A trust count derived from a table the trusting route itself writes to is self-feeding unless
+  it filters on WHO granted the approval.** `reviewed_by` is that discriminator here:
+  `app/api/edit/route.ts` writes `null` on the auto path, `app/api/admin/approve-edit/route.ts:152`
+  writes `user.id` on the moderator path. Without `.not('reviewed_by','is',null)` every
+  auto-approved edit raises the very threshold that authorized it, so trust becomes irrevocable —
+  a moderator cannot withdraw it, because abusive edits never queue.
+- `/api/admin/verify` and `/api/admin/archive` write `status:'approved'` audit rows into `edits`
+  credited to the **acting maintainer** (`verify/route.ts:52-62`, `archive/route.ts:60-70`). Any
+  query reading "approved edits by user X" as "contributions X made that were reviewed"
+  over-counts for anyone who has ever held `maintainer`/`admin` — including
+  `sync_edits_approved` and the `20260725000000:232-240` backfill.
+- An `edits` INSERT with `status='approved'` fires **two** triggers in one statement and awards
+  **+6** karma, not +5: `trg_award_edit_events` emits `edit_proposed` (+1) *and* `edit_approved`
+  (+5) on the INSERT arm (`20260421030000_karma.sql:121-129`), while `trg_sync_edits_approved`
+  bumps `profiles.edits_approved` (`20260421000000_sync_profile_counters.sql:66-71`). A
+  status→`pending` UPDATE reverses exactly −5/−1, so insert+revert nets the same +1 as an
+  ordinary proposal. Both triggers are `SECURITY DEFINER` and key on `NEW.user_id`, never
+  `auth.uid()` — which is the precondition that makes moving an `edits` write to the service
+  role attribution-safe.
+- The S23 stale `profiles` UPDATE policy **froze `role` and `created_at`** and leaked only the
+  counter columns (`20260725000000:14-36`). So `profiles.role` was NOT forgeable under either
+  RLS state — reasoning that lumps `role` in with `karma`/`edits_approved` as "S23-forgeable"
+  is wrong.
+- `edits` is **append-only** (eleven `from('edits')` sites across `app/`/`lib/`/`bots/`/`scripts/`,
+  zero deletes) and unindexed on `user_id` (only `edits_server_idx`, `edits_status_idx` —
+  `20260402000000_initial_schema.sql:131-132`), so any `.eq('user_id', …)` predicate on it is
+  O(table) forever. Filed as S75. `edits.user_id` has **two** FKs — the second,
+  `edits_user_id_profile_fkey → public.profiles` (`20260502120000:10-13`), exists solely so
+  PostgREST can embed, which makes a `profiles → edits(count)` embedded count available for
+  folding per-user aggregates into an existing round trip.
+- `app/admin/page.tsx:155` is the *only* moderation-queue fetch and has **no status filter** —
+  `select('*') … order(created_at desc).limit(50)` over all of `edits`. Any writer that adds
+  non-`pending` rows silently shrinks the visible queue while the sidebar badge (`:206-212`, an
+  exact count on `status='pending'`) stays right; the two disagreeing is the symptom. Filed as S73.
+- `head: true` genuinely sends no body — supabase-js sets `method = 'HEAD'` and parses the count
+  from the `content-range` response header, so a head-only count costs ~300-500 B of response
+  headers and zero row egress. Conversely `count: 'planned'`/`'estimated'` on a column with no
+  index and no per-value stats returns a **table-wide average**, which for a per-user gate would
+  hand a brand-new user everyone else's average — an exactness requirement, not a preference.
+## Caching, listings & the retry envelope (2026-08-01, S60)
+
+- **`unstable_cache` caches DATA, not the rendered response, so it can never move `x-vercel-cache` off
+  `MISS`.** A page that awaits `searchParams` is dynamic (`node_modules/next/dist/docs/01-app/
+  03-api-reference/03-file-conventions/page.md:119`) and dynamic pages are served
+  `private, no-cache, no-store, max-age=0, must-revalidate` (`.../02-guides/cdn-caching.md:24`).
+  Internally `unstable-cache.js:135-141` handles `workUnitStore.type === 'request'` with a bare
+  `break`, propagating no `revalidate` to the work store. The `/category` fix (PR #82, `6042fc1`)
+  left `await searchParams` at `:153` BEFORE the cached call at `:174` and is still dynamic.
+  Acceptance criteria phrased as "verify via `x-vercel-cache`" for this pattern are unmeetable by
+  construction — the live wording in BACKLOG rows S35 and S60 is flagged for a human re-word.
+- **The house cache pattern is a three-layer sandwich and the middle layer is the safety property:**
+  `unstable_cache(args => withRetry(() => fetch(args)), ['key-vN'], {revalidate, tags})`, where
+  `fetch` THROWS on any Supabase error and the caller degrades in a `try/catch`. `unstable_cache`
+  only persists successful returns (`unstable-cache.js:206,214`), so a fetcher that returns `[]` on
+  error pins the degraded empty page for the whole TTL. Converting a "set `loadFailed`, return
+  empty" page to a cached one is therefore never just a wrap — **the error contract must invert
+  first**. Documented at `lib/retry.ts:1-15`, `app/security/page.tsx:85-88`.
+- **Normalizing the argument shape is necessary but NOT sufficient for cache safety.** The key is
+  `cb.toString() + keyParts + JSON.stringify(args)` (`unstable-cache.js:55,81`), so a single
+  free-text field left in the args object reopens unbounded, attacker-writable key minting on an
+  unrate-limited page route. The second gate must be a **predicate at the call site** deciding
+  whether the cache is entered at all — `isCacheableQuery` in `lib/servers-query.ts`, applied in
+  `app/servers/page.tsx`. `/servers` and `/category` have NO rate limiting; `/api/search` limits the
+  same `search_servers` RPC to 30/min/IP.
+- **Cache-key normalization is only safe when it is result-preserving.** An out-of-allow-list FILTER
+  value means "matches nothing", not "no filter" — `?status=zzz` becomes `.eq('health_status','zzz')`
+  → zero rows, while `?status=` returns the whole catalog. Collapsing unknown filter values onto `''`
+  would silently turn a typo into "show everything". Sort is different (unknown ≡ default) but must be
+  **branch-aware**: `search_servers` has NO `commit` arm and every unrecognized `sort_by` falls
+  through to the trailing `s.github_stars desc nulls last`
+  (`20260719120000_search_servers_filters.sql:38-44`), so in the search branch `{commit, unknown} ≡
+  'stars'` and `'' ≡ 'relevance'`, while the catalog branch's arms are a different set entirely.
+- **`count: 'estimated'` is a planner estimate, not a row count.** A PostgREST-filtered query matching
+  zero rows can still return a large `count`, which `/servers` and `/category` turn into a phantom
+  header total plus a live pagination block above an empty list. "Zero rows ⇒ `totalCount === 0`" is
+  wrong on both pages. Filed as S80.
+- **`withDeadline` takes a `PromiseLike`, not a thunk** (`lib/retry.ts:28`), which is what makes
+  `withDeadline(withRetry(fn, opts), ms, label)` the correct idiom rather than an accident — the retry
+  promise is constructed eagerly and then raced, so the deadline bounds the ENTIRE retry loop. Bare
+  `withRetry` defaults to 4 attempts + 1.75s of backoff and does not distinguish transient from
+  permanent failures; against the 3s anon statement timeout that is a ~13.75s worst case AND a 4x
+  retry storm into an already-failing database. Remaining bare sites filed as S78.
+- **A sibling `loading.tsx` changes what a slow server fetch MEANS.** Next commits 200 + shell and
+  streams, so an overrun is a permanently stuck skeleton, not a 504, and `app/error.tsx` can no longer
+  fire — the in-page degraded panel only renders if the render COMPLETES. `app/servers/loading.tsx`
+  exists, which is why the latency budget there is a correctness constraint, not a perf one.
+- **Next hands `searchParams` a `string[]` for repeated query keys**, but the pages type it
+  `Record<string, string | undefined>` — a runtime lie. An array reaching `.contains(col, [param])`
+  becomes `cs.{a,b}` (an accidental AND-of-two-values); an array reaching a `text` RPC param errors
+  outright. `lib/servers-query.ts`'s `first()` is the first fix of this class in the repo.
+- **`.next/prerender-manifest.json` has TWO route maps** and the difference is exactly 7 here:
+  `routes` = 210 concrete prerendered paths, `dynamicRoutes` = 7 ISR *templates* (`/best/[category]`,
+  `/best-for/[usecase]`, `/blog/[slug]`, `/compare/[slugs]`, `/guides/[slug]`, `/s/[slug]`,
+  `/skills/[slug]`). Templates are emitted for every ISR segment regardless of whether
+  `generateStaticParams` returned anything, so `/s/[slug]` and `/compare/[slugs]` appear there even in
+  a provably env-less build with zero concrete children. **The env-less proof must count `routes`
+  only** — `routes + dynamicRoutes` reads as 217 and looks like 7 phantom DB-derived pages.
+- `revalidateTag` is called **nowhere** in this repo — every `tags:` array on the four `unstable_cache`
+  sites is decorative. The only invalidation is `revalidatePath` in `lib/revalidate.ts` and
+  `app/api/revalidate/route.ts` (defaults `['/', '/security']`). Listings are time-based only.
 
 ## Homepage degrade incident + test harnesses (2026-08-01, S34/S37/S39/S43/S44 + hotfix #100)
 

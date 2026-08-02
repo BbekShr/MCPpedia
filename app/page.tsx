@@ -136,7 +136,12 @@ async function fetchHomeData() {
     supabase
       .from('security_advisories')
       .select('id, cve_id, severity, title, status, published_at, server:servers!inner(name, slug)')
-      .order('published_at', { ascending: false, nullsFirst: false })
+      // No nullsFirst: false here. DESC NULLS LAST cannot be served by a plain
+      // btree (Postgres DESC defaults to NULLS FIRST), so it forced a full sort
+      // of all 27,405 advisory rows — 1.81s versus 0.41s for the identical rows
+      // without it. Zero rows have a null published_at, so dropping it changes
+      // no result. This is the un-audited call site S54 named.
+      .order('published_at', { ascending: false })
       .limit(5),
     supabase.rpc('home_category_counts'),
   ])
@@ -251,7 +256,14 @@ export default async function HomePage() {
   // with a shell that says what is actually wrong. No JSON-LD is emitted on
   // this path — publishing a Dataset with zeroed counts is worse than
   // publishing nothing.
-  const data = await liveDataOrNull(getHomeData)
+  //
+  // The 9s budget (vs the 6s default) is deliberate: the budget exists to bound
+  // a *user-facing* wait, but getHomeData is cached for 24h, so it only ever
+  // runs on a cache miss. If the budget is shorter than the cold fetch, the
+  // cache never fills and EVERY visitor gets the degraded shell forever — which
+  // is exactly what happened. It must be long enough for the fetch to complete
+  // at least once. 9s stays under the 10s platform function floor.
+  const data = await liveDataOrNull(getHomeData, 9000)
   if (!data) return <LiveDataUnavailable title="The catalog is temporarily unavailable" />
 
   const { stats, featured, trending, useCaseTiles, advisories, categoryTiles } = data
