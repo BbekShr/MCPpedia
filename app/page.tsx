@@ -154,12 +154,30 @@ async function fetchHomeData() {
   if (statsResult.error) {
     console.warn('[home] home_stats failed (rendering with 0s):', statsResult.error)
   }
+  // home_use_cases and home_category_counts are excluded for the same reason,
+  // measured against prod on 2026-08-01: both returned HTTP 500 with Postgres
+  // 57014 (statement timeout) on 10/10 calls. They are aggregate RPCs over a
+  // ~46k-row catalog run as the anon role, whose statement timeout is 3s (the
+  // raise in 20260718120000 covered service_role only). Keeping them critical
+  // made fetchHomeData throw on every request, which withRetry then retried 4x
+  // — the whole homepage went dark for two sections' worth of data. Their
+  // consumers below return null rather than zeroes so the sections are OMITTED,
+  // not rendered as a grid of 0s (see below). The durable fix is to
+  // snapshot-back these RPCs the way home_stats_cache is, or to index them; both
+  // need a migration, so neither can land here.
+  if (usecaseResults.error) {
+    console.warn('[home] home_use_cases failed (omitting the section):', usecaseResults.error)
+  }
+  if (categoryCountResults.error) {
+    console.warn(
+      '[home] home_category_counts failed (omitting the section):',
+      categoryCountResults.error,
+    )
+  }
   const criticalErrors = [
     ['topScored', topScoredResult.error],
-    ['useCases', usecaseResults.error],
     ['trending', trendingResult.error],
     ['advisories', recentAdvisoriesResult.error],
-    ['categoryCounts', categoryCountResults.error],
   ].filter((e): e is [string, NonNullable<typeof e[1]>] => e[1] != null)
 
   if (criticalErrors.length > 0) {
@@ -193,15 +211,22 @@ async function fetchHomeData() {
 
   const trending: TrendingRow[] = ((trendingResult.data ?? []) as unknown) as TrendingRow[]
 
-  const useCaseData = (usecaseResults.data ?? {}) as Record<string, UseCaseRpcEntry>
-  const useCaseTiles: UseCaseTileData[] = HOMEPAGE_USECASES.map(uc => ({
-    id: uc.id,
-    title: uc.title,
-    subtitle: uc.subtitle,
-    accent: uc.accent,
-    count: useCaseData[uc.id]?.count ?? 0,
-    top: useCaseData[uc.id]?.top ?? [],
-  }))
+  // null (not zeroed tiles) when the RPC errored — every tile would read
+  // "0 servers", which is a visible falsehood that unstable_cache would then
+  // pin for 24h. An empty-but-successful result still renders 0s, as before.
+  const useCaseData = usecaseResults.error
+    ? null
+    : ((usecaseResults.data ?? {}) as Record<string, UseCaseRpcEntry>)
+  const useCaseTiles: UseCaseTileData[] | null =
+    useCaseData &&
+    HOMEPAGE_USECASES.map(uc => ({
+      id: uc.id,
+      title: uc.title,
+      subtitle: uc.subtitle,
+      accent: uc.accent,
+      count: useCaseData[uc.id]?.count ?? 0,
+      top: useCaseData[uc.id]?.top ?? [],
+    }))
 
   const advisories: HomeAdvisory[] = ((recentAdvisoriesResult.data ?? []) as unknown as Array<{
     id: string
@@ -227,24 +252,35 @@ async function fetchHomeData() {
 
   // home_category_counts() returns { [slug]: count } for every category that
   // has >=1 non-archived server. Project onto the canonical CATEGORIES list so
-  // the grid always renders all 22 tiles (even if a category is empty).
-  const countsBySlug = (categoryCountResults.data ?? {}) as Record<string, number>
-  const categoryCounts: CategoryCount[] = CATEGORIES.map(slug => ({
-    slug,
-    label: CATEGORY_LABELS[slug as Category],
-    count: countsBySlug[slug] ?? 0,
-  }))
+  // the grid always renders all 22 tiles (even if a category is empty). null
+  // when the RPC errored, for the same reason as useCaseTiles above: a failed
+  // fetch omits the grid, a genuinely empty category still shows a 0 tile.
+  const countsBySlug = categoryCountResults.error
+    ? null
+    : ((categoryCountResults.data ?? {}) as Record<string, number>)
+  const categoryCounts: CategoryCount[] | null =
+    countsBySlug &&
+    CATEGORIES.map(slug => ({
+      slug,
+      label: CATEGORY_LABELS[slug as Category],
+      count: countsBySlug[slug] ?? 0,
+    }))
 
   // Mark the top 3 non-empty categories as "Hot" — gentle visual cue without
   // requiring time-series data.
-  const sortedCounts = [...categoryCounts]
-    .filter(c => c.count > 0)
-    .sort((a, b) => b.count - a.count)
-  const hotSet = new Set(sortedCounts.slice(0, 3).map(c => c.slug))
-  const categoryTiles: HomeCategory[] = categoryCounts.map(c => ({
-    ...c,
-    hot: hotSet.has(c.slug),
-  }))
+  const hotSet = new Set(
+    [...(categoryCounts ?? [])]
+      .filter(c => c.count > 0)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3)
+      .map(c => c.slug),
+  )
+  const categoryTiles: HomeCategory[] | null =
+    categoryCounts &&
+    categoryCounts.map(c => ({
+      ...c,
+      hot: hotSet.has(c.slug),
+    }))
 
   return { stats, featured, trending, useCaseTiles, advisories, categoryTiles }
 }
@@ -320,17 +356,23 @@ export default async function HomePage() {
         </RevealOnScroll>
       )}
 
-      <RevealOnScroll>
-        <UseCases tiles={useCaseTiles} />
-      </RevealOnScroll>
+      {/* null means the backing RPC failed — drop the whole section, heading
+          included, rather than render a grid of zeroed counts. */}
+      {useCaseTiles && (
+        <RevealOnScroll>
+          <UseCases tiles={useCaseTiles} />
+        </RevealOnScroll>
+      )}
 
       <RevealOnScroll>
         <Advisories advisories={advisories} />
       </RevealOnScroll>
 
-      <RevealOnScroll>
-        <CategoriesGrid categories={categoryTiles} />
-      </RevealOnScroll>
+      {categoryTiles && (
+        <RevealOnScroll>
+          <CategoriesGrid categories={categoryTiles} />
+        </RevealOnScroll>
+      )}
 
       <RevealOnScroll>
         <ScoringExplainer />
