@@ -380,6 +380,7 @@ async function main() {
   await run.finish()
 
   await refreshHomeStatsCache()
+  await refreshHomeAggregatesCache()
   await revalidateSiteCache()
   await revalidateComparePages(movedSlugs)
   } catch (err) {
@@ -411,6 +412,34 @@ async function refreshHomeStatsCache() {
     console.log('Refreshed home_stats_cache.')
   } catch (err) {
     console.error(`refresh_home_stats_cache threw — home_stats_cache is now stale: ${String(err)}`)
+    process.exitCode = 1
+  }
+}
+
+// Recompute the home_aggregates_cache row backing the homepage's "Browse by use
+// case" and "Browse by category" sections. Same shape and same rationale as
+// refreshHomeStatsCache above: it runs as service_role under the 120s
+// statement_timeout, against aggregates that cost ~3.3s combined and blow the
+// anon role's 3s ceiling on the request path (the 2026-08-01 incident).
+//
+// Failure leaves the previous snapshot intact but silently stale, so log at
+// error level and mark the run failed — without throwing, so revalidateSiteCache
+// still runs.
+async function refreshHomeAggregatesCache() {
+  try {
+    const { error } = await supabase.rpc('refresh_home_aggregates_cache')
+    if (error) {
+      console.error(
+        `refresh_home_aggregates_cache failed — home_aggregates_cache is now stale: ${error.message}`,
+      )
+      process.exitCode = 1
+      return
+    }
+    console.log('Refreshed home_aggregates_cache.')
+  } catch (err) {
+    console.error(
+      `refresh_home_aggregates_cache threw — home_aggregates_cache is now stale: ${String(err)}`,
+    )
     process.exitCode = 1
   }
 }
