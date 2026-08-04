@@ -1,0 +1,74 @@
+name: Migrate Database
+
+# Applies supabase/migrations/** to production.
+#
+# Deliberately NOT part of the Vercel build. A Vercel build is not a
+# once-per-merge event: it re-runs on redeploy, on rollback, and can run
+# concurrently, and a build that fails halfway would leave DDL half-applied with
+# no record of it. This workflow is the single serialised writer instead.
+#
+# ORDERING: this runs in parallel with the Vercel production deploy, not before
+# it. For the window between the two, old app code is live against the new
+# schema — so migrations must be expand/contract. Add columns/tables in one PR,
+# ship the code that reads them in the next, drop the old ones in a third. A
+# migration that renames or drops something the currently-deployed code still
+# reads will break production for the length of the deploy.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+  workflow_dispatch:
+
+# Never cancel an in-flight migration: a killed `db push` can leave the
+# migration history disagreeing with the schema. Queue instead.
+concurrency:
+  group: migrate-db
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: Plan (dry run)
+    # Fork PRs get no secrets, so the dry run would fail on something the
+    # contributor cannot fix. Same-repo PRs only.
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Show pending migrations
+        # --dry-run prints the migrations that WOULD apply and exits without
+        # touching the database. This is the review artifact: a human reads it
+        # before merging, since merging main is what actually applies them.
+        run: supabase db push --dry-run --db-url "$SUPABASE_DB_URL"
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
+  migrate:
+    name: Apply to production
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Apply migrations
+        # No --include-all: that flag applies out-of-order migrations, which
+        # silently reorders DDL against a schema that was built in filename
+        # order. If push refuses a migration because an older one landed after
+        # it, that is a real conflict to resolve by hand, not to force past.
+        run: supabase db push --db-url "$SUPABASE_DB_URL"
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
