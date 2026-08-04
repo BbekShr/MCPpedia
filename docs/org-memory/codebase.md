@@ -758,3 +758,26 @@ _(record "audited <ground> under <lens>: clean" entries here so discovery skips 
   healthy. A blog post (#109) was on `main` and still served "Post Not Found", because the blog index
   and its `generateStaticParams` read `content/blog/` from the filesystem at build time — no build,
   no post, indefinitely.
+
+## 2026-08-04 — Vercel deploys were double-locked; the second lock went unnoticed
+
+`b218234` ("build only on main, skip preview deployments") added TWO independent kill switches to
+`vercel.json`: the `git.deploymentEnabled { "**": false, "main": true }` block AND
+`ignoreCommand: [ "$VERCEL_ENV" != "production" ]`. PR #111 removed only the first, so production
+stayed dead and the symptom was unchanged — which read as "the fix didn't work".
+
+- **Evidence that settles it:** the GitHub commit status for every commit from `b218234` onward reads
+  `Vercel: success — "Canceled by Ignored Build Step"`. `f91da69`, the commit immediately BEFORE
+  `b218234`, reads `"Deployment has completed"`. That one-line `description` field is the whole
+  diagnosis; the `state` is `success` in both cases, so **a skipped build is indistinguishable from a
+  successful one unless you read the description.** Never conclude "deployed" from a green Vercel
+  check — read `.statuses[]|select(.context=="Vercel")|.description`.
+- `ignoreCommand` semantics are inverted from intuition: **exit 0 SKIPS the build**, exit 1 proceeds.
+  So any `[ "$X" != "expected" ]` form fails CLOSED — when `$X` is unset or unexpected it evaluates
+  true, exits 0, and silently cancels. `VERCEL_ENV` is evidently not `"production"` during the ignore
+  step on this project, so the production branch was cancelled by a rule written to protect previews.
+- The replacement keys on `VERCEL_GIT_COMMIT_REF` and fails OPEN: it skips only when the ref is known
+  AND is not `main`. An unset ref builds rather than cancels — for a production deploy path, an extra
+  build is a cost, a silently skipped one is an outage.
+- **A stale production deploy is invisible to every gate the org has.** CI was green on all five PRs
+  merged that day; none of them reached users. The only detector was polling the live `dpl_*` hash.
