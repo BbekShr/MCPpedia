@@ -3,7 +3,7 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { createPublicClient } from '@/lib/supabase/public'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { PUBLIC_SERVER_FIELDS, PUBLIC_CARD_FIELDS } from '@/lib/constants'
+import { PUBLIC_SERVER_FIELDS, PUBLIC_CARD_FIELDS, CATEGORIES, CATEGORY_LABELS, type Category } from '@/lib/constants'
 import DiscussionSection from '@/components/DiscussionSection'
 import NewsletterSignup from '@/components/NewsletterSignup'
 import BadgeEmbed from '@/components/BadgeEmbed'
@@ -196,6 +196,9 @@ export default async function ServerDetailPage({
   const hasEnvInstructions = s.env_instructions && Object.keys(s.env_instructions).length > 0
   const hasChangelog = !!(changelogs && changelogs.length > 0)
   const hasSimilar = !!(similarServers && similarServers.length > 0)
+  // Only a category in CATEGORIES has hub pages; anything else would link to a 404.
+  const rawPrimaryCategory = (s.categories || [])[0]
+  const primaryCategory = CATEGORIES.includes(rawPrimaryCategory as Category) ? rawPrimaryCategory : null
 
   const navItems = [
     { id: 'install', label: 'Install' },
@@ -470,16 +473,36 @@ export default async function ServerDetailPage({
                 title="Similar servers"
                 desc={`Others in ${(s.categories || []).join(' / ') || 'this space'}`}
                 right={
-                  <Link
-                    href={`/servers?category=${encodeURIComponent((s.categories || [])[0] || '')}`}
-                    className="text-sm text-accent hover:text-accent-hover"
-                  >
-                    View all →
-                  </Link>
+                  primaryCategory ? (
+                    <Link
+                      href={`/category/${encodeURIComponent(primaryCategory)}`}
+                      className="text-sm text-accent hover:text-accent-hover"
+                    >
+                      View all →
+                    </Link>
+                  ) : undefined
                 }
               />
               <SimilarGrid servers={similarServers as Server[]} />
             </section>
+          )}
+
+          {/* Hub links. These used to be a single /servers?category=X query-string
+              URL, which is a filtered view of one listing page — it passes no
+              authority to the category or /best hub, and those hubs are the
+              pages we actually want ranking. Both targets are canonical,
+              sitemap-listed URLs. */}
+          {primaryCategory && (
+            <nav aria-label="Related hubs" className="text-sm text-text-muted">
+              More {CATEGORY_LABELS[primaryCategory as Category] || primaryCategory} MCP servers:{' '}
+              <Link href={`/category/${encodeURIComponent(primaryCategory)}`} className="text-accent hover:text-accent-hover">
+                all {CATEGORY_LABELS[primaryCategory as Category] || primaryCategory} servers
+              </Link>
+              {' · '}
+              <Link href={`/best/${encodeURIComponent(primaryCategory)}`} className="text-accent hover:text-accent-hover">
+                best {CATEGORY_LABELS[primaryCategory as Category] || primaryCategory} servers
+              </Link>
+            </nav>
           )}
 
           <section>
