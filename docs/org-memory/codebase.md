@@ -735,3 +735,26 @@ _(record "audited <ground> under <lens>: clean" entries here so discovery skips 
 - **Issues #68 and #108 were external rediscoveries of already-filed rows** (S56+S57, and S65). Both
   reporters' code reads were accurate. Two of four open issues needed no new row — dedupe against
   BACKLOG before filing anything from an issue.
+## Production stopped deploying for ~15h and nothing alerted (2026-08-04, PR #104 → fix)
+
+- **`vercel.json`'s `git.deploymentEnabled: { "**": false, "main": true }` disabled deploys on `main`
+  too.** The assumption was that the exact branch key beats the glob. It does not — `**` matched
+  `main`, and deployment *creation* was off for every branch. Last production deploy before the fix:
+  `f91da69` at 2026-08-03T23:42:05Z, the commit immediately BEFORE #104 landed. Never pair a
+  `"**": false` catch-all with a narrower allow key in `deploymentEnabled`.
+- **`ignoreCommand` alone does the job #104 wanted.** It runs after a deployment record is created but
+  before the build, and **exit 0 means skip the build**. `[ "$VERCEL_ENV" != "production" ]` exits 0
+  on preview (skip) and 1 on production (build). Preview deployment *records* still get created; they
+  cost nothing because no build runs, and build minutes were the actual concern.
+- **CI green is not deployed.** Three merges to `main` (#105, #106, #109) each passed CI in ~1-1.5m
+  and produced **zero** deployments. The GitHub Vercel commit status still read `success` — a skipped
+  or never-created deploy is not distinguishable from a shipped one at that layer.
+- **The detection path that worked**: `gh api repos/<repo>/deployments` and compare the newest
+  `Production` SHA against `origin/main`. If they differ, the merge did not ship, whatever CI says.
+  This generalises the "deploy verification needs the deployment hash" lesson from the 2026-08-01
+  post-mortem: checking `dpl_*` only tells you the deployment *changed*; checking the deployments API
+  tells you *which commit* is live.
+- **Symptom to recognise**: content merged to `main` 404s in prod while the rest of the site is
+  healthy. A blog post (#109) was on `main` and still served "Post Not Found", because the blog index
+  and its `generateStaticParams` read `content/blog/` from the filesystem at build time — no build,
+  no post, indefinitely.
