@@ -147,6 +147,29 @@ describe('POST /api/server/[slug]/refresh-score — advisory reconciliation', ()
     expect(serversUpdated()).toHaveLength(1)
   })
 
+  // S70: the shared guard the bot now mirrors. `servers:await` keys the score
+  // UPDATE *alone* only because SERVER_ROW has `github_url: null` and
+  // `npm_package: null`, which skip the route's two other `servers` updates
+  // (route.ts:75-84, :98-101) — give SERVER_ROW either field and this injection
+  // starts failing those writes too.
+  it('skips reconciliation when the servers score update fails', async () => {
+    // A successful scan reporting ZERO advisories — the exact combination that
+    // would close every open row for this server if the guard were absent.
+    scanResult.current = makeScan({ scan_status: 'success', advisories: [] })
+    harness.queuedErrors['servers:await'] = {
+      code: '57014',
+      message: 'canceling statement due to statement timeout',
+    }
+
+    const res = await postRefresh()
+    expect(res.status).toBe(200)
+
+    expect(calls.filter(c => c.table === 'security_advisories')).toEqual([])
+    // Teeth: the handler DID reach the score update, so the absence above is
+    // the guard firing, not an early bail.
+    expect(serversUpdated()).toHaveLength(1)
+  })
+
   it('touches the advisory table at ALL on a failed scan that carries advisories', async () => {
     // A dual-package server where one OSV query failed and the other succeeded
     // reports 'failed' WITH a populated array (lib/scoring.ts:853, :315-316).
