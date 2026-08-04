@@ -32,6 +32,12 @@ Before handing back, run the gates yourself: `npx tsc --noEmit`, `npm run lint`,
 If you are one of several worktree-parallel implementers, run only the cheap gates
 (typecheck + lint) — QA owns the serialized full bar.
 
+**COMMIT your work on the branch before handing back** (unless the dispatch says otherwise).
+Leaving it uncommitted is not neutral: the review board and QA diff against `main`, so an
+uncommitted tree makes `git diff main...HEAD` show nothing but the BACKLOG row, and every
+reviewer has to rediscover the real change in `git status` — or silently review the wrong
+thing. State the resulting commit SHA in your hand-back.
+
 You NEVER: merge anything, push to `main`, add the `human-approved` label, use
 `gh pr merge --admin`, or edit BACKLOG.md rows beyond what the dispatch asked.
 

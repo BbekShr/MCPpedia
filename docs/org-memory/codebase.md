@@ -563,3 +563,100 @@ _(record "audited <ground> under <lens>: clean" entries here so discovery skips 
 - **`normalizeGithubUrl` strips `.git` BEFORE trailing slashes** (`lib/normalize.ts:1-9`), so `…/repo.git/` → `…/repo.git` while `…/repo.git` → `…/repo`. A test proving "a de-normalized monorepo url is still skipped" must NOT use `.git/` — it would fail against correct code and read as a bug. Filed as M15.
 - **A concurrent agent writing the repo makes any gate result untrustworthy and looks exactly like a flaky test.** When a gate goes red once and will not reproduce, `stat` the mtimes of the files in the diff before blaming test order. Mutation work belongs in an isolated `git worktree` with `node_modules` symlinked — ~0 setup cost, reproduces the suite exactly. Filed as M16.
 - Baselines re-measured: `main` = 20 files / 277 tests; this branch = 22 / 286. Env-less build fingerprint stable at 210 `routes` / 0 `/s/` / 0 `/compare/` / 62 `/blog` / 91 `/skills` (259 static pages) — `/blog` and `/skills` counts are INDEX-INCLUSIVE, so a `startsWith('/blog/')` count gives 61/90 and reads as a phantom regression.
+## 2026-08-01 — S81 (homepage aggregate snapshot)
+
+- **`REVOKE ALL ON FUNCTION … FROM PUBLIC` is a NO-OP for `anon`/`authenticated` on this Supabase
+  project.** The bootstrap `ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO
+  anon, authenticated, service_role` issues DIRECT per-role grants at CREATE time; revoking the
+  `PUBLIC` pseudo-role does not touch them. Every function written as
+  `REVOKE … FROM PUBLIC; GRANT … TO service_role;` is therefore anon-callable over PostgREST —
+  confirmed live on prod for `refresh_home_stats_cache` (`20260430160000:99`) and
+  `cleanup_rate_limits` (`20260417210500:115`). The correct form names the roles:
+  `REVOKE ALL ON FUNCTION f() FROM PUBLIC, anon, authenticated;`. Filed repo-wide as S84.
+- **Default TABLE privileges are live too**, so "no GRANT written" never means "not reachable":
+  `GET /rest/v1/rate_limits` returns `200 []` on a table with RLS on, zero policies and zero
+  explicit grants (`20260417210500_rate_limits.sql:7-22`). RLS is the only thing actually holding.
+- **Read-only privilege probes against prod PostgREST that write nothing:** use `GET` (not `POST`)
+  on an RPC — it runs in a read-only transaction, so a VOLATILE function's privilege check is
+  observable via `57014`/`25006` while any write it attempts is rejected. A nonexistent function
+  returns `PGRST202` 404, which is what "unreachable" actually looks like.
+- **`revalidatePath` DOES invalidate `unstable_cache` entries** created by that page —
+  `node_modules/next/dist/server/web/spec-extension/unstable-cache.js:152,231` pass
+  `softTags: implicitTags`. This corrects the natural reading of the earlier note that
+  `revalidateTag` is called nowhere and every `tags:` array is decorative: the tag arrays are
+  decorative, but the cache entries are NOT uninvalidatable — `lib/revalidate.ts`'s
+  `revalidatePath('/')` reaches `home-page-data-vN`. Homepage aggregate staleness is therefore the
+  snapshot cadence, not cadence + the 24h window.
+- **A snapshot-backed RPC's failure mode is `{data: null, error: null}` — a SUCCESS, not an error.**
+  A `LANGUAGE sql` reader of the form `SELECT data -> 'k' FROM cache WHERE id = true` returns SQL
+  NULL for a missing row, a missing key, AND a scalar `data`. Every `?? {}` fallback downstream of
+  one silently converts "never seeded" into "zero of everything", which renders as a grid of
+  literal zeros — a visible falsehood strictly worse than omitting the section. `lib/home-tiles.ts`
+  folds error ∨ null ∨ empty into one `isAbsent` guard for this reason.
+- **`security_advisories` on prod (measured 2026-08-01): 27,405 rows total, 362 `status='open'`
+  (1.3%), ZERO with NULL `published_at`.** `status` is an index predicate nowhere
+  (`20260402010000:53-55` indexes only `server_id`, `cve_id`, `severity`), so adding a partial
+  index on `status='open'` is what would first make the daily scan's `open → fixed` transitions
+  HOT-blocking. A partial index was designed into S81 and then DROPPED on this measurement:
+  `/security` already returns in 0.15s (ids) / 0.74s (full rows + embed) with no index at all, and
+  the 0.74s is dominated by `select=*` plus the `servers` embed, which no `published_at` index
+  touches.
+- **Postgres `ORDER BY x DESC` defaults to NULLS FIRST and postgrest-js emits no NULLS clause when
+  `nullsFirst` is omitted**, so the index serving `.order(col, {ascending: false})` is `(col DESC)`.
+  Writing `(col DESC NULLS LAST)` produces an index neither `app/page.tsx` nor
+  `app/security/page.tsx:108` can use — the inverse of the S54/S50 trap.
+- **`SET LOCAL statement_timeout` only takes effect inside an explicit transaction block**, and this
+  repo had ZERO prior `SET LOCAL` in any migration — there is no in-repo evidence that migration
+  files are applied inside one. Applied via `psql -f` without `BEGIN` or via the dashboard SQL
+  editor, Postgres emits `WARNING: SET LOCAL can only be used in transaction blocks` and discards
+  it. `SET … ; RESET …` is correct under both apply methods.
+- **`EXCEPTION WHEN OTHERS` around a migration's own seed removes the LAST verification of that
+  SQL**, because nothing in the bar parses or executes `supabase/migrations/**` (M7) — a typo in the
+  function body would commit green with an empty snapshot. Narrow such handlers to the one condition
+  they are documented for (`WHEN query_canceled` for a 57014 timeout).
+- **Non-`CONCURRENTLY` `CREATE INDEX` holds a SHARE lock until the transaction commits**, so an
+  index statement placed BEFORE a long seed blocks writes to that table for the whole seed window.
+  Order index creation after the seed.
+- **A permanently-red scheduled bot masks genuine failures** — the repo's canonical statement is
+  `bots/compute-scores.ts:369-377`, and it now governs three call sites. Because migrations do not
+  auto-apply (M2), any new unattended bot step referencing a hand-applied migration's objects is red
+  for a human-latency-long window: `freshness-probe` (`cron: '0 */6 * * *'`) would post 4 red runs a
+  day and `alert-on-failure.yml` comments per failure. New bot steps of this shape need an explicit
+  not-yet-applied tolerance (`PGRST202` for a missing function, `PGRST205`/`42P01` for a missing
+  relation) that warns without failing.
+- **SQL parse gate with no DB and no Docker** (see M14): `npm install --no-save
+  pg-query-emscripten@5.1.0`; `const pg = await require('pg-query-emscripten').default()` — `.default`
+  is an ASYNC module factory that must be called and awaited. `pg.parse()` treats `$$…$$` as an
+  opaque literal, so bodies must be extracted and parsed individually; `parsePlpgsql` accepts only
+  `BEGIN…END` bodies and rejects `LANGUAGE sql` ones, which go through `parse()`. Local `psql`,
+  `postgres`, `pg_ctl` are all absent and Docker is not running on the dev machine, so
+  `supabase db lint`/`db start`/`db push` are unavailable — any acceptance criterion phrased as "run
+  the migration locally" is unmeetable here without starting Docker Desktop first.
+- **Test baseline moved to 288 tests / 21 files (~1.5s)**, from the 221/16 recorded at S48. Env-less
+  build baseline unchanged: 210 prerendered `routes` (0 `/s/`, 0 `/compare/`, 62 `/blog`, 91
+  `/skills`).
+## Homepage outage post-mortem (2026-08-01, PRs #100 + #102)
+
+- **The user-visible copy lied about the cause.** `/` said "the database is not reachable" while the DB
+  was healthy: `/api/v1/servers` and `/api/search` served real data in ~1s and `/servers`, `/security`,
+  `/analytics` all rendered. `LiveDataUnavailable`'s text is a component's guess, not a diagnosis —
+  probe per-page and per-query before believing it.
+- **Actual cause: `home_use_cases()` and `home_category_counts()` return 500/`57014` on every call**
+  (measured 10/10). They are anon-role aggregates over ~46k servers against a 3s statement timeout.
+  Both were in `criticalErrors`, so `fetchHomeData` threw, `withRetry` retried 4x, and **no
+  `liveDataOrNull` budget could ever rescue it.** Filed as S83.
+- **They returned 200 in 1.83s/1.39s and 500 within the same hour.** A query measured comfortably
+  under a timeout is not safe if it is on a growth curve — measure the trend, not the point.
+- **The first hotfix (#100) treated a symptom.** Raising the budget 6s→9s was reasoned from a partial
+  measurement (the RPCs happened to succeed when first probed) and shipped with a stated estimate of
+  4-5s cold. Production proved it wrong: the page waited 9.2s and still degraded. **When a fix is
+  reasoned from a measurement, re-measure after deploy — the deploy is the experiment.**
+- **Demoting a query out of `criticalErrors` is NOT sufficient on its own.** Both consumers fell back
+  to `?? {}`, so demotion alone would have rendered `0` across all 22 category tiles — and since
+  `unstable_cache` caches successful returns, that falsehood would have been pinned for 24h, outliving
+  the outage. A section fed by a fallible aggregate needs a THREE-way contract — failed / empty /
+  populated — with failed rendering as *absent*, not as zero. Demotion and nullability are one change.
+- **Deploy verification needs the deployment hash.** Polling right after a merge reads the PREVIOUS
+  deployment: `dpl_*` in the HTML changed three times during this incident, and two of those were
+  unrelated merges. Confirm the hash moved past the merge before concluding a fix failed.
+- Recovery confirmed: homepage 3.7s cold, then **0.25-0.32s warm** with 18 server links.
