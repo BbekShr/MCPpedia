@@ -3,6 +3,60 @@ import { SITE_NAME, SITE_URL, SITE_DESCRIPTION } from './constants'
 import type { Server } from './types'
 import type { BlogMeta } from './blog'
 
+// ── Index quality gate ──────────────────────────────────────────────
+
+// The catalog is ~36.5k servers but most rows are registry stubs with no
+// description, no tools and a near-zero score. Submitting all of them left
+// 15,056 URLs in Search Console's "Crawled – currently not indexed" bucket,
+// which is a site-wide quality signal, not a per-URL one — the thin pages drag
+// down the crawl budget of the ones we actually want ranked.
+//
+// This is the SINGLE source of truth for "should Google index this server?".
+// Both the `robots` meta tag in app/s/[slug]/page.tsx and the server sitemap
+// shards read it, so the two can never disagree — a URL in the sitemap that
+// renders `noindex` is the worst of both worlds.
+//
+// Calibration against the live catalog (36,477 rows): 13,383 score >= 40,
+// 4,302 >= 60. The `description` clause is what carries most of the passing
+// set — a written description is the cheapest honest proxy for "there is
+// something on this page worth reading".
+export interface IndexableServerFields {
+  description?: string | null
+  tool_count?: number | null
+  score_total?: number | null
+  is_archived?: boolean | null
+  review_count?: number | null
+  community_verified?: boolean | null
+}
+
+// Columns `isServerIndexable` reads. Kept next to the predicate so every caller
+// selects exactly what the gate needs and nothing more.
+export const INDEXABLE_FIELD_LIST = [
+  'description',
+  'tool_count',
+  'score_total',
+  'is_archived',
+  'review_count',
+  'community_verified',
+] as const
+
+export const INDEXABLE_FIELDS = INDEXABLE_FIELD_LIST.join(', ')
+
+export function isServerIndexable(server: IndexableServerFields): boolean {
+  if (server.is_archived) return false
+
+  const score = server.score_total ?? 0
+  const toolCount = server.tool_count ?? 0
+
+  if ((server.description ?? '').trim().length > 0) return true
+  if (toolCount > 0 && score >= 40) return true
+  if (score >= 60) return true
+  if ((server.review_count ?? 0) > 0) return true
+  if (server.community_verified) return true
+
+  return false
+}
+
 // ── JSON-LD Script Component ────────────────────────────────────────
 
 export function JsonLdScript({ data }: { data: Record<string, unknown> | Record<string, unknown>[] }) {

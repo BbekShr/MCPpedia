@@ -32,6 +32,8 @@ import {
   generateServerJsonLd,
   generateBreadcrumbJsonLd,
   generateFAQJsonLd,
+  isServerIndexable,
+  INDEXABLE_FIELDS,
 } from '@/lib/seo'
 import type { Server, Changelog, SecurityAdvisory } from '@/lib/types'
 import type { Metadata } from 'next'
@@ -60,11 +62,17 @@ export async function generateMetadata({
   const supabase = createPublicClient()
   const { data: server } = await supabase
     .from('servers')
-    .select('name, tagline, tool_count, categories, score_total')
+    .select(`name, tagline, categories, ${INDEXABLE_FIELDS}`)
     .eq('slug', slug)
     .single()
 
   if (!server) return { title: 'Server Not Found' }
+
+  // Thin registry stubs are served, linked and editable — they are just not
+  // submitted to the index. `follow: true` keeps their outbound links (category
+  // hubs, similar servers) flowing authority. Shares `isServerIndexable` with
+  // the sitemap so the two can never disagree.
+  const indexable = isServerIndexable(server)
 
   const toolCount = (server.tool_count as number) ?? 0
   const score = server.score_total || 0
@@ -93,6 +101,7 @@ export async function generateMetadata({
     alternates: {
       canonical: `${SITE_URL}/s/${slug}`,
     },
+    ...(indexable ? {} : { robots: { index: false, follow: true } }),
   }
 }
 
