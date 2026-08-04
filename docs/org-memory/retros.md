@@ -238,3 +238,26 @@ One line per cycle: `- YYYY-MM-DD <ID>: <friction observed> → <action or M-row
   `BACKLOG.md` on disk. Concretely: `gh pr diff <n> | grep -E '^\+\| [SMRW][0-9]+'` across open PRs
   before appending. Worth a real fix (append-with-timestamp IDs, or filing rows only against a
   freshly-pulled `main`) rather than another round of manual care.
+- **2026-08-01 (live homepage outage, PRs #100 then #102).** The org shipped a wrong fix first and the
+  only thing that caught it was checking production afterwards.
+  (1) **#100 was reasoned from a measurement taken at the wrong moment.** When I first probed,
+  `home_use_cases` and `home_category_counts` returned 200 in 1.83s/1.39s, so I concluded the problem
+  was the 6s budget plus a `nullsFirst: false` index defeat, and predicted 4-5s cold. Within the hour
+  both RPCs were returning 500/`57014` on every call — they had been sitting right at the edge of the
+  3s anon timeout. The lesson is not "measure more" but **"a value near a threshold is a trend, not a
+  reading"**: both numbers were within 2x of a hard 3s limit on a table that grows daily, and I treated
+  them as stable inputs.
+  (2) **Publishing an estimate created the obligation that caught it.** #100's body said "expected cold
+  total ~4-5s" and asked for two curls after deploy. That is the only reason the insufficiency was
+  found in minutes rather than by the user again. Stating a falsifiable prediction in the PR body is
+  cheap and should be standard for any perf fix.
+  (3) **The second fix nearly shipped a subtler bug than the one it fixed.** Demoting the two RPCs out
+  of `criticalErrors` would, on its own, have rendered `0` for all 22 category tiles — and
+  `unstable_cache` would have pinned that lie for 24h. Catching it required asking "what does the page
+  actually render in the failure case?" rather than "does the page still render?".
+  (4) **I read a stale deployment and briefly believed the fix had failed.** After merging #102 I
+  polled immediately, saw DEGRADED at 9.2s, and started re-diagnosing — but the `dpl_` hash was still
+  the previous build. Always confirm the deployment hash advanced before concluding anything.
+  (5) **Nothing in the org noticed the homepage was blank for every visitor** — not CI, not the S19
+  freshness probe (which watches cache staleness, not page health), not any bot. It was found because
+  a human looked at the site. That gap is S82 and it is the most important item this incident produced.

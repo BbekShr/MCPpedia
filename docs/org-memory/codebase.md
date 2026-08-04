@@ -624,3 +624,28 @@ _(record "audited <ground> under <lens>: clean" entries here so discovery skips 
 - **Test baseline moved to 288 tests / 21 files (~1.5s)**, from the 221/16 recorded at S48. Env-less
   build baseline unchanged: 210 prerendered `routes` (0 `/s/`, 0 `/compare/`, 62 `/blog`, 91
   `/skills`).
+## Homepage outage post-mortem (2026-08-01, PRs #100 + #102)
+
+- **The user-visible copy lied about the cause.** `/` said "the database is not reachable" while the DB
+  was healthy: `/api/v1/servers` and `/api/search` served real data in ~1s and `/servers`, `/security`,
+  `/analytics` all rendered. `LiveDataUnavailable`'s text is a component's guess, not a diagnosis —
+  probe per-page and per-query before believing it.
+- **Actual cause: `home_use_cases()` and `home_category_counts()` return 500/`57014` on every call**
+  (measured 10/10). They are anon-role aggregates over ~46k servers against a 3s statement timeout.
+  Both were in `criticalErrors`, so `fetchHomeData` threw, `withRetry` retried 4x, and **no
+  `liveDataOrNull` budget could ever rescue it.** Filed as S83.
+- **They returned 200 in 1.83s/1.39s and 500 within the same hour.** A query measured comfortably
+  under a timeout is not safe if it is on a growth curve — measure the trend, not the point.
+- **The first hotfix (#100) treated a symptom.** Raising the budget 6s→9s was reasoned from a partial
+  measurement (the RPCs happened to succeed when first probed) and shipped with a stated estimate of
+  4-5s cold. Production proved it wrong: the page waited 9.2s and still degraded. **When a fix is
+  reasoned from a measurement, re-measure after deploy — the deploy is the experiment.**
+- **Demoting a query out of `criticalErrors` is NOT sufficient on its own.** Both consumers fell back
+  to `?? {}`, so demotion alone would have rendered `0` across all 22 category tiles — and since
+  `unstable_cache` caches successful returns, that falsehood would have been pinned for 24h, outliving
+  the outage. A section fed by a fallible aggregate needs a THREE-way contract — failed / empty /
+  populated — with failed rendering as *absent*, not as zero. Demotion and nullability are one change.
+- **Deploy verification needs the deployment hash.** Polling right after a merge reads the PREVIOUS
+  deployment: `dpl_*` in the HTML changed three times during this incident, and two of those were
+  unrelated merges. Confirm the hash moved past the merge before concluding a fix failed.
+- Recovery confirmed: homepage 3.7s cold, then **0.25-0.32s warm** with 18 server links.
