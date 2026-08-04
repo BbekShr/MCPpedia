@@ -660,3 +660,38 @@ _(record "audited <ground> under <lens>: clean" entries here so discovery skips 
   deployment: `dpl_*` in the HTML changed three times during this incident, and two of those were
   unrelated merges. Confirm the hash moved past the merge before concluding a fix failed.
 - Recovery confirmed: homepage 3.7s cold, then **0.25-0.32s warm** with 18 server links.
+
+## 2026-08-04 — S70 cycle (advisory reconciliation guarded on the score write)
+
+- **`reconcileAdvisories` is the only CREATOR of `security_advisories` rows as well as the only
+  closer** (`lib/advisories.ts`: insert, conflict-update that flips status in *both* directions, and
+  the bulk close). So `if (updateError) skip reconcile` is not a free win — it trades a false-green
+  ("No known CVEs" beside a non-zero `cve_count`) for a newly published CVE going unrecorded that
+  night. The trade is deliberate and now written into the guard comment. An "upsert-only, never
+  close" mode is NOT a safe alternative: the upsert writes `adv.status` and can itself close a row.
+- **"The next run retries" is only half true.** A failed UPDATE leaves `score_computed_at` unstamped,
+  so the row stays in the stale filter and at the head of the stalest-first walk. But postgrest-js
+  RESOLVES with `{error}` rather than throwing, so a lost response AFTER a commit stamps
+  `score_computed_at`, drops the row out of the stale set, and defers the skipped reconcile by up to
+  `SCORE_STALE_DAYS` (7 days). Any "it self-heals tomorrow" claim about this bot needs that caveat.
+- **`bots/compute-scores.ts` passes `closeOn: 'success-or-pending'` while both routes pass
+  `'success'`** — under that policy `lib/advisories.ts`'s early return never fires for any status, so
+  the bot ALSO closes every open row on a `'pending'` scan. The bot's trigger set is strictly wider
+  than the routes'; reason about it separately.
+- **`bot_runs.servers_updated` has no automated consumer** — only `app/api/admin/bots/route.ts` →
+  `app/admin/page.tsx` render it. `alert-on-failure.yml` keys solely on workflow conclusion and the
+  S19 freshness probe keys solely on cache `refreshed_at`. So ANY per-server failure counter in a bot
+  is human-polled by construction: a run where every write fails is still green, exit 0. That is the
+  open M10 policy question, not something a fix cycle should decide silently.
+- **`bot_runs.summary` has no schema contract** (`jsonb default '{}'`, no CHECK, spread-merged, then
+  rendered generically via `Object.entries`). Adding a summary key is always non-breaking; removing
+  one silently drops a chip from the admin UI.
+- **`bots/**` is outside the `next build` surface** — verified no non-comment import of
+  `bots/compute-scores` exists under `app/`, `components/`, `lib/`, `proxy.ts`, `next.config.ts`. A
+  bot-only diff is legitimately build-exempt under CLAUDE.md §2 and must not burn Supabase egress on
+  a speculative prerender. The rest of the bar runs in well under 15s, so nothing else is skippable.
+- **Cross-file line citations rot.** `bots/freshness-probe.ts:42` hard-codes a line RANGE inside
+  `bots/compute-scores.ts`; it has now drifted twice (`369-377` → `410-417`). It is the only such
+  citation in `bots/` — check it whenever `compute-scores.ts` changes above that point.
+- Suite baseline re-measured: `main` = 297 tests / 23 files; the S70 branch = 298 / 23 (~2.0s).
+  `npx tsc --noEmit` ≈ 2.2s. This figure moves most cycles — re-measure, never trust the record.
