@@ -1,0 +1,127 @@
+---
+title: "36,614 MCP Servers, 171 Good Ones: What the Long Tail Actually Looks Like"
+description: "We scored every live MCP server in the catalog. The median is 30/100, 78% land under 50, and the single biggest reason isn't bad code — it's missing metadata. Here are the numbers, with the caveats."
+hook: "The median MCP server scores 30 out of 100. Only 171 of 36,614 crack 90. The reason is duller and more fixable than 'most servers are bad'."
+date: "2026-08-04"
+tags: ["data","ecosystem","scoring","metadata","state-of-mcp"]
+category: "category-deep-dive"
+featuredServers: ["puppeteer","context7","gemini-cli","dbhub"]
+---
+<SectionLabel>Ecosystem Data</SectionLabel>
+
+## The Shape of the Catalog
+
+MCPpedia tracks 66,778 MCP server records. 30,164 of those are archived — the upstream repo is gone, dead, or explicitly retired — which leaves **36,614 live servers**, every one of them scored 0–100 by the same automated engine.
+
+Here is the distribution nobody puts in a launch announcement:
+
+<StatGrid>
+<Stat value="30" label="Median score" detail="out of 100, across all 36,614" />
+<Stat value="171" label="Score 90 or above" detail="0.5% of the catalog" />
+<Stat value="78%" label="Score below 50" detail="28,726 servers" />
+</StatGrid>
+
+The top of the market is genuinely small. 2,022 servers score 70 or better (5.5%). 1,151 clear 80 (3.1%). And 171 — call it the A+ club — reach 90 (0.5%).
+
+Meanwhile 16,691 servers, **45.6% of everything live**, score under 20.
+
+<PullQuote>Nearly half the MCP ecosystem scores under 20 out of 100. Almost none of that is because the code is bad. It's because there is nothing there to read.</PullQuote>
+
+---
+
+## The Real Cause Is Boring: Missing Metadata
+
+It is tempting to read "median 30" as "most MCP servers are junk." That is not what the data says. Look at what's actually absent from the catalog:
+
+| Missing | Servers | Share of live catalog |
+|---|---|---|
+| No description | 23,162 | 63.3% |
+| No GitHub URL | 21,382 | 58.4% |
+| No license | 28,343 | 77.4% |
+| Zero GitHub stars | 29,376 | 80.2% |
+
+Only **8,210 servers — 22.4%** have all three of a description, a repository URL, and a license.
+
+Our score cannot invent evidence. Documentation is 15 points and reads the README. Maintenance is 25 points and reads commit recency. Security is 30 points and reads the source, the dependency tree, and the tool schemas. A registry entry with a name, a package, and nothing else isn't a bad server — it's an *unreadable* one, and it scores like a bad one because from the outside those are indistinguishable.
+
+The cleanest evidence of this is a single query result:
+
+<Callout type="info">
+Every one of the 2,022 servers scoring 70 or above has a GitHub URL. All of them. Not a single URL-less entry in the catalog breaks 70 — because more than half the rubric is reading a repository that isn't there.
+</Callout>
+
+If you publish an MCP server and want it to rank anywhere, the highest-leverage thing you can do is not refactoring. It's filling in the three fields above.
+
+---
+
+## Stars Measure the Repo, Not the Server
+
+The obvious shortcut — sort by GitHub stars, install the top one — breaks in a specific and instructive way. Here are the most-starred entries in the catalog:
+
+| Entry | Stars | Score |
+|---|---|---|
+| eslint-plugin-react-hooks | 246,920 | 67 |
+| n8n | 199,282 | 55 |
+| browser-use | 107,832 | 61 |
+| Gemini CLI | 106,350 | 95 |
+| awesome-mcp-servers | 91,806 | 63 |
+| Puppeteer MCP Server | 89,194 | 98 |
+
+Four of those six numbers are not measuring an MCP server at all. `eslint-plugin-react-hooks` carries React's monorepo stars. `awesome-mcp-servers` is a *list*. The MCP surface inside a 250,000-star repository inherits every star that repository ever earned, including the ones from a decade of work that has nothing to do with MCP.
+
+Stars aren't worthless — the 331 servers with 1,000+ stars average 70.0, while a 1,000-server sample of zero-star entries averages 26.7. The signal is real. But it's a signal about *the project the server lives in*, and it goes badly wrong at both ends: a monorepo drags a mediocre integration up, and a focused, well-built, single-purpose server starts at zero.
+
+Which is why the A+ club is not who you'd guess. Of the 171 servers scoring 90+, **103 have fewer than 1,000 stars and 52 have fewer than 100**:
+
+<ServerCardMini slug="io-github-zenml-io-mcp-zenml" name="mcp-zenml" score={93} tools={17} cves={0} />
+<ServerCardMini slug="io-github-akutishevsky-withings" name="Withings MCP Server" score={93} tools={11} cves={0} />
+<ServerCardMini slug="io-github-mp-tool-komodo-mcp-server" name="Komodo MCP Server" score={93} tools={11} cves={0} />
+
+Twelve stars, ninety-three points. That server is documented, licensed, actively committed, and clean on every security check we run. Sorting by popularity would never have shown it to you.
+
+---
+
+## What the A+ Club Has in Common
+
+The 171 servers at 90+ are not exotic. They share four unglamorous traits:
+
+| Trait | Why it matters | Share of the catalog that has it |
+|---|---|---|
+| A repository you can read | No server scores 70+ without one | 41.6% |
+| A license | Gates the documentation points | 22.6% |
+| A commit in the last 90 days | Maintenance is 25 of the 100 points | 27.6% |
+| A clean security scan | Security is the largest slice, 30 points | 99.5% |
+
+That last one is worth a number: across 36,614 live servers, **59 carry a known CVE and 111 are flagged for tool poisoning** — tool descriptions that try to steer the model rather than describe the tool. That's 0.5% combined. Outright malice is rare. Abandonment is not: only 10,095 servers (27.6%) have a commit in the last 90 days.
+
+<Callout type="warning">
+A low score is usually neglect, not danger. But the inverse doesn't hold — a *high* score is not a safety guarantee either. Our checks are static: they read code, dependencies, and schemas. They do not run the server, and they cannot see what a remote endpoint does at request time. [The full nine-check breakdown is here.](/blog/2026-07-25-are-mcp-servers-safe-the-9-checks-that-decide-a-serve)
+</Callout>
+
+---
+
+## How Fast Is It Actually Growing?
+
+Carefully: our `created_at` is when *MCPpedia first indexed* a server, not when its author published it. July shows 22,279 new rows — but 4,127 of those landed on a single day, July 19, when a registry backfill imported a large batch at once. Reading that as "22,000 servers were built in July" would be wrong.
+
+The steady-state rate is the honest number. The first four days of August: 351, 300, 214, and 159 new records. **Call it 200–350 genuinely new servers per day**, which is roughly 6,000–10,000 a month, and still fast enough that the catalog's shape — a very long tail, a very small head — is not going to change on its own.
+
+---
+
+## How We Counted
+
+Every number above is a live query against the MCPpedia catalog on 2026-08-04, restricted to non-archived servers. Three caveats we'd rather state than have you find:
+
+- **Duplicates exist.** The registry sync and our GitHub discovery bot can index the same project twice under different slugs — `browser-use` appears at both 107,832 and 107,820 stars. A dedup bot runs, but it hasn't caught everything, and duplicates are counted twice in every total here.
+- **The zero-star average (26.7) is a 1,000-server sample**, not the full 29,376 — PostgREST caps a single response at 1,000 rows. Every other figure is an exact count.
+- **Scores are as fresh as the last scan.** Scoring runs daily, but a server whose repository changed this morning may still be carrying yesterday's number.
+
+---
+
+## The Takeaway
+
+The MCP ecosystem is not 36,614 servers competing on quality. It's a few thousand real, maintained, readable projects, buried under tens of thousands of registry entries that no automated system — ours or anyone's — has enough information to evaluate.
+
+If you're **choosing** a server: ignore the star count, check that it has a repository and a recent commit, and read the score breakdown rather than the total.
+
+If you're **publishing** one: a description, a license, and a linked repo will move you further up this distribution than any amount of code. More than half the catalog hasn't done it yet.
