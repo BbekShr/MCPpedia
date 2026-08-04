@@ -4,66 +4,21 @@
  * the advisory block on `advisories.length > 0`, so the empty case — a package
  * cleared or an OSV entry withdrawn — left the row open forever.
  *
- * The stub is deliberately local to this file: this is the repo's first
- * route-level write test and there is no second consumer to share a harness
- * with yet.
+ * The stub is the shared `__tests__/helpers/route-supabase-stub` harness. This
+ * suite keeps both flags off: it neither distinguishes the two clients nor keys
+ * resolves by write verb, so a recorded call is `{ table, op, args }` and the
+ * `security_advisories` read resolves under `:await`.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import type { SecurityScanResult, Advisory } from '@/lib/scoring'
+import { createRouteSupabaseHarness } from './helpers/route-supabase-stub'
 
-type Call = { table: string; op: string; args: unknown[] }
+const harness = createRouteSupabaseHarness()
+const { calls, authUser } = harness
 
-const calls: Call[] = []
-/** Rows the awaited reads resolve to, keyed by `${table}:${single|await}`. */
-let queued: Record<string, unknown> = {}
-
-/**
- * A PostgREST query builder is BOTH chainable and thenable — this handler runs
- * `select().eq().single()` and `select().eq().eq()` — so every method returns
- * the builder and the builder itself resolves the queued result.
- *
- * Only the BUILDER is thenable, never the client: `await createClient()` would
- * otherwise adopt a thenable client and resolve to the query result instead.
- */
-function makeBuilder(table: string) {
-  const builder = {
-    _record(op: string, args: unknown[]) {
-      calls.push({ table, op, args })
-      return builder
-    },
-    select(...args: unknown[]) { return builder._record('select', args) },
-    update(...args: unknown[]) { return builder._record('update', args) },
-    upsert(...args: unknown[]) { return builder._record('upsert', args) },
-    eq(...args: unknown[]) { return builder._record('eq', args) },
-    in(...args: unknown[]) { return builder._record('in', args) },
-    single() { return resolveFor(`${table}:single`) },
-    then(resolve: (value: unknown) => unknown) {
-      return resolveFor(`${table}:await`).then(resolve)
-    },
-  }
-  return builder
-}
-
-function resolveFor(key: string) {
-  return Promise.resolve({ data: key in queued ? queued[key] : [], error: null })
-}
-
-/** Signed-in user the `createClient` stub reports; null exercises the 401 path. */
-const authUser = vi.hoisted(() => ({ current: { id: 'user-1' } as { id: string } | null }))
-
-function makeStub() {
-  return {
-    from: (table: string) => makeBuilder(table),
-    auth: {
-      getUser: async () => ({ data: { user: authUser.current }, error: null }),
-    },
-  } as unknown as SupabaseClient
-}
-
-vi.mock('@/lib/supabase/server', () => ({ createClient: async () => makeStub() }))
-vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => makeStub() }))
+vi.mock('@/lib/supabase/server', () => ({ createClient: harness.createClient }))
+vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: harness.createAdminClient }))
 vi.mock('@/lib/rate-limit', () => ({
   rateLimitUser: async () => ({ allowed: true, remaining: 29, resetAt: Date.now() + 1000 }),
 }))
@@ -147,9 +102,9 @@ const serversUpdated = () => calls.filter(c => c.table === 'servers' && c.op ===
 
 describe('POST /api/server/[slug]/refresh-score — advisory reconciliation', () => {
   beforeEach(() => {
-    calls.length = 0
+    harness.reset()
     authUser.current = { id: 'user-1' }
-    queued = {
+    harness.queued = {
       'profiles:single': { role: 'admin' },
       'servers:single': { ...SERVER_ROW },
       // The open-advisory read the reconciler performs after its upserts.
@@ -266,7 +221,7 @@ describe('POST /api/server/[slug]/refresh-score — advisory reconciliation', ()
   })
 
   it('rejects a contributor with 403 and never touches the advisory table', async () => {
-    queued['profiles:single'] = { role: 'contributor' }
+    harness.queued['profiles:single'] = { role: 'contributor' }
     scanResult.current = makeScan({ scan_status: 'success', advisories: [] })
 
     const res = await postRefresh()

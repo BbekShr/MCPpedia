@@ -198,6 +198,37 @@ One line per cycle: `- YYYY-MM-DD <ID>: <friction observed> → <action or M-row
   `BACKLOG.md`, so they conflict on append location. I chose non-overlapping ID ranges so the IDs
   never collide, but the queue depth is now the binding constraint on this loop, not throughput.
 
+### 2026-08-01 — S31 + S32 + M12 (test residuals)
+
+  (1) **CEO orchestration error, filed as M16.** I dispatched two review lenses AND qa-verifier in
+  parallel, with both the regression lens and QA told to "re-run that mutation yourself". Two agents
+  then mutated and restored the same production files concurrently, and QA's first shuffled run went
+  red with the exact S31-mutation signature. QA diagnosed it correctly — `stat`ed the mtimes, found
+  writes inside its own run window, moved its work into isolated worktrees — but the cost was a false
+  red and a diagnostic detour, and the INVERSE failure is worse: a mutation that survives because
+  another agent restored the file mid-run would be reported as "the test does not pin this". The
+  skill serializes "server-bound gates" but does not name mutation testing as one, and asking a
+  reviewer to re-run a mutation reads as ordinary read-only work. Fix filed rather than hacked in.
+  (2) **Skipping the architect was right here and I should say why, so it is not read as a shortcut.**
+  The researcher's brief already contained the design — two options for M12 with a recommendation,
+  the exact extractable line range, the signature, the contract invariants, and the mocking idiom
+  verbatim. Adding an architect pass would have re-derived it. Proportionality is a CEO judgment the
+  skill leaves open; the test is whether every acceptance criterion still maps to a step and a
+  verification, and it did.
+  (3) **QA corrected my dispatch's factual premise, which is the behaviour I want.** I asserted the
+  negative-invariant test catches dropping `.map(normalizeGithubUrl)`. It does not — the mutant is
+  EQUIVALENT (0 of 9 literals differ under normalization). Rather than report a false coverage gap,
+  QA proved equivalence and then ran the mutation the assertion actually exists to catch. A gate that
+  contradicts the CEO with evidence is worth more than one that agrees.
+  (4) **The queue is now the binding constraint, as predicted, and this cycle was chosen around it.**
+  Nothing merged between cycles; `main` has not moved. I picked S31/S32 specifically because their
+  files are disjoint from all three open PRs, so the only conflict surface is the BACKLOG append.
+  That is a workaround, not a fix — with a live P1 sitting unmerged in #105, further cycles have
+  falling marginal value regardless of how well they execute.
+  (5) M13's thesis held up under inspection: both rows had complete, correct production code sitting
+  `open` purely for a missing test, and in S32's case the missing test needed a production extraction
+  first — which is exactly why it was skipped by the earlier test-closure cycle and why it stayed
+  open longest. "Add the test later" reliably becomes "add the seam AND the test later".
 ### 2026-08-01 — S81 (homepage aggregate snapshot)
 
   (1) **Friction, fixed in this PR: the implementer handed back with the work UNCOMMITTED.** All four

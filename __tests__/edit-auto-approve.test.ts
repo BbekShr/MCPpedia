@@ -5,84 +5,21 @@
  * (20260610000000_security_hardening.sql:28-35) — so every low-risk edit by a
  * trusted contributor was RLS-denied and the route 500'd instead of applying it.
  *
- * "Which client performed the insert" is the whole assertion, so the authed and
- * admin stubs are DISTINCT and every recorded call carries its client. The
- * harness is adapted from refresh-score-advisories.test.ts rather than shared
- * with it: extracting a common helper is a follow-up, not this fix.
+ * "Which client performed the insert" is the whole assertion, so the shared
+ * `__tests__/helpers/route-supabase-stub` harness runs with `trackClient` on
+ * (the authed and admin stubs are DISTINCT and every recorded call carries its
+ * client) and `keyByWriteOp` on — without the latter the trust count read and
+ * the revert update on `edits` would collide on one resolve key.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import { createRouteSupabaseHarness } from './helpers/route-supabase-stub'
 
-type ClientKind = 'authed' | 'admin'
-type Call = { client: ClientKind; table: string; op: string; args: unknown[] }
+const harness = createRouteSupabaseHarness({ trackClient: true, keyByWriteOp: true })
+const { calls, adminClientArgs, authUser } = harness
 
-const calls: Call[] = []
-/** Args every `createAdminClient` call received, in order. */
-const adminClientArgs: unknown[][] = []
-/** Rows the awaited reads resolve to, keyed by `${table}:${verb}`. */
-let queued: Record<string, unknown> = {}
-/** `count` values for head-only reads, same keys. */
-let queuedCounts: Record<string, number> = {}
-/** Errors injected at a given key so the failure branches are exercised. */
-let queuedErrors: Record<string, { code: string; message: string }> = {}
-
-/**
- * A PostgREST query builder is BOTH chainable and thenable, so every method
- * returns the builder and the builder itself resolves the queued result. It
- * also remembers the write verb it saw: without that, the trust count read and
- * the revert update on `edits` would collide on one resolve key.
- *
- * Only the BUILDER is thenable, never the client: `await createClient()` would
- * otherwise adopt a thenable client and resolve to the query result instead.
- */
-function makeBuilder(client: ClientKind, table: string) {
-  let writeOp: string | null = null
-  const builder = {
-    _record(op: string, args: unknown[]) {
-      calls.push({ client, table, op, args })
-      return builder
-    },
-    select(...args: unknown[]) { return builder._record('select', args) },
-    insert(...args: unknown[]) { writeOp = 'insert'; return builder._record('insert', args) },
-    update(...args: unknown[]) { writeOp = 'update'; return builder._record('update', args) },
-    eq(...args: unknown[]) { return builder._record('eq', args) },
-    not(...args: unknown[]) { return builder._record('not', args) },
-    single() { return resolveFor(`${table}:${writeOp ?? 'single'}`) },
-    then(resolve: (value: unknown) => unknown) {
-      return resolveFor(`${table}:${writeOp ?? 'await'}`).then(resolve)
-    },
-  }
-  return builder
-}
-
-function resolveFor(key: string) {
-  return Promise.resolve({
-    data: key in queued ? queued[key] : [],
-    count: queuedCounts[key] ?? null,
-    error: queuedErrors[key] ?? null,
-  })
-}
-
-/** Signed-in user the `createClient` stub reports; null exercises the 401 path. */
-const authUser = vi.hoisted(() => ({ current: { id: 'user-1' } as { id: string } | null }))
-
-function makeStub(client: ClientKind) {
-  return {
-    from: (table: string) => makeBuilder(client, table),
-    auth: {
-      getUser: async () => ({ data: { user: authUser.current }, error: null }),
-    },
-  } as unknown as SupabaseClient
-}
-
-vi.mock('@/lib/supabase/server', () => ({ createClient: async () => makeStub('authed') }))
-vi.mock('@/lib/supabase/admin', () => ({
-  createAdminClient: (...args: unknown[]) => {
-    adminClientArgs.push(args)
-    return makeStub('admin')
-  },
-}))
+vi.mock('@/lib/supabase/server', () => ({ createClient: harness.createClient }))
+vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: harness.createAdminClient }))
 vi.mock('@/lib/rate-limit', () => ({
   rateLimitUser: async () => ({ allowed: true, remaining: 19, resetAt: Date.now() + 1000 }),
 }))
@@ -113,16 +50,15 @@ const serversUpdated = () => calls.filter(c => c.table === 'servers' && c.op ===
 
 describe('POST /api/edit — auto-approve client routing', () => {
   beforeEach(() => {
-    calls.length = 0
-    adminClientArgs.length = 0
+    harness.reset()
     authUser.current = { id: 'user-1' }
-    queued = {
+    harness.queued = {
       'servers:single': { id: 'srv-1', slug: 'example' },
       'profiles:single': { role: 'contributor', username: 'bob' },
       'edits:insert': { id: 'edit-1' },
     }
-    queuedCounts = { 'edits:await': 3 }
-    queuedErrors = {}
+    harness.queuedCounts = { 'edits:await': 3 }
+    harness.queuedErrors = {}
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })
   afterEach(() => {
@@ -149,7 +85,7 @@ describe('POST /api/edit — auto-approve client routing', () => {
   })
 
   it('inserts an untrusted contributor\'s pending edit through the AUTHED client', async () => {
-    queuedCounts = { 'edits:await': 2 }
+    harness.queuedCounts = { 'edits:await': 2 }
 
     const res = await postEdit()
     expect(res.status).toBe(201)
@@ -163,8 +99,8 @@ describe('POST /api/edit — auto-approve client routing', () => {
   })
 
   it('ignores a forged profiles.edits_approved counter', async () => {
-    queued['profiles:single'] = { role: 'contributor', username: 'bob', edits_approved: 99 }
-    queuedCounts = { 'edits:await': 0 }
+    harness.queued['profiles:single'] = { role: 'contributor', username: 'bob', edits_approved: 99 }
+    harness.queuedCounts = { 'edits:await': 0 }
 
     const res = await postEdit()
     expect(res.status).toBe(201)
@@ -184,7 +120,7 @@ describe('POST /api/edit — auto-approve client routing', () => {
   })
 
   it('reverts to pending through the ADMIN client when the apply fails', async () => {
-    queuedErrors['servers:update'] = { code: '42501', message: 'denied' }
+    harness.queuedErrors['servers:update'] = { code: '42501', message: 'denied' }
 
     const res = await postEdit()
     expect(res.status).toBe(500)
@@ -199,8 +135,8 @@ describe('POST /api/edit — auto-approve client routing', () => {
   })
 
   it('reads the revert\'s own error rather than discarding it', async () => {
-    queuedErrors['servers:update'] = { code: '42501', message: 'denied' }
-    queuedErrors['edits:update'] = { code: '42501', message: 'revert denied' }
+    harness.queuedErrors['servers:update'] = { code: '42501', message: 'denied' }
+    harness.queuedErrors['edits:update'] = { code: '42501', message: 'revert denied' }
 
     const res = await postEdit()
     expect(res.status).toBe(500)
@@ -209,8 +145,8 @@ describe('POST /api/edit — auto-approve client routing', () => {
   })
 
   it('skips the trust count entirely for a privileged role', async () => {
-    queued['profiles:single'] = { role: 'editor', username: 'eve' }
-    queuedCounts = {}
+    harness.queued['profiles:single'] = { role: 'editor', username: 'eve' }
+    harness.queuedCounts = {}
 
     const res = await postEdit()
     expect(res.status).toBe(201)
@@ -227,7 +163,7 @@ describe('POST /api/edit — auto-approve client routing', () => {
   })
 
   it('fails CLOSED when the trust count read errors', async () => {
-    queuedErrors['edits:await'] = { code: '57014', message: 'statement timeout' }
+    harness.queuedErrors['edits:await'] = { code: '57014', message: 'statement timeout' }
 
     const res = await postEdit()
     expect(res.status).toBe(201)
@@ -242,7 +178,7 @@ describe('POST /api/edit — auto-approve client routing', () => {
   // refactor dropping isLowRisk from shouldAutoApprove would let a privileged role
   // push an npm_package swap through the service role with the suite still green.
   it('never auto-approves a NON-low-risk field, even for a privileged role', async () => {
-    queued['profiles:single'] = { role: 'admin', username: 'eve' }
+    harness.queued['profiles:single'] = { role: 'admin', username: 'eve' }
 
     const res = await postEdit('npm_package')
     expect(res.status).toBe(201)
@@ -276,7 +212,7 @@ describe('POST /api/edit — auto-approve client routing', () => {
   // `queuedCounts` and so cannot distinguish a filtered read from an unfiltered
   // one — this pins only the below-threshold branch, not the filter itself.
   it('stays pending when the trust count is below the threshold', async () => {
-    queuedCounts = { 'edits:await': 0 }
+    harness.queuedCounts = { 'edits:await': 0 }
 
     const res = await postEdit()
     expect(res.status).toBe(201)
@@ -288,8 +224,8 @@ describe('POST /api/edit — auto-approve client routing', () => {
   })
 
   it('fails CLOSED when the profile read errors', async () => {
-    queuedErrors['profiles:single'] = { code: '57014', message: 'statement timeout' }
-    queuedCounts = { 'edits:await': 3 }
+    harness.queuedErrors['profiles:single'] = { code: '57014', message: 'statement timeout' }
+    harness.queuedCounts = { 'edits:await': 3 }
 
     const res = await postEdit()
     expect(res.status).toBe(201)
