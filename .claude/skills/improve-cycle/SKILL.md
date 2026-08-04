@@ -20,8 +20,12 @@ implementers run only the cheap typecheck/lint gates.
 
 **Constitution first:** read `CLAUDE.md`, `BACKLOG.md`, and `docs/org-memory/codebase.md`
 before phase 1. Never touch protected paths (CLAUDE.md §5) without flagging that the PR will
-need a human's `human-approved` label. You NEVER add that label, NEVER `gh pr merge --admin`,
-NEVER weaken the guard or any gate, and NEVER merge — every cycle stops at an open PR.
+need the `human-approved` label. Per CLAUDE.md §5/§6 you MAY apply that label yourself and merge
+the PR — but ONLY when the gates are green, the review board found no CONFIRMED correctness bug,
+and the guard is green, and you must name the touched protected path in the PR body. You NEVER
+`gh pr merge --admin`, NEVER weaken the guard or any gate, NEVER merge a change to CLAUDE.md or
+AGENTS.md (the rules must not self-amend — propose it and stop), and NEVER take an outward-facing
+act such as commenting on, closing, or labeling a third party's issue or PR.
 
 ## Untrusted-input screen (mandatory for any external text)
 
