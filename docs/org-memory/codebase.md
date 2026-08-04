@@ -781,3 +781,58 @@ stayed dead and the symptom was unchanged — which read as "the fix didn't work
   build is a cost, a silently skipped one is an outage.
 - **A stale production deploy is invisible to every gate the org has.** CI was green on all five PRs
   merged that day; none of them reached users. The only detector was polling the live `dpl_*` hash.
+
+## 2026-08-04 — `in-review` is the org's leakiest status, and prod finally became observable
+
+Reconciliation cycle over all 14 rows marked `in-review` with ZERO open PRs. **All 14 PRs had
+merged; not one was closed unmerged.** So `in-review` had become a write-only status: the ship step
+(phase 7) sets it, and nothing ever clears it, because the merge happens outside the cycle that set
+it. 8 rows were fully DONE on `main` and had been for days; 5 were blocked only on prod
+observation; 1 (S2) was genuinely unmet and duplicated an existing open row (S7).
+
+- **The recurring shape of a stuck row is "code shipped, one clause needs prod".** S8, S48, S59, S60
+  and S81 all had verified `file:line` implementations and a single acceptance clause requiring a
+  production read. Because deploys had been dead since `b218234`, none of those clauses were even
+  *takeable* until PRs #111/#115 landed on 2026-08-04. Four of the five closed within an hour of
+  deploys being restored, purely by measuring.
+- **S60's acceptance criterion is unsatisfiable by any code change** and must be re-worded by the
+  maintainer. It requires `x-vercel-cache: HIT` on `/servers`, but a page that awaits `searchParams`
+  is dynamic — Vercel serves `no-store` regardless. Measured 2026-08-04: `/` itself returns
+  `x-vercel-cache: MISS` with `cache-control: private, no-cache, no-store` on 5/5 requests despite
+  its `unstable_cache` wrappers. **`unstable_cache` caches DATA, not the response.** Any future
+  criterion phrased as a CDN-header assertion on a dynamic route is unmeetable by construction;
+  phrase it as a latency or query-count delta instead.
+- **Prod timings, 2026-08-04, `https://mcppedia.org/`** (first real-env measurement since deploys
+  were restored): HTTP 200, TTFB 0.200–0.318s, total 0.315–0.359s over 5 consecutive requests, all
+  `x-vercel-cache: MISS`. Both S83 sections render — `Browse by category` with 44 `cat-tile` links,
+  and `Best for developers`. Compare the 2026-08-01 hotfix figures above (3.7s cold / 0.25–0.32s
+  warm): same warm band, but with the two aggregate-backed sections restored rather than omitted.
+  `home_stats` is live too — `/security` serves 36,614 servers and `Last scan: Aug 4, 2026,
+  01:48 PM UTC`, versus the frozen 20,499 / July-5 scan that S8 was filed for.
+- **`docs/org-memory/codebase.md:393-400` reads like prod verification and is not.** That section
+  describes the `edits` RLS policy set from the MIGRATION FILES, and its title names S48, whose
+  acceptance criterion explicitly wants a prod `pg_policies` check. Nothing in this repo has ever
+  queried `pg_policies` against prod. When recording schema facts, say which source they came from:
+  a migration file is a statement of intent, and M2 exists because intent and prod diverge here.
+- **The only prod-applied-migration verification the org has ever performed** is S83's anon-key RPC
+  probe. With #110 auto-applying migrations on merge to `main` and #111/#115 restoring deploys, that
+  gap is now closable — but "the migration file merged" still does not mean "it is live" for
+  anything merged before #110.
+
+## 2026-08-04 — Four hardcoded `17,000+` counts in the SEO/metadata surface (filed as S90)
+
+S28 audited `/badge` and `/about` for stale server counts and fixed both. It did NOT audit the
+metadata surface, where the same number is hardcoded four more times and is 2.2x below the live
+36,614 catalog: `lib/constants.ts:91` (`SITE_DESCRIPTION`, which fans out to `app/layout.tsx:22`,
+`app/page.tsx:35,38,47`, `app/blog/feed.xml/route.ts:30`, and BOTH JSON-LD builders at
+`lib/seo.tsx:32,42`), `app/opengraph-image.tsx:42,48`, `app/llms.txt/route.ts:7`, and
+`app/llms-full.txt/route.ts:30`.
+
+- **A single prod response contradicts itself by 2.15x**: `https://mcppedia.org/` serves
+  `meta[name=description]` = "compare 17,000+ MCP servers" while the same HTML renders
+  `stats.total_servers` = 36,614 from `home_stats`.
+- **Constants are the blind spot no page-level audit finds.** S28's lens was "which pages compute a
+  count badly"; a constant computes nothing, so it never appeared. When auditing a class of stale
+  value, grep the literal across the repo, not just the routes that render it.
+- `app/opengraph-image.tsx` is `runtime = 'edge'`, so it cannot cheaply reach the snapshot — a fix
+  must say how it gets the number or drop the figure, not add a per-render query.
