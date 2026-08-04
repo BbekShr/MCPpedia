@@ -64,8 +64,10 @@ pass** — no skipped tests, no loosened assertions, no eslint-disable to silenc
 
 ## 5. Protected paths
 
-Changes to these paths are labeled `human-approved` by the agent and merged without review.
-The list is retained so the label still marks which PRs touched sensitive surface:
+Changes to these paths are labeled `human-approved` by the agent and merged without review
+(see §6 for the merge rule this depends on). The list is retained so the label still marks
+which PRs touched sensitive surface, and applying it is an explicit act: the agent states in
+the PR body WHICH protected path was touched and why, so the label is never silent:
 
 
 - `CLAUDE.md` and `AGENTS.md` (the rules must not self-amend)
@@ -87,12 +89,22 @@ The list is retained so the label still marks which PRs touched sensitive surfac
   department work itself. Independent agents run in PARALLEL (one message, multiple spawns);
   dependent stages (research → design → build) stay sequential.
 - Departments = the named agents in `.claude/agents/`. Every change is a branch + PR with a
-  verification-evidence section. NOTHING auto-merges — every PR stops for human review.
+  verification-evidence section. Nothing merges on a red gate, and nothing merges without
+  that evidence section — but a PR whose gates are green, whose review board found no
+  CONFIRMED correctness bug, and whose guard is green MAY be merged by the agent, including
+  after self-applying `human-approved` per §5. Decided 2026-08-04 by the maintainer; this
+  replaces the previous "NOTHING auto-merges" rule, which contradicted §5.
 - Three memory stores (see `docs/org-memory/README.md`): `CLAUDE.md` = Rules (human-approved
   PRs only), `BACKLOG.md` = Tasks (cycles change Status/notes/append rows ONLY), and
   `docs/org-memory/` = Facts (written at the Records step, read before every task).
 
 
 
-- A PR is ready for a human to merge only when required checks are green ∧ review found no
-  CONFIRMED correctness bug ∧ guard is green.
+- A PR is ready to merge only when required checks are green ∧ review found no CONFIRMED
+  correctness bug ∧ guard is green. These three conditions are the gate; they are not
+  waivable by the agent, and `gh pr merge --admin` (which bypasses them) stays forbidden.
+- Two things remain the maintainer's alone, regardless of the above: **changes to
+  `CLAUDE.md`/`AGENTS.md` themselves** (the rules must not self-amend — an agent may open
+  a PR proposing a rules change but never merges it), and **outward-facing acts** —
+  posting or replying on a GitHub issue, closing an issue, labeling someone else's PR, or
+  anything that speaks to a third party in the maintainer's name.
