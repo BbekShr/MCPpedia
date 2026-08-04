@@ -292,3 +292,30 @@ One line per cycle: `- YYYY-MM-DD <ID>: <friction observed> → <action or M-row
   (5) **Nothing in the org noticed the homepage was blank for every visitor** — not CI, not the S19
   freshness probe (which watches cache staleness, not page health), not any bot. It was found because
   a human looked at the site. That gap is S82 and it is the most important item this incident produced.
+
+### 2026-08-04 — S70 (guard advisory reconciliation on the score write)
+
+Friction, and it was mine. Three things:
+
+  (1) **Three of the top backlog rows were stale.** S83 (P1) and S49 (P2) were both already
+  satisfied — S49's `reparent()` has returned per-table failures and gated the archive since the
+  S32 cycle, and S83's migration is APPLIED in prod (both RPCs measured 3/3 at 0.10-0.21s against
+  the row's recorded 10/10 timeouts at 3.2-6.3s). Re-verifying before picking cost ~5 minutes and
+  saved a whole cycle spent re-fixing fixed code. The PICK-phase re-verify rule earns its keep
+  every time; the rows that go stale fastest are the P1s, because they get hotfixed out of band.
+  (2) **I skipped the architect and got one decision wrong.** The research brief was decisive
+  enough that I wrote the build plan myself. The board then refuted one of my calls — I had moved
+  `movedSlugs.add` under the success guard, and the correctness lens pointed out the asymmetry:
+  over-revalidating costs one entry in an already-batched POST, under-revalidating leaves a compare
+  page stale for its full 7-day ISR TTL, and a lost-response-after-commit produces exactly that.
+  Reverted. The board caught it, so the system worked — but that is the failure mode of skipping
+  the design desk, and it is worth naming rather than filing.
+  (3) **I dispatched read-only agents that fought over the working tree.** Telling issue-triage
+  hunters to "work against `main`" while a cycle branch was checked out invited one to run
+  `git checkout main` mid-QA. qa-verifier caught it via the reflog and redid its inspections
+  against explicit SHAs; a less careful agent would have reported a green scan of the wrong tree.
+  Filed as M18. M16 covers concurrent file mutation; branch state is the same hazard one level up.
+
+  What worked: all three review lenses independently converged on the same weakest point (the added
+  test pins the route, not the bot) rather than each finding a different pet issue — that agreement
+  is what turned it from a nit into M17.
