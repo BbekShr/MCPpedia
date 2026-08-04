@@ -1,5 +1,5 @@
-import type { Metadata } from 'next'
-import { SITE_NAME, SITE_URL, SITE_DESCRIPTION } from './constants'
+import { SITE_NAME, SITE_URL, SITE_DESCRIPTION, CATEGORY_LABELS, type Category } from './constants'
+import { normalizeServerName } from './server-name'
 import type { Server } from './types'
 import type { BlogMeta } from './blog'
 
@@ -231,8 +231,8 @@ export function generateServerJsonLd(server: Server) {
   return {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
-    name: server.name,
-    description: server.tagline || server.description || `${server.name} MCP Server`,
+    name: normalizeServerName(server.name),
+    description: server.tagline || server.description || `${normalizeServerName(server.name)} MCP Server`,
     applicationCategory: 'DeveloperApplication',
     operatingSystem: 'Cross-platform',
     url: `${SITE_URL}/s/${server.slug}`,
@@ -301,31 +301,130 @@ export function generateItemListJsonLd(items: { name: string; url: string; descr
   }
 }
 
-// ── Metadata Helpers ────────────────────────────────────────────────
+// ── Server title & description ──────────────────────────────────────
 
-export function generateServerMetadata(server: Server): Metadata {
-  const toolCount = server.tools?.length || 0
-  const description = server.tagline
-    ? `${server.tagline}. ${toolCount} tools. Compatible with Claude Desktop, Cursor, and Claude Code.`
-    : `${server.name} MCP Server with ${toolCount} tools.`
+// The old title was `Mcp Hn — Score: 74/100 (B) - MCPpedia`. Three things wrong
+// with it, all of which show up in a 0.3% CTR:
+//   - "Mcp Hn" is the data pipeline's title-casing, not a name (see
+//     lib/server-name.ts).
+//   - The score led the title, so the most volatile number on the page sat in
+//     front of the keywords and rewrote the <title> on every recompute. Google
+//     re-learns a churning title instead of trusting it.
+//   - Nothing in it said what the page was FOR. "MCP server", "Claude",
+//     "Cursor" are the words people actually type.
+//
+// Google truncates the SERP title around 60 characters, so the pattern degrades
+// through progressively shorter forms rather than emitting one long string and
+// hoping. `{Name} — {Category} MCP Server for Claude & Cursor | MCPpedia` when
+// it fits, down to `{Name} | MCPpedia` for a long name.
+export const SERVER_TITLE_MAX = 60
+export const SERVER_DESCRIPTION_MAX = 155
 
-  return {
-    title: `${server.name} - ${SITE_NAME}`,
-    description,
-    openGraph: {
-      title: `${server.name} - ${SITE_NAME}`,
-      description,
-      url: `${SITE_URL}/s/${server.slug}`,
-      siteName: SITE_NAME,
-      type: 'website',
-    },
-    twitter: {
-      card: 'summary',
-      title: `${server.name} - ${SITE_NAME}`,
-      description,
-    },
-    alternates: {
-      canonical: `${SITE_URL}/s/${server.slug}`,
-    },
+export interface ServerTitleFields {
+  name: string
+  categories?: string[] | null
+}
+
+export interface ServerDescriptionFields {
+  name: string
+  tagline?: string | null
+  tool_count?: number | null
+  transport?: string | null
+  score_total?: number | null
+  categories?: string[] | null
+}
+
+function primaryCategoryLabel(categories: string[] | null | undefined): string | null {
+  const first = categories?.[0]
+  if (!first) return null
+  return CATEGORY_LABELS[first as Category] ?? null
+}
+
+export function buildServerTitle(server: ServerTitleFields): string {
+  const name = normalizeServerName(server.name)
+  const category = primaryCategoryLabel(server.categories)
+  // A name that already says "MCP server" should not say it twice.
+  const saysMcpServer = /mcp[\s-]*server/i.test(name)
+
+  // Ordered longest-first. When something has to go it is "for Claude & Cursor"
+  // before the category: that clause is identical on every page, while the
+  // category is the part that distinguishes this title from 36k others.
+  const candidates = saysMcpServer
+    ? [`${name} for Claude & Cursor`, name]
+    : [
+        category && `${name} — ${category} MCP Server for Claude & Cursor`,
+        category && `${name} — ${category} MCP Server`,
+        `${name} — MCP Server for Claude & Cursor`,
+        `${name} — MCP Server`,
+        name,
+      ].filter((c): c is string => typeof c === 'string' && c.length > 0)
+
+  const suffix = ` | ${SITE_NAME}`
+  const fitting = candidates.find(c => c.length + suffix.length <= SERVER_TITLE_MAX)
+  // Nothing fits: the name alone is already over budget. Emit it anyway rather
+  // than truncating a name mid-word — Google will clip the tail itself.
+  return `${fitting ?? candidates[candidates.length - 1]}${suffix}`
+}
+
+// Taglines come from package registries and can carry HTML; a description is
+// plain text.
+function plain(text: string): string {
+  return text
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+// Every one of 36k pages used to carry the same two sentence shapes with the
+// numbers swapped, which is the definition of boilerplate. This builds from
+// whatever real data the row actually has and drops the clauses it does not,
+// so two servers only read alike when they genuinely are alike.
+export function buildServerDescription(server: ServerDescriptionFields): string {
+  const facts: string[] = []
+  const toolCount = server.tool_count ?? 0
+  if (toolCount > 0) facts.push(`${toolCount} tool${toolCount === 1 ? '' : 's'}`)
+  if (server.transport) facts.push(`${server.transport} transport`)
+  const score = server.score_total ?? 0
+  if (score > 0) facts.push(`score ${score}/100`)
+
+  const tail = 'Install config for Claude Desktop, Cursor & Claude Code.'
+  const factSentence = facts.length ? `${facts.join(', ')}.` : ''
+  // Capitalize the leading fact when it is the first thing in the sentence.
+  const factsFirst = factSentence.charAt(0).toUpperCase() + factSentence.slice(1)
+
+  const rawTagline = server.tagline ? plain(server.tagline) : ''
+  const lead = rawTagline ? (/[.!?]$/.test(rawTagline) ? rawTagline : `${rawTagline}.`) : ''
+
+  const withoutLead = [factsFirst, tail].filter(Boolean).join(' ')
+  if (!lead) {
+    // No tagline at all: name the thing so the description is not identical to
+    // every other tagline-less server in the same shape.
+    const fallbackLead = `${normalizeServerName(server.name)} is an MCP server.`
+    return clampToSentence(`${fallbackLead} ${withoutLead}`, SERVER_DESCRIPTION_MAX)
   }
+
+  const full = `${lead} ${withoutLead}`
+  if (full.length <= SERVER_DESCRIPTION_MAX) return full
+
+  // Over budget: shorten the tagline rather than the facts, which are what make
+  // the description distinct from its neighbours.
+  const budget = SERVER_DESCRIPTION_MAX - withoutLead.length - 1
+  const trimmedLead = clampToSentence(lead, Math.max(budget, 0))
+  return trimmedLead ? `${trimmedLead} ${withoutLead}` : withoutLead
+}
+
+// Cut at a word boundary and mark the cut, so a truncated description never
+// ends mid-word.
+function clampToSentence(text: string, max: number): string {
+  if (text.length <= max) return text
+  if (max <= 1) return ''
+  const cut = text.slice(0, max - 1)
+  const lastSpace = cut.lastIndexOf(' ')
+  return `${(lastSpace > 0 ? cut.slice(0, lastSpace) : cut).replace(/[.,;:\s]+$/, '')}…`
 }

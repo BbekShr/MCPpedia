@@ -34,6 +34,8 @@ import {
   generateFAQJsonLd,
   isServerIndexable,
   INDEXABLE_FIELDS,
+  buildServerTitle,
+  buildServerDescription,
 } from '@/lib/seo'
 import type { Server, Changelog, SecurityAdvisory } from '@/lib/types'
 import type { Metadata } from 'next'
@@ -62,7 +64,7 @@ export async function generateMetadata({
   const supabase = createPublicClient()
   const { data: server } = await supabase
     .from('servers')
-    .select(`name, tagline, categories, ${INDEXABLE_FIELDS}`)
+    .select(`name, tagline, categories, transport, ${INDEXABLE_FIELDS}`)
     .eq('slug', slug)
     .single()
 
@@ -74,23 +76,25 @@ export async function generateMetadata({
   // the sitemap so the two can never disagree.
   const indexable = isServerIndexable(server)
 
-  const toolCount = (server.tool_count as number) ?? 0
-  const score = server.score_total || 0
-  const grade = score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 40 ? 'C' : score >= 20 ? 'D' : 'F'
-
-  const nameForTitle = server.name.toLowerCase().includes('mcp') ? server.name : `${server.name} MCP Server`
-  const title = `${nameForTitle} — Score: ${score}/100 (${grade})`
-  const description = server.tagline
-    ? `${server.tagline}. ${toolCount} tools. Scored on security, maintenance, and efficiency.`
-    : `${nameForTitle}. ${toolCount} tools. Score: ${score}/100.`
+  const url = `${SITE_URL}/s/${slug}`
+  const title = buildServerTitle(server)
+  const description = buildServerDescription(server)
 
   return {
-    title,
+    // `absolute` because the root layout appends " - MCPpedia" via its title
+    // template, and the pattern already ends in "| MCPpedia".
+    title: { absolute: title },
     description,
     openGraph: {
       title,
       description,
-      type: 'website',
+      // 'article', not 'website': these are per-entity documents that change
+      // over time, and 'website' told every social and answer-engine parser to
+      // treat 36k distinct pages as the site's front door.
+      type: 'article',
+      // Was missing entirely — only the canonical carried the URL, so anything
+      // reading OG alone had no identity for the page to key on.
+      url,
       siteName: SITE_NAME,
     },
     twitter: {
@@ -99,7 +103,7 @@ export async function generateMetadata({
       description,
     },
     alternates: {
-      canonical: `${SITE_URL}/s/${slug}`,
+      canonical: url,
     },
     ...(indexable ? {} : { robots: { index: false, follow: true } }),
   }
