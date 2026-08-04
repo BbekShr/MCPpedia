@@ -39,7 +39,7 @@ async function checkSnapshot(
     // permanently-red probe destroys the staleness signal for the OTHER table in
     // the same run — the exact silent-freeze class (S8) this probe exists to
     // catch — and alert-on-failure.yml watches this workflow, so a permanently
-    // red bot masks genuine failures (the rule stated at bots/compute-scores.ts:369-377).
+    // red bot masks genuine failures (the rule stated at bots/compute-scores.ts:410-417).
     // This tolerance covers ONLY the manual-apply gap: every other read error,
     // the >48h stale case, and the never-been-built case still fail.
     if (error.code === 'PGRST205' || error.code === '42P01') {
