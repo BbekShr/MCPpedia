@@ -5,14 +5,8 @@ import { createPublicClient } from '@/lib/supabase/public'
 import { withRetry } from '@/lib/retry'
 import { liveDataOrNull } from '@/lib/degrade'
 import LiveDataUnavailable from '@/components/LiveDataUnavailable'
-import {
-  CATEGORIES,
-  CATEGORY_LABELS,
-  SITE_NAME,
-  SITE_DESCRIPTION,
-  SITE_URL,
-} from '@/lib/constants'
-import type { Category } from '@/lib/constants'
+import { SITE_NAME, SITE_DESCRIPTION, SITE_URL } from '@/lib/constants'
+import { buildUseCaseTiles, buildCategoryTiles } from '@/lib/home-tiles'
 import {
   JsonLdScript,
   generateOrganizationJsonLd,
@@ -25,9 +19,9 @@ import Hero from '@/components/home/Hero'
 import RevealOnScroll from '@/components/home/RevealOnScroll'
 import Featured, { type FeaturedServer } from '@/components/home/Featured'
 import Trending, { type TrendingRow } from '@/components/home/Trending'
-import UseCases, { HOMEPAGE_USECASES, type UseCaseTileData } from '@/components/home/UseCases'
+import UseCases from '@/components/home/UseCases'
 import Advisories, { type HomeAdvisory } from '@/components/home/Advisories'
-import CategoriesGrid, { type HomeCategory } from '@/components/home/CategoriesGrid'
+import CategoriesGrid from '@/components/home/CategoriesGrid'
 import ScoringExplainer from '@/components/home/ScoringExplainer'
 
 // Skip prerender at build time — home_stats can hit Postgres statement
@@ -75,13 +69,6 @@ const CARD_FIELDS = [
   'verified',
 ].join(', ')
 
-type UseCaseRpcEntry = {
-  count: number
-  top: { slug: string; name: string; homepage_url: string | null; author_github: string | null }[]
-}
-
-type CategoryCount = { slug: string; label: string; count: number }
-
 // Cache the homepage's six Supabase round-trips for 24h. Bot-driven data
 // (scoring, CVE feeds, npm downloads) refreshes daily, so a day-old snapshot
 // is fine. Bust on demand with `revalidateTag('home-page')`. Throwing inside
@@ -96,7 +83,10 @@ type CategoryCount = { slug: string; label: string; count: number }
 // function so only the final successful result is cached.
 const getHomeData = unstable_cache(
   () => withRetry(fetchHomeData),
-  ['home-page-data-v2'],
+  // v3: unstable_cache persists across deployments and the callback text is
+  // unchanged, so a pre-S81 entry holding zeroed use-case/category tiles could
+  // otherwise survive up to 24h and hide the fix.
+  ['home-page-data-v3'],
   { revalidate: 86400, tags: ['home-page'] },
 )
 
@@ -154,17 +144,18 @@ async function fetchHomeData() {
   if (statsResult.error) {
     console.warn('[home] home_stats failed (rendering with 0s):', statsResult.error)
   }
-  // home_use_cases and home_category_counts are excluded for the same reason,
-  // measured against prod on 2026-08-01: both returned HTTP 500 with Postgres
-  // 57014 (statement timeout) on 10/10 calls. They are aggregate RPCs over a
-  // ~46k-row catalog run as the anon role, whose statement timeout is 3s (the
-  // raise in 20260718120000 covered service_role only). Keeping them critical
-  // made fetchHomeData throw on every request, which withRetry then retried 4x
-  // — the whole homepage went dark for two sections' worth of data. Their
-  // consumers below return null rather than zeroes so the sections are OMITTED,
-  // not rendered as a grid of 0s (see below). The durable fix is to
-  // snapshot-back these RPCs the way home_stats_cache is, or to index them; both
-  // need a migration, so neither can land here.
+  // home_use_cases and home_category_counts are both snapshot-backed as of
+  // 20260801120000_home_aggregates_snapshot_cache.sql: each is now a sub-ms
+  // single-row read of `home_aggregates_cache`, refreshed nightly by
+  // bots/compute-scores as service_role. They used to be aggregate scans over
+  // the ~46k-row catalog run as anon (3s statement timeout) and returned 57014
+  // on 10/10 calls during the 2026-08-01 incident.
+  //
+  // They stay OUT of criticalErrors on purpose. Post-snapshot the remaining
+  // failure mode is a SUCCESSFUL response carrying null — the snapshot has never
+  // been built, or the key is missing from `data`. That must omit two sections,
+  // not 500 the whole page, so buildUseCaseTiles/buildCategoryTiles map absent
+  // to null and the JSX guards drop the sections.
   if (usecaseResults.error) {
     console.warn('[home] home_use_cases failed (omitting the section):', usecaseResults.error)
   }
@@ -211,22 +202,11 @@ async function fetchHomeData() {
 
   const trending: TrendingRow[] = ((trendingResult.data ?? []) as unknown) as TrendingRow[]
 
-  // null (not zeroed tiles) when the RPC errored — every tile would read
-  // "0 servers", which is a visible falsehood that unstable_cache would then
-  // pin for 24h. An empty-but-successful result still renders 0s, as before.
-  const useCaseData = usecaseResults.error
-    ? null
-    : ((usecaseResults.data ?? {}) as Record<string, UseCaseRpcEntry>)
-  const useCaseTiles: UseCaseTileData[] | null =
-    useCaseData &&
-    HOMEPAGE_USECASES.map(uc => ({
-      id: uc.id,
-      title: uc.title,
-      subtitle: uc.subtitle,
-      accent: uc.accent,
-      count: useCaseData[uc.id]?.count ?? 0,
-      top: useCaseData[uc.id]?.top ?? [],
-    }))
+  // null (not zeroed tiles) when the aggregate is absent — every tile would
+  // read "0 servers", a visible falsehood that unstable_cache would then pin for
+  // 24h. "Absent" covers an error AND a successful-but-null/empty result, which
+  // is what an unseeded home_aggregates_cache returns. See lib/home-tiles.ts.
+  const useCaseTiles = buildUseCaseTiles(usecaseResults)
 
   const advisories: HomeAdvisory[] = ((recentAdvisoriesResult.data ?? []) as unknown as Array<{
     id: string
@@ -250,37 +230,9 @@ async function fetchHomeData() {
     }
   })
 
-  // home_category_counts() returns { [slug]: count } for every category that
-  // has >=1 non-archived server. Project onto the canonical CATEGORIES list so
-  // the grid always renders all 22 tiles (even if a category is empty). null
-  // when the RPC errored, for the same reason as useCaseTiles above: a failed
-  // fetch omits the grid, a genuinely empty category still shows a 0 tile.
-  const countsBySlug = categoryCountResults.error
-    ? null
-    : ((categoryCountResults.data ?? {}) as Record<string, number>)
-  const categoryCounts: CategoryCount[] | null =
-    countsBySlug &&
-    CATEGORIES.map(slug => ({
-      slug,
-      label: CATEGORY_LABELS[slug as Category],
-      count: countsBySlug[slug] ?? 0,
-    }))
-
-  // Mark the top 3 non-empty categories as "Hot" — gentle visual cue without
-  // requiring time-series data.
-  const hotSet = new Set(
-    [...(categoryCounts ?? [])]
-      .filter(c => c.count > 0)
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 3)
-      .map(c => c.slug),
-  )
-  const categoryTiles: HomeCategory[] | null =
-    categoryCounts &&
-    categoryCounts.map(c => ({
-      ...c,
-      hot: hotSet.has(c.slug),
-    }))
+  // Same absent-aggregate rule as useCaseTiles: an absent snapshot omits the
+  // whole grid, while a genuinely empty category still shows a 0 tile.
+  const categoryTiles = buildCategoryTiles(categoryCountResults)
 
   return { stats, featured, trending, useCaseTiles, advisories, categoryTiles }
 }
@@ -356,8 +308,9 @@ export default async function HomePage() {
         </RevealOnScroll>
       )}
 
-      {/* null means the backing RPC failed — drop the whole section, heading
-          included, rather than render a grid of zeroed counts. */}
+      {/* null means the backing aggregate is absent (RPC error, or a snapshot
+          that has never been built) — drop the whole section, heading included,
+          rather than render a grid of zeroed counts. */}
       {useCaseTiles && (
         <RevealOnScroll>
           <UseCases tiles={useCaseTiles} />

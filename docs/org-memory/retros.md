@@ -198,6 +198,46 @@ One line per cycle: `- YYYY-MM-DD <ID>: <friction observed> → <action or M-row
   `BACKLOG.md`, so they conflict on append location. I chose non-overlapping ID ranges so the IDs
   never collide, but the queue depth is now the binding constraint on this loop, not throughput.
 
+### 2026-08-01 — S81 (homepage aggregate snapshot)
+
+  (1) **Friction, fixed in this PR: the implementer handed back with the work UNCOMMITTED.** All four
+  review lenses and QA independently discovered that `git diff main...HEAD` contained only the
+  BACKLOG status flip, and each had to reconstruct the real change from `git status` and untracked
+  files. Four agents paid the same tax, and a less careful reviewer would have reviewed `main`. Fixed
+  by adding an explicit commit-before-hand-back requirement to `.claude/agents/implementer.md`.
+  (2) **The board earned its keep by DISAGREEING.** The regression lens filed "user-visible staleness
+  doubles 24h → 48h" as CONFIRMED; the correctness lens refuted it with evidence from Next internals
+  (`unstable-cache.js:152,231` pass `softTags: implicitTags`, so `revalidatePath('/')` does evict the
+  entry). Had I acted on the first report as it arrived I would have shipped an unnecessary
+  `revalidate` change. Waiting for all lenses before dispatching one fix batch was the right call and
+  should stay the default.
+  (3) **Two CEO design decisions were reversed by measurement, both mine.** I directed "both indexes"
+  (plain + partial on `status='open'`) without asking for a row count; the performance lens measured
+  362 open of 27,405 (1.3%), showed `/security` already returns in 0.15s unindexed, and showed the
+  partial index would newly make `open → fixed` updates HOT-blocking — a permanent write cost for a
+  measured ~zero benefit. I also chose "no code tolerance, use an apply-before-merge runbook" for the
+  migration-apply gap; two lenses then pointed at the repo's OWN rule 60 lines above the new code
+  (`bots/compute-scores.ts:369-377`, "a permanently-red bot masks genuine failures"), which made
+  tolerance the org-consistent answer rather than gate-weakening. **Lesson: do not decide index shape
+  or alarm policy from the armchair — the row counts and the existing rule were both one query and
+  one grep away.**
+  (4) **The row understated its own severity, and only a live probe caught it.** S81 read as "within
+  ~1-2s of degrading again"; the pre-fix baseline the implementer measured showed 9 of 10 anon calls
+  to both aggregate RPCs returning HTTP 500 `57014` right now. A cheap 5-run median against prod with
+  the `.env.local` anon key should be the default first step for any statement-timeout item, before
+  any design work — it re-verifies the row and sizes the fix in the same minute.
+  (5) **A capability the org lacked appeared as a side effect of a gate doing its job honestly.**
+  Asked to state plainly that nothing verifies SQL (M7), qa-verifier went and found a way — parsing
+  migrations via `pg-query-emscripten` with no database and no Docker. Filed as M14. Asking an agent
+  to name a gap explicitly is apparently a decent way to get the gap closed.
+  (6) **Backlog ID collision is now a recurring cost of the open-PR queue, and it bit twice in one
+  day.** This cycle appended `S83`; PR #103, open concurrently, had already claimed `S83` for the
+  aggregate-RPC prod outage — which is the very defect this cycle's PR #105 fixes. Renumbered to
+  `S84` after the fact. The previous retro already flagged this and the mitigation ("choose
+  non-overlapping ID ranges") only works if a cycle checks the OPEN PRs before picking IDs, not just
+  `BACKLOG.md` on disk. Concretely: `gh pr diff <n> | grep -E '^\+\| [SMRW][0-9]+'` across open PRs
+  before appending. Worth a real fix (append-with-timestamp IDs, or filing rows only against a
+  freshly-pulled `main`) rather than another round of manual care.
 - **2026-08-01 (live homepage outage, PRs #100 then #102).** The org shipped a wrong fix first and the
   only thing that caught it was checking production afterwards.
   (1) **#100 was reasoned from a measurement taken at the wrong moment.** When I first probed,
