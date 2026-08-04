@@ -212,6 +212,11 @@ async function main() {
   // is fail-soft by design, so this counter is the only thing that reaches the
   // run summary.
   let advisoryWriteFailures = 0
+  // Servers whose `servers` score UPDATE itself failed — disjoint from
+  // `advisoryWriteFailures` above, which counts reconcile failures only. A
+  // failed update skips the reconcile entirely (see the guard below), so the
+  // two counters never describe the same server.
+  let serverUpdateFailures = 0
   // Slugs whose total score shifted ≥ 2 points this run. Used after the loop
   // to revalidate /compare/... pages containing them (score-driven freshness
   // for compare pages; individual /s/{slug} pages accept up to 7-day lag).
@@ -291,6 +296,14 @@ async function main() {
     console.log(`  TOTAL: ${merged.score_total}/100\n`)
 
     const oldTotal = server.score_total ?? 0
+    // Unconditional, and deliberately NOT under the update guard below:
+    // `movedSlugs` is a cache-invalidation hint, not a write. Over-revalidating
+    // costs one entry in an already-batched POST; under-revalidating leaves
+    // /compare/... serving a stale score for its full ISR TTL. postgrest-js
+    // returns `{error}` rather than throwing, so a transport failure AFTER the
+    // UPDATE committed surfaces as a non-null `updateError` while the new score
+    // IS live — and because `score_computed_at` landed, the stale filter will
+    // not revisit that server for SCORE_STALE_DAYS.
     if (Math.abs(merged.score_total - oldTotal) >= 2) {
       movedSlugs.add(server.slug)
     }
@@ -343,25 +356,52 @@ async function main() {
       })
       .eq('id', server.id)
 
+    // Everything below is guarded on the scores actually landing, mirroring
+    // app/api/server/[slug]/refresh-score/route.ts:211-218. A failed UPDATE
+    // (statement timeout 57014, a transient PostgREST 5xx) followed by a
+    // zero-advisory scan would close every open advisory row while `cve_count`
+    // and `score_security` keep the OLD CVE penalty — a green "no known CVEs"
+    // verdict beside a row that still counts CVEs. Skipping the reconcile is
+    // the safe branch, but it is not free, and "the next run retries" holds
+    // ONLY when the write did not commit: an unstamped `score_computed_at`
+    // keeps the row in the stale filter and at the head of the stalest-first
+    // walk. A LOST RESPONSE AFTER A COMMIT stamps `score_computed_at`, drops
+    // the row out of the stale set, and so defers the skipped reconcile by up
+    // to SCORE_STALE_DAYS (7 days).
+    // What the safe branch gives up: reconcileAdvisories is the only CREATOR of
+    // security_advisories rows as well as the only closer, so skipping it also
+    // means a newly published CVE for this server is not recorded tonight. The
+    // trade is deliberate — a false-green "no known CVEs" beside a non-zero
+    // `cve_count` is worse than a delayed disclosure — and an upsert-only mode
+    // is NOT a safe alternative, because the upsert writes `adv.status` and can
+    // itself close a row (lib/advisories.ts).
+    // The exposure here is WIDER than the route's, because this call passes
+    // `closeOn: 'success-or-pending'`: under that policy lib/advisories.ts's
+    // early return is DISABLED for every status, so a 'pending' scan closes
+    // rows too.
+    // Deliberately if/else rather than `continue`: a `continue` would skip the
+    // 300 ms OSV politeness sleep below, removing the throttle on exactly the
+    // run where every write is failing.
     if (updateError) {
       console.error(`  Error updating ${server.slug}: ${updateError.message}`)
+      serverUpdateFailures++
+    } else {
+      // Upsert this scan's advisories and close the ones it no longer reports.
+      // The helper decides what is safe to close from `scan_status` — see the
+      // rules in lib/advisories.ts. 'success-or-pending' because this run is
+      // unattended: nobody picked the moment or the target, so a package-less
+      // ('pending') row genuinely carries no CVE. The helper is fail-soft, so
+      // count its failures here — an unattended bot must not report success on a
+      // run where advisory writes were silently dropped.
+      const reconciled = await reconcileAdvisories(
+        supabase, server.id, security.advisories, security.scan_status, 'success-or-pending'
+      )
+      if (!reconciled) advisoryWriteFailures++
     }
-
-    // Upsert this scan's advisories and close the ones it no longer reports.
-    // The helper decides what is safe to close from `scan_status` — see the
-    // rules in lib/advisories.ts. 'success-or-pending' because this run is
-    // unattended: nobody picked the moment or the target, so a package-less
-    // ('pending') row genuinely carries no CVE. The helper is fail-soft, so
-    // count its failures here — an unattended bot must not report success on a
-    // run where advisory writes were silently dropped.
-    const reconciled = await reconcileAdvisories(
-      supabase, server.id, security.advisories, security.scan_status, 'success-or-pending'
-    )
-    if (!reconciled) advisoryWriteFailures++
 
     processed++
     run.addProcessed()
-    run.addUpdated()
+    if (!updateError) run.addUpdated()
 
     // Rate limit — be nice to OSV.dev
     await new Promise(r => setTimeout(r, 300))
@@ -375,8 +415,13 @@ async function main() {
   // permanently-red bot masks genuine failures. The counter plus the per-CVE
   // errors already remove the silence. (Unlike refreshHomeStatsCache below,
   // which is one global operation, not a per-server counter.)
-  run.setSummary({ scored: processed, advisoryWriteFailures })
-  console.log(`\nDone. Scored ${processed} servers.`)
+  run.setSummary({
+    attempted: processed,
+    scored: processed - serverUpdateFailures,
+    advisoryWriteFailures,
+    serverUpdateFailures,
+  })
+  console.log(`\nDone. Attempted ${processed}, scored ${processed - serverUpdateFailures}.`)
   await run.finish()
 
   await refreshHomeStatsCache()
