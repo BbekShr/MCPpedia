@@ -231,10 +231,14 @@ export default async function ServerDetailPage({
           </div>
         )}
 
+        {/* rel="nofollow": both targets are Disallowed in robots.ts, so every
+            crawl of a server page discovered two URLs it was then forbidden to
+            fetch — 1,251 of them in Search Console's "blocked by robots.txt but
+            internally linked" bucket, all wasted discovery budget. */}
         <div className="flex items-center gap-3 text-xs text-text-muted mb-4">
-          <Link href={`/s/${s.slug}/edit`} className="hover:text-accent">Edit this page</Link>
+          <Link href={`/s/${s.slug}/edit`} rel="nofollow" className="hover:text-accent">Edit this page</Link>
           <span aria-hidden="true">·</span>
-          <Link href={`/s/${s.slug}/history`} className="hover:text-accent">View history</Link>
+          <Link href={`/s/${s.slug}/history`} rel="nofollow" className="hover:text-accent">View history</Link>
         </div>
 
         <CategoryEditor slug={s.slug} initialCategories={s.categories} />
@@ -294,7 +298,7 @@ export default async function ServerDetailPage({
                   <p className="m-0 text-text-primary font-medium">No description provided.</p>
                   <p className="mt-1 mb-2">
                     This server is thin — proceed with caution.{' '}
-                    <Link href={`/s/${s.slug}/edit`} className="text-accent">
+                    <Link href={`/s/${s.slug}/edit`} rel="nofollow" className="text-accent">
                       Help improve this page →
                     </Link>
                   </p>
@@ -430,6 +434,7 @@ export default async function ServerDetailPage({
                 </p>
                 <Link
                   href={`/s/${s.slug}/edit`}
+                  rel="nofollow"
                   className="inline-block px-4 py-2 text-sm rounded-md bg-accent text-accent-fg hover:bg-accent-hover transition-colors"
                 >
                   Add information
