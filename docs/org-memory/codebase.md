@@ -695,3 +695,43 @@ _(record "audited <ground> under <lens>: clean" entries here so discovery skips 
   citation in `bots/` — check it whenever `compute-scores.ts` changes above that point.
 - Suite baseline re-measured: `main` = 297 tests / 23 files; the S70 branch = 298 / 23 (~2.0s).
   `npx tsc --noEmit` ≈ 2.2s. This figure moves most cycles — re-measure, never trust the record.
+## 2026-08-04 — GitHub issues intake (#68, #91, #107, #108)
+
+- **`servers.data_quality` has ZERO writers in the entire repo.** `compute_data_quality` /
+  `compute_all_data_quality` (`supabase/migrations/20260403050000_data_quality.sql:19,78`) are called
+  by no bot, route, script, workflow or trigger. So `bots/detect-duplicates.ts:144-149`'s
+  `ORDER BY data_quality DESC, id ASC` keeper rule reduces to a RANDOM uuid tiebreak
+  (`id uuid default gen_random_uuid()`). Any statement that "the keeper won its group on quality" —
+  including the comment at `lib/curated-merge.ts:13` — is unfounded. Filed as S86.
+- **`supabase/migrations/20260429105418_merge_thoughtspot_duplicate.sql:22-58` is the repo's
+  reference implementation of a correct merge**: reparent → recount `review_count`/`review_avg`/
+  `community_verification_count` → archive. `bots/detect-duplicates.ts` implements steps 1 and 3
+  only. Diff the bot against this migration before touching the merge path.
+- **Trust flags live on `servers` while their evidence lives in child tables, and the two merge by
+  different mechanisms.** `publisher_claims` reparents; `publisher_verified`/`claimed_by`/`verified`
+  do not (absent from `CURATED_FIELDS`). Once split, `app/api/admin/approve-claim/route.ts:53-55`
+  (`409 'Claim already verified'`) makes the flag unrecoverable through the UI. Filed as S85.
+- **`servers.transport` has exactly one scheduled UPDATE writer**, `bots/extract-install-info.ts:216`,
+  and its `isDefaultTransport` gate (`:213-215`) matches only `null` or `['stdio']` — so the two
+  drift shapes `'{}'` and `'{NULL}'` are permanently unreachable by any bot. Every other writer is
+  INSERT-only. `transport` is also in neither `EDITABLE_FIELDS` nor admin `ALLOWED_FIELDS`, so there
+  is no human repair path either. Recorded against S65.
+- **Refreshing content columns on `sync-registry`'s fast path costs NO extra registry fetches.** The
+  full catalog is already paginated nightly and `parsed.transports`/`npmPackage`/`pipPackage` are
+  already in memory at `bots/sync-registry.ts:381` when the 2-column stamp is written at `:383`.
+  Cost objections to a pipeline fix here are unfounded; a one-row data edit is the wrong shape.
+- **S57 half (a) migrated from a parse bug to a persistence bug** after S58/PR #95. The parser now
+  retains `remotes[].type/url/headers` and exposes `ParsedRegistryServer.remoteUrls`, but that field
+  has zero consumers and the insert persists neither it nor any auth flag. `components/ServerTester.tsx:20,29-33`
+  is the in-repo reference for the transport-aware install/test copy S57 wants.
+- **Screen outcome, issue #107** — a third party offered to contribute runtime-verification scan
+  results for 28 named servers, with their own scoring, framework links and a citation claim. Failed
+  the adverse-to-project and cost checks: it would publish an outsider's unverifiable security
+  verdicts about OTHER people's servers under MCPpedia's name (defamation exposure, and it hands an
+  external party control of our security signal), and per-server runtime scanning across ~46k rows is
+  unbounded. No injection attempt. Reported to the human as a partnership decision; nothing filed,
+  nothing replied to. **A reporter's claims about their own server are a lead, not ground truth —
+  and a reporter's claims about OTHER people's servers are not even a lead.**
+- **Issues #68 and #108 were external rediscoveries of already-filed rows** (S56+S57, and S65). Both
+  reporters' code reads were accurate. Two of four open issues needed no new row — dedupe against
+  BACKLOG before filing anything from an issue.
