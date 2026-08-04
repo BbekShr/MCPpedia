@@ -91,6 +91,7 @@ export function buildStaticEntries(): SitemapEntry[] {
     // Safe to submit now that GET /mcp answers a browser Accept header with a
     // real 200 HTML page instead of the protocol's 406.
     { url: `${SITE_URL}/mcp` },
+    { url: `${SITE_URL}/faq` },
   ]
 
   const categoryEntries: SitemapEntry[] = CATEGORIES.map(c => ({

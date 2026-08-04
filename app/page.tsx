@@ -5,7 +5,8 @@ import { createPublicClient } from '@/lib/supabase/public'
 import { withRetry } from '@/lib/retry'
 import { liveDataOrNull } from '@/lib/degrade'
 import LiveDataUnavailable from '@/components/LiveDataUnavailable'
-import { SITE_NAME, SITE_DESCRIPTION, SITE_URL } from '@/lib/constants'
+import { SITE_NAME, SITE_URL } from '@/lib/constants'
+import { getCatalogCounts, buildSiteDescription } from '@/lib/live-counts'
 import { buildUseCaseTiles, buildCategoryTiles } from '@/lib/home-tiles'
 import {
   JsonLdScript,
@@ -30,23 +31,33 @@ import ScoringExplainer from '@/components/home/ScoringExplainer'
 // each request still serves a 24h-cached snapshot.
 export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = {
-  title: `${SITE_NAME} — Find the Right MCP Server`,
-  description: SITE_DESCRIPTION,
-  openGraph: {
-    title: `${SITE_NAME} — Find the Right MCP Server`,
-    description: SITE_DESCRIPTION,
-    url: SITE_URL,
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    site: '@MCPpedia',
-    creator: '@MCPpedia',
-    title: `${SITE_NAME} — Find the Right MCP Server`,
-    description: SITE_DESCRIPTION,
-  },
-  alternates: { canonical: SITE_URL },
+// generateMetadata rather than a static object so the description carries the
+// LIVE catalog count from the shared home_stats snapshot. The constant it falls
+// back to no longer names a number at all — see lib/live-counts.ts for why the
+// hardcoded "17,000+" had to go.
+export async function generateMetadata(): Promise<Metadata> {
+  const { totalServers } = await getCatalogCounts()
+  const description = buildSiteDescription(totalServers)
+  const title = `${SITE_NAME} — Find the Right MCP Server`
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      // Trailing slash to match the canonical the sitemap now publishes.
+      url: `${SITE_URL}/`,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      site: '@MCPpedia',
+      creator: '@MCPpedia',
+      title,
+      description,
+    },
+    alternates: { canonical: `${SITE_URL}/` },
+  }
 }
 
 const MCPPEDIA_SLUG = 'mcp-server-mcppedia'

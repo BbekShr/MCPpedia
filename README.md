@@ -1,6 +1,6 @@
 # MCPpedia
 
-The encyclopedia for MCP servers. Browse, compare, and evaluate 19,000+ Model Context Protocol servers with transparent, automated scoring.
+The encyclopedia for MCP servers. Browse, compare, and evaluate every Model Context Protocol server we can find (36,000+ and growing — the live count is on the homepage) with transparent, automated scoring.
 
 **Live at [mcppedia.org](https://mcppedia.org)**
 

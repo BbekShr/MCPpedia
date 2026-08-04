@@ -125,8 +125,24 @@ export default async function BlogPostPage({
             <span className={`text-xs px-2.5 py-1 rounded-full font-semibold border ${categoryColors[post.meta.category]}`}>
               {categoryIcons[post.meta.category]} {categoryLabels[post.meta.category]}
             </span>
-            <div className="flex items-center gap-2 text-xs text-text-muted">
-              <time>{new Date(post.meta.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</time>
+            <div className="flex items-center gap-2 text-xs text-text-muted flex-wrap">
+              <time dateTime={new Date(post.meta.date).toISOString()}>
+                {new Date(post.meta.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+              </time>
+              {/* Article JSON-LD already carried dateModified, but only a parser
+                  could see it. Freshness is a ranking input for AI answers, and
+                  a date a reader can see is worth more than one in a script tag. */}
+              {post.meta.updated && post.meta.updated !== post.meta.date && (
+                <>
+                  <span>·</span>
+                  <span>
+                    Updated{' '}
+                    <time dateTime={new Date(post.meta.updated).toISOString()}>
+                      {new Date(post.meta.updated).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </time>
+                  </span>
+                </>
+              )}
               <span>·</span>
               <span>{post.meta.readingTime} min read</span>
             </div>

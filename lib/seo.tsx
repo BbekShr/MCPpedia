@@ -228,6 +228,20 @@ export function generateCollectionJsonLd(name: string, description: string, url:
 export function generateServerJsonLd(server: Server) {
   const reviewCount = server.review_count || 0
   const reviewAvg = server.review_avg || 0
+  const url = `${SITE_URL}/s/${server.slug}`
+  // Everything we can point at that describes the same entity. `sameAs` is how
+  // an answer engine reconciles "this MCPpedia page" with "that GitHub repo"
+  // instead of treating them as two unrelated things.
+  const sameAs = [server.github_url, server.homepage_url]
+    .concat(server.npm_package ? [`https://www.npmjs.com/package/${server.npm_package}`] : [])
+    .concat(server.pip_package ? [`https://pypi.org/project/${server.pip_package}`] : [])
+    .filter((u): u is string => typeof u === 'string' && u.length > 0)
+  const requirements = [
+    'An MCP-compatible client (Claude Desktop, Claude Code, Cursor, Windsurf)',
+    server.transport ? `${server.transport} transport` : null,
+    server.requires_api_key ? 'An API key for the underlying service' : null,
+  ].filter(Boolean).join('; ')
+
   return {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
@@ -235,7 +249,29 @@ export function generateServerJsonLd(server: Server) {
     description: server.tagline || server.description || `${normalizeServerName(server.name)} MCP Server`,
     applicationCategory: 'DeveloperApplication',
     operatingSystem: 'Cross-platform',
-    url: `${SITE_URL}/s/${server.slug}`,
+    url,
+    // Freshness is a ranking input for AI answers, and this is the same
+    // user-visible-change timestamp the sitemap's lastmod uses, so the two
+    // cannot tell different stories about when the page last changed.
+    ...(server.content_updated_at || server.updated_at
+      ? { dateModified: server.content_updated_at || server.updated_at }
+      : {}),
+    ...(server.score_computed_at ? { datePublished: server.created_at } : {}),
+    ...(server.npm_package || server.pip_package
+      ? {
+          downloadUrl: server.npm_package
+            ? `https://www.npmjs.com/package/${server.npm_package}`
+            : `https://pypi.org/project/${server.pip_package}`,
+        }
+      : {}),
+    image: {
+      '@type': 'ImageObject',
+      url: `${url}/opengraph-image`,
+      width: 1200,
+      height: 630,
+    },
+    softwareRequirements: requirements,
+    ...(sameAs.length ? { sameAs } : {}),
     ...(server.npm_package && { installUrl: `https://www.npmjs.com/package/${server.npm_package}` }),
     ...(server.pip_package && { installUrl: `https://pypi.org/project/${server.pip_package}` }),
     ...(server.license && server.license !== 'NOASSERTION' && { license: server.license }),
@@ -329,9 +365,25 @@ export interface ServerDescriptionFields {
   name: string
   tagline?: string | null
   tool_count?: number | null
-  transport?: string | null
+  // `servers.transport` is a text[] — a server can speak more than one, and its
+  // elements are nullable.
+  transport?: string | (string | null)[] | null
   score_total?: number | null
   categories?: string[] | null
+}
+
+// "stdio", "stdio and http", "stdio, sse and http".
+function formatTransports(transport: string | (string | null)[] | null | undefined): string | null {
+  // `servers.transport` is text[] with no NOT NULL on its elements, and rows
+  // with `[null]` exist in production (e.g. /s/app-worldmonitor-mcp) — filter
+  // before touching them, not after.
+  const list = (Array.isArray(transport) ? transport : transport ? [transport] : [])
+    .filter((t): t is string => typeof t === 'string')
+    .map(t => t.trim())
+    .filter(Boolean)
+  if (!list.length) return null
+  if (list.length === 1) return list[0]
+  return `${list.slice(0, -1).join(', ')} and ${list[list.length - 1]}`
 }
 
 function primaryCategoryLabel(categories: string[] | null | undefined): string | null {
@@ -389,7 +441,8 @@ export function buildServerDescription(server: ServerDescriptionFields): string 
   const facts: string[] = []
   const toolCount = server.tool_count ?? 0
   if (toolCount > 0) facts.push(`${toolCount} tool${toolCount === 1 ? '' : 's'}`)
-  if (server.transport) facts.push(`${server.transport} transport`)
+  const transports = formatTransports(server.transport)
+  if (transports) facts.push(`${transports} transport`)
   const score = server.score_total ?? 0
   if (score > 0) facts.push(`score ${score}/100`)
 
@@ -427,4 +480,56 @@ function clampToSentence(text: string, max: number): string {
   const cut = text.slice(0, max - 1)
   const lastSpace = cut.lastIndexOf(' ')
   return `${(lastSpace > 0 ? cut.slice(0, lastSpace) : cut).replace(/[.,;:\s]+$/, '')}…`
+}
+
+// ── Answer-first summary (Server Detail) ────────────────────────────
+
+// A single 40-60 word plain-text paragraph at the top of every server page,
+// stating what the thing is, what it exposes, what it needs, and how it scores.
+//
+// This is the block an answer engine lifts. Everything else on a server page is
+// markup — cards, chips, score rings, tables — and a model extracting "what is
+// X?" has to reassemble the answer from it. This says it once, in a sentence,
+// with no markup noise, in the order the question is usually asked.
+export function buildServerSummary(server: {
+  name: string
+  tagline?: string | null
+  tool_count?: number | null
+  transport?: string | (string | null)[] | null
+  requires_api_key?: boolean | null
+  score_total?: number | null
+  categories?: string[] | null
+}): string {
+  const name = normalizeServerName(server.name)
+  const category = server.categories?.[0]
+  const categoryLabel = category ? CATEGORY_LABELS[category as Category] : null
+
+  const does = server.tagline
+    ? plain(server.tagline).replace(/[.!?]+$/, '')
+    : categoryLabel
+      ? `provides ${categoryLabel.toLowerCase()} tools to AI agents`
+      : 'exposes tools to AI agents over the Model Context Protocol'
+  // The tagline continues the sentence "... is an MCP server that", so its
+  // leading capital has to go — unless the first word is a proper noun or an
+  // acronym, which a second capital or an all-caps word gives away ("GitHub",
+  // "AWS", "PostgreSQL").
+  const firstWord = does.split(/\s/, 1)[0] ?? ''
+  const isProperNoun = /[A-Z]/.test(firstWord.slice(1))
+  const lead = isProperNoun ? does : does.charAt(0).toLowerCase() + does.slice(1)
+
+  const toolCount = server.tool_count ?? 0
+  const exposes = toolCount > 0
+    ? `It exposes ${toolCount} tool${toolCount === 1 ? '' : 's'}`
+    : 'Its tool list has not been published yet'
+  const transports = formatTransports(server.transport)
+  const transport = transports ? ` over ${transports}` : ''
+  const auth = server.requires_api_key
+    ? ', requires an API key for the underlying service'
+    : ', requires no API key'
+  const score = server.score_total ?? 0
+  const scoring = score > 0
+    ? `, and scores ${score}/100 on MCPpedia's security, maintenance and efficiency rubric.`
+    : ', and has not been scored yet.'
+
+  return `${name} is an MCP server that ${lead}. ${exposes}${transport}${auth}${scoring}`
 }

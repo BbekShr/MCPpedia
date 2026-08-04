@@ -88,7 +88,13 @@ export const REVALIDATE_LISTINGS = 60       // seconds
 export const REVALIDATE_GUIDES = 86400      // 24 hours
 
 export const SITE_NAME = 'MCPpedia'
-export const SITE_DESCRIPTION = 'Discover and compare 17,000+ MCP servers — each scored on security, maintenance, and efficiency with real CVE scanning. Find the right server before you install.'
+// Deliberately carries NO server count. This is a module constant baked into
+// the bundle, so any number in it is stale the day the catalog grows — and it
+// said "17,000+" while the API served 36,477 and the Dataset schema said 36,614.
+// Surfaces that can read the live snapshot build their copy with
+// `buildSiteDescription` (lib/live-counts.ts) instead; this is the fallback for
+// the ones that genuinely cannot await, and for when the snapshot is down.
+export const SITE_DESCRIPTION = 'Discover and compare every MCP server — each scored on security, maintenance, and efficiency with real CVE scanning. Find the right server before you install.'
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://mcppedia.org'
 
 // Smaller field set for list/card views (homepage, category, /servers, /best, etc.).

@@ -36,6 +36,7 @@ import {
   INDEXABLE_FIELDS,
   buildServerTitle,
   buildServerDescription,
+  buildServerSummary,
 } from '@/lib/seo'
 import type { Server, Changelog, SecurityAdvisory } from '@/lib/types'
 import type { Metadata } from 'next'
@@ -247,6 +248,15 @@ export default async function ServerDetailPage({
           <span aria-hidden="true">·</span>
           <Link href={`/s/${s.slug}/history`} rel="nofollow" className="hover:text-accent">View history</Link>
         </div>
+
+        {/* Answer-first summary. Plain text, no markup noise, 40-60 words: what
+            it is, what it exposes, what it needs, how it scores. This is the
+            paragraph an answer engine lifts when asked "what is X?" — every
+            other statement of the same facts on this page is spread across
+            cards, chips and a score ring it would have to reassemble. */}
+        <p className="text-[15px] leading-[1.65] text-text-primary max-w-[760px] mb-5">
+          {buildServerSummary(s)}
+        </p>
 
         <CategoryEditor slug={s.slug} initialCategories={s.categories} />
 

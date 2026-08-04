@@ -1,4 +1,5 @@
 import { createPublicClient } from './supabase/public'
+import { SITE_DESCRIPTION } from './constants'
 
 // One live source for "how many servers does MCPpedia track?".
 //
@@ -42,4 +43,14 @@ export async function getCatalogCounts(): Promise<CatalogCounts> {
 export function formatApproxTotal(total: number | null, fallback = 'thousands of'): string {
   if (!total || total < 1000) return fallback
   return `${(Math.floor(total / 1000) * 1000).toLocaleString('en-US')}+`
+}
+
+// The site description with the live count folded in, for surfaces that can
+// await one. Falls back to the count-free SITE_DESCRIPTION rather than guessing.
+export function buildSiteDescription(total: number | null): string {
+  if (!total || total < 1000) return SITE_DESCRIPTION
+  return (
+    `Discover and compare ${formatApproxTotal(total)} MCP servers — each scored on security, ` +
+    `maintenance, and efficiency with real CVE scanning. Find the right server before you install.`
+  )
 }
