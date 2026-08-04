@@ -112,10 +112,15 @@ create trigger security_advisories_touch_server
 -- planner hint that mirrors it, not a second authority. If the two ever drift
 -- the query still returns correct rows; it just loses the index and gets slow.
 --
--- Without it, counting the indexable set is a sequential scan of 66k rows
--- (measured: 12s cold, 2s warm) — exactly the shape of exact-count query that
--- has taken the catalog down twice (S20/S28). The included ordering columns are
--- the sitemap's own (score_total desc, slug), so the shard walk rides it too.
+-- The ordering columns are the sitemap's own — (score_total desc, slug) — so
+-- both halves of the shard render use it: the one-row seek that finds where
+-- each shard begins, and the keyset walk that fills it. Without it those
+-- queries sort the whole 66k-row table on every shard.
+--
+-- (Sizing the shard set is a seek, not a count, for the same reason: an exact
+-- count over this predicate hits the anon statement timeout outright and is a
+-- 66k-row sequential scan on the service role — 12s cold, 2s warm — which is
+-- the query shape that took the catalog down in S20/S28.)
 create index if not exists servers_sitemap_indexable_idx
   on servers (score_total desc, slug)
   where is_archived = false
