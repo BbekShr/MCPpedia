@@ -1,23 +1,5 @@
 import Markdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import rehypeRaw from 'rehype-raw'
-import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
-
-// Extend default schema to allow common README elements
-const sanitizeSchema = {
-  ...defaultSchema,
-  tagNames: [
-    ...(defaultSchema.tagNames || []),
-    'details', 'summary', 'picture', 'source',
-  ],
-  attributes: {
-    ...defaultSchema.attributes,
-    img: [...(defaultSchema.attributes?.img || []), 'width', 'height', 'align'],
-    source: ['srcset', 'media', 'type'],
-    details: ['open'],
-    '*': [...(defaultSchema.attributes?.['*'] || []), 'align'],
-  },
-}
+import { readmeRemarkPlugins, readmeRehypePlugins } from '@/lib/readme-pipeline'
 
 export default async function ServerReadme({ githubUrl }: { githubUrl: string | null }) {
   if (!githubUrl) return null
@@ -48,20 +30,6 @@ export default async function ServerReadme({ githubUrl }: { githubUrl: string | 
 
   if (!readme) return null
 
-  // Resolve relative image URLs to GitHub raw URLs
-  const baseRawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/HEAD`
-  const processedReadme = readme
-    // Markdown-style images: ![alt](relative/path)
-    .replace(
-      /!\[([^\]]*)\]\((?!https?:\/\/)([^)]+)\)/g,
-      (_, alt, src) => `![${alt}](${baseRawUrl}/${src})`
-    )
-    // HTML <img> tags with relative src
-    .replace(
-      /(<img\s[^>]*src=["'])(?!https?:\/\/)([^"']+)(["'])/gi,
-      (_, before, src, after) => `${before}${baseRawUrl}/${src}${after}`
-    )
-
   return (
     <section id="readme" className="pt-8 border-t border-border">
       <details open>
@@ -88,7 +56,9 @@ export default async function ServerReadme({ githubUrl }: { githubUrl: string | 
           prose-td:border prose-td:border-border prose-td:px-3 prose-td:py-2
           prose-tr:even:bg-bg-tertiary/50
         ">
-          <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, [rehypeSanitize, sanitizeSchema]]}>{processedReadme}</Markdown>
+          <Markdown remarkPlugins={readmeRemarkPlugins} rehypePlugins={readmeRehypePlugins(owner, repo)}>
+            {readme}
+          </Markdown>
         </div>
       </details>
     </section>
