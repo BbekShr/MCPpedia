@@ -17,15 +17,24 @@ const PRIVATE_PATHS = [
   '/welcome',
   '/setup',
   '/s/*/claim',
-  // OG images. Social crawlers fetch these from the <meta> tag regardless of
-  // robots.txt, so nothing that needs them loses them — but Google was
-  // crawling them as pages, and all 184 of Search Console's 5xx errors are
-  // /s/*/opengraph-image. They are 1200x630 renders, not documents.
   '/apple-icon',
-  '/*/opengraph-image',
-  '/s/*/opengraph-image',
-  '/blog/*/opengraph-image',
 ]
+
+// The OG image routes used to be listed above. They are not: the server-page
+// JSON-LD points `image` at /s/<slug>/opengraph-image, and Google requires the
+// schema image be crawlable or the page is ineligible for rich results and
+// Discover. Twitterbot also honours robots.txt, so disallowing them broke X and
+// LinkedIn previews across the whole catalog plus every blog post.
+//
+// The original reason for the disallow was the 184 5xx errors Search Console
+// attributed to /s/*/opengraph-image. Those were load-related; the routes now
+// return 200 image/png, so the disallow is no longer buying anything.
+//
+// Deliberately NOT paired with `X-Robots-Tag: noindex` on the image route:
+// Google's structured-data guidance requires the `image` be crawlable AND
+// indexable, so a noindex header would reintroduce the same ineligibility by
+// another door. These are 1200x630 renders; letting them sit in Google Images
+// costs nothing.
 
 const AI_CRAWLERS = [
   'GPTBot',

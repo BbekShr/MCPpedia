@@ -120,7 +120,7 @@ export async function generateMetadata({
   const uc = USE_CASES[usecase]
   if (!uc) return { title: 'Not Found' }
   return {
-    title: `${uc.title} — MCPpedia`,
+    title: { absolute: `${uc.title} — MCPpedia` },
     description: uc.description,
     openGraph: {
       title: uc.title,

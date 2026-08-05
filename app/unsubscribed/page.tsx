@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import UnsubscribeConfirm from './UnsubscribeConfirm'
 
 export const metadata: Metadata = {
-  title: 'Unsubscribe — MCPpedia',
+  title: { absolute: 'Unsubscribe — MCPpedia' },
   robots: { index: false },
 }
 

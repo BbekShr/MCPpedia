@@ -29,7 +29,7 @@ export async function generateMetadata({
   const url = `${SITE_URL}/skills/${slug}`
   const description = skill.description ?? skill.tagline
   return {
-    title: `${skill.name} — ${SITE_NAME}`,
+    title: { absolute: `${skill.name} — ${SITE_NAME}` },
     description,
     alternates: { canonical: url },
     openGraph: {

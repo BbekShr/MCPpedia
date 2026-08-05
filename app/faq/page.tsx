@@ -17,7 +17,12 @@ import { getCatalogCounts, formatApproxTotal } from '@/lib/live-counts'
 export const revalidate = 86400 // 1d — the counts below are live
 
 export const metadata: Metadata = {
-  title: `MCP Server FAQ — What MCP Is, How to Install, How Scoring Works | ${SITE_NAME}`,
+  // `absolute` because the root layout appends " - MCPpedia" via its title
+  // template, and this already ends in "| MCPpedia". Same pattern as the
+  // server pages — every hub title that names the brand must use it.
+  title: {
+    absolute: `MCP Server FAQ — What MCP Is, How to Install, How Scoring Works | ${SITE_NAME}`,
+  },
   description:
     'Straight answers about Model Context Protocol servers: what MCP is, how to install a server in Claude or Cursor, whether MCP servers are safe, and how MCPpedia scores them.',
   openGraph: {
