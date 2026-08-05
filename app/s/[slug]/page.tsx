@@ -3,7 +3,7 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { createPublicClient } from '@/lib/supabase/public'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { PUBLIC_SERVER_FIELDS, PUBLIC_CARD_FIELDS } from '@/lib/constants'
+import { PUBLIC_SERVER_FIELDS, PUBLIC_CARD_FIELDS, CATEGORIES, CATEGORY_LABELS, type Category } from '@/lib/constants'
 import DiscussionSection from '@/components/DiscussionSection'
 import NewsletterSignup from '@/components/NewsletterSignup'
 import BadgeEmbed from '@/components/BadgeEmbed'
@@ -32,6 +32,11 @@ import {
   generateServerJsonLd,
   generateBreadcrumbJsonLd,
   generateFAQJsonLd,
+  isServerIndexable,
+  INDEXABLE_FIELDS,
+  buildServerTitle,
+  buildServerDescription,
+  buildServerSummary,
 } from '@/lib/seo'
 import type { Server, Changelog, SecurityAdvisory } from '@/lib/types'
 import type { Metadata } from 'next'
@@ -60,29 +65,37 @@ export async function generateMetadata({
   const supabase = createPublicClient()
   const { data: server } = await supabase
     .from('servers')
-    .select('name, tagline, tool_count, categories, score_total')
+    .select(`name, tagline, categories, transport, ${INDEXABLE_FIELDS}`)
     .eq('slug', slug)
     .single()
 
   if (!server) return { title: 'Server Not Found' }
 
-  const toolCount = (server.tool_count as number) ?? 0
-  const score = server.score_total || 0
-  const grade = score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 40 ? 'C' : score >= 20 ? 'D' : 'F'
+  // Thin registry stubs are served, linked and editable — they are just not
+  // submitted to the index. `follow: true` keeps their outbound links (category
+  // hubs, similar servers) flowing authority. Shares `isServerIndexable` with
+  // the sitemap so the two can never disagree.
+  const indexable = isServerIndexable(server)
 
-  const nameForTitle = server.name.toLowerCase().includes('mcp') ? server.name : `${server.name} MCP Server`
-  const title = `${nameForTitle} — Score: ${score}/100 (${grade})`
-  const description = server.tagline
-    ? `${server.tagline}. ${toolCount} tools. Scored on security, maintenance, and efficiency.`
-    : `${nameForTitle}. ${toolCount} tools. Score: ${score}/100.`
+  const url = `${SITE_URL}/s/${slug}`
+  const title = buildServerTitle(server)
+  const description = buildServerDescription(server)
 
   return {
-    title,
+    // `absolute` because the root layout appends " - MCPpedia" via its title
+    // template, and the pattern already ends in "| MCPpedia".
+    title: { absolute: title },
     description,
     openGraph: {
       title,
       description,
-      type: 'website',
+      // 'article', not 'website': these are per-entity documents that change
+      // over time, and 'website' told every social and answer-engine parser to
+      // treat 36k distinct pages as the site's front door.
+      type: 'article',
+      // Was missing entirely — only the canonical carried the URL, so anything
+      // reading OG alone had no identity for the page to key on.
+      url,
       siteName: SITE_NAME,
     },
     twitter: {
@@ -91,8 +104,9 @@ export async function generateMetadata({
       description,
     },
     alternates: {
-      canonical: `${SITE_URL}/s/${slug}`,
+      canonical: url,
     },
+    ...(indexable ? {} : { robots: { index: false, follow: true } }),
   }
 }
 
@@ -183,6 +197,9 @@ export default async function ServerDetailPage({
   const hasEnvInstructions = s.env_instructions && Object.keys(s.env_instructions).length > 0
   const hasChangelog = !!(changelogs && changelogs.length > 0)
   const hasSimilar = !!(similarServers && similarServers.length > 0)
+  // Only a category in CATEGORIES has hub pages; anything else would link to a 404.
+  const rawPrimaryCategory = (s.categories || [])[0]
+  const primaryCategory = CATEGORIES.includes(rawPrimaryCategory as Category) ? rawPrimaryCategory : null
 
   const navItems = [
     { id: 'install', label: 'Install' },
@@ -222,11 +239,24 @@ export default async function ServerDetailPage({
           </div>
         )}
 
+        {/* rel="nofollow": both targets are Disallowed in robots.ts, so every
+            crawl of a server page discovered two URLs it was then forbidden to
+            fetch — 1,251 of them in Search Console's "blocked by robots.txt but
+            internally linked" bucket, all wasted discovery budget. */}
         <div className="flex items-center gap-3 text-xs text-text-muted mb-4">
-          <Link href={`/s/${s.slug}/edit`} className="hover:text-accent">Edit this page</Link>
+          <Link href={`/s/${s.slug}/edit`} rel="nofollow" className="hover:text-accent">Edit this page</Link>
           <span aria-hidden="true">·</span>
-          <Link href={`/s/${s.slug}/history`} className="hover:text-accent">View history</Link>
+          <Link href={`/s/${s.slug}/history`} rel="nofollow" className="hover:text-accent">View history</Link>
         </div>
+
+        {/* Answer-first summary. Plain text, no markup noise, 40-60 words: what
+            it is, what it exposes, what it needs, how it scores. This is the
+            paragraph an answer engine lifts when asked "what is X?" — every
+            other statement of the same facts on this page is spread across
+            cards, chips and a score ring it would have to reassemble. */}
+        <p className="text-[15px] leading-[1.65] text-text-primary max-w-[760px] mb-5">
+          {buildServerSummary(s)}
+        </p>
 
         <CategoryEditor slug={s.slug} initialCategories={s.categories} />
 
@@ -285,7 +315,7 @@ export default async function ServerDetailPage({
                   <p className="m-0 text-text-primary font-medium">No description provided.</p>
                   <p className="mt-1 mb-2">
                     This server is thin — proceed with caution.{' '}
-                    <Link href={`/s/${s.slug}/edit`} className="text-accent">
+                    <Link href={`/s/${s.slug}/edit`} rel="nofollow" className="text-accent">
                       Help improve this page →
                     </Link>
                   </p>
@@ -421,6 +451,7 @@ export default async function ServerDetailPage({
                 </p>
                 <Link
                   href={`/s/${s.slug}/edit`}
+                  rel="nofollow"
                   className="inline-block px-4 py-2 text-sm rounded-md bg-accent text-accent-fg hover:bg-accent-hover transition-colors"
                 >
                   Add information
@@ -452,16 +483,36 @@ export default async function ServerDetailPage({
                 title="Similar servers"
                 desc={`Others in ${(s.categories || []).join(' / ') || 'this space'}`}
                 right={
-                  <Link
-                    href={`/servers?category=${encodeURIComponent((s.categories || [])[0] || '')}`}
-                    className="text-sm text-accent hover:text-accent-hover"
-                  >
-                    View all →
-                  </Link>
+                  primaryCategory ? (
+                    <Link
+                      href={`/category/${encodeURIComponent(primaryCategory)}`}
+                      className="text-sm text-accent hover:text-accent-hover"
+                    >
+                      View all →
+                    </Link>
+                  ) : undefined
                 }
               />
               <SimilarGrid servers={similarServers as Server[]} />
             </section>
+          )}
+
+          {/* Hub links. These used to be a single /servers?category=X query-string
+              URL, which is a filtered view of one listing page — it passes no
+              authority to the category or /best hub, and those hubs are the
+              pages we actually want ranking. Both targets are canonical,
+              sitemap-listed URLs. */}
+          {primaryCategory && (
+            <nav aria-label="Related hubs" className="text-sm text-text-muted">
+              More {CATEGORY_LABELS[primaryCategory as Category] || primaryCategory} MCP servers:{' '}
+              <Link href={`/category/${encodeURIComponent(primaryCategory)}`} className="text-accent hover:text-accent-hover">
+                all {CATEGORY_LABELS[primaryCategory as Category] || primaryCategory} servers
+              </Link>
+              {' · '}
+              <Link href={`/best/${encodeURIComponent(primaryCategory)}`} className="text-accent hover:text-accent-hover">
+                best {CATEGORY_LABELS[primaryCategory as Category] || primaryCategory} servers
+              </Link>
+            </nav>
           )}
 
           <section>

@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og'
+import { getCatalogCounts, formatApproxTotal } from '@/lib/live-counts'
 
 export const runtime = 'edge'
 export const alt = 'MCPpedia — The Trusted Source for MCP Servers'
@@ -6,6 +7,11 @@ export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
 export default async function Image() {
+  // Live count: this image is the site's link preview everywhere it is shared,
+  // and it claimed "17,000+" against a real catalog of 36,000+.
+  const { totalServers } = await getCatalogCounts()
+  const catalogSize = formatApproxTotal(totalServers, 'Thousands of')
+
   return new ImageResponse(
     (
       <div
@@ -39,13 +45,13 @@ export default async function Image() {
 
         {/* Subheading */}
         <div style={{ display: 'flex', fontSize: 24, color: '#656d76', lineHeight: 1.5, maxWidth: 780, marginBottom: 'auto' }}>
-          17,000+ servers scored on security, maintenance, and efficiency — with real CVE scanning, not opinions.
+          {`${catalogSize} servers scored on security, maintenance, and efficiency — with real CVE scanning, not opinions.`}
         </div>
 
         {/* Stats */}
         <div style={{ display: 'flex', gap: 48, marginTop: 48, borderTop: '1px solid rgba(0,0,0,0.08)', paddingTop: 32 }}>
           {[
-            { value: '17,000+', label: 'Servers tracked' },
+            { value: catalogSize, label: 'Servers tracked' },
             { value: '548 CVEs', label: 'Found & tracked' },
             { value: '100pt', label: 'Quality score' },
             { value: 'Daily', label: 'Security scans' },

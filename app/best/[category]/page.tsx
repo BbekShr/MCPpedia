@@ -5,6 +5,9 @@ import Link from 'next/link'
 import type { Server } from '@/lib/types'
 import { CATEGORIES, CATEGORY_LABELS, SITE_URL, PUBLIC_CARD_FIELDS } from '@/lib/constants'
 import { JsonLdScript, generateItemListJsonLd, generateBreadcrumbJsonLd } from '@/lib/seo'
+import { getHubAggregates, buildHubIntro } from '@/lib/hub-intro'
+import { normalizeServerName } from '@/lib/server-name'
+import HubIntro from '@/components/HubIntro'
 import type { Category } from '@/lib/constants'
 import type { Metadata } from 'next'
 
@@ -76,14 +79,28 @@ export default async function BestCategoryPage({
 
   const supabase = createPublicClient()
 
-  const { data: servers } = await supabase
-    .from('servers')
-    .select(PUBLIC_CARD_FIELDS)
-    .contains('categories', [category])
-    .eq('is_archived', false)
-    .gt('score_total', 0)
-    .order('score_total', { ascending: false })
-    .limit(10)
+  const [{ data: servers }, agg] = await Promise.all([
+    supabase
+      .from('servers')
+      .select(PUBLIC_CARD_FIELDS)
+      .contains('categories', [category])
+      .eq('is_archived', false)
+      .gt('score_total', 0)
+      .order('score_total', { ascending: false })
+      .limit(10),
+    getHubAggregates([category]),
+  ])
+
+  const ranked = (servers as Server[]) || []
+  const intro = buildHubIntro({
+    subject: `${label.toLowerCase()} MCP servers`,
+    agg,
+    leaders: ranked.slice(0, 3).map(s => ({
+      name: normalizeServerName(s.name),
+      slug: s.slug,
+      score: s.score_total ?? 0,
+    })),
+  })
 
   const itemListJsonLd = servers && servers.length > 0
     ? generateItemListJsonLd(
@@ -115,9 +132,22 @@ export default async function BestCategoryPage({
         <p className="text-text-muted max-w-2xl">{description}</p>
       </div>
 
+      <HubIntro
+        paragraphs={intro}
+        updatedAt={new Date()}
+        siblingsLabel="Also see"
+        siblings={[
+          { label: `All ${label} servers`, href: `/category/${category}` },
+          ...CATEGORIES.filter(c => c !== category).slice(0, 4).map(c => ({
+            label: `Best ${CATEGORY_LABELS[c as Category]}`,
+            href: `/best/${c}`,
+          })),
+        ]}
+      />
+
       {/* Ranked list */}
       <div className="space-y-4">
-        {(servers as Server[] || []).map((server, i) => (
+        {ranked.map((server, i) => (
           <div key={server.id} className="flex gap-4 items-start">
             <div className="w-8 h-8 rounded-full bg-bg-tertiary flex items-center justify-center text-sm font-bold text-text-muted shrink-0 mt-2">
               {i + 1}

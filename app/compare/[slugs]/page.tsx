@@ -9,9 +9,23 @@ import { PUBLIC_SERVER_FIELDS, SITE_URL } from '@/lib/constants'
 import type { Metadata } from 'next'
 import fs from 'fs'
 import path from 'path'
-import { JsonLdScript } from '@/lib/seo'
+import { JsonLdScript, generateBreadcrumbJsonLd, generateItemListJsonLd } from '@/lib/seo'
+import { buildCompareVerdict } from '@/lib/hub-intro'
+import { normalizeServerName } from '@/lib/server-name'
 
 export const revalidate = 604800 // 7d; on-demand revalidate triggers on edits and score deltas
+
+// Shape buildCompareVerdict needs, pulled off a full server row.
+function toVerdictInput(s: Server) {
+  return {
+    name: normalizeServerName(s.name),
+    score: s.score_total ?? 0,
+    toolCount: s.tools?.length ?? 0,
+    cveCount: s.cve_count ?? 0,
+    official: s.author_type === 'official',
+    stars: s.github_stars ?? 0,
+  }
+}
 
 const MIN_SERVERS = 2
 const MAX_SERVERS = 4
@@ -238,24 +252,42 @@ export default async function ComparePage({
     }
   }
 
-  const namesJoined = servers.map(s => s.name).join(' vs ')
+  const namesJoined = servers.map(s => normalizeServerName(s.name)).join(' vs ')
 
-  // JSON-LD structured data
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'WebPage',
-    name: `${namesJoined} — MCP Server Comparison`,
-    description: `Side-by-side comparison of ${namesJoined} MCP servers.`,
-    url: `${SITE_URL}/compare/${slugsParam}`,
-    breadcrumb: {
-      '@type': 'BreadcrumbList',
-      itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
-        { '@type': 'ListItem', position: 2, name: 'Servers', item: `${SITE_URL}/servers` },
-        { '@type': 'ListItem', position: 3, name: namesJoined },
-      ],
+  // Answer-first verdict. Answer engines extract the first paragraph that
+  // actually answers the question the URL asks — "which of these two should I
+  // use?" — and a comparison page that opens with a table answers nobody. Only
+  // for 1v1: a four-way "verdict" would be a guess dressed as a recommendation.
+  // Baked at prerender/revalidation, so it is genuinely when this comparison
+  // was last recomputed rather than "now" in the reader's browser.
+  const lastUpdated = new Date()
+  const verdict = n === 2 ? buildCompareVerdict(...(servers.slice(0, 2).map(toVerdictInput) as [
+    ReturnType<typeof toVerdictInput>, ReturnType<typeof toVerdictInput>
+  ])) : null
+
+  // JSON-LD structured data. The BreadcrumbList moved out to the shared helper
+  // so every template emits the same shape, and the compared set is published
+  // as an ItemList rather than being implied by the card grid.
+  const jsonLd = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      name: `${namesJoined} — MCP Server Comparison`,
+      description: verdict || `Side-by-side comparison of ${namesJoined} MCP servers.`,
+      url: `${SITE_URL}/compare/${slugsParam}`,
     },
-  }
+    generateBreadcrumbJsonLd([
+      { name: 'Home', url: SITE_URL },
+      { name: 'Servers', url: `${SITE_URL}/servers` },
+      { name: 'Compare', url: `${SITE_URL}/compare` },
+      { name: namesJoined, url: `${SITE_URL}/compare/${slugsParam}` },
+    ]),
+    generateItemListJsonLd(servers.map(s => ({
+      name: `${normalizeServerName(s.name)} MCP Server`,
+      url: `${SITE_URL}/s/${s.slug}`,
+      description: s.tagline || undefined,
+    }))),
+  ]
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 py-8">
@@ -268,6 +300,8 @@ export default async function ComparePage({
           <li aria-hidden="true">/</li>
           <li><Link href="/servers" className="hover:text-accent">Servers</Link></li>
           <li aria-hidden="true">/</li>
+          <li><Link href="/compare" className="hover:text-accent">Compare</Link></li>
+          <li aria-hidden="true">/</li>
           <li className="text-text-primary">{namesJoined}</li>
         </ol>
       </nav>
@@ -275,7 +309,19 @@ export default async function ComparePage({
       <h1 className="text-2xl font-semibold text-text-primary mb-2 text-center">
         {namesJoined}
       </h1>
-      <p className="text-text-muted text-center mb-8">Side-by-side MCP server comparison</p>
+      <p className="text-text-muted text-center mb-6">Side-by-side MCP server comparison</p>
+
+      {verdict && (
+        <p className="max-w-[760px] mx-auto text-[15px] leading-[1.65] text-text-primary mb-3">
+          {verdict}
+        </p>
+      )}
+      <p className="max-w-[760px] mx-auto text-xs text-text-muted mb-8">
+        Last updated{' '}
+        <time dateTime={lastUpdated.toISOString()}>
+          {lastUpdated.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+        </time>
+      </p>
 
       {/* Score cards: 2-col grid for N=2 (preserves SEO-indexed layout), horizontal scroll for N≥3 */}
       {n === 2 ? (

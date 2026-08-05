@@ -15,6 +15,7 @@ import { createAdminClient } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
 import { searchRepos, searchReposPaginated, type GitHubRepo } from './lib/github'
 import { categorize, inferAuthorType, inferCompatibleClients, inferPricing } from './lib/categorize'
+import { humanizeServerName } from '../lib/server-name'
 
 const supabase = createAdminClient('bot-discover')
 
@@ -386,7 +387,7 @@ async function insertFromGitHub(repo: GitHubRepo, source: string, existingSlugs:
 
   const { error } = await supabase.from('servers').insert({
     slug,
-    name: sanitize(repo.full_name.split('/')[1].replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), 200) || slug,
+    name: sanitize(humanizeServerName(repo.full_name.split('/')[1]), 200) || slug,
     tagline: sanitize(repo.description),
     github_url: repo.html_url,
     author_name: repo.owner.login,
@@ -435,7 +436,7 @@ async function insertFromNpm(
 
   const { error } = await supabase.from('servers').insert({
     slug,
-    name: sanitize(pkg.name.replace(/^@[\w-]+\//, '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), 200) || slug,
+    name: sanitize(humanizeServerName(pkg.name.replace(/^@[\w-]+\//, '')), 200) || slug,
     tagline: sanitize(pkg.description || null),
     github_url: githubUrl,
     npm_package: pkg.name,
@@ -478,7 +479,7 @@ async function insertFromPyPI(
 
   const { error } = await supabase.from('servers').insert({
     slug,
-    name: sanitize(pkg.name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), 200) || slug,
+    name: sanitize(humanizeServerName(pkg.name), 200) || slug,
     tagline: sanitize(pkg.summary || null),
     pip_package: pkg.name,
     author_type: 'unknown',

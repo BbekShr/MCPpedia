@@ -6,7 +6,10 @@ import ServerCard from '@/components/ServerCard'
 import CategoryFilters from '@/components/CategoryFilters'
 import { CATEGORIES, CATEGORY_LABELS, ITEMS_PER_PAGE, SITE_URL, PUBLIC_CARD_FIELDS } from '@/lib/constants'
 import { sanitizeSearchQuery } from '@/lib/validators'
-import { JsonLdScript, generateCollectionJsonLd, generateBreadcrumbJsonLd } from '@/lib/seo'
+import { JsonLdScript, generateCollectionJsonLd, generateBreadcrumbJsonLd, generateItemListJsonLd } from '@/lib/seo'
+import { getHubAggregates, buildHubIntro } from '@/lib/hub-intro'
+import { normalizeServerName } from '@/lib/server-name'
+import HubIntro from '@/components/HubIntro'
 import type { Server } from '@/lib/types'
 import type { Category } from '@/lib/constants'
 import type { Metadata } from 'next'
@@ -142,6 +145,10 @@ async function fetchCategoryListing({
   return { servers: (data as Server[]) || [], totalCount: count || 0 }
 }
 
+function hasFiltersFor({ status, transport, minScore, q }: { status: string; transport: string; minScore: number; q: string }): boolean {
+  return Boolean(status || transport || minScore > 0 || q)
+}
+
 export default async function CategoryPage({
   params,
   searchParams,
@@ -179,10 +186,27 @@ export default async function CategoryPage({
     loadFailed = true
   }
 
+  // Intro copy is only meaningful for the unfiltered, first-page view — that is
+  // the URL in the sitemap and the one a crawler lands on. A filtered permutation
+  // gets the list without the prose rather than prose describing the wrong set.
+  const isCanonicalView = !hasFiltersFor({ status, transport, minScore, q }) && page === 1
+  const agg = isCanonicalView ? await getHubAggregates([category]) : null
+  const intro = agg
+    ? buildHubIntro({
+        subject: `${label.toLowerCase()} MCP servers`,
+        agg,
+        leaders: servers.slice(0, 3).map(s => ({
+          name: normalizeServerName(s.name),
+          slug: s.slug,
+          score: s.score_total ?? 0,
+        })),
+      })
+    : []
+
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE)
 
   // Calculate category stats for the header
-  const hasFilters = status || transport || minScore > 0 || q
+  const hasFilters = hasFiltersFor({ status, transport, minScore, q })
 
   // Build pagination URL helper
   function pageUrl(p: number) {
@@ -206,6 +230,17 @@ export default async function CategoryPage({
           { name: 'Categories', url: `${SITE_URL}/servers` },
           { name: label, url: `${SITE_URL}/category/${category}` },
         ]),
+        // The list itself, so the ranking is machine-readable rather than being
+        // implied by card markup. Only on the canonical unfiltered view — a
+        // filtered permutation would publish a different list under the same
+        // canonical URL.
+        ...(isCanonicalView && servers.length > 0
+          ? [generateItemListJsonLd(servers.map(s => ({
+              name: `${normalizeServerName(s.name)} MCP Server`,
+              url: `${SITE_URL}/s/${s.slug}`,
+              description: s.tagline || undefined,
+            })))]
+          : []),
       ]} />
 
       {/* Breadcrumb */}
@@ -226,6 +261,21 @@ export default async function CategoryPage({
             : `${totalCount.toLocaleString()} server${totalCount !== 1 ? 's' : ''} in this category`
         }
       </p>
+
+      {intro.length > 0 && (
+        <HubIntro
+          paragraphs={intro}
+          updatedAt={new Date()}
+          siblingsLabel="Also see"
+          siblings={[
+            { label: `Best ${label} MCP servers`, href: `/best/${category}` },
+            ...CATEGORIES.filter(c => c !== category).slice(0, 4).map(c => ({
+              label: CATEGORY_LABELS[c as Category],
+              href: `/category/${c}`,
+            })),
+          ]}
+        />
+      )}
 
       {/* Filters */}
       <div className="mb-6">

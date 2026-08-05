@@ -4,6 +4,7 @@ import VerifiedBadge from '@/components/VerifiedBadge'
 import type { Server, SecurityAdvisory } from '@/lib/types'
 import { Chip, Icon, ScoreRing, daysSince, formatNumber } from './helpers'
 import { timeAgo } from '@/lib/dates'
+import { normalizeServerName } from '@/lib/server-name'
 
 function stripHtml(html: string): string {
   return html
@@ -130,6 +131,10 @@ export default function Hero({
   advisories: SecurityAdvisory[]
 }) {
   const s = server
+  // Defensive: `servers.name` is title-cased by the discovery bot, so historical
+  // rows still read "Mcp Hn". Normalizing at render keeps the visible <h1> and
+  // the <title> saying the same thing before any backfill lands.
+  const displayName = normalizeServerName(s.name)
   const score = s.score_total || 0
   const primaryCategory = s.categories?.[0]
   const tagline = s.tagline ? stripHtml(s.tagline) : null
@@ -156,7 +161,7 @@ export default function Hero({
             </>
           )}
           <span className="opacity-50">/</span>
-          <span className="text-text-primary font-medium truncate max-w-[280px]">{s.name}</span>
+          <span className="text-text-primary font-medium truncate max-w-[280px]">{displayName}</span>
         </nav>
 
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-7 items-start">
@@ -167,7 +172,7 @@ export default function Hero({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h1 className="m-0 text-2xl font-bold leading-tight tracking-tight text-text-primary break-words">
-                    {s.name}
+                    {displayName}
                   </h1>
                   {s.author_type === 'official' && <Chip tone="accent" size="md">Official</Chip>}
                   {s.verified && <VerifiedBadge type="mcppedia" />}

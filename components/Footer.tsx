@@ -18,6 +18,7 @@ const COLUMNS: { title: string; links: { label: string; href: string; external?:
   {
     title: 'Scoring',
     links: [
+      { label: 'FAQ', href: '/faq' },
       { label: 'How scoring works', href: '/methodology' },
       { label: 'Rubric', href: '/methodology#rubric' },
       { label: 'Report a mistake', href: `${GITHUB_URL}/issues/new`, external: true },

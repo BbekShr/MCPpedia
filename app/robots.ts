@@ -13,6 +13,18 @@ const PRIVATE_PATHS = [
   '/unsubscribed',
   '/s/*/edit',
   '/s/*/history',
+  // Account/onboarding flows with nothing to rank and a session dependency.
+  '/welcome',
+  '/setup',
+  '/s/*/claim',
+  // OG images. Social crawlers fetch these from the <meta> tag regardless of
+  // robots.txt, so nothing that needs them loses them — but Google was
+  // crawling them as pages, and all 184 of Search Console's 5xx errors are
+  // /s/*/opengraph-image. They are 1200x630 renders, not documents.
+  '/apple-icon',
+  '/*/opengraph-image',
+  '/s/*/opengraph-image',
+  '/blog/*/opengraph-image',
 ]
 
 const AI_CRAWLERS = [

@@ -41,6 +41,12 @@ export interface Server {
   verified: boolean
   created_at: string
   updated_at: string
+  // Advances only on user-visible change (description, tagline, tools,
+  // categories, a score crossing a grade boundary, a new advisory) — see
+  // supabase/migrations/20260804120000_content_updated_at.sql. Optional because
+  // the column post-dates most callers' projections; `updated_at` is the
+  // fallback everywhere it is read.
+  content_updated_at?: string | null
   // MCPpedia Score
   score_total: number
   score_security: number

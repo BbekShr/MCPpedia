@@ -88,7 +88,13 @@ export const REVALIDATE_LISTINGS = 60       // seconds
 export const REVALIDATE_GUIDES = 86400      // 24 hours
 
 export const SITE_NAME = 'MCPpedia'
-export const SITE_DESCRIPTION = 'Discover and compare 17,000+ MCP servers — each scored on security, maintenance, and efficiency with real CVE scanning. Find the right server before you install.'
+// Deliberately carries NO server count. This is a module constant baked into
+// the bundle, so any number in it is stale the day the catalog grows — and it
+// said "17,000+" while the API served 36,477 and the Dataset schema said 36,614.
+// Surfaces that can read the live snapshot build their copy with
+// `buildSiteDescription` (lib/live-counts.ts) instead; this is the fallback for
+// the ones that genuinely cannot await, and for when the snapshot is down.
+export const SITE_DESCRIPTION = 'Discover and compare every MCP server — each scored on security, maintenance, and efficiency with real CVE scanning. Find the right server before you install.'
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://mcppedia.org'
 
 // Smaller field set for list/card views (homepage, category, /servers, /best, etc.).
@@ -122,7 +128,11 @@ export const PUBLIC_SERVER_FIELDS = [
   'github_stars', 'github_last_commit', 'github_open_issues', 'npm_weekly_downloads',
   'is_archived', 'health_status', 'health_checked_at',
   'categories', 'tags', 'source', 'verified',
-  'created_at', 'updated_at',
+  // `content_updated_at` is what generateServerJsonLd publishes as dateModified.
+  // Without it in this projection the field is undefined at render and silently
+  // falls back to `updated_at` — the column the metadata bots move daily — so
+  // the page's JSON-LD would claim a freshness the sitemap's lastmod does not.
+  'created_at', 'updated_at', 'content_updated_at',
   'score_total', 'score_security', 'score_maintenance',
   'score_documentation', 'score_compatibility', 'score_efficiency', 'score_computed_at',
   'has_authentication', 'cve_count', 'security_evidence',

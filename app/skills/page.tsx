@@ -13,6 +13,7 @@ import {
   getSkillCategoriesWithCounts,
 } from '@/lib/skills'
 import SkillsBrowser from '@/components/SkillsBrowser'
+import HubIntro from '@/components/HubIntro'
 
 export const metadata: Metadata = {
   title: `Claude Code Skills Directory — ${SITE_NAME}`,
@@ -31,6 +32,14 @@ export default function SkillsPage() {
   const all = getAllSkills()
   const featured = getFeaturedSkills(6)
   const categoriesWithCounts = getSkillCategoriesWithCounts()
+
+  // Derived from the directory itself so the numbers cannot go stale: adding a
+  // skill file rewrites this paragraph on the next build.
+  const topCategories = [...categoriesWithCounts].sort((a, b) => b.count - a.count).slice(0, 3)
+  const lastUpdated = all
+    .map(s => (s.last_updated ? new Date(s.last_updated) : null))
+    .filter((d): d is Date => d !== null && !Number.isNaN(d.getTime()))
+    .sort((a, b) => b.getTime() - a.getTime())[0] ?? new Date()
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 py-8">
@@ -72,6 +81,28 @@ export default function SkillsPage() {
           and the best of the community.
         </p>
       </div>
+
+      <HubIntro
+        updatedAt={lastUpdated}
+        paragraphs={[
+          `This directory lists ${all.length} Claude Code skills across ${categoriesWithCounts.length} ` +
+            `categories${topCategories.length ? `, the largest being ${topCategories.map(c => `${c.category} (${c.count})`).join(', ')}` : ''}. ` +
+            `A skill is not an MCP server: an MCP server gives an agent new tools to call over a protocol, ` +
+            `while a skill gives it instructions, context and a workflow for a task it can already do. ` +
+            `Most real setups end up using both.`,
+          `Every entry here is hand-checked rather than scraped — it links to the source repository, says ` +
+            `which clients it works with, and shows when it was last updated, because an abandoned skill ` +
+            `is worse than no skill: it will confidently walk an agent through a workflow that no longer ` +
+            `matches the tool it is driving.`,
+        ]}
+        siblingsLabel="Also see"
+        siblings={[
+          { label: 'Best MCP servers', href: '/best' },
+          { label: 'All MCP servers', href: '/servers' },
+          { label: 'Getting started with MCP', href: '/get-started' },
+          { label: 'MCPpedia MCP server', href: '/mcp' },
+        ]}
+      />
 
       {/* Interactive search + browse */}
       <SkillsBrowser

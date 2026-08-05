@@ -45,6 +45,26 @@ jobs:
         with:
           version: latest
 
+      # Fail with the actual cause. Without this, an unset secret expands to an
+      # empty --db-url and the CLI falls back to a local unix socket, so the job
+      # dies with "failed to connect to host=/var/run/postgresql user=runner" —
+      # which reads as a database outage and is nothing of the kind. The first
+      # ever run of this workflow failed exactly that way (PR #117), because the
+      # secret was never added when the workflow landed in #110.
+      - name: Require SUPABASE_DB_URL
+        run: |
+          if [ -z "${SUPABASE_DB_URL:-}" ]; then
+            echo "::error::SUPABASE_DB_URL is not set on this repository, so no migration can be applied."
+            echo "::error::Use the SESSION POOLER string, not the direct connection: Supabase dashboard -> Project Settings -> Database -> Connection string -> Session pooler."
+            echo "::error::  postgresql://postgres.<ref>:<password>@aws-<n>-<region>.pooler.supabase.com:5432/postgres"
+            echo "::error::The direct host db.<ref>.supabase.co is IPv6-only and GitHub Actions runners are IPv4-only, so it cannot be reached from here."
+            echo "::error::Port 5432 (session mode), NOT 6543 (transaction mode) — migrations need session-level state that the transaction pooler does not keep."
+            echo "::error::Then: gh secret set SUPABASE_DB_URL --body '<that string>'"
+            exit 1
+          fi
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
       - name: Show pending migrations
         # --dry-run prints the migrations that WOULD apply and exits without
         # touching the database. This is the review artifact: a human reads it
@@ -63,6 +83,26 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: latest
+
+      # Fail with the actual cause. Without this, an unset secret expands to an
+      # empty --db-url and the CLI falls back to a local unix socket, so the job
+      # dies with "failed to connect to host=/var/run/postgresql user=runner" —
+      # which reads as a database outage and is nothing of the kind. The first
+      # ever run of this workflow failed exactly that way (PR #117), because the
+      # secret was never added when the workflow landed in #110.
+      - name: Require SUPABASE_DB_URL
+        run: |
+          if [ -z "${SUPABASE_DB_URL:-}" ]; then
+            echo "::error::SUPABASE_DB_URL is not set on this repository, so no migration can be applied."
+            echo "::error::Use the SESSION POOLER string, not the direct connection: Supabase dashboard -> Project Settings -> Database -> Connection string -> Session pooler."
+            echo "::error::  postgresql://postgres.<ref>:<password>@aws-<n>-<region>.pooler.supabase.com:5432/postgres"
+            echo "::error::The direct host db.<ref>.supabase.co is IPv6-only and GitHub Actions runners are IPv4-only, so it cannot be reached from here."
+            echo "::error::Port 5432 (session mode), NOT 6543 (transaction mode) — migrations need session-level state that the transaction pooler does not keep."
+            echo "::error::Then: gh secret set SUPABASE_DB_URL --body '<that string>'"
+            exit 1
+          fi
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
 
       - name: Apply migrations
         # No --include-all: that flag applies out-of-order migrations, which

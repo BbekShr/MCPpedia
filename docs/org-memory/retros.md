@@ -319,3 +319,25 @@ Friction, and it was mine. Three things:
   What worked: all three review lenses independently converged on the same weakest point (the added
   test pins the route, not the bot) rather than each finding a different pet issue — that agreement
   is what turned it from a nit into M17.
+
+## 2026-08-04 — reconciliation cycle (S83 → done; 14 `in-review` rows resolved; S90 filed)
+
+Friction: **the org has no step that closes a row.** Phase 7 sets `in-review` and stops at the open
+PR by design, but the merge then happens in a later session that has no reason to revisit the row —
+so 14 rows accumulated as `in-review` with zero open PRs, 8 of them fully DONE on `main` and
+invisible as available capacity. This cost real time: the top open P1 (S83) was already satisfied,
+and finding that out required auditing the whole stale set. A cheap fix would be a phase-1 step that
+reconciles any `in-review` row with no open PR before picking work, or a CI check that flags the
+mismatch. Not filed as an M row this cycle — the reconciliation itself is the remedy and phase 1
+already says "reclaim dead rows"; it just says it about `in-progress`, not `in-review`. If the same
+backlog re-accumulates, file it.
+
+What worked: dispatching ONE qa-verifier over all 14 rows instead of one agent per row. The rows
+share evidence (four of them merged in the same PR #101) and a per-row fan-out would have re-read
+the same diffs 14 times. It also surfaced a cross-row conclusion no single-row agent could reach —
+that S2 is now entirely subsumed by S7, and that S60's criterion is unsatisfiable by construction.
+
+The unplanned find was the better one: chasing S8's prod evidence meant reading the served HTML,
+which is the only reason anyone noticed every page advertises 17,000 servers for a 36,614-row
+catalog (S90). Verifying against the real artifact rather than the code finds things the code review
+cannot.

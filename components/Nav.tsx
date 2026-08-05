@@ -144,6 +144,7 @@ export default function Nav() {
           ) : (
             <Link
               href="/login"
+              rel="nofollow"
               className="text-sm px-3 py-1.5 rounded-md bg-accent text-accent-fg hover:bg-accent-hover"
             >
               Sign in
@@ -221,6 +222,7 @@ export default function Nav() {
             ) : (
               <Link
                 href="/login"
+                rel="nofollow"
                 onClick={() => setMobileOpen(false)}
                 className="block px-3 py-2 rounded-md text-sm text-accent hover:text-accent-hover"
               >
