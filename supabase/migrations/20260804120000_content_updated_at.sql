@@ -31,6 +31,21 @@
 -- CREATE INDEX takes SHARE, which blocks writes but not reads, for a few
 -- seconds on this row count. Not CONCURRENTLY, because `supabase db push` runs
 -- each migration inside a transaction and CONCURRENTLY cannot.
+--
+-- The backfill runs BEFORE the trigger is created, which matters more than it
+-- looks: with the trigger in place first, the UPDATE fires 66,778 plpgsql
+-- invocations, each calling mcppedia_score_grade twice, and blows the 2-minute
+-- statement_timeout on a 309 MB table. It was ordered that way to avoid a window
+-- where a concurrent write lands with a null has_description — but there is no
+-- such window. `supabase db push` wraps each migration in one transaction, so
+-- nothing here is visible until commit, and the ADD COLUMN's ACCESS EXCLUSIVE
+-- lock blocks concurrent writers for the duration regardless. The backfill
+-- therefore sets both columns itself and the trigger takes over afterwards.
+
+-- A full rewrite of a 309 MB table does not fit in the default 2 minutes.
+-- `set local` scopes this to the migration's own transaction, so no role setting
+-- is changed and nothing outlives the push.
+set local statement_timeout = '900s';
 
 alter table servers
   add column if not exists content_updated_at timestamptz;
@@ -49,6 +64,19 @@ alter table servers
 
 alter table servers
   alter column content_updated_at set default now();
+
+-- Backfill both columns in one pass, BEFORE the trigger exists — see the lock
+-- budget note above for why that ordering is the fast one and still safe.
+--
+-- `content_updated_at` is seeded from the existing timestamp: the best evidence
+-- we have of when each row last changed, and it stops every URL from publishing
+-- a null lastmod on the first sitemap render after this ships.
+--
+-- `has_description` is assigned the same expression the trigger uses, so the two
+-- code paths cannot disagree about what a blank description is.
+update servers set
+  content_updated_at = coalesce(content_updated_at, updated_at, created_at, now()),
+  has_description = btrim(coalesce(description, '')) <> '';
 
 -- Letter grade, not the raw score. The score itself drifts by a point or two on
 -- every recompute and that is not a content change; crossing 60 into a B is.
@@ -125,20 +153,6 @@ create trigger security_advisories_touch_server
   after insert on security_advisories
   for each row
   execute function security_advisories_touch_server_content();
-
--- Backfill, AFTER the trigger exists so there is no window in which a concurrent
--- write lands with a null `has_description`.
---
--- `content_updated_at` is seeded from the existing timestamp — the best evidence
--- we have of when each row last changed, and it stops every URL from publishing
--- a null lastmod on the first sitemap render after this ships. `has_description`
--- needs no assignment here: the trigger derives it on every row this UPDATE
--- touches, which is all of them.
---
--- The trigger will NOT stomp the value being set: this UPDATE changes no
--- content column, so its content-change branch does not fire.
-update servers
-  set content_updated_at = coalesce(content_updated_at, updated_at, created_at, now());
 
 -- Partial index backing the sitemap's indexable-server query.
 --
