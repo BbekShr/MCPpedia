@@ -128,7 +128,11 @@ export const PUBLIC_SERVER_FIELDS = [
   'github_stars', 'github_last_commit', 'github_open_issues', 'npm_weekly_downloads',
   'is_archived', 'health_status', 'health_checked_at',
   'categories', 'tags', 'source', 'verified',
-  'created_at', 'updated_at',
+  // `content_updated_at` is what generateServerJsonLd publishes as dateModified.
+  // Without it in this projection the field is undefined at render and silently
+  // falls back to `updated_at` — the column the metadata bots move daily — so
+  // the page's JSON-LD would claim a freshness the sitemap's lastmod does not.
+  'created_at', 'updated_at', 'content_updated_at',
   'score_total', 'score_security', 'score_maintenance',
   'score_documentation', 'score_compatibility', 'score_efficiency', 'score_computed_at',
   'has_authentication', 'cve_count', 'security_evidence',
