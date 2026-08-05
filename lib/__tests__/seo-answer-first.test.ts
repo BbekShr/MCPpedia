@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { buildServerSummary } from '../seo'
-import { formatApproxTotal, buildSiteDescription } from '../live-counts'
+import { formatApproxTotal, formatExactCount, buildSiteDescription } from '../live-counts'
 import { SITE_DESCRIPTION } from '../constants'
 
 function wordCount(s: string): number {
@@ -100,6 +100,18 @@ describe('formatApproxTotal', () => {
 
   it('takes a caller-supplied fallback', () => {
     expect(formatApproxTotal(null, 'Thousands of')).toBe('Thousands of')
+  })
+})
+
+describe('formatExactCount', () => {
+  it('prints the exact figure, grouped', () => {
+    expect(formatExactCount(364, 'OSV.dev')).toBe('364')
+    expect(formatExactCount(27441, 'OSV.dev')).toBe('27,441')
+  })
+
+  it('refuses to print a number it cannot verify', () => {
+    expect(formatExactCount(null, 'OSV.dev')).toBe('OSV.dev')
+    expect(formatExactCount(0, 'OSV.dev')).toBe('OSV.dev')
   })
 })
 
