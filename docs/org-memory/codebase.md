@@ -836,3 +836,29 @@ metadata surface, where the same number is hardcoded four more times and is 2.2x
   value, grep the literal across the repo, not just the routes that render it.
 - `app/opengraph-image.tsx` is `runtime = 'edge'`, so it cannot cheaply reach the snapshot — a fix
   must say how it gets the number or drop the figure, not add a per-render query.
+
+## 2026-08-04 — Adding a live count to `opengraph-image` silently makes it dynamic
+
+PR #117 fixed the hardcoded `17,000+` counts (S90) by routing every surface through a new
+`lib/live-counts.ts`. Correct fix, one unintended consequence: `app/opengraph-image.tsx` was a
+build-time static asset, and adding `await getCatalogCounts()` at `:12` flipped it to fully dynamic.
+
+- **The rule, from the Next docs in this repo** (`node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/01-metadata/opengraph-image.md:91,93`):
+  generated images are "statically optimized (generated at build time and cached) **unless they use
+  Request-time APIs or uncached data**". An uncached fetch is uncached data. There is no warning and
+  no build error — the route just stops being static.
+- **Measured in prod 2026-08-04**: `/opengraph-image` returns `x-vercel-cache: MISS`, `age: 0`,
+  `cache-control: public, max-age=0, must-revalidate` on 3/3 requests. This URL is the `og:image` of
+  every page, so every crawler and every Slack/Discord/X/LinkedIn unfurl costs one `home_stats` RPC
+  plus a satori PNG render on the edge. Filed as S91.
+- **The general shape**: `lib/live-counts.ts` is now imported by 8 routes. Six of them export a
+  `revalidate` (`/faq:17`, `/best:45`, `/llms.txt:4`, `/llms-full.txt:7`) or are page-cached; two do
+  not. When a shared data helper lands, the caching question is per-CALL-SITE — the helper cannot
+  answer it, and a route that had no data fetch before has no `revalidate` to inherit.
+- **Corollary for reviews**: "does this add a per-request DB query?" cannot be answered by reading the
+  diff of the helper. It requires checking each consumer's route segment config. S90's row carried an
+  explicit "ZERO per-request DB queries" cost note and it still shipped this way.
+- **Partial-sweep hazard**: the same file still renders a hardcoded `'548 CVEs'` at `:55`, in the same
+  tile row whose two neighbours #117 made live. Prod that day: 364 open / 27,441 fixed CVEs — 548
+  matches neither. Filed as S92. When replacing hardcoded stats, enumerate every literal in the file,
+  not the ones the ticket named.
