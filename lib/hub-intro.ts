@@ -158,6 +158,45 @@ export function buildHubIntro({
 }
 
 /**
+ * Intro copy for /servers, the whole-catalog listing.
+ *
+ * Separate from `buildHubIntro` because it takes NO aggregates: that helper's
+ * scored50/scored70 counts are `count: 'exact'`, which is only affordable
+ * because a single category is small. Across the whole ~36k-row table it is the
+ * query shape that blew anon's 3s statement timeout in S20/S28. Everything here
+ * comes from the home_stats snapshot and the first page of results, both of
+ * which /servers has already fetched — so the prose costs no extra round trip.
+ *
+ * Returns [] when there is no catalog total worth quoting, so the caller can
+ * skip the block rather than print a sentence with a hole in it.
+ */
+export function buildCatalogIntro({
+  total,
+  leader,
+}: {
+  total: number
+  leader?: { name: string; score: number } | null
+}): string[] {
+  if (total <= 0) return []
+
+  const paragraphs = [
+    `MCPpedia tracks ${total.toLocaleString()} Model Context Protocol servers and rescores ` +
+      `every one of them daily. The catalog is the whole ecosystem, not a curated shortlist: official ` +
+      `vendor servers, community projects, and the long tail of registry entries that were published ` +
+      `once and never touched again. Knowing that a server exists and is unmaintained is worth as much ` +
+      `as knowing a good one exists, so both are listed and both are scored.`,
+  ]
+
+  paragraphs.push(
+    leader?.score
+      ? `${leader.name} currently leads at ${leader.score}/100. ${SCORE_EXPLAINER}`
+      : SCORE_EXPLAINER,
+  )
+
+  return paragraphs
+}
+
+/**
  * A verdict paragraph for /compare — answer-first, because that is the shape an
  * answer engine extracts. Says which one to pick and why in the first sentence.
  */

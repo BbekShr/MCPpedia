@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildHubIntro, buildCompareVerdict } from '../hub-intro'
+import { buildHubIntro, buildCompareVerdict, buildCatalogIntro } from '../hub-intro'
 
 const AGG = { total: 2313, scored50: 559, scored70: 181, official: 40, withCves: 2 }
 const LEADERS = [
@@ -132,5 +132,41 @@ describe('buildCompareVerdict', () => {
       { ...base, name: 'Beta', score: 61 },
     )
     expect(v).toContain('weighted security, maintenance and documentation inputs')
+  })
+})
+
+describe('buildCatalogIntro', () => {
+  const intro = buildCatalogIntro({ total: 36614, leader: { name: 'Postgres', score: 91 } })
+
+  it('leads with the live catalog total, formatted', () => {
+    expect(intro[0]).toContain('MCPpedia tracks 36,614 Model Context Protocol servers')
+  })
+
+  it('names the current leader and its score', () => {
+    expect(intro.join(' ')).toContain('Postgres currently leads at 91/100')
+  })
+
+  it('explains what the score is made of', () => {
+    // The one sentence a reader or answer engine needs to trust the ranking.
+    expect(intro.join(' ')).toContain('token efficiency')
+  })
+
+  it('degrades to the score explainer when the page has no leader row', () => {
+    const noLeader = buildCatalogIntro({ total: 36614, leader: null })
+    expect(noLeader).toHaveLength(2)
+    expect(noLeader.join(' ')).not.toContain('currently leads')
+    expect(noLeader.join(' ')).toContain('token efficiency')
+  })
+
+  it('omits a leader with no score rather than printing "0/100"', () => {
+    const unscored = buildCatalogIntro({ total: 36614, leader: { name: 'Nameless', score: 0 } })
+    expect(unscored.join(' ')).not.toContain('Nameless')
+    expect(unscored.join(' ')).not.toContain('0/100')
+  })
+
+  it('returns nothing when the snapshot is unavailable, rather than "0 servers"', () => {
+    // /servers degrades softly on a home_stats miss: catalogTotal falls back to
+    // the live count, which is 0 when the listing query also failed.
+    expect(buildCatalogIntro({ total: 0, leader: null })).toEqual([])
   })
 })

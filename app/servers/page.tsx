@@ -3,13 +3,19 @@ import ServerCard from '@/components/ServerCard'
 import SearchBar from '@/components/SearchBar'
 import FilterBar from '@/components/FilterBar'
 import ScoreFilterPills from '@/components/ScoreFilterPills'
+import HubIntro from '@/components/HubIntro'
 import {
+  CATEGORIES,
+  CATEGORY_LABELS,
   ITEMS_PER_PAGE,
   PUBLIC_CARD_FIELDS,
   PUBLIC_CARD_FIELD_LIST,
   SITE_URL,
   projectFields,
+  type Category,
 } from '@/lib/constants'
+import { formatApproxTotal } from '@/lib/live-counts'
+import { buildCatalogIntro } from '@/lib/hub-intro'
 import {
   first,
   isCacheableQuery,
@@ -50,8 +56,24 @@ export async function generateMetadata({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }): Promise<Metadata> {
   const params = await searchParams
+
+  // The catalog size is the one fact this page owns that no competing directory
+  // can copy, and every directory that outranks us puts its count in the title
+  // ("22,080+ updated daily"). Reads the SAME zero-argument `unstable_cache`
+  // entry the render below awaits, so this costs no extra round trip — and
+  // degrades to the old count-free title rather than blocking the page on it.
+  const total = await getServersCatalogStats()
+    .then(s => s.total_servers ?? null)
+    .catch(() => null)
+
+  // Rounded DOWN to the nearest thousand by `formatApproxTotal`, so the claim
+  // stays true between daily snapshots (lib/live-counts.ts explains why).
+  const title = total
+    ? `${formatApproxTotal(total)} MCP Servers, Scored and Updated Daily`
+    : 'Browse MCP Servers'
+
   return {
-    title: 'Browse MCP Servers',
+    title,
     description: 'Search and browse MCP servers scored on security, maintenance, and efficiency. Filter by category, transport, status, and more.',
     alternates: { canonical: `${SITE_URL}/servers` },
     // Deep pages are near-duplicate slices of the same catalog and all
@@ -352,6 +374,21 @@ export default async function ServersPage({
   // shows the shared snapshot total.
   const headerTotal = hasFilters ? totalCount : catalogTotal
 
+  // The unfiltered, unsorted, page-1 view — the only one where `servers[0]` is
+  // genuinely the highest-scoring server in the catalog, and so the only one
+  // where the intro's leader sentence is true. Every other view canonicalizes
+  // here anyway, so it loses nothing by omitting the block.
+  const isDefaultListing = !hasFilters && page === 1 && !first(params.sort)
+
+  // Costs no extra query: both inputs are already on the page.
+  const intro =
+    isDefaultListing && !loadFailed
+      ? buildCatalogIntro({
+          total: catalogTotal,
+          leader: servers[0] ? { name: servers[0].name, score: servers[0].score_total } : null,
+        })
+      : []
+
   // Build full structured-data set on the canonical landing (page 1, no query).
   // Filtered/paginated views canonicalize to /servers, so emitting schema there
   // would just duplicate signals.
@@ -384,6 +421,18 @@ export default async function ServersPage({
   return (
     <div className="max-w-[1200px] mx-auto px-4 py-6">
       {jsonLd && <JsonLdScript data={jsonLd} />}
+
+      {/* This page had NO h1 and no h2 at all — a priority-0.9 page with no
+          structural heading for a crawler to read. The count leads because it
+          is the claim this directory can make and its competitors cannot. */}
+      <h1 className="text-2xl font-semibold text-text-primary mb-2">
+        {catalogTotal > 0
+          ? `${catalogTotal.toLocaleString()} MCP Servers, Scored and Updated Daily`
+          : 'Browse MCP Servers'}
+      </h1>
+
+      <HubIntro paragraphs={intro} updatedAt={new Date()} />
+
       <div className="mb-6">
         <SearchBar
           placeholder={`Search ${catalogTotal.toLocaleString()}+ MCP servers...`}
@@ -410,6 +459,20 @@ export default async function ServersPage({
             }
           </p>
         </div>
+      )}
+
+      {servers.length > 0 && (
+        <h2 className="text-base font-semibold text-text-primary mb-3">
+          {/* Only the default page-1 view is genuinely score-ordered from the
+              top — page 2 and any explicit `sort` are not, and a heading that
+              claims otherwise is just wrong. `isDefaultListing` is the same
+              predicate the intro uses, for the same reason. */}
+          {q
+            ? `Results for "${q}"`
+            : isDefaultListing
+              ? 'Highest-scoring MCP servers'
+              : 'MCP servers'}
+        </h2>
       )}
 
       <div className="space-y-3">
@@ -471,6 +534,40 @@ export default async function ServersPage({
           )}
         </div>
       )}
+
+      {/* Crawl paths. This page exposed 20 of ~36k servers to a crawler and
+          nothing else, so server-page discovery rested almost entirely on the
+          sitemap. These 44 links are built from constants — no query, no cost —
+          and hand the crawler a route into every category and ranking hub.
+          Raising ITEMS_PER_PAGE would be the other lever, but that one is paid
+          for in listing-query time against a 3s statement timeout. */}
+      <nav aria-labelledby="browse-by-category" className="mt-12 pt-8 border-t border-border">
+        <h2 id="browse-by-category" className="text-base font-semibold text-text-primary mb-3">
+          Browse MCP servers by category
+        </h2>
+        <ul className="flex flex-wrap gap-x-4 gap-y-2 mb-6 p-0 list-none">
+          {CATEGORIES.map(c => (
+            <li key={c}>
+              <Link href={`/category/${c}`} className="text-sm text-accent hover:text-accent-hover">
+                {CATEGORY_LABELS[c as Category]} MCP servers
+              </Link>
+            </li>
+          ))}
+        </ul>
+
+        <h2 className="text-base font-semibold text-text-primary mb-3">
+          Best MCP servers by category
+        </h2>
+        <ul className="flex flex-wrap gap-x-4 gap-y-2 p-0 list-none">
+          {CATEGORIES.map(c => (
+            <li key={c}>
+              <Link href={`/best/${c}`} className="text-sm text-accent hover:text-accent-hover">
+                Best {CATEGORY_LABELS[c as Category]}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
     </div>
   )
 }
