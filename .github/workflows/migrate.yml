@@ -55,8 +55,11 @@ jobs:
         run: |
           if [ -z "${SUPABASE_DB_URL:-}" ]; then
             echo "::error::SUPABASE_DB_URL is not set on this repository, so no migration can be applied."
-            echo "::error::Add it with: gh secret set SUPABASE_DB_URL --body 'postgresql://postgres:<password>@db.<ref>.supabase.co:5432/postgres'"
-            echo "::error::Find it in the Supabase dashboard under Project Settings -> Database -> Connection string -> URI (direct connection, port 5432)."
+            echo "::error::Use the SESSION POOLER string, not the direct connection: Supabase dashboard -> Project Settings -> Database -> Connection string -> Session pooler."
+            echo "::error::  postgresql://postgres.<ref>:<password>@aws-<n>-<region>.pooler.supabase.com:5432/postgres"
+            echo "::error::The direct host db.<ref>.supabase.co is IPv6-only and GitHub Actions runners are IPv4-only, so it cannot be reached from here."
+            echo "::error::Port 5432 (session mode), NOT 6543 (transaction mode) — migrations need session-level state that the transaction pooler does not keep."
+            echo "::error::Then: gh secret set SUPABASE_DB_URL --body '<that string>'"
             exit 1
           fi
         env:
@@ -91,8 +94,11 @@ jobs:
         run: |
           if [ -z "${SUPABASE_DB_URL:-}" ]; then
             echo "::error::SUPABASE_DB_URL is not set on this repository, so no migration can be applied."
-            echo "::error::Add it with: gh secret set SUPABASE_DB_URL --body 'postgresql://postgres:<password>@db.<ref>.supabase.co:5432/postgres'"
-            echo "::error::Find it in the Supabase dashboard under Project Settings -> Database -> Connection string -> URI (direct connection, port 5432)."
+            echo "::error::Use the SESSION POOLER string, not the direct connection: Supabase dashboard -> Project Settings -> Database -> Connection string -> Session pooler."
+            echo "::error::  postgresql://postgres.<ref>:<password>@aws-<n>-<region>.pooler.supabase.com:5432/postgres"
+            echo "::error::The direct host db.<ref>.supabase.co is IPv6-only and GitHub Actions runners are IPv4-only, so it cannot be reached from here."
+            echo "::error::Port 5432 (session mode), NOT 6543 (transaction mode) — migrations need session-level state that the transaction pooler does not keep."
+            echo "::error::Then: gh secret set SUPABASE_DB_URL --body '<that string>'"
             exit 1
           fi
         env:
