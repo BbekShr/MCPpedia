@@ -389,6 +389,12 @@ function formatTransports(transport: string | (string | null)[] | null | undefin
 function primaryCategoryLabel(categories: string[] | null | undefined): string | null {
   const first = categories?.[0]
   if (!first) return null
+  // `other` is the catch-all bucket, and 4,604 indexable servers sit in it —
+  // more than any real category. "Other MCP Server for Claude & Cursor" is worse
+  // than saying nothing: it wastes the most valuable characters in the title on
+  // a word that describes no use case and matches no query. Treated as absent so
+  // those titles degrade to the generic form.
+  if (first === 'other') return null
   return CATEGORY_LABELS[first as Category] ?? null
 }
 
