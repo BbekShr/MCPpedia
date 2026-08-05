@@ -56,6 +56,14 @@ describe('buildServerTitle', () => {
     expect(title).toBe('Filesystem MCP Server for Claude & Cursor | MCPpedia')
   })
 
+  it('never says "Other MCP Server" — the catch-all category is not a keyword', () => {
+    // 4,604 indexable servers are categorised `other`, more than any real
+    // category. Spending title characters on it describes no use case.
+    const title = buildServerTitle({ name: 'MCP HN', categories: ['other'] })
+    expect(title).not.toContain('Other')
+    expect(title).toBe('MCP HN — MCP Server for Claude & Cursor | MCPpedia')
+  })
+
   it('tolerates a missing category', () => {
     expect(buildServerTitle({ name: 'Weather' })).toContain('MCP Server')
   })
