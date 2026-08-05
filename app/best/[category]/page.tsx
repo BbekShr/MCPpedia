@@ -54,7 +54,7 @@ export async function generateMetadata({
   const description = CATEGORY_DESCRIPTIONS[category as Category]
 
   return {
-    title: `Best ${label} MCP Servers — MCPpedia`,
+    title: { absolute: `Best ${label} MCP Servers — MCPpedia` },
     description,
     openGraph: {
       title: `Best ${label} MCP Servers`,

@@ -11,7 +11,7 @@ import BadgePreview from '@/components/BadgePreview'
 export const revalidate = 86400
 
 export const metadata: Metadata = {
-  title: `MCPpedia Security Badges — Show your MCP server's score`,
+  title: { absolute: `MCPpedia Security Badges — Show your MCP server's score` },
   description: 'Add MCPpedia security badges to your GitHub README. Show your MCP server\'s overall score and security grade, backed by daily CVE scanning.',
   openGraph: {
     title: 'MCPpedia Security Badges',

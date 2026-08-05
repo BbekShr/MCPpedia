@@ -7,7 +7,7 @@ import type { Category } from '@/lib/constants'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Best MCP Servers by Category — MCPpedia',
+  title: { absolute: 'Best MCP Servers by Category — MCPpedia' },
   description: 'Find the best MCP servers for every use case — each ranked by MCPpedia\'s security score, maintenance, and efficiency. Backed by daily CVE scanning.',
   openGraph: {
     title: 'Best MCP Servers by Category — MCPpedia',

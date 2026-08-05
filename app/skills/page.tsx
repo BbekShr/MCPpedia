@@ -16,7 +16,7 @@ import SkillsBrowser from '@/components/SkillsBrowser'
 import HubIntro from '@/components/HubIntro'
 
 export const metadata: Metadata = {
-  title: `Claude Code Skills Directory — ${SITE_NAME}`,
+  title: { absolute: `Claude Code Skills Directory — ${SITE_NAME}` },
   description:
     'Browse curated, high-quality Claude Code skills and plugins. Official Anthropic skills, Superpowers, UI UX Pro Max, and the best of the community — all in one place.',
   openGraph: {

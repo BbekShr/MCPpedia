@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Edit server — MCPpedia',
+  title: { absolute: 'Edit server — MCPpedia' },
   robots: { index: false, follow: false },
 }
 

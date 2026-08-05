@@ -3,7 +3,7 @@ import BlinkLogo from '@/components/BlinkLogo'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Page not found — MCPpedia',
+  title: { absolute: 'Page not found — MCPpedia' },
   robots: { index: false, follow: false },
 }
 
