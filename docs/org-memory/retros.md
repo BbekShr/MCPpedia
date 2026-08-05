@@ -341,3 +341,18 @@ The unplanned find was the better one: chasing S8's prod evidence meant reading 
 which is the only reason anyone noticed every page advertises 17,000 servers for a 36,614-row
 catalog (S90). Verifying against the real artifact rather than the code finds things the code review
 cannot.
+
+## 2026-08-04 — cycle b (S90 → done in <1h; S91/S92 filed)
+
+Friction, and it is the same friction as cycle a one level down: **S90 was stale within the hour.**
+It was filed against `4be7510` and fixed by PR #117 four commits later, while the filing PR was still
+open. Parallel sessions are shipping to the same `main`, so "re-verify the item still applies" is not
+a formality at the start of a cycle — it is the highest-value step in it, and phase 1 already says
+so. The cost here was low only because re-verification was one grep.
+
+What worked: re-verifying against the DEPLOYED artifact rather than the source. Reading
+`app/opengraph-image.tsx` shows a correct fix. Curling `/opengraph-image` three times shows
+`x-vercel-cache: MISS` on all three, which is what turned "S90 is done" into two filed regressions
+(S91, S92) that no amount of diff-reading would have surfaced. Both cycles today found their real
+finding in prod, not in the repo. That is worth generalising: the org's gates all run against source,
+and the last two genuine defects were only visible in a response header and a served HTML document.
