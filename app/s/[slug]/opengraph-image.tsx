@@ -4,57 +4,60 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // Runs on Node: createAdminClient uses @supabase/supabase-js which is not
 // designed for edge. Sibling blog OG image uses nodejs runtime for the same reason.
 export const runtime = 'nodejs'
-export const revalidate = false // static; OG previews rarely change meaningfully
+export const revalidate = 604800 // 7 days — matches app/s/[slug]/page.tsx
 export const alt = 'MCPpedia Server Score'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
+// Load-bearing despite being empty. Next only treats a metadata-image route as
+// SSG/ISR — making the `revalidate` export above real instead of inert — when
+// THIS module exports generateStaticParams; the sibling page.tsx's does not
+// apply. It returns [] on purpose: prerendering any of ~39k slug images would
+// run satori + a Supabase query per slug on every deploy. dynamicParams stays
+// true, so each slug renders on first request and ISR holds it for `revalidate`.
+export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
+  return []
+}
+
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
 
-  let name = slug
-  let tagline = ''
-  let score = 0
-  let scoreSecurity = 0
-  let scoreMaintenance = 0
-  let scoreEfficiency = 0
-  let scoreDocs = 0
-  let scoreCompat = 0
-  let toolCount = 0
-  let transport: string[] = []
-  let license = ''
-  let cveCount = 0
-  let hasAuth = false
-  let stars = 0
-  let grade = 'F'
-
-  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const supabase = createAdminClient('og-image')
-    const { data: server } = await supabase
-      .from('servers')
-      .select('name, tagline, score_total, score_security, score_maintenance, score_efficiency, score_documentation, score_compatibility, tool_count, transport, license, cve_count, has_authentication, health_status, github_stars')
-      .eq('slug', slug)
-      .single()
-
-    if (server) {
-      name = server.name
-      tagline = server.tagline || ''
-      score = server.score_total || 0
-      scoreSecurity = server.score_security || 0
-      scoreMaintenance = server.score_maintenance || 0
-      scoreEfficiency = server.score_efficiency || 0
-      scoreDocs = server.score_documentation || 0
-      scoreCompat = server.score_compatibility || 0
-      toolCount = (server.tool_count as number) ?? 0
-      transport = server.transport || []
-      license = server.license || ''
-      cveCount = server.cve_count || 0
-      hasAuth = server.has_authentication || false
-      stars = server.github_stars || 0
-    }
+  // No env → can't look the server up; a cheap 404 beats fabricating a
+  // score-0/grade-F card. Unreachable in prod (Vercel always has env); at build
+  // this function never runs because generateStaticParams returns [].
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return new Response('Not Found', { status: 404 })
   }
 
-  grade = score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 40 ? 'C' : score >= 20 ? 'D' : 'F'
+  const supabase = createAdminClient('og-image')
+  const { data: server, error } = await supabase
+    .from('servers')
+    .select('name, tagline, score_total, score_security, score_maintenance, score_efficiency, score_documentation, score_compatibility, tool_count, transport, license, cve_count, has_authentication, health_status, github_stars')
+    .eq('slug', slug)
+    .maybeSingle()
+
+  // Throw on DB error: a transient failure must 500 (not cached) rather than
+  // ISR-pin a degraded card for 7 days. maybeSingle separates "row absent"
+  // (null data, no error) from "query failed" — .single() conflated them.
+  if (error) throw new Error(`og-image: servers query failed for ${slug}: ${error.message}`)
+  if (!server) return new Response('Not Found', { status: 404 })
+
+  const name = server.name
+  const tagline = server.tagline || ''
+  const score = server.score_total || 0
+  const scoreSecurity = server.score_security || 0
+  const scoreMaintenance = server.score_maintenance || 0
+  const scoreEfficiency = server.score_efficiency || 0
+  const scoreDocs = server.score_documentation || 0
+  const scoreCompat = server.score_compatibility || 0
+  const toolCount = (server.tool_count as number) ?? 0
+  const transport: string[] = server.transport || []
+  const license = server.license || ''
+  const cveCount = server.cve_count || 0
+  const hasAuth = server.has_authentication || false
+  const stars = server.github_stars || 0
+
+  const grade = score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 40 ? 'C' : score >= 20 ? 'D' : 'F'
   const gradeColor = score >= 80 ? '#1a7f37' : score >= 60 ? '#0969da' : score >= 40 ? '#9a6700' : '#cf222e'
 
   const scoreRows = [
@@ -197,6 +200,11 @@ export default async function Image({ params }: { params: Promise<{ slug: string
         </div>
       </div>
     ),
-    { ...size }
+    {
+      ...size,
+      headers: {
+        'Cache-Control': 'public, max-age=3600, s-maxage=604800, stale-while-revalidate=604800',
+      },
+    }
   )
 }
