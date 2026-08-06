@@ -923,3 +923,51 @@ label needs the caller's guard to match the helper's fallback rule exactly.
 **Env-less builds give a free visual gate for OG routes**: `.next/server/app/opengraph-image.body`
 is a readable PNG. The fallback copy renders offline with no server and no network, so the
 absent-data path — normally the hardest to see — is the one that is trivially checkable.
+
+## 2026-08-05 — Metadata image routes: ISR requires a module-own generateStaticParams (S93, cycle 2026-08-05-a)
+
+S93 made `/s/[slug]/opengraph-image` (39k slugs, service-role query + satori render per request) and
+`/blog/[slug]/opengraph-image` real ISR routes. The mechanism facts, all verified against the Next
+source in this repo:
+
+- **A `revalidate` export alone is INERT on a dynamic app route.** Next only marks a route SSG/ISR
+  when the route module itself exports `generateStaticParams` — an empty `[]` return qualifies
+  (truthy empty array → `prerenderedRoutes = []` → `isSSG`, `next/dist/build/static-paths/app.js:723-725`,
+  `build/index.js:1350-1354`). A sibling `page.tsx`'s `generateStaticParams` NEVER applies to the
+  image route (`build/segment-config/app/app-segments.js:93-121`). Edge runtime force-disables SSG
+  entirely (`build/index.js:1333-1337`). `generateStaticParams(){ return [] }` is therefore
+  load-bearing, not decorative: ISR template, zero build renders, on-demand children.
+- **The metadata route loader re-exports every named export except `default`, `generateSitemaps`,
+  `dynamicParams`** (`next-metadata-route-loader.js:40-45`) — so `revalidate`/`generateStaticParams`
+  on an og-image file are first-class, an exported `dynamicParams` is silently dropped, and adding
+  `generateImageMetadata` alongside a userland `generateStaticParams` is an export collision
+  (`:174-189`). Build typegen never checks metadata route files (`next-types-plugin/index.js:312`
+  matches only `(page|route).*`), so `tsc` validates none of this — only the build artifacts do.
+- **`ImageResponse` hardcodes `cache-control: public, max-age=0, must-revalidate`, but
+  `options.headers` is applied after and wins** (`next/dist/server/og/image-response.js:36-46`), and
+  Next's revalidate-derived header applies only when the handler set none
+  (`build/templates/app-route.js:316`). Every cacheable OG image must pass `Cache-Control` explicitly.
+- **App-route ISR caches responses of ANY status** — the template stores `status: response.status`
+  with no 200-check (`build/templates/app-route.js:236-249`); only thrown errors escape caching.
+  Consequence pair: throw on transient DB error (never persist a degraded card), and any returned 404
+  is pinned for the full window. Prod-verified the same day: soft-404 `/s/<nonexistent>` pages return
+  200 WITH the `og:image` meta, so crawlers can mint 404 ISR entries for slugs that do not exist yet
+  — which is why `revalidateServer` now purges `/s/{slug}/opengraph-image` too (`lib/revalidate.ts:12`).
+- **Uncaught route-handler errors never reach the client in prod** — rethrown at
+  `route-modules/app-route/module.js:481`, served as static `Internal Server Error` text/plain
+  (`base-server.js:1848`); interpolated error text lands in logs only (still sanitize path params in
+  messages — log-line forgery).
+- **`servers` SELECT RLS is `using (true)` and has never been narrowed** — the sole SELECT policy in
+  all migrations (`20260402000000_initial_schema.sql:298-299`), archived rows included, so
+  service-role reads of `servers` confer zero extra data access.
+- **Updated baselines**: env-less build now 322 static pages / ~14.7s static-gen (61 blog OG PNGs at
+  ~160 ms satori render, ~5 MB output — supersedes the 259-page S51 figure); test suite 411 tests /
+  31 files (supersedes 221/16 from S48). The build table prints the ISR template as
+  `● /s/-/opengraph-image` — a literal `-` placeholder, NOT a concrete prerender; count
+  `prerender-manifest.json` `.routes` only. `dynamicRoutes` entries carry `fallbackRevalidate`/
+  `fallbackHeaders` only under PPR — in this repo they are null, so ISR proof for on-demand dynamic
+  routes needs the two-request prod probe, not the manifest.
+- `getAllBlogPosts()`/`getBlogPost()` are synchronous (`lib/blog.ts:32,59`). Watch item (below filing
+  bar): a future generated blog post with an emoji in `title`/`hook` would make the env-less build
+  fetch Google Fonts for the glyph (satori `loadDynamicAsset`) — a network blip becomes a failed
+  deploy; the generate-blog bot should keep those two fields ASCII+em-dash.
