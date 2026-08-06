@@ -923,3 +923,30 @@ label needs the caller's guard to match the helper's fallback rule exactly.
 **Env-less builds give a free visual gate for OG routes**: `.next/server/app/opengraph-image.body`
 is a readable PNG. The fallback copy renders offline with no server and no network, so the
 absent-data path — normally the hardest to see — is the one that is trivially checkable.
+
+## 2026-08-05 — S91/S92 confirmed in prod: the two-request check, and what the fix actually bought
+
+Post-deploy verification of PR #124 (`f1ed6d2`), the first time this org has closed a caching row
+on measured production evidence rather than build artifacts alone.
+
+- **The two-request check works exactly as predicted.** `https://mcppedia.org/opengraph-image?f272bb6fe4169bc4`:
+  request 1 → `x-vercel-cache: PRERENDER`, `age: 0`; request 2 → **`x-vercel-cache: HIT`**. Both carry
+  `cache-control: public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400`. **A
+  single-request check would have read as a failure** — a deploy purges the CDN and each PoP misses
+  once. Any future acceptance criterion phrased as "returns `x-vercel-cache: HIT`" must specify two
+  requests, or it will be reported red when it is green.
+- **Read the Vercel status `description`, never the `state`.** The deploy for this merge reported
+  `state: success` with `description: "Deployment has completed"`. A skipped build ALSO reports
+  `state: success`, with `description: "Canceled by Ignored Build Step"` — the 2026-08-04 outage.
+  The wait loop that gates a post-deploy check must poll the description.
+- **The rendered PNG is the proof the throw did not fire.** The prod card shows `36,000+` /
+  `Servers tracked` and `364` / `Open CVEs` — live figures, not the `Thousands` / `OSV.dev`
+  fallback. That single observation confirms three things at once: the build-time `home_stats` read
+  succeeded, the new `failed`-flag throw stayed unreached, and S92's tile is sourced from the
+  snapshot. Downloading and viewing the OG PNG is a cheap, high-information prod check.
+- **What the fix bought, measured**: from unbounded per-request (`MISS` 3/3, one `home_stats` RPC +
+  one satori render per unfurl) to ~1 render/day globally plus a CDN-served `HIT`. Prod PNG is
+  85,222 bytes — bandwidth is unchanged by this fix; only compute and DB moved. The
+  `linear-gradient` background is the likely reason this card is ~1.8x the per-slug card's 47,946 B
+  (PNG encodes gradients poorly); a flat background would plausibly cut it ~65%, on a payload every
+  unfurl pays forever. Not filed — noting it here as a cheap win if anyone touches this file.

@@ -385,3 +385,16 @@ pattern to reuse for any caching or route-config change.
 The cycle also produced its own follow-on: the perf lens quantified `/s/[slug]/opengraph-image` as
 the same defect ~39,409x over, on the service-role client. Filed as S93, not fixed here — finding
 and fixing stay in separate diffs.
+
+## 2026-08-05 — cycle c closeout (S91/S92 verified in prod)
+
+No friction. The cycle closed the way the previous two suggested it should: the acceptance criteria
+were written to be checkable against production, the check was specified before the code was
+written (including the "request 1 is expected to miss" caveat that would otherwise have read as a
+failure), and closing the rows took one command rather than an investigation.
+
+Worth naming as the pattern that made all three of today's cycles work: **verify against the
+deployed artifact, not the source.** Cycle a found a self-contradicting HTML document, cycle b found
+a response header, cycle c confirmed a fix by downloading and looking at a PNG. Every gate this org
+runs — typecheck, lint, test, build — reads source. All three genuine findings today were invisible
+to every one of them.
