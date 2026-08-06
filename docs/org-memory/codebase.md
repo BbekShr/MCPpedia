@@ -863,6 +863,67 @@ build-time static asset, and adding `await getCatalogCounts()` at `:12` flipped 
   matches neither. Filed as S92. When replacing hardcoded stats, enumerate every literal in the file,
   not the ones the ticket named.
 
+## 2026-08-05 — OG image caching: prerendering is NOT enough, and the header is load-bearing
+
+Fixing S91 established the rule for every metadata image route in this repo. Two levers are
+required and neither is sufficient alone.
+
+- **`ImageResponse` hardcodes `public, max-age=0, must-revalidate` as its production default**
+  (`node_modules/next/dist/server/og/image-response.js:39`), and `exportAppRoute` copies the
+  handler's own response headers verbatim into `.meta` / `initialHeaders`
+  (`node_modules/next/dist/export/routes/app-route.js:101-120`). **Proof that prerendering alone
+  does nothing for the CDN**: `/apple-icon` in prod is a fully prerendered metadata route
+  (`initialRevalidateSeconds: false`) and still returns `x-vercel-cache: PRERENDER, age: 0` on
+  every single request. Prerendering removes the DB call and the satori render; **only an
+  explicit `s-maxage` removes the origin touch.** Never treat the header as redundant with
+  `revalidate` — that reasoning was proposed in this cycle and refuted by measurement.
+- **`export const revalidate` is inert under `runtime = 'edge'`, silently**
+  (`node_modules/next/dist/docs/01-app/02-guides/caching-without-cache-components.md:186`). The
+  only edge/segment-config conflict Next warns about at build time is `dynamic = 'force-static'`
+  (`node_modules/next/dist/build/utils.js:664-666`), so an edge route carrying a `revalidate`
+  passes typecheck, lint, test AND build while changing nothing.
+- **The four pre-deploy discriminators** — the only local proof a caching change actually landed:
+  (a) `.next/server/middleware-manifest.json` → `functions` no longer lists the route (edge
+  routes appear there); (b) `.next/server/app/<route>.body` + `.meta` both exist (the prerendered
+  route-handler signature); (c) the `.meta` records the exact `cache-control` prod will serve;
+  (d) `.next/prerender-manifest.json` → `routes[...].initialRevalidateSeconds`. For a DYNAMIC
+  route the test is the pair "absent from `dynamicRoutes` + present in
+  `functions-config-manifest.json`" = bare lambda, not ISR.
+- **Post-deploy check must use TWO requests.** Request 1 is expected to be `PRERENDER`/`MISS` —
+  a deploy purges the CDN and each PoP misses once. Only request 2 proves `HIT`/`age > 0`. A
+  single-request check reads as a false failure.
+- **An OG image's `?<hash>` is a content hash of the SOURCE MODULE, not the rendered PNG**
+  (`node_modules/next/dist/build/webpack/loaders/next-metadata-image-loader.js:59,63`). So a bad
+  render lands at the identical URL third-party unfurlers already cached — no cache-busting
+  signal, and `lib/revalidate.ts` only calls `revalidatePath` with the default `'page'` type,
+  which does not emit this entry's tags. Recovery is a redeploy. **This is why the error contract
+  matters more on an OG route than anywhere else.**
+- **The error contract must invert before caching — second known shape.** The S60 rule was about
+  `unstable_cache`; segment-level ISR on a metadata image route is the same mechanic (Next
+  persists only SUCCESSFUL responses). `getCatalogCounts` swallows failures to `null`, so a
+  failed read renders a successful 200 of fallback copy that ISR then pins. The fix is a `failed`
+  flag plus a `throw` at the one call site that can afford it — **not** a throw inside the
+  fetcher, which has 7 other callers that must keep degrading.
+- **A `throw` in an ISR'd route is safe in the env-less CI build ONLY** because
+  `getCatalogCounts`'s no-env short-circuit returns `failed: false` BEFORE issuing any RPC
+  (the S29 ordering rule). Flipping that `false` to `true` would fail `npm run build` in CI.
+  Verified empirically this cycle: BUILD_EXIT=0, 262/262 pages, route prerendered `○`.
+- **`home_stats()` is a one-row snapshot read**, not an aggregate scan, since
+  `supabase/migrations/20260430160000_home_stats_snapshot_cache.sql`. The "`home_stats` can hit
+  57014 during `next build`" hazard applies to `refresh_home_stats_cache()`, not to readers —
+  the `dynamic = 'force-dynamic'` comments at `app/page.tsx:28-32` and `app/security/page.tsx:10-13`
+  are arguing from a stale premise. Seven build-time callers now exist without incident.
+
+**Predicate-drift trap worth naming generally:** a shared fallback constant used as BOTH a value
+and a branch sentinel. `formatExactCount(n, fallback)` falls back at `n <= 0` while its caller
+guarded on `=== null`; they disagreed at exactly one input, and typecheck cannot see it because
+both branches have the same type. Any `format*(x, fallback)` helper whose caller also picks a
+label needs the caller's guard to match the helper's fallback rule exactly.
+
+**Env-less builds give a free visual gate for OG routes**: `.next/server/app/opengraph-image.body`
+is a readable PNG. The fallback copy renders offline with no server and no network, so the
+absent-data path — normally the hardest to see — is the one that is trivially checkable.
+
 ## 2026-08-05 — Metadata image routes: ISR requires a module-own generateStaticParams (S93, cycle 2026-08-05-a)
 
 S93 made `/s/[slug]/opengraph-image` (39k slugs, service-role query + satori render per request) and
