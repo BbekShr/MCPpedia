@@ -356,3 +356,32 @@ What worked: re-verifying against the DEPLOYED artifact rather than the source. 
 (S91, S92) that no amount of diff-reading would have surfaced. Both cycles today found their real
 finding in prod, not in the repo. That is worth generalising: the org's gates all run against source,
 and the last two genuine defects were only visible in a response header and a served HTML document.
+
+## 2026-08-05 — cycle c (S91/S92 built and gated; S93 filed)
+
+First full build cycle of the run, and the review board earned its keep twice.
+
+Friction: **I proposed a fix that would have partly undone the change, and only measurement
+caught it.** Reasoning from the regression lens's staleness finding, I decided to lower `s-maxage`
+below the ISR window. The performance lens then proved against prod that `/apple-icon` — fully
+prerendered, no explicit header — still serves `age: 0` on every request, because `ImageResponse`
+hardcodes `max-age=0, must-revalidate`. The header is the load-bearing half, not the redundant
+one. Two lenses disagreeing is not noise; the one holding a measurement wins.
+
+I also talked myself into a bad mitigation before that: shortening `revalidate` from 24h to 1h to
+limit degraded-card exposure. That trades nothing for nothing — it cuts the duration of a bad
+window but multiplies the number of regenerations that can fail, leaving expected staleness
+identical. The correct fix was the org's own recorded rule (invert the error contract), which both
+lenses cited and I initially dismissed on a false premise — I assumed a throw would break the
+env-less CI build, when the no-env short-circuit returns before any RPC and makes it unreachable.
+qa-verifier then confirmed that empirically rather than by re-reading the code.
+
+What worked: the artifact-level QA gate. This change is in a class where all four standard gates
+stay green whether or not the fix works — a `revalidate` export under `runtime = 'edge'` is a
+silent no-op. Specifying the four build-artifact discriminators UP FRONT, with their known values
+on `main`, meant "did this actually land?" was answered by observation, not inference. That is the
+pattern to reuse for any caching or route-config change.
+
+The cycle also produced its own follow-on: the perf lens quantified `/s/[slug]/opengraph-image` as
+the same defect ~39,409x over, on the service-role client. Filed as S93, not fixed here — finding
+and fixing stay in separate diffs.
