@@ -39,7 +39,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   // Throw on DB error: a transient failure must 500 (not cached) rather than
   // ISR-pin a degraded card for 7 days. maybeSingle separates "row absent"
   // (null data, no error) from "query failed" — .single() conflated them.
-  if (error) throw new Error(`og-image: servers query failed for ${slug}: ${error.message}`)
+  if (error) throw new Error(`og-image: servers query failed for ${encodeURIComponent(slug).slice(0, 100)}: ${error.message}`)
   if (!server) return new Response('Not Found', { status: 404 })
 
   const name = server.name
