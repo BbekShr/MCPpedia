@@ -54,6 +54,100 @@ async function fetchAllServers() {
   return servers
 }
 
+// Retention for the `server_changes` audit log. It is append-only (the
+// servers_audit trigger logs every audited-field write) and by 2026-08 had
+// grown to 169k rows / 39 MB against the 500 MB free-plan disk cap.
+//
+// Scope, decided by the maintainer 2026-08-08:
+//   - Only servers with audit activity NEWER than the cutoff are pruned. The
+//     trigger fires solely on metadata edits, so a quiet server's entire
+//     history can be older than the cutoff — an unconditional age prune would
+//     blank its /s/[slug]/history page permanently. Churning servers are what
+//     actually grow the table, and for them the history page still shows the
+//     retained window.
+//   - `__deleted__` tombstones are never pruned: they carry the full-row
+//     snapshot of hard-deleted servers, the only surviving record of them
+//     (see 20260416010000_server_changes_audit.sql — "audit rows must survive
+//     server deletion").
+//
+// Every step is non-fatal: today's snapshot already succeeded, and a failed
+// or truncated pass simply prunes less and retries tomorrow.
+const CHANGES_RETENTION_DAYS = 90
+
+async function pruneServerChanges() {
+  const cutoff = new Date(Date.now() - CHANGES_RETENTION_DAYS * 86_400_000).toISOString()
+
+  // 1. Which servers still have prunable rows? Keyset-paged on the `id` PK
+  //    (same pattern and rationale as fetchAllServers above).
+  const staleServerIds = new Set<string>()
+  let cursor: string | null = null
+  while (true) {
+    let query = supabase
+      .from('server_changes')
+      .select('id, server_id')
+      .lt('changed_at', cutoff)
+      .neq('field_name', '__deleted__')
+      .order('id', { ascending: true })
+      .limit(1000)
+    if (cursor) query = query.gt('id', cursor)
+    const { data, error } = await query
+    if (error) {
+      console.warn(`[snapshot-metrics] server_changes prune scan failed (non-fatal): ${error.message}`)
+      return
+    }
+    if (!data || data.length === 0) break
+    for (const r of data) if (r.server_id) staleServerIds.add(r.server_id as string)
+    if (data.length < 1000) break
+    cursor = data[data.length - 1].id as string
+  }
+  if (staleServerIds.size === 0) {
+    console.log('[snapshot-metrics] server_changes prune: nothing older than cutoff')
+    return
+  }
+
+  // 2. Of those, which also have activity inside the window? A truncated
+  //    result under-detects activity, which only means under-pruning — rows
+  //    are never deleted for a server this step failed to observe.
+  const activeIds: string[] = []
+  const staleIds = Array.from(staleServerIds)
+  for (let i = 0; i < staleIds.length; i += 100) {
+    const chunk = staleIds.slice(i, i + 100)
+    const { data, error } = await supabase
+      .from('server_changes')
+      .select('server_id')
+      .in('server_id', chunk)
+      .gte('changed_at', cutoff)
+      .limit(1000)
+    if (error) {
+      console.warn(`[snapshot-metrics] server_changes activity check failed (non-fatal): ${error.message}`)
+      return
+    }
+    const seen = new Set((data || []).map(r => r.server_id as string))
+    for (const id of chunk) if (seen.has(id)) activeIds.push(id)
+  }
+
+  // 3. Prune old rows for active servers only.
+  let pruned = 0
+  for (let i = 0; i < activeIds.length; i += 100) {
+    const chunk = activeIds.slice(i, i + 100)
+    const { error, count } = await supabase
+      .from('server_changes')
+      .delete({ count: 'exact' })
+      .lt('changed_at', cutoff)
+      .neq('field_name', '__deleted__')
+      .in('server_id', chunk)
+    if (error) {
+      console.warn(`[snapshot-metrics] server_changes prune delete failed (non-fatal): ${error.message}`)
+      break
+    }
+    pruned += count ?? 0
+  }
+  console.log(
+    `[snapshot-metrics] pruned ${pruned} server_changes rows older than ${CHANGES_RETENTION_DAYS}d ` +
+      `across ${activeIds.length} active servers (${staleServerIds.size - activeIds.length} quiet servers untouched)`,
+  )
+}
+
 async function main() {
   const run = await BotRun.start('snapshot-metrics')
 
@@ -266,6 +360,8 @@ async function main() {
     if (error) throw new Error(`Upsert failed: ${error.message}`)
 
     console.log(`[snapshot-metrics] ${snapshotDate}: ${total} servers, ${openCves || 0} open CVEs, ${serversAddedToday} added today`)
+
+    await pruneServerChanges()
 
     run.addProcessed(total)
     run.addUpdated(1)
