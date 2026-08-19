@@ -45,6 +45,8 @@ const COLUMNS: { title: string; links: { label: string; href: string; external?:
       { label: 'Blog', href: '/blog' },
       { label: 'Changelog', href: `${GITHUB_URL}/releases`, external: true },
       { label: 'Contribute on GitHub', href: GITHUB_URL, external: true },
+      { label: 'Sponsor on GitHub', href: 'https://github.com/sponsors/BbekShr', external: true },
+      { label: 'Buy me a coffee ☕', href: 'https://buymeacoffee.com/BbekShr', external: true },
     ],
   },
 ]

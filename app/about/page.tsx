@@ -132,6 +132,22 @@ export default async function AboutPage() {
           </div>
         </section>
 
+        <section>
+          <h2 className="text-lg font-semibold mb-2">Support MCPpedia</h2>
+          <p className="text-text-muted">
+            MCPpedia is free, has no ads, and runs on donated time. If it saved you from installing a
+            sketchy server, you can help cover hosting and scanning costs:
+          </p>
+          <div className="flex gap-4 mt-3">
+            <a href="https://github.com/sponsors/BbekShr" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover font-medium">
+              Sponsor on GitHub &rarr;
+            </a>
+            <a href="https://buymeacoffee.com/BbekShr" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-hover font-medium">
+              Buy me a coffee &rarr;
+            </a>
+          </div>
+        </section>
+
         <section className="pt-4 border-t border-border">
           <p className="text-text-muted">
             Questions or feedback?{' '}
