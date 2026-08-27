@@ -1,6 +1,5 @@
 import { revalidatePath } from 'next/cache'
-import fs from 'fs'
-import path from 'path'
+import { getComparisonPairs } from '@/lib/comparison-pairs'
 
 // Revalidate a server detail page plus every pre-generated /compare page
 // that includes the slug. Call after any write that changes what a visitor
@@ -10,7 +9,7 @@ export function revalidateServer(slug: string): void {
   // The OG image is its own ISR entry (7d) — purging only the page would leave
   // the social card stale (or a pre-creation 404 pinned).
   revalidatePath(`/s/${slug}/opengraph-image`)
-  for (const pair of loadComparisonPairs()) {
+  for (const pair of getComparisonPairs()) {
     if (pair.slugA === slug || pair.slugB === slug) {
       revalidatePath(`/compare/${pair.slugA}-vs-${pair.slugB}`)
     }
@@ -19,18 +18,4 @@ export function revalidateServer(slug: string): void {
 
 export function revalidateProfile(username: string): void {
   revalidatePath(`/profile/${username}`)
-}
-
-interface ComparisonPair { slugA: string; slugB: string }
-let pairsCache: ComparisonPair[] | null = null
-
-function loadComparisonPairs(): ComparisonPair[] {
-  if (pairsCache) return pairsCache
-  try {
-    const raw = fs.readFileSync(path.join(process.cwd(), 'data', 'comparison-pairs.json'), 'utf-8')
-    pairsCache = JSON.parse(raw).pairs ?? []
-  } catch {
-    pairsCache = []
-  }
-  return pairsCache!
 }

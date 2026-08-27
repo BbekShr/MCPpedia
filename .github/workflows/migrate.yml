@@ -2,13 +2,13 @@ name: Migrate Database
 
 # Applies supabase/migrations/** to production.
 #
-# Deliberately NOT part of the Vercel build. A Vercel build is not a
+# Deliberately NOT part of the app build. A deploy build is not a
 # once-per-merge event: it re-runs on redeploy, on rollback, and can run
 # concurrently, and a build that fails halfway would leave DDL half-applied with
 # no record of it. This workflow is the single serialised writer instead.
 #
-# ORDERING: this runs in parallel with the Vercel production deploy, not before
-# it. For the window between the two, old app code is live against the new
+# ORDERING: this runs in parallel with the Deploy (Cloudflare Workers) job, not
+# before it. For the window between the two, old app code is live against the new
 # schema — so migrations must be expand/contract. Add columns/tables in one PR,
 # ship the code that reads them in the next, drop the old ones in a third. A
 # migration that renames or drops something the currently-deployed code still

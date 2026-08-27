@@ -82,15 +82,22 @@ describe('getClientIp', () => {
     return new Request('https://example.com/', { headers })
   }
 
-  it('prefers x-vercel-forwarded-for (Vercel-signed, not spoofable)', () => {
+  it('prefers cf-connecting-ip (written by the Cloudflare edge, not spoofable)', () => {
     expect(getClientIp(req({
-      'x-vercel-forwarded-for': '1.1.1.1',
+      'cf-connecting-ip': '1.1.1.1',
       'x-forwarded-for': '2.2.2.2',
       'x-real-ip': '3.3.3.3',
     }))).toBe('1.1.1.1')
   })
 
-  it('falls back to x-forwarded-for if x-vercel-forwarded-for missing', () => {
+  it('ignores x-vercel-forwarded-for entirely — off Vercel it is caller-controlled', () => {
+    expect(getClientIp(req({
+      'x-vercel-forwarded-for': '1.1.1.1',
+      'x-forwarded-for': '2.2.2.2',
+    }))).toBe('2.2.2.2')
+  })
+
+  it('falls back to x-forwarded-for if cf-connecting-ip missing', () => {
     expect(getClientIp(req({
       'x-forwarded-for': '2.2.2.2, 10.0.0.1',
       'x-real-ip': '3.3.3.3',

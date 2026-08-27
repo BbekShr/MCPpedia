@@ -2,7 +2,12 @@ import { ImageResponse } from 'next/og'
 import { getAllBlogPosts, getBlogPost } from '@/lib/blog'
 
 export const runtime = 'nodejs'
-export const revalidate = 604800 // 7 days — content is fs-committed; changes ship via deploy anyway
+// Prerender-only: getBlogPost()/getGuide() read the MDX body off disk, and
+// Cloudflare Workers have no filesystem. `dynamicParams = false` (with no
+// `revalidate`) pins this segment to build time, so an unlisted slug 404s from
+// the static shell instead of trying to read content/ inside the Worker. Posts
+// are fs-committed and ship via deploy anyway, so nothing is lost.
+export const dynamicParams = false
 export const alt = 'MCPpedia Blog'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'

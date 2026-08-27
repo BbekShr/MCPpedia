@@ -67,3 +67,8 @@ social-posts-and-outreach.md
 
 # Local analysis scratch scripts (see .blogdata*.tmp.ts) — never part of the app
 *.tmp.ts
+
+# Cloudflare Workers / OpenNext build output
+.open-next/
+.wrangler/
+cloudflare-env.d.ts

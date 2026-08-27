@@ -4,8 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "npm run content:index",
     "build": "next build",
     "start": "next start",
+    "content:index": "node scripts/generate-content-index.mjs",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "cf:typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -16,13 +22,12 @@
     "@supabase/supabase-js": "^2.101.1",
     "@tailwindcss/typography": "^0.5.19",
     "@types/diff": "^7.0.2",
-    "@vercel/analytics": "^2.0.1",
     "clsx": "^2.1.1",
     "diff": "^9.0.0",
     "dotenv": "^17.4.0",
     "framer-motion": "^12.38.0",
     "gray-matter": "^4.0.3",
-    "next": "16.2.2",
+    "next": "16.3.3",
     "next-mdx-remote": "^6.0.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
@@ -35,6 +40,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.3",
     "@tailwindcss/postcss": "^4",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^20",
@@ -42,10 +48,11 @@
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^9",
-    "eslint-config-next": "16.2.2",
+    "eslint-config-next": "16.3.3",
     "jsdom": "^29.1.1",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^4.1.4"
+    "vitest": "^4.1.4",
+    "wrangler": "^4.126.0"
   }
 }

@@ -76,7 +76,12 @@ jobs:
         run: |
           git config user.name "mcppedia-bot"
           git config user.email "bot@mcppedia.org"
-          git add content/blog/
+          # data/blog-index.json is the frontmatter index that request-time
+          # routes (/sitemap.xml, /llms.txt, /blog) read instead of walking
+          # content/ — Cloudflare Workers have no filesystem. Regenerate it in
+          # the same commit so the committed copy never lags the posts.
+          node scripts/generate-content-index.mjs
+          git add content/blog/ data/blog-index.json
           git diff --cached --quiet && echo "No new posts generated" && exit 0
           git commit -m "blog: auto-generate articles [bot]"
           # Rebase-retry: other bot workflows push to main too, so a push can be

@@ -1,0 +1,77 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mcppedia",
+  "main": ".open-next/worker.js",
+
+  // workerd behaviour is pinned to this date. `nodejs_compat` is what makes
+  // node:crypto (app/api/mcp, app/api/revalidate) and node:async_hooks
+  // (lib/mcp/api.ts) resolve; `global_fetch_strictly_public` makes fetch() to
+  // the site's own origin go back out through the edge instead of short-
+  // circuiting inside the Worker, which is what Next's self-referencing
+  // fetches expect. Both are required by @opennextjs/cloudflare.
+  "compatibility_date": "2026-08-25",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+
+  // Static output (_next/static, public/) is served straight off Cloudflare's
+  // asset store — those requests never wake the Worker, which is the same
+  // shape the proxy.ts matcher already assumes.
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+
+  "observability": {
+    "enabled": true
+  },
+
+  // Required by the R2 incremental cache and the D1 tag cache: both call back
+  // into this Worker to run revalidation.
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "mcppedia"
+    }
+  ],
+
+  // ISR/prerender payloads. Every `export const revalidate = N` page in app/
+  // (/s/[slug], /compare/[slugs], /category/*, /best/*, …) stores its rendered
+  // output here; on Vercel this was the built-in ISR store.
+  "r2_buckets": [
+    {
+      "binding": "NEXT_INC_CACHE_R2_BUCKET",
+      "bucket_name": "mcppedia-inc-cache"
+    }
+  ],
+
+  // Time-based revalidation queue. Caps out at 10 DO instances × 5 in-flight
+  // revalidations = 50 concurrent regenerations.
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "NEXT_CACHE_DO_QUEUE",
+        "class_name": "DOQueueHandler"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["DOQueueHandler"]
+    }
+  ],
+
+  // On-demand revalidation (revalidatePath) — lib/revalidate.ts fires this on
+  // approved edits, karma writes and score deltas, and app/api/revalidate
+  // exposes it as a webhook. Without a tag cache those calls are no-ops.
+  //
+  // If revalidation volume outgrows D1 (bursty compute-scores runs are the
+  // likely trigger), swap the override in open-next.config.ts to
+  // `tag-cache/do-sharded-tag-cache`; the binding below becomes unused.
+  "d1_databases": [
+    {
+      "binding": "NEXT_TAG_CACHE_D1",
+      "database_name": "mcppedia-tag-cache",
+      "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+    }
+  ]
+}

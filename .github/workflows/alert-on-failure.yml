@@ -26,6 +26,10 @@ on:
       - Generate Comparison Pairs
       - Newsletter Digest
       - Freshness Probe
+      # A failed production deploy is the highest-severity failure in the fleet:
+      # the site silently keeps serving the previous Worker version, so nothing
+      # looks broken until someone notices the change never shipped.
+      - Deploy (Cloudflare Workers)
     types: [completed]
 
 permissions:

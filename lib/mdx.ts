@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import matter from 'gray-matter'
+import guidesIndex from '@/data/guides-index.json'
 
 const guidesDir = path.join(process.cwd(), 'content', 'guides')
 
@@ -13,29 +14,14 @@ export interface GuideMeta {
   tags: string[]
 }
 
+// Build-time index, not the filesystem — /llms-full.txt and /sitemap.xml call
+// this at request time and Cloudflare Workers have no fs. See lib/blog.ts.
 export function getAllGuides(): GuideMeta[] {
-  if (!fs.existsSync(guidesDir)) return []
-
-  const files = fs.readdirSync(guidesDir).filter(f => f.endsWith('.mdx'))
-
-  return files
-    .map(file => {
-      const slug = file.replace(/\.mdx$/, '')
-      const content = fs.readFileSync(path.join(guidesDir, file), 'utf-8')
-      const { data } = matter(content)
-
-      return {
-        slug,
-        title: data.title || slug,
-        description: data.description || '',
-        author: data.author || 'MCPpedia',
-        date: data.date || '',
-        tags: data.tags || [],
-      }
-    })
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  return guidesIndex as GuideMeta[]
 }
 
+// Reads the guide BODY off disk, so it is build-time only — /guides/[slug] sets
+// `dynamicParams = false` to keep it out of the Worker.
 export function getGuide(slug: string): { meta: GuideMeta; content: string } | null {
   // Prevent path traversal — only allow alphanumeric, hyphens, underscores
   if (!/^[a-zA-Z0-9_-]+$/.test(slug)) return null

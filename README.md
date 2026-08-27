@@ -37,7 +37,7 @@ The encyclopedia for MCP servers. Browse, compare, and evaluate every Model Cont
 - **Security data:** OSV.dev API
 - **Server registry:** registry.modelcontextprotocol.io
 - **AI:** Anthropic Claude (schema extraction, blog generation, description enrichment)
-- **Hosting:** Vercel
+- **Hosting:** Cloudflare Workers (via [@opennextjs/cloudflare](https://opennext.js.org/cloudflare)) — see [docs/CLOUDFLARE.md](docs/CLOUDFLARE.md)
 
 ## Getting Started
 

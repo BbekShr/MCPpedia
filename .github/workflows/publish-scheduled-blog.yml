@@ -58,7 +58,12 @@ jobs:
 
           # Touch the file to update its timestamp and trigger revalidation
           touch "${{ steps.check.outputs.post }}"
-          git add "${{ steps.check.outputs.post }}"
+          # data/blog-index.json is the frontmatter index that request-time
+          # routes (/sitemap.xml, /llms.txt, /blog) read instead of walking
+          # content/ — Cloudflare Workers have no filesystem. Regenerate it in
+          # the same commit so the committed copy never lags the posts.
+          node scripts/generate-content-index.mjs
+          git add "${{ steps.check.outputs.post }}" data/blog-index.json
 
           # Only commit if there are actual changes
           if git diff --staged --quiet; then

@@ -1,8 +1,7 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import fs from 'fs'
-import path from 'path'
 import { SITE_URL } from '@/lib/constants'
+import { getComparisonPairs, type ComparisonPair } from '@/lib/comparison-pairs'
 
 export const metadata: Metadata = {
   title: 'Compare MCP Servers — Side-by-Side Comparisons',
@@ -12,27 +11,8 @@ export const metadata: Metadata = {
   },
 }
 
-interface ComparisonPair {
-  slugA: string
-  slugB: string
-  nameA: string
-  nameB: string
-  category?: string
-}
-
-function loadPairs(): ComparisonPair[] {
-  try {
-    const filePath = path.join(process.cwd(), 'data', 'comparison-pairs.json')
-    const raw = fs.readFileSync(filePath, 'utf-8')
-    const data = JSON.parse(raw)
-    return data.pairs || []
-  } catch {
-    return []
-  }
-}
-
 export default function CompareIndexPage() {
-  const pairs = loadPairs()
+  const pairs = getComparisonPairs()
 
   // Group by category
   const byCategory = new Map<string, ComparisonPair[]>()

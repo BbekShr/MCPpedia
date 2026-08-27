@@ -119,9 +119,10 @@ function etagJson(
 // The hosted /mcp endpoint calls this route over the public internet, so every
 // one of its requests presents the same lambda egress IP and would share a
 // single rate-limit bucket. It forwards the real caller's IP instead, proven
-// internal by a shared secret — Vercel rewrites `x-forwarded-for` on the way
-// in, so an ordinary forwarding header could not survive the hop anyway, and a
-// direct caller cannot forge this one without MCP_INTERNAL_KEY. With the key
+// internal by a shared secret — the Cloudflare edge writes `cf-connecting-ip`
+// itself on the way in, so an ordinary forwarding header could not survive the
+// hop anyway, and a direct caller cannot forge this one without
+// MCP_INTERNAL_KEY. With the key
 // unset (local dev, preview) nothing is trusted and we key on the socket IP.
 function resolveRateLimitIp(request: Request): string {
   const expected = process.env.MCP_INTERNAL_KEY
