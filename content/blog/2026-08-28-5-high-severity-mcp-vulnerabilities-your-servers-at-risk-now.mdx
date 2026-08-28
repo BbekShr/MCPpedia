@@ -1,0 +1,87 @@
+---
+title: "5 High-Severity MCP Vulnerabilities: Your Servers at Risk Now"
+description: "Five critical CVEs affecting Contentful, FAF, Python AI Kit, and JupyterLab MCP servers dropped this week—all allow credential theft or code execution."
+hook: "Five high-severity vulnerabilities hit MCP servers in 72 hours — three enable remote code execution. If you run these tools with untrusted LLM input, patch now or isolate."
+date: "2026-08-28"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+Five high-severity vulnerabilities dropped this week across four MCP servers — all published August 19. If you're running any of these tools with untrusted LLM input, you're exposed now.
+
+---
+
+## The Threat Snapshot
+
+All five advisories are **high severity**. Three allow arbitrary code execution. Two expose credentials. None have patches yet — only updates or isolation strategies. The common thread: **unsafe parameter handling**. Tools accept user/LLM-controlled input and pass it straight into dangerous operations without validation or confinement.
+
+<Callout type="warning">
+If you run these servers in production with Claude, ChatGPT, or any untrusted LLM, patch or isolate them immediately. LLMs will exploit this — not out of malice, but because an LLM sees a parameter and has no concept of trust boundaries.
+</Callout>
+
+---
+
+## Credential Theft: Contentful MCP Server
+
+[Contentful Mcp Server](/s/contentful-mcp-server) exports and imports Contentful spaces. The **`export_space` and `import_space` tools accept LLM-controlled `host` and `proxy` parameters** that get passed straight into the Contentful Management API (CMA) client configuration.
+
+An LLM can set `host` to an attacker-controlled URL. The MCP server then sends every CMA request — complete with your Personal Access Token — to that endpoint. Your credentials are stolen in transit.
+
+**Action:** Disable these tools, or restrict them to local-only input. If you must use them, run Contentful MCP in an isolated environment with credentials that have minimal scope.
+
+---
+
+## Path Traversal: Three Servers, Two Patterns
+
+### 1. File Access in FAF-MCP Servers
+
+[one.faf/faf-mcp](/s/one-faf-faf-mcp) and [one.faf/grok-faf-mcp](/s/one-faf-grok-faf-mcp) both accept a `path` argument in their FAF tools. The servers resolve `~` and `.` segments but **never confine the result to a project directory**. An absolute path or `../` traversal goes straight through.
+
+**one.faf/faf-mcp** (GHSA-j4r7-8ph4-43g3) allows both read and write. **one.faf/grok-faf-mcp** (GHSA-cc2g-gq8c-r332) allows read only. Either way, an LLM can read `/etc/passwd`, SSH keys, environment files, or anything the server process can access.
+
+**Action:** Disable these tools, or run them in a container with a read-only root filesystem and only the `.faf` directory mounted read-write.
+
+### 2. Path Traversal in Python AI Kit
+
+[Python Ai Kit](/s/python-ai-kit) uses Copier, a Python template tool, to generate projects. Copier 9.5.0–9.15.1 has a **trust-prefix bypass**: it checks if a template URL starts with a trusted prefix using raw string matching, but normalizes the URL later when fetching. A template reference like `/trusted/prefix/../../../etc/passwd` bypasses the check but resolves to `/etc/passwd` when retrieved.
+
+An LLM can inject template URLs that bypass your trust rules and run arbitrary tasks.
+
+**Action:** Update Copier to 9.15.2+. If you can't update, disable untrusted template ingestion.
+
+---
+
+## Code Execution: JupyterLab XSS Cascade
+
+Three separate XSS vulnerabilities in JupyterLab affect [Mcp Server Jupyter](/s/mcp-server-jupyter) and [Era5 Mcp Server](/s/era5-mcp-server):
+
+**CVE-2026-73417:** Importing a malicious `overrides.json` settings file runs code in JupyterLab. Because settings import looks benign, users trust it.
+
+**CVE-2026-73415:** Opening a malicious image file in the image viewer and then opening it in a new browser tab triggers XSS that escalates to remote code execution on the server.
+
+**CVE-2026-73416:** The PyPI extension blocklist uses weak package-name canonicalization. An attacker requests `JupyterLab.Git` instead of `jupyterlab-git`, bypasses the block, and installs a backdoored package.
+
+All three assume the LLM (or user) can trigger file operations or imports.
+
+<PullQuote>
+If your LLM can ask JupyterLab to open files or import settings, you're one malicious response away from remote code execution.
+</PullQuote>
+
+**Action:** Patch JupyterLab to 4.6.2 or 4.5.10. Disable untrusted file imports and keep the extension blocklist current. Consider running JupyterLab in a sandbox.
+
+---
+
+## What to Do Right Now
+
+1. **Audit your deployment.** Which servers are you running? Which ones accept untrusted input?
+2. **Isolate or patch.** Update vulnerable servers, or move them to sandboxed environments where credentials and filesystem access are bounded.
+3. **Restrict LLM input.** Use tool allowlists or parameter constraints where your MCP framework supports them.
+4. **Monitor for updates.** These advisories are fresh — maintainers are working on patches.
+
+The MCP ecosystem is young. Security hardening is ongoing. Until then, **never run untrusted MCP servers in production with full system access**.
+
+---
+
+<Callout type="info">
+See your MCPpedia server pages for current version status and published patches. Links above go straight to each affected server's profile.
+</Callout>

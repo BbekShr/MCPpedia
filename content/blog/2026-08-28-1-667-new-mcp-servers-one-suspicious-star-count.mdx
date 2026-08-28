@@ -1,0 +1,73 @@
+---
+title: "1,667 New MCP Servers, One Suspicious Star Count"
+description: "This week's MCP roundup: 35,074 total servers, a JVM runtime worth watching, a metering server that solves billing, and a trending list with a data quality problem."
+hook: "35,074 MCP servers and counting — but when one 'generic client bridge' claims 201,958 GitHub stars, more than browser-use and Scrapling combined, it's time to ask what's actually being measured."
+date: "2026-08-28"
+tags: ["weekly","ecosystem","new-servers"]
+category: "weekly-roundup"
+featuredServers: ["tachyon","io-github-dev55acc-ai-paid-mcp-metering","com-transcriptout-youtube-transcript-and-youtube-search","mcp-server-openai-image","io-github-get-concord-ai-concord-mcp","io-tapeline-tapeline","io-github-boyakh-jpg-boxtier","io-github-flukeatzerocool-infobroker","io-github-lastsearch-hq-lastsearch","io-github-a1-x-tech-mcp-shopify-admin"]
+---
+MCPpedia added **1,667 new servers this week**, pushing the total catalog past **35,074**. That's not a typo — the registry is still in its land-grab phase, and this week's crop ranges from a genuinely interesting Java/Kotlin runtime to a tool that lets you generate a fake basketball receipt. Both exist. Only one of them matters.
+
+<StatGrid>
+<Stat value="35,074" label="Total Servers" detail="Cataloged on MCPpedia" />
+<Stat value="1,667" label="New This Week" detail="Added to the registry" />
+<Stat value="93" label="Top New Score" detail="Tachyon" />
+</StatGrid>
+
+---
+
+## The new arrivals worth your attention
+
+Most weeks, the top of the "new servers" list skews toward thin wrappers around a single API. This week had a few servers that actually earned their scores.
+
+### 1. Tachyon — the runtime nobody else built
+
+[Tachyon](/s/tachyon) landed with a **93 score**, the highest of any new server this week, and it's doing something genuinely underserved: a full MCP runtime for **Java and Kotlin**, with Streamable HTTP, native Netty transports, resumable sessions, and stateless deployment support baked in. Six tools, only 30 GitHub stars so far — the score is ahead of the audience. For a JVM shop trying to stand up an MCP server without duct-taping together a Node process, this is the one to watch.
+
+### 2. Paid MCP Metering — someone has to bill for this eventually
+
+[io.github.dev55acc-ai/paid-mcp-metering](/s/io-github-dev55acc-ai-paid-mcp-metering) scored a **92** with zero stars and four tools, and it's worth flagging on concept alone: free discovery over MCP, but per-call execution settled in **USDC via x402 v2**. The "who pays for tool calls" question has been hanging over the whole ecosystem since day one. This is one of the first servers to actually answer it with real settlement rails instead of a vague "contact us for pricing."
+
+### 3. YouTube Transcript and Search — the boring, useful kind
+
+[com.transcriptout/youtube-transcript-and-search](/s/com-transcriptout-youtube-transcript-and-youtube-search) pulled a **92** with transcripts, search, channels, playlists, and bulk transcript jobs across 14 tools. Zero stars, no hype — just a server that does one unglamorous thing agents actually need and does it with more surface area than the average scraper.
+
+<Callout type="tip">
+The four highest-scoring new servers this week all landed at 91+ with fewer than 300 combined GitHub stars between them. Score and popularity are still two very different signals on MCPpedia — don't sleep on the quiet ones.
+</Callout>
+
+Also worth a mention: [io.github.Get-Concord-AI/concord-mcp](/s/io-github-get-concord-ai-concord-mcp) scored 91 and actually brought an audience with it — **283 stars** for a server that handles cross-harness communication and shared work-state between AI coding agents. As more teams run Claude, Codex, and Cursor side by side on the same repo, "agents need to talk to each other" is becoming its own category, and Concord looks like an early, credible entry.
+
+---
+
+<SectionLabel>Trending This Week</SectionLabel>
+
+## What's actually moving
+
+Star gains tell a different story than new-server scores, and this week's trending list has both a legitimate breakout and a data quality puzzle worth naming out loud.
+
+<ScoreBreakdown>
+<ScoreRow label="GitNexus" points="+212" description="46,129 stars total — client-side, zero-server knowledge graph builder for any GitHub repo" />
+<ScoreRow label="Scrapling" points="+168" description="76,950 stars — adaptive web scraping framework, score of 92" />
+<ScoreRow label="browser-use" points="+135" description="111,574 stars — drives a real Chrome browser to fill forms and book flights" />
+<ScoreRow label="Context7" points="+47" description="61,352 stars — up-to-date library docs for LLMs, score of 97" />
+</ScoreBreakdown>
+
+[GitNexus](/s/gitnexus) is the standout: **+212 stars** this week alone, on a genuinely different pitch — a knowledge graph generator that runs entirely client-side in the browser, no server required, with a built-in GraphRAG agent for code exploration. Drop in a repo or a zip file and get an interactive graph back. It's still early on MCPpedia's own scoring (65), but the star velocity says the market noticed before the score did.
+
+[Scrapling](/s/scrapling) backs that up with substance: **76,950 total stars**, a **92 score**, and 7 tools behind an "adaptive" scraping framework built to handle everything from a single request to a full crawl. That combination — high score, high stars, real tool count — is rare enough this week that it's worth calling out as the safest bet on this list.
+
+<PullQuote>Score and star count agree on almost nothing this week — except when they do, like Scrapling, and then you should pay attention.</PullQuote>
+
+Then there's the part of the trending list that deserves some skepticism instead of applause. **Claude Flow**, **Cli Core**, and **Ruflo** show up as three separate entries with nearly identical star counts — 69,645, 69,642, and 69,642 — and overlapping "agent orchestration swarm" pitches. That's not a coincidence; it reads like the same underlying project fragmented across multiple registry listings. And [Dsh MCP Client](/s/dsh-mcp-client) claims **201,958 stars** for what its tagline describes as a generic "MCP client bridge" — a star count that outsizes even browser-use and Scrapling combined, attached to a project with the thinnest description on the whole list. Numbers that big, on a project that undifferentiated, are worth a second look before anyone treats them as a signal.
+
+<Callout type="warning">
+Not every star count on a trending list reflects the project it's attached to. When a generic-sounding server outranks category leaders by 2x, check the source repo before you trust the number.
+</Callout>
+
+---
+
+## The takeaway
+
+1,667 new servers is a lot of noise to sort through, but the signal is there if you filter for it: Tachyon fills a real gap for JVM developers, paid-mcp-metering is tackling the monetization question head-on, and GitNexus's client-side approach to code intelligence is picking up real momentum. The trending list is also a reminder that in a registry this size, stars are a popularity metric, not a trust metric — verify before you build on top of anything claiming six figures of GitHub love.

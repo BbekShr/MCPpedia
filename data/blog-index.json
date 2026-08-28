@@ -1,5 +1,46 @@
 [
   {
+    "slug": "2026-08-28-1-667-new-mcp-servers-one-suspicious-star-count",
+    "title": "1,667 New MCP Servers, One Suspicious Star Count",
+    "description": "This week's MCP roundup: 35,074 total servers, a JVM runtime worth watching, a metering server that solves billing, and a trending list with a data quality problem.",
+    "hook": "35,074 MCP servers and counting — but when one 'generic client bridge' claims 201,958 GitHub stars, more than browser-use and Scrapling combined, it's time to ask what's actually being measured.",
+    "date": "2026-08-28",
+    "tags": [
+      "weekly",
+      "ecosystem",
+      "new-servers"
+    ],
+    "category": "weekly-roundup",
+    "featuredServers": [
+      "tachyon",
+      "io-github-dev55acc-ai-paid-mcp-metering",
+      "com-transcriptout-youtube-transcript-and-youtube-search",
+      "mcp-server-openai-image",
+      "io-github-get-concord-ai-concord-mcp",
+      "io-tapeline-tapeline",
+      "io-github-boyakh-jpg-boxtier",
+      "io-github-flukeatzerocool-infobroker",
+      "io-github-lastsearch-hq-lastsearch",
+      "io-github-a1-x-tech-mcp-shopify-admin"
+    ],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-08-28-5-high-severity-mcp-vulnerabilities-your-servers-at-risk-now",
+    "title": "5 High-Severity MCP Vulnerabilities: Your Servers at Risk Now",
+    "description": "Five critical CVEs affecting Contentful, FAF, Python AI Kit, and JupyterLab MCP servers dropped this week—all allow credential theft or code execution.",
+    "hook": "Five high-severity vulnerabilities hit MCP servers in 72 hours — three enable remote code execution. If you run these tools with untrusted LLM input, patch now or isolate.",
+    "date": "2026-08-28",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 3
+  },
+  {
     "slug": "2026-08-04-36-614-mcp-servers-171-good-ones-what-the-long-tail",
     "title": "36,614 MCP Servers, 171 Good Ones: What the Long Tail Actually Looks Like",
     "description": "We scored every live MCP server in the catalog. The median is 30/100, 78% land under 50, and the single biggest reason isn't bad code — it's missing metadata. Here are the numbers, with the caveats.",

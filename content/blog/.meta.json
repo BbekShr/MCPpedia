@@ -1,5 +1,5 @@
 {
-  "lastRoundupDate": "2026-06-18",
+  "lastRoundupDate": "2026-08-28",
   "lastSpotlightSlugs": [
     "io-mailtrap-mcp",
     "io-github-3121n-statfin-mcp",
@@ -18,6 +18,16 @@
     "is MCP server safe security risks"
   ],
   "publishedCveIds": [
+    "CVE-2026-53957",
+    "CVE-2026-53951",
+    "GHSA-j4r7-8ph4-43g3",
+    "GHSA-cc2g-gq8c-r332",
+    "CVE-2026-73417",
+    "CVE-2026-73417",
+    "CVE-2026-73415",
+    "CVE-2026-73415",
+    "CVE-2026-73416",
+    "CVE-2026-73416",
     "CVE-2026-55447",
     "CVE-2026-55446",
     "CVE-2026-55255",
