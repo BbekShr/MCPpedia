@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // Runs on Node: createAdminClient uses @supabase/supabase-js which is not
 // designed for edge. Sibling blog OG image uses nodejs runtime for the same reason.
 export const runtime = 'nodejs'
-export const revalidate = 604800 // 7 days — matches app/s/[slug]/page.tsx
+export const revalidate = 2592000 // 30d — matches app/s/[slug]/page.tsx
 export const alt = 'MCPpedia Server Score'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'

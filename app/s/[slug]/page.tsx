@@ -41,7 +41,21 @@ import {
 import type { Server, Changelog, SecurityAdvisory } from '@/lib/types'
 import type { Metadata } from 'next'
 
-export const revalidate = 604800 // 7d; on-demand revalidate triggers on approved edits
+// 30d, not 7d. Every expiry is a cold render: the full PUBLIC_SERVER_FIELDS row
+// (`tools`/`resources`/`prompts` JSONB included), changelogs, advisories and four
+// related cards, for any of ~36k slugs a crawler chooses to revisit. The TTL is a
+// backstop, not the freshness mechanism — lib/revalidate.ts already purges a
+// server on approved edits, karma writes and score deltas — so lengthening it
+// cuts cold renders ~4x without making any real change wait longer.
+export const revalidate = 2592000 // 30d; on-demand revalidate triggers on approved edits
+
+// Explicit projections rather than `select('*')`. Both tables are narrow today,
+// so this is not a byte win now — it is a guard: a heavy column added to either
+// table would otherwise start shipping on every one of ~36k server pages with no
+// code change and nothing to notice it.
+const CHANGELOG_FIELDS = 'id, server_id, version, changes_summary, detected_at, github_release_url'
+const ADVISORY_FIELDS =
+  'id, server_id, cve_id, severity, cvss_score, title, description, affected_versions, fixed_version, source_url, status, published_at, created_at'
 
 function stripHtml(html: string): string {
   return html
@@ -160,19 +174,22 @@ export default async function ServerDetailPage({
   const [{ data: changelogs }, { data: advisoriesData }, { data: similarServers }] = await Promise.all([
     supabase
       .from('changelogs')
-      .select('*')
+      .select(CHANGELOG_FIELDS)
       .eq('server_id', s.id)
       .order('detected_at', { ascending: false })
       .limit(10),
     // Bounded: this was unbounded, so a server with a pathological advisory
     // history dictated the size of its own page response. Newest-first, so the
-    // cap drops the oldest — 100 is far above any real server's count.
+    // cap drops the oldest. 100 was "far above any real server's count", i.e. it
+    // never bound anything; 20 is above what SecurityPanel shows before its
+    // "show more" expander and still covers every server in the catalog today,
+    // while capping the worst case at a fifth of the bytes.
     supabase
       .from('security_advisories')
-      .select('*')
+      .select(ADVISORY_FIELDS)
       .eq('server_id', s.id)
       .order('published_at', { ascending: false })
-      .limit(100),
+      .limit(20),
     supabase
       .from('servers')
       .select(PUBLIC_CARD_FIELDS)
