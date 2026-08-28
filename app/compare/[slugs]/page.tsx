@@ -53,6 +53,27 @@ const COMPARE_SERVER_FIELDS = PUBLIC_SERVER_FIELDS
 
 // ---------- Static Params (pre-generate comparison pages for SEO) ----------
 
+// Whether this exact comparison is one of the curated pairs in
+// data/comparison-pairs.json (the set the sitemap advertises and
+// generateStaticParams prerenders). Order-insensitive: /compare/a-vs-b and
+// /compare/b-vs-a are the same comparison.
+//
+// This gate exists for crawl budget, not for correctness. The route accepts any
+// 2-4 valid slugs, so its URL space is every pair (and triple, and quadruple) of
+// a ~36k-server catalog — effectively unbounded. Every one of those URLs renders
+// COMPARE_SERVER_FIELDS per slug (2-4 of the heaviest projection on the site,
+// `tools` JSONB included) and then holds an ISR entry for `revalidate`. Left
+// open, a crawler walking these mints unbounded cache entries and unbounded
+// egress against a shared 5 GB/month pool. Curated pairs stay fully indexable;
+// everything else is served normally to humans but kept out of the index.
+function isCuratedPair(slugs: string[]): boolean {
+  if (slugs.length !== 2) return false
+  const [a, b] = slugs
+  return getComparisonPairs().some(
+    p => (p.slugA === a && p.slugB === b) || (p.slugA === b && p.slugB === a),
+  )
+}
+
 export async function generateStaticParams() {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return []
@@ -173,6 +194,10 @@ export async function generateMetadata({
       url: `${SITE_URL}/compare/${slugsParam}`,
       type: 'website',
     },
+    // `follow: false` as well as `index: false`: this page links to other
+    // comparisons, so a followable noindex still feeds the crawler the next
+    // unbounded URL. Curated pairs are unaffected and stay indexable.
+    ...(isCuratedPair(slugs) ? {} : { robots: { index: false, follow: false } }),
   }
 }
 
@@ -219,17 +244,13 @@ export default async function ComparePage({
       )
       .slice(0, 6)
   } else {
+    // Deliberately empty. This branch used to emit every sub-pair of an N>=3
+    // comparison as a link, so one arbitrary /compare/a-vs-b-vs-c minted up to
+    // six further comparison URLs, each of which minted more — an expanding
+    // crawl graph over the heaviest query on the site, with an ISR entry per
+    // node. The N==2 branch above links only curated pairs, which are bounded
+    // and already advertised in the sitemap, so it keeps its related links.
     relatedPairs = []
-    for (let i = 0; i < servers.length; i++) {
-      for (let j = i + 1; j < servers.length; j++) {
-        relatedPairs.push({
-          slugA: servers[i].slug,
-          slugB: servers[j].slug,
-          nameA: servers[i].name,
-          nameB: servers[j].name,
-        })
-      }
-    }
   }
 
   const namesJoined = servers.map(s => normalizeServerName(s.name)).join(' vs ')

@@ -398,3 +398,16 @@ were skipped in favor of the four-lens board — that substitution worked, and t
 mattered: the plan-stage decision to defer the `revalidateServer` purge line was overturned by three
 lenses independently proving ISR caches 404s. A plan's "out of scope" call is only as good as its
 model of the cache.
+
+## 2026-08-05 — cycle c closeout (S91/S92 verified in prod)
+
+No friction. The cycle closed the way the previous two suggested it should: the acceptance criteria
+were written to be checkable against production, the check was specified before the code was
+written (including the "request 1 is expected to miss" caveat that would otherwise have read as a
+failure), and closing the rows took one command rather than an investigation.
+
+Worth naming as the pattern that made all three of today's cycles work: **verify against the
+deployed artifact, not the source.** Cycle a found a self-contradicting HTML document, cycle b found
+a response header, cycle c confirmed a fix by downloading and looking at a PNG. Every gate this org
+runs — typecheck, lint, test, build — reads source. All three genuine findings today were invisible
+to every one of them.
