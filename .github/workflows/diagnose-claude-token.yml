@@ -72,6 +72,21 @@ jobs:
             echo "whitespace: none"
           fi
 
+          # 92 chars with no sk-ant- prefix matches several non-Anthropic
+          # credential formats. Identify which, because if this is a live
+          # GitHub PAT it has been handed to a third-party action as a bearer
+          # token on every run since June and needs revoking, not just replacing.
+          case "${TOK}" in
+            github_pat_*) echo "identity: GitHub fine-grained PAT — REVOKE IT" ;;
+            ghp_*|gho_*|ghu_*|ghs_*|ghr_*) echo "identity: GitHub classic token — REVOKE IT" ;;
+            sbp_*)        echo "identity: Supabase access token — revoke it" ;;
+            xox*)         echo "identity: Slack token — revoke it" ;;
+            eyJ*)         echo "identity: a JWT (Supabase anon/service key?) — revoke it" ;;
+            re_*)         echo "identity: Resend API key — revoke it" ;;
+            npm_*)        echo "identity: npm token — revoke it" ;;
+            *)            echo "identity: unrecognized format" ;;
+          esac
+
           if [ "${LEN}" -lt 80 ]; then
             echo "VERDICT: too short to be a complete setup-token credential - truncated paste"
           else
