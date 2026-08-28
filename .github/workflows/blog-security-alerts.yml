@@ -23,54 +23,31 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - run: npm ci
 
-      # 1) Decide whether there's a new security advisory worth publishing.
-      #    This only touches Supabase — no model call — and emits a prompt file
-      #    (job 0) for the Claude Code step below when (and only when) there's an
-      #    alert. Sets job_count + model_0 outputs.
-      - name: Prepare security alert job
-        id: prep
-        run: npx tsx bots/generate-blog.ts --security-only --prepare
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-
-      # 2) Generate the article with the Claude Code action. This bills a Claude
-      #    subscription via CLAUDE_CODE_OAUTH_TOKEN instead of Anthropic API
-      #    credits, so there's no ANTHROPIC_API_KEY here. Generate `claude
-      #    setup-token` locally (Pro/Max) and store the result as the
-      #    CLAUDE_CODE_OAUTH_TOKEN repository secret. Runs only when step 1 found
-      #    something to publish.
-      # @main, not @beta: the beta ref pins Claude Code 1.0.88, which rejects
-      # OAuth tokens minted by current CLI versions (401 invalid bearer token).
-      # main also renamed the allowed_tools/model inputs into claude_args.
-      - name: Generate article with Claude (subscription)
-        if: steps.prep.outputs.job_count == '1'
-        uses: anthropics/claude-code-base-action@main
-        timeout-minutes: 15
-        with:
-          prompt_file: blog-work/prompt-0.txt
-          claude_args: "--allowedTools Write --model ${{ steps.prep.outputs.model_0 }}"
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-
-      # 3) Turn the generated prose back into a proper MDX post and record the
-      #    covered CVEs in .meta.json so tomorrow's run doesn't republish them.
-      - name: Finalize article
-        if: steps.prep.outputs.job_count == '1'
-        run: npx tsx bots/generate-blog.ts --security-only --finalize
+      # Publish a post only when there is a new critical/high advisory that
+      # .meta.json has not already covered — the bot writes nothing otherwise,
+      # and the commit step below no-ops. Rendered from Supabase data; see the
+      # note in generate-blog.yml for why there is no model call here any more.
+      - name: Render security alert from advisory data
+        run: npx tsx bots/generate-blog.ts --security-only --render
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Commit and push if new alerts
-        if: steps.prep.outputs.job_count == '1'
         run: |
           git config user.name "mcppedia-bot"
           git config user.email "bot@mcppedia.org"
-          git add content/blog/
+          # Regenerate the frontmatter index in the same commit — request-time
+          # routes read data/blog-index.json, not content/, so a post committed
+          # without it is invisible to /blog, /sitemap.xml and /llms.txt. The
+          # previous version of this job omitted this and only generate-blog.yml
+          # ever caught the index up.
+          node scripts/generate-content-index.mjs
+          git add content/blog/ data/blog-index.json
           git diff --cached --quiet && echo "No security alerts to publish" && exit 0
           git commit -m "blog: security alert [bot]"
           # Rebase-retry: other bot workflows push to main too, so a push can be

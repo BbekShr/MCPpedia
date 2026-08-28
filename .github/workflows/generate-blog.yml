@@ -24,55 +24,28 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - run: npm ci
 
-      # 1) Plan the article(s) (0-2) and emit a prompt file per article. Touches
-      #    only Supabase — no model call. Sets job_count + model_<i> outputs.
-      - name: Prepare blog jobs
-        id: prep
-        run: npx tsx bots/generate-blog.ts --prepare
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-
-      # 2) Generate each planned article with the Claude Code action. This bills
-      #    a Claude subscription via CLAUDE_CODE_OAUTH_TOKEN instead of Anthropic
-      #    API credits — generate it locally with `claude setup-token` (Pro/Max)
-      #    and store it as the CLAUDE_CODE_OAUTH_TOKEN repository secret. Up to
-      #    two articles per run, each on its planned model.
-      # @main, not @beta: the beta ref pins Claude Code 1.0.88, which rejects
-      # OAuth tokens minted by current CLI versions (401 invalid bearer token).
-      # main also renamed the allowed_tools/model inputs into claude_args.
-      - name: Generate article 0 with Claude (subscription)
-        if: steps.prep.outputs.job_count == '1' || steps.prep.outputs.job_count == '2'
-        uses: anthropics/claude-code-base-action@main
-        timeout-minutes: 15
-        with:
-          prompt_file: blog-work/prompt-0.txt
-          claude_args: "--allowedTools Write --model ${{ steps.prep.outputs.model_0 }}"
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-
-      - name: Generate article 1 with Claude (subscription)
-        if: steps.prep.outputs.job_count == '2'
-        uses: anthropics/claude-code-base-action@main
-        timeout-minutes: 15
-        with:
-          prompt_file: blog-work/prompt-1.txt
-          claude_args: "--allowedTools Write --model ${{ steps.prep.outputs.model_1 }}"
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-
-      # 3) Turn the generated prose back into MDX posts and update .meta.json.
-      - name: Finalize articles
-        if: steps.prep.outputs.job_count == '1' || steps.prep.outputs.job_count == '2'
-        run: npx tsx bots/generate-blog.ts --finalize
+      # Plan the article(s) and render each one from Supabase data via the
+      # templates in bots/lib/blog-templates.ts. Supabase is the only credential
+      # in this job.
+      #
+      # This replaced a three-step dance around anthropics/claude-code-base-action,
+      # billed to a Claude subscription through CLAUDE_CODE_OAUTH_TOKEN. That
+      # token began returning `authentication_error: Invalid bearer token` on
+      # 2026-06-25; every scheduled run after it died in under two seconds having
+      # written nothing, and two separate token refreshes did not change that.
+      # The blog was dark for nine weeks on one expiring credential, so the
+      # scheduled path deliberately no longer holds one.
+      - name: Render articles from catalog data
+        run: npx tsx bots/generate-blog.ts --render
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Commit and push new posts
-        if: steps.prep.outputs.job_count == '1' || steps.prep.outputs.job_count == '2'
         run: |
           git config user.name "mcppedia-bot"
           git config user.email "bot@mcppedia.org"
