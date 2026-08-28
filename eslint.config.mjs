@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // OpenNext/Wrangler build output. Gitignored, but it sits in the working
+    // tree after `npm run cf:build`, and linting the bundled Worker drowns the
+    // real findings in tens of thousands of generated-code problems.
+    ".open-next/**",
+    ".wrangler/**",
+    "cloudflare-env.d.ts",
   ]),
 ]);
 

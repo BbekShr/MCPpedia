@@ -1,0 +1,79 @@
+name: Deploy (Cloudflare Workers)
+
+# Replaces Vercel's git integration. vercel.json's `ignoreCommand` limited
+# deploys to `main`; the branch filter below does the same job — pushes to any
+# other branch build in CI but never deploy.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One deploy at a time. The bot fleet pushes to main throughout the day
+# (generate-blog, compute-scores, sync-registry, …); without this, two pushes
+# minutes apart would race and the older build could land last. Deploys are not
+# cancelled in-flight — a half-uploaded Worker with a half-populated cache is
+# worse than a queued one.
+concurrency:
+  group: deploy-cloudflare
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy Worker
+    runs-on: ubuntu-latest
+    # Same reasoning as CI: next/font/google has no timeout in production
+    # builds, so cap the wall clock rather than hang for GitHub's 6h default.
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Unlike the CI build, this one runs WITH env on purpose: prerendering
+      # /s/[slug], /compare/[slugs], /skills/[slug] and the OG images needs real
+      # Supabase reads, and NEXT_PUBLIC_* values are inlined into the bundle at
+      # build time — they cannot be supplied later as Worker secrets.
+      - name: Build Worker
+        run: npx opennextjs-cloudflare build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+          NEXT_PUBLIC_CF_ANALYTICS_TOKEN: ${{ secrets.NEXT_PUBLIC_CF_ANALYTICS_TOKEN }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      # `deploy` = upload the Worker AND populate the R2 incremental cache with
+      # the build's prerendered output. Plain `wrangler deploy` skips the
+      # second half, and every prerendered page then 404s or misses until it
+      # regenerates — verified locally, this is not a theoretical failure.
+      - name: Deploy to Cloudflare Workers
+        run: npx opennextjs-cloudflare deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # Server-only values are NOT inlined at build time; they are read from the
+      # Worker's environment at request time. Set them once with
+      # `wrangler secret put <NAME>` (see docs/CLOUDFLARE.md) — this step only
+      # asserts they exist so a missing secret surfaces here rather than as a
+      # 500 in production.
+      - name: Verify runtime secrets are set on the Worker
+        run: |
+          set -euo pipefail
+          LIST=$(npx wrangler secret list --name mcppedia)
+          echo "$LIST"
+          for NAME in SUPABASE_SERVICE_ROLE_KEY REVALIDATE_SECRET MCP_INTERNAL_KEY; do
+            if ! echo "$LIST" | grep -q "\"$NAME\""; then
+              echo "::error::Worker secret $NAME is not set. Run: npx wrangler secret put $NAME --name mcppedia"
+              exit 1
+            fi
+          done
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

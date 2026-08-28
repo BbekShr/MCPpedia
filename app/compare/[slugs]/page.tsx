@@ -7,11 +7,10 @@ import type { Server } from '@/lib/types'
 import type { HealthStatus } from '@/lib/constants'
 import { PUBLIC_SERVER_FIELDS, SITE_URL } from '@/lib/constants'
 import type { Metadata } from 'next'
-import fs from 'fs'
-import path from 'path'
 import { JsonLdScript, generateBreadcrumbJsonLd, generateItemListJsonLd } from '@/lib/seo'
 import { buildCompareVerdict } from '@/lib/hub-intro'
 import { normalizeServerName } from '@/lib/server-name'
+import { getComparisonPairs, type ComparisonPair } from '@/lib/comparison-pairs'
 
 export const revalidate = 604800 // 7d; on-demand revalidate triggers on edits and score deltas
 
@@ -54,25 +53,6 @@ const COMPARE_SERVER_FIELDS = PUBLIC_SERVER_FIELDS
 
 // ---------- Static Params (pre-generate comparison pages for SEO) ----------
 
-interface ComparisonPair {
-  slugA: string
-  slugB: string
-  nameA: string
-  nameB: string
-  category?: string
-}
-
-function loadComparisonPairs(): ComparisonPair[] {
-  try {
-    const filePath = path.join(process.cwd(), 'data', 'comparison-pairs.json')
-    const raw = fs.readFileSync(filePath, 'utf-8')
-    const data = JSON.parse(raw)
-    return data.pairs || []
-  } catch {
-    return []
-  }
-}
-
 // Whether this exact comparison is one of the curated pairs in
 // data/comparison-pairs.json (the set the sitemap advertises and
 // generateStaticParams prerenders). Order-insensitive: /compare/a-vs-b and
@@ -89,7 +69,7 @@ function loadComparisonPairs(): ComparisonPair[] {
 function isCuratedPair(slugs: string[]): boolean {
   if (slugs.length !== 2) return false
   const [a, b] = slugs
-  return loadComparisonPairs().some(
+  return getComparisonPairs().some(
     p => (p.slugA === a && p.slugB === b) || (p.slugA === b && p.slugB === a),
   )
 }
@@ -108,7 +88,7 @@ export async function generateStaticParams() {
   // written score-descending (bots/generate-comparisons.ts pairs the top 30
   // servers), so the first N are the ones traffic actually lands on; the tail
   // renders on first request and then caches for the same 7 days.
-  const pairs = loadComparisonPairs()
+  const pairs = getComparisonPairs()
   return pairs.slice(0, PRERENDERED_PAIRS).map(p => ({
     slugs: `${p.slugA}-vs-${p.slugB}`,
   }))
@@ -252,7 +232,7 @@ export default async function ComparePage({
   // Find related comparisons. For N=2 use the curated pairs JSON; for N≥3
   // suggest sub-pairs (e.g. a-vs-b-vs-c → a-vs-b, b-vs-c, a-vs-c) so users can
   // drill into 1v1 matchups.
-  const allPairs = loadComparisonPairs()
+  const allPairs = getComparisonPairs()
   let relatedPairs: ComparisonPair[]
   if (n === 2) {
     const [slugA, slugB] = slugs

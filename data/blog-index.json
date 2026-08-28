@@ -1,0 +1,1195 @@
+[
+  {
+    "slug": "2026-08-04-36-614-mcp-servers-171-good-ones-what-the-long-tail",
+    "title": "36,614 MCP Servers, 171 Good Ones: What the Long Tail Actually Looks Like",
+    "description": "We scored every live MCP server in the catalog. The median is 30/100, 78% land under 50, and the single biggest reason isn't bad code — it's missing metadata. Here are the numbers, with the caveats.",
+    "hook": "The median MCP server scores 30 out of 100. Only 171 of 36,614 crack 90. The reason is duller and more fixable than 'most servers are bad'.",
+    "date": "2026-08-04",
+    "tags": [
+      "data",
+      "ecosystem",
+      "scoring",
+      "metadata",
+      "state-of-mcp"
+    ],
+    "category": "category-deep-dive",
+    "featuredServers": [
+      "puppeteer",
+      "context7",
+      "gemini-cli",
+      "dbhub"
+    ],
+    "readingTime": 5
+  },
+  {
+    "slug": "2026-07-25-are-mcp-servers-safe-the-9-checks-that-decide-a-serve",
+    "title": "Are MCP Servers Safe? The 9 Checks That Decide a Server's Security Score",
+    "description": "MCP servers get handed your shell, your database, and your credentials. Here's exactly how MCPpedia audits one — all nine security checks, the point values, and what each one can't catch.",
+    "hook": "You're about to give a stranger's code your shell and your API keys. Security is the single biggest slice of our 0-100 score — 30 points, nine checks. Here's every one of them.",
+    "date": "2026-07-25",
+    "tags": [
+      "security",
+      "guide",
+      "methodology",
+      "tool-poisoning"
+    ],
+    "category": "category-deep-dive",
+    "featuredServers": [],
+    "readingTime": 7
+  },
+  {
+    "slug": "2026-07-17-26099-mcp-servers-and-the-tiny-club-that-actually-scores-90",
+    "title": "26,099 MCP Servers — and the Tiny Club That Actually Scores 90+",
+    "description": "The MCP catalog crossed 26,000 servers, AI-ML quietly became the biggest category, and a handful of servers pull 13M+ weekly downloads with barely any stars. Here's what the data says.",
+    "hook": "There are 26,099 MCP servers now. Fewer than a dozen crack a 90 on our score. One pulls 16.5M downloads a week with 2,300 stars. Stars are lying to you — the scores aren't.",
+    "date": "2026-07-17",
+    "tags": [
+      "weekly",
+      "ecosystem",
+      "new-servers"
+    ],
+    "category": "weekly-roundup",
+    "featuredServers": [
+      "jscpd",
+      "io-github-cameroncooke-xcodebuildmcp",
+      "supabase",
+      "mcp-gitlab",
+      "brave-search",
+      "postgres",
+      "tavily-mcp",
+      "io-github-signerlabs-shipswift",
+      "dbhub",
+      "mcp-agent-mail"
+    ],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-06-24-three-critical-vulns-hit-langflow-mcp-servers-patch-now",
+    "title": "Three Critical Vulns Hit Langflow MCP Servers—Patch Now",
+    "description": "Critical RCE and IDOR vulnerabilities exposed in MCPin10. Two critical, one high-severity. Unauthenticated DoS also disclosed.",
+    "hook": "3 security flaws just hit Langflow MCP servers—2 critical, including arbitrary file read + RCE. If you run file uploads or multi-tenant flows, patch today or disable them.",
+    "date": "2026-06-24",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 2
+  },
+  {
+    "slug": "2026-06-23-headroom-s-3-423-star-week-signals-what-mcp-developers-actua",
+    "title": "Headroom's 3,423-Star Week Signals What MCP Developers Actually Want",
+    "description": "Token compression is dominating this week's trending MCP servers. Headroom gained 3,423 stars. Here's why developers are finally solving for efficiency, not features.",
+    "hook": "Headroom just gained 3,423 stars in one week by solving the token bloat problem developers have suffered through for months. The MCP ecosystem is finally getting serious about efficiency.",
+    "date": "2026-06-23",
+    "tags": [
+      "trending",
+      "stars",
+      "popular"
+    ],
+    "category": "trending",
+    "featuredServers": [
+      "headroom",
+      "pi-coding-agent",
+      "open-pencil",
+      "vibe-trading",
+      "codebase-memory-mcp",
+      "gitnexus",
+      "auto-claude-code-research-in-sleep",
+      "ai-com-mcp-skills-search",
+      "context7",
+      "blender-mcp"
+    ],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-06-23-mailtrap-s-official-mcp-server-gives-ai-agents-a-full-email-",
+    "title": "Mailtrap's Official MCP Server Gives AI Agents a Full Email Stack",
+    "description": "12 tools covering sandbox testing, live sending, templates, logs, and stats — with a perfect security score.",
+    "hook": "Your AI agent can now send emails, test them in a sandbox, and pull delivery stats — all in one conversation. Mailtrap's official MCP server scores a perfect 30/30 on security. Here's what 12 tools looks like in practice.",
+    "date": "2026-06-23",
+    "tags": [
+      "spotlight",
+      "review"
+    ],
+    "category": "server-spotlight",
+    "featuredServers": [
+      "io-mailtrap-mcp"
+    ],
+    "readingTime": 3
+  },
+  {
+    "slug": "2026-06-21-three-critical-mcp-security-flaws-disclosed-patch-your-serve",
+    "title": "Three Critical MCP Security Flaws Disclosed — Patch Your Servers Now",
+    "description": "Two HIGH-severity SSRF and DoS vulnerabilities hit Searxng; a CRITICAL OS command injection flaw found in Gemini Tool. Update immediately.",
+    "hook": "Two HIGH-severity flaws in Searxng MCP + a CRITICAL vulnerability in Gemini Tool let attackers read private files and crash servers. Patches are live. Your move.",
+    "date": "2026-06-21",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 3
+  },
+  {
+    "slug": "2026-06-20-7-high-severity-openclaw-bugs-patch-your-server-now",
+    "title": "7 High-Severity OpenClaw Bugs: Patch Your Server Now",
+    "description": "June 2026 disclosure hits espresso-mcp with PATH hijacking, env poisoning, and auth bypass flaws. All high severity. Patch immediately.",
+    "hook": "7 high-severity OpenClaw vulnerabilities dropped at once—from PATH hijacking to Discord spoofing. If you're running espresso-mcp in production, patching isn't optional. Here's what broke and why it matters.",
+    "date": "2026-06-20",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 3
+  },
+  {
+    "slug": "2026-06-19-critical-10-security-flaws-in-praisonai-mcp-server-3-allow-r",
+    "title": "CRITICAL: 10 Security Flaws in PraisonAI MCP Server—3 Allow Remote Code Execution",
+    "description": "PraisonAI MCP server disclosed with 3 critical RCE vulnerabilities, 7 high-severity auth bypasses, and arbitrary file access. Production deployments must be isolated immediately.",
+    "hook": "PraisonAI just disclosed 10 security advisories—3 critical RCE flaws, zero-auth endpoints, and arbitrary file read/write. If you're running it in production, take it offline now. Full breakdown inside.",
+    "date": "2026-06-19",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 3
+  },
+  {
+    "slug": "2026-06-18-1-062-new-mcp-servers-in-7-days-here-s-what-actually-matters",
+    "title": "1,062 New MCP Servers in 7 Days — Here's What Actually Matters",
+    "description": "The MCP ecosystem hit 23,812 servers this week. We cut through the noise to find the debuts and trends worth your attention.",
+    "hook": "1,062 MCP servers launched in a single week. A $0/token memory graph scored 91. A vault that keeps secrets FROM the AI model. And Firecrawl added 381 stars in 7 days. Here's what's actually happening in the MCP ecosystem.",
+    "date": "2026-06-18",
+    "tags": [
+      "weekly",
+      "ecosystem",
+      "new-servers"
+    ],
+    "category": "weekly-roundup",
+    "featuredServers": [
+      "io-github-yonasvalentin-mcp-memory-graph",
+      "io-github-jurimaxam-dotcom-chemdraw-mcp",
+      "io-github-wundervault-wundervault-mcp",
+      "io-github-red-square-software-keeping-mcp",
+      "an-mcp-server-that-exposes-tree-sitter-based-code-navigation-as-tools-for-ai-assistants",
+      "mk-qa-master",
+      "mcp-apps",
+      "kapture-mcp",
+      "scrivener-mcp",
+      "io-github-asklokesh-loki-mode"
+    ],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-06-18-8-high-severity-mcp-vulnerabilities-disclosed-update-now-or-",
+    "title": "8 High-Severity MCP Vulnerabilities Disclosed: Update Now or Expose RCE",
+    "description": "Header leakage, privilege escalation, and three yt-dlp RCE flaws affect popular MCP servers. Patches available—get them today.",
+    "hook": "Three major MCP servers just disclosed 8 high-severity vulnerabilities—including multiple remote code execution flaws hidden in video metadata. Update now or risk being pwned through your downloads.",
+    "date": "2026-06-18",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 3
+  },
+  {
+    "slug": "2026-06-17-vllm-auth-bypass-rce-two-critical-vulns-one-infrastructure-r",
+    "title": "vLLM Auth Bypass & RCE: Two Critical Vulns, One Infrastructure Risk",
+    "description": "CVE-2026-48746 strips API key auth entirely; CVE-2026-41523 enables arbitrary code execution. Patch Llm Server Docs now or assume compromise.",
+    "hook": "Two critical vulnerabilities in vLLM just dropped: one kills API authentication completely, the other gives attackers your server's shell. Update now or assume you're already breached.",
+    "date": "2026-06-17",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 2
+  },
+  {
+    "slug": "2026-06-16-statfin-mcp-finland-s-3-000-official-tables-no-api-key-neede",
+    "title": "StatFin MCP: Finland's 3,000+ Official Tables, No API Key Needed",
+    "description": "This MCP server wires Finland's entire StatFin database into your AI client — 3,000+ tables, zero credentials required.",
+    "hook": "Finland's entire official statistics database — 3,000+ tables on population, housing, labor, and more — is now queryable through an AI assistant. No API key. No signup. Just ask.",
+    "date": "2026-06-16",
+    "tags": [
+      "spotlight",
+      "review"
+    ],
+    "category": "server-spotlight",
+    "featuredServers": [
+      "io-github-3121n-statfin-mcp"
+    ],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-06-16-token-compression-wars-why-these-5-mcp-servers-exploded-this",
+    "title": "Token Compression Wars: Why These 5 MCP Servers Exploded This Week",
+    "description": "Headroom gained 1,513 stars by compressing LLM context 60-95%. Here's why efficiency, data access, and workflow orchestration are the real trends in 2025.",
+    "hook": "Headroom jumped 1,513 stars in one week by solving LLMs' biggest cost problem: token bloat. These 5 trending servers show what builders actually need in 2025 — and it's not more features.",
+    "date": "2026-06-16",
+    "tags": [
+      "trending",
+      "stars",
+      "popular"
+    ],
+    "category": "trending",
+    "featuredServers": [
+      "headroom",
+      "caveman-shrink",
+      "firecrawl",
+      "io-github-t8y2-dbx",
+      "n8n",
+      "mcp-apps",
+      "vibe-trading",
+      "aitoearn",
+      "supermemory",
+      "prompts-chat"
+    ],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-06-15-critical-rce-in-mermaid-missing-binary-verification-enables-",
+    "title": "Critical RCE in MermAId: Missing Binary Verification Enables Remote Code Execution",
+    "description": "High-severity vulnerability (GHSA-gv7w-rqvm-qjhr) in MermAId's esbuild Deno module allows RCE via unverified binary downloads. Patch immediately.",
+    "hook": "MermAId's esbuild module downloads executables without verifying them—a flaw the Node.js version fixed months ago. If you're running MermAId, stop. Now.",
+    "date": "2026-06-15",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 2
+  },
+  {
+    "slug": "2026-06-11-mcp-weekly-1-130-new-servers-wearables-and-a-trust-layer-for",
+    "title": "MCP Weekly: 1,130 New Servers, Wearables, and a Trust Layer for AI Tools",
+    "description": "This week's MCP ecosystem roundup: 25,966 total servers, dbx gains 253 stars, and a server that scores other MCP servers for trustworthiness.",
+    "hook": "The MCP ecosystem added 1,130 servers in 7 days — and one of them exists to tell you whether to trust the other 25,965. This week's roundup gets into the details.",
+    "date": "2026-06-11",
+    "tags": [
+      "weekly",
+      "ecosystem",
+      "new-servers"
+    ],
+    "category": "weekly-roundup",
+    "featuredServers": [
+      "io-mcpskills-server",
+      "apple-mail-fast-mcp",
+      "io-github-briangaoo-totem",
+      "io-github-fulcrai-skb-mcp",
+      "io-github-aissablk1-mcp-roadmapsh",
+      "transport-stdio",
+      "io-github-friendlygeorge-posthog-mcp-server",
+      "io-github-3121n-nve-mcp",
+      "tiny-stdio-mcp-server",
+      "io-github-friendlygeorge-resend-mcp-server"
+    ],
+    "readingTime": 5
+  },
+  {
+    "slug": "2026-06-11-trvl-mcp-one-tool-65-intents-zero-api-keys",
+    "title": "Trvl Mcp: One Tool, 65 Intents, Zero API Keys",
+    "description": "Trvl Mcp routes flights, hotels, trains, and more through a single MCP tool with 65 aliases — no API keys required.",
+    "hook": "Most travel APIs require 5 different accounts before you can search a single flight. This MCP server does flights, hotels, trains, ferries, award sweet spots, and lounges with zero API keys and one tool.",
+    "date": "2026-06-11",
+    "tags": [
+      "spotlight",
+      "review"
+    ],
+    "category": "server-spotlight",
+    "featuredServers": [
+      "trvl-mcp"
+    ],
+    "readingTime": 3
+  },
+  {
+    "slug": "2026-06-09-the-mcp-reference-server-you-should-have-been-building-from",
+    "title": "The MCP Reference Server You Should Have Been Building From",
+    "description": "A 90/100-scoring TypeScript MCP server with dual transports, 42 tests, Docker, and CI — built to be cloned and templated.",
+    "hook": "Most MCP servers solve a problem. This one solves the harder problem: how to build one correctly. 90/100 quality score, 42 tests, dual transports — and 0 GitHub stars. That's a timing issue, not a quality issue.",
+    "date": "2026-06-09",
+    "tags": [
+      "spotlight",
+      "review"
+    ],
+    "category": "server-spotlight",
+    "featuredServers": [
+      "derekhuynen-mcp-server"
+    ],
+    "readingTime": 3
+  },
+  {
+    "slug": "2026-06-09-token-crushers-win-why-compression-tools-are-dominating-mcp-",
+    "title": "Token Crushers Win: Why Compression Tools Are Dominating MCP This Week",
+    "description": "Headroom gains 1,425 stars as developers race to solve token inflation. Compression and web scraping tools rule the trending charts.",
+    "hook": "Headroom just gained 1,425 stars in a week. Developers are obsessed with crushing token costs—and it's reshaping the MCP ecosystem. Here's why compression tools are winning.",
+    "date": "2026-06-09",
+    "tags": [
+      "trending",
+      "stars",
+      "popular"
+    ],
+    "category": "trending",
+    "featuredServers": [
+      "headroom",
+      "aitoearn",
+      "firecrawl",
+      "caveman-shrink",
+      "codex-shell-tool-mcp",
+      "scrapling",
+      "io-github-t8y2-dbx",
+      "supermemory",
+      "pi-coding-agent",
+      "mempalace"
+    ],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-06-04-mcp-weekly-memory-wars-token-compression-and-1-128-new-serve",
+    "title": "MCP Weekly: Memory Wars, Token Compression, and 1,128 New Servers",
+    "description": "The MCP ecosystem hit 24,973 servers this week. Here's what's worth your attention: browser memory sync, context compression, and vertical integrations.",
+    "hook": "1,128 new MCP servers dropped this week — and the trending charts tell a surprising story: developers aren't building more tools, they're desperately trying to compress the ones they already have.",
+    "date": "2026-06-04",
+    "tags": [
+      "weekly",
+      "ecosystem",
+      "new-servers"
+    ],
+    "category": "weekly-roundup",
+    "featuredServers": [
+      "io-github-vaaraio-vaara-server",
+      "io-github-beznazwiska-codetoimage-mcp-server",
+      "arcrift",
+      "io-github-avansaber-seo-monster",
+      "line-oa-mcp-ultimate",
+      "skill-creator",
+      "wundr-io-mcp-server",
+      "neo",
+      "eplan-2026-ia-mcp-scripts",
+      "atomicmemory"
+    ],
+    "readingTime": 5
+  },
+  {
+    "slug": "2026-06-04-pictify-mcp-31-tools-that-let-your-ai-agent-generate-real-vi",
+    "title": "Pictify MCP: 31 Tools That Let Your AI Agent Generate Real Visual Assets",
+    "description": "Pictify's MCP server gives AI agents 31 tools to generate images, GIFs, and PDFs — plus a full A/B testing loop for visual content.",
+    "hook": "Your AI agent can write the copy, design the layout, and run an A/B test on the result — all without a human touching a pixel. Pictify's 31-tool MCP server makes that real today.",
+    "date": "2026-06-04",
+    "tags": [
+      "spotlight",
+      "review"
+    ],
+    "category": "server-spotlight",
+    "featuredServers": [
+      "io-github-pictify-io-mcp"
+    ],
+    "readingTime": 3
+  },
+  {
+    "slug": "2026-06-02-token-bloat-is-breaking-ai-agents-this-week-s-stars-are-the-",
+    "title": "Token Bloat Is Breaking AI Agents — This Week's Stars Are the Fix",
+    "description": "Headroom gained 1,609 stars in a week. Two compression tools cracked the top 3. The MCP community is solving context bloat.",
+    "hook": "Two compression tools hit the top 3 trending MCP servers this week. Headroom gained 1,609 stars — 42% of its entire star count — in 7 days. The AI community just decided token bloat is the #1 problem worth solving.",
+    "date": "2026-06-02",
+    "tags": [
+      "trending",
+      "stars",
+      "popular"
+    ],
+    "category": "trending",
+    "featuredServers": [
+      "headroom",
+      "supermemory",
+      "caveman-shrink",
+      "codex-shell-tool-mcp",
+      "io-github-ruvnet-claude-flow",
+      "cli-core",
+      "claude-flow",
+      "ruflo",
+      "scrapling",
+      "paperclipai-mcp-server"
+    ],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-06-02-vat-validation-for-45-countries-wired-directly-into-your-ai-",
+    "title": "VAT Validation for 45 Countries, Wired Directly Into Your AI Agent",
+    "description": "vatnode-mcp brings EU VIES validation, offline format checks, and full rate data for 45 countries into one 89-score MCP server.",
+    "hook": "Building anything that touches EU commerce? There are 27 different VAT rule sets waiting to break your invoices. This MCP server handles all of them — live VIES validation, offline format checks, and an audit-ready consultation number — in 5 clean tools.",
+    "date": "2026-06-02",
+    "tags": [
+      "spotlight",
+      "review"
+    ],
+    "category": "server-spotlight",
+    "featuredServers": [
+      "io-github-vatnode-vatnode-mcp"
+    ],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-05-28-850-new-mcp-servers-this-week-and-5-worth-actually-caring-ab",
+    "title": "850 New MCP Servers This Week — And 5 Worth Actually Caring About",
+    "description": "The MCP catalog hit 23,931 servers this week. Here's what's worth your attention: from Inkscape control to Rust-secured local tools.",
+    "hook": "Pi Coding Agent gained 457 stars in a single week. The MCP ecosystem added 850 new servers. Here's what actually matters inside the noise.",
+    "date": "2026-05-28",
+    "tags": [
+      "weekly",
+      "ecosystem",
+      "new-servers"
+    ],
+    "category": "weekly-roundup",
+    "featuredServers": [
+      "inkscape-mcp",
+      "io-github-kioie-tiny-go-mcp",
+      "paperclipai-mcp-server",
+      "server-memory",
+      "easel",
+      "io-github-rocnubie-earscribe-mcp",
+      "io-github-rocnubie-flowmusicai-mcp",
+      "io-github-chrischall-redfin-mcp",
+      "io-github-chrischall-zillow-mcp",
+      "localops-mcp-server"
+    ],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-05-28-the-mcp-server-that-unlocks-3-000-web-scraping-actors-on-dem",
+    "title": "The MCP Server That Unlocks 3,000+ Web Scraping Actors On Demand",
+    "description": "Apify's Actors MCP Server scores 94/100 and lets AI agents dynamically discover and run web scraping tools mid-conversation.",
+    "hook": "Most MCP servers give your AI a fixed toolset. Apify's 1,281-star Actors MCP Server lets it discover and add new web scraping tools mid-conversation — unlocking thousands of pre-built Actors on demand.",
+    "date": "2026-05-28",
+    "tags": [
+      "spotlight",
+      "review"
+    ],
+    "category": "server-spotlight",
+    "featuredServers": [
+      "actors-mcp-server"
+    ],
+    "readingTime": 3
+  },
+  {
+    "slug": "2026-05-19-4-000-stars-in-one-week-the-mcp-servers-blowing-up-right-now",
+    "title": "4,000 Stars in One Week: The MCP Servers Blowing Up Right Now",
+    "description": "AiToEarn, Claude Flow, Caveman Shrink, and Firecrawl led a 4,010-star week — and the pattern reveals where AI infrastructure is heading.",
+    "hook": "10 MCP servers just gained 4,010 GitHub stars in a single week. AiToEarn alone pulled 605. Here's what the trend data actually says about where AI agent infrastructure is heading.",
+    "date": "2026-05-19",
+    "tags": [
+      "trending",
+      "stars",
+      "popular"
+    ],
+    "category": "trending",
+    "featuredServers": [
+      "aitoearn",
+      "claude-flow",
+      "ruflo",
+      "caveman-shrink",
+      "firecrawl",
+      "scrapling",
+      "codex-shell-tool-mcp",
+      "io-github-incorporatedpartners-labelhead-artist-momentum",
+      "io-github-bytedance-mcp-server-browser",
+      "io-github-bytedance-mcp-server-commands"
+    ],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-05-19-signed-verified-accountable-agent-handoffs-done-right",
+    "title": "Signed, Verified, Accountable: Agent Handoffs Done Right",
+    "description": "This MCP server brings cryptographic signing and HMAC attestation to agent-to-agent task delegation — scoring a perfect 30 on security.",
+    "hook": "Your multi-agent system delegates tasks constantly. Can it prove who authorized each handoff? This MCP server scores a perfect security score by making every agent handoff cryptographically signed and auditable.",
+    "date": "2026-05-19",
+    "tags": [
+      "spotlight",
+      "review"
+    ],
+    "category": "server-spotlight",
+    "featuredServers": [
+      "io-github-csoai-org-agent-handoff-certified-mcp"
+    ],
+    "readingTime": 3
+  },
+  {
+    "slug": "2026-05-14-1-037-new-mcp-servers-in-one-week-here-s-what-matters",
+    "title": "1,037 New MCP Servers in One Week — Here's What Matters",
+    "description": "The MCP ecosystem hit 22,171 servers this week. We break down the new arrivals and trending projects worth your attention.",
+    "hook": "679 stars in a week for a tool that just compresses text. Meanwhile, Firecrawl sits at 119K and ByteDance quietly dropped a full agentic suite. This week in MCP was wild — here's what you missed.",
+    "date": "2026-05-14",
+    "tags": [
+      "weekly",
+      "ecosystem",
+      "new-servers"
+    ],
+    "category": "weekly-roundup",
+    "featuredServers": [
+      "godot-mcp-native",
+      "io-github-csoai-org-csrd-compliance-mcp",
+      "io-github-csoai-org-csv-analytics-mcp",
+      "io-github-csoai-org-jwt-ai-mcp",
+      "io-github-csoai-org-icon-generator-ai-mcp",
+      "io-github-whw23-searxng-http-mcp",
+      "io-github-ykastelnik-realevents",
+      "io-github-looptech-ai-understand-quickly",
+      "ga4-mcp-server",
+      "svn-mcp-server"
+    ],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-05-14-92-score-0-stars-the-msp-tool-flying-under-the-radar",
+    "title": "92 Score, 0 Stars: The MSP Tool Flying Under the Radar",
+    "description": "Datto SaaS Protection gets an MCP server — 9 tools for M365/GWS backup management, restores, and license tracking.",
+    "hook": "This MCP server scored 92/100 and has zero GitHub stars. It lets AI agents queue Datto restores, audit license usage, and manage M365/GWS backups across every client org at once — and almost no one knows it exists.",
+    "date": "2026-05-14",
+    "tags": [
+      "spotlight",
+      "review"
+    ],
+    "category": "server-spotlight",
+    "featuredServers": [
+      "io-github-wyre-technology-datto-saas-protection-mcp"
+    ],
+    "readingTime": 3
+  },
+  {
+    "slug": "2026-05-12-agents-dominate-the-mcp-servers-exploding-this-week",
+    "title": "Agents Dominate: The MCP Servers Exploding This Week",
+    "description": "Ruflo gained 1,499 stars, ByteDance swept four spots at once, and Firecrawl hit 118K. This week's trending MCP servers share one theme: autonomous agents.",
+    "hook": "ByteDance landed 4 trending MCP servers simultaneously — all with identical star counts. Ruflo gained 1,499 stars in a week. This isn't random. The MCP ecosystem just revealed exactly what it's building toward.",
+    "date": "2026-05-12",
+    "tags": [
+      "trending",
+      "stars",
+      "popular"
+    ],
+    "category": "trending",
+    "featuredServers": [
+      "ruflo",
+      "io-github-bytedance-mcp-server-browser",
+      "io-github-bytedance-mcp-server-search",
+      "io-github-bytedance-mcp-server-commands",
+      "io-github-bytedance-mcp-server-filesystem",
+      "firecrawl",
+      "aitoearn",
+      "scrapling",
+      "io-github-chromedevtools-chrome-devtools-mcp",
+      "chrome-devtools-mcp"
+    ],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-05-12-antigravity-the-mcp-server-that-makes-your-codebase-answer-q",
+    "title": "Antigravity: The MCP Server That Makes Your Codebase Answer Questions",
+    "description": "With 1,216 stars and a 96/100 score, Antigravity turns any codebase into a queryable AI assistant — with real file paths and line numbers.",
+    "hook": "Most AI coding tools hallucinate their way through your codebase. Antigravity Workspace Template (1,216 stars, 96/100 score) deploys a multi-agent cluster to index your code first — then answers questions with actual file paths and line numbers. Big difference.",
+    "date": "2026-05-12",
+    "tags": [
+      "spotlight",
+      "review"
+    ],
+    "category": "server-spotlight",
+    "featuredServers": [
+      "antigravity-workspace-template"
+    ],
+    "readingTime": 3
+  },
+  {
+    "slug": "2026-05-07-780-new-mcp-servers-this-week-and-a-clear-production-shift",
+    "title": "780 New MCP Servers This Week — and a Clear Production Shift",
+    "description": "The MCP ecosystem hit 21,152 servers this week. The new additions reveal a sharp pivot: AI agent ops tooling is arriving fast.",
+    "hook": "780 new MCP servers in one week — and the most interesting ones aren't demos. Cost tracking, security vetting with 41 detection rules, safe rollbacks. Someone is quietly building the production ops layer for AI agents.",
+    "date": "2026-05-07",
+    "tags": [
+      "weekly",
+      "ecosystem",
+      "new-servers"
+    ],
+    "category": "weekly-roundup",
+    "featuredServers": [
+      "io-github-temurkhan13-openclaw-cost-tracker-mcp",
+      "io-github-theyahia-claude-webcache",
+      "io-github-temurkhan13-openclaw-health-mcp",
+      "io-github-retrorobai-mcp-memory-graph",
+      "io-github-mayanktalwar0-startup-finance-metrics",
+      "io-github-temurkhan13-openclaw-skill-vetter-mcp",
+      "io-github-temurkhan13-openclaw-upgrade-orchestrator-mcp",
+      "flyto-core",
+      "agent-toolkit-for-aws",
+      "io-github-alyiox-mcp-atlassian-attachments"
+    ],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-05-07-swatchbook-mcp-the-ai-interface-your-design-tokens-are-missi",
+    "title": "Swatchbook MCP: The AI Interface Your Design Tokens Are Missing",
+    "description": "Swatchbook MCP exposes DTCG design tokens, axes, and diagnostics to AI agents — no Storybook required. An 88/100 early-stage gem.",
+    "hook": "Your AI assistant can't read your design tokens — but Swatchbook MCP can fix that. It scores 88/100 and requires zero Storybook to run. Here's why design system engineers should be watching this one.",
+    "date": "2026-05-07",
+    "tags": [
+      "spotlight",
+      "review"
+    ],
+    "category": "server-spotlight",
+    "featuredServers": [
+      "swatchbook-mcp"
+    ],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-05-05-e2eval-the-eval-framework-that-actually-earns-its-results",
+    "title": "E2eval: The Eval Framework That Actually Earns Its Results",
+    "description": "E2eval tests AI agents against real tasks and real tools — then scrubs the source evidence so they can't cheat their way to the right answer.",
+    "hook": "Most agent evals are fake — synthetic tasks, sanitized inputs, no real tools. E2eval scores 91/100 by doing the opposite: real Slack threads, real APIs, and middleware that scrubs the answer before the agent can find it.",
+    "date": "2026-05-05",
+    "tags": [
+      "spotlight",
+      "review"
+    ],
+    "category": "server-spotlight",
+    "featuredServers": [
+      "e2eval"
+    ],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-05-05-the-swarm-is-rising-multi-agent-orchestration-dominates-mcp-",
+    "title": "The Swarm Is Rising: Multi-Agent Orchestration Dominates MCP This Week",
+    "description": "Ruflo gained 2,689 stars in 7 days. Here's what this week's trending MCP servers say about where AI development is heading.",
+    "hook": "Ruflo gained 2,689 stars in a single week — one star every 4 minutes. This week's trending MCP servers aren't simple tools. They're autonomous swarms, and they want to run your entire dev workflow.",
+    "date": "2026-05-05",
+    "tags": [
+      "trending",
+      "stars",
+      "popular"
+    ],
+    "category": "trending",
+    "featuredServers": [
+      "ruflo",
+      "n8n-mcp",
+      "io-github-ruvnet-claude-flow",
+      "claude-flow",
+      "context-mode",
+      "vibe-trading",
+      "code-review-graph",
+      "codex-shell-tool-mcp",
+      "local-deep-research",
+      "scrapling"
+    ],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-04-30-1-020-new-mcp-servers-in-one-week-here-s-what-actually-matte",
+    "title": "1,020 New MCP Servers in One Week — Here's What Actually Matters",
+    "description": "The MCP ecosystem hit 20,413 total servers this week. We cut through the noise to find what's actually worth your attention.",
+    "hook": "1,020 MCP servers launched in a single week. The ecosystem now has 20,413 total — and the quality gap between the most-starred and best-built tools has never been wider.",
+    "date": "2026-04-30",
+    "tags": [
+      "weekly",
+      "ecosystem",
+      "new-servers"
+    ],
+    "category": "weekly-roundup",
+    "featuredServers": [
+      "vitemcp",
+      "e2eval",
+      "swatchbook-mcp",
+      "tool-types",
+      "mcp-ui-angular",
+      "pyslang-mcp",
+      "korea-stock-mcp",
+      "claude-video-vision",
+      "mcp-s2s-asterisk",
+      "beever-atlas"
+    ],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-04-30-vitemcp-the-typescript-mcp-framework-that-actually-thinks-ab",
+    "title": "Vitemcp: The TypeScript MCP Framework That Actually Thinks About Security",
+    "description": "Vitemcp scores 92/100 with a perfect 30/30 security rating — here's why it's the go-to TypeScript framework for production MCP servers.",
+    "hook": "Most MCP frameworks treat security as an afterthought. Vitemcp scored 30/30 on security — with OAuth 2.1, mutual TLS, and 3,068 GitHub stars backing it up. This is what a production-ready MCP framework actually looks like.",
+    "date": "2026-04-30",
+    "tags": [
+      "spotlight",
+      "review"
+    ],
+    "category": "server-spotlight",
+    "featuredServers": [
+      "vitemcp"
+    ],
+    "readingTime": 3
+  },
+  {
+    "slug": "2026-04-28-421-stars-in-one-week-what-s-trending-in-mcp-right-now",
+    "title": "421 Stars in One Week: What's Trending in MCP Right Now",
+    "description": "PostHog leads this week's MCP star surge, but the real story is a pattern: developers are using MCP to solve the AI context problem.",
+    "hook": "A hip-hop momentum tracker with 59K stars. An analytics server scoring only 35/100 but leading all weekly gains. This week's MCP trending data is stranger — and more revealing — than you'd expect.",
+    "date": "2026-04-28",
+    "tags": [
+      "trending",
+      "stars",
+      "popular"
+    ],
+    "category": "trending",
+    "featuredServers": [
+      "io-github-posthog-mcp",
+      "io-github-incorporatedpartners-labelhead-artist-momentum",
+      "scrapling",
+      "claude-context",
+      "trendradar",
+      "ruflo",
+      "code-review-graph",
+      "n8n",
+      "prompts-chat",
+      "gitnexus"
+    ],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-04-28-the-mcp-server-that-lets-ai-say-i-m-done",
+    "title": "The MCP Server That Lets AI Say 'I'm Done'",
+    "description": "End Conversation MCP Server Zh gives DeepSeek and Chinese-optimized LLMs a structured, auditable way to opt out of uncomfortable conversations.",
+    "hook": "Most MCP servers are about what AI can do for you. This one — scoring 92/100 with zero required inputs — is about what AI can refuse. And it might be the most honest tool in the ecosystem.",
+    "date": "2026-04-28",
+    "tags": [
+      "spotlight",
+      "review"
+    ],
+    "category": "server-spotlight",
+    "featuredServers": [
+      "end-conversation-mcp-server-zh"
+    ],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-04-23-hermes-paperclip-adapter-one-tool-zero-ambiguity",
+    "title": "Hermes Paperclip Adapter: One Tool, Zero Ambiguity",
+    "description": "MarketIntelLabs' production Hermes fork replaces curl-in-prompt with structured, enum-constrained tool calls — scoring 91/100 with only 2 stars.",
+    "hook": "This MCP server has 2 GitHub stars and a 91/100 quality score. It replaces curl-in-prompt with schema-enforced tool calls — and MarketIntelLabs runs it in production. Popularity is not a proxy for quality.",
+    "date": "2026-04-23",
+    "tags": [
+      "spotlight",
+      "review"
+    ],
+    "category": "server-spotlight",
+    "featuredServers": [
+      "hermes-paperclip-adapter"
+    ],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-04-23-introducing-skills-on-mcppedia",
+    "title": "Introducing Skills on MCPpedia",
+    "description": "A hand-curated directory of 65 Claude Code skills, plugins, and marketplaces — browsable alongside the 17,000 MCP servers already on the site.",
+    "hook": "MCPpedia isn't just MCP servers anymore. We've added a curated directory of Claude Code skills — the other half of what actually makes an agent useful.",
+    "date": "2026-04-23",
+    "tags": [
+      "skills",
+      "claude-code",
+      "announcement",
+      "mcppedia"
+    ],
+    "category": "category-deep-dive",
+    "featuredServers": [],
+    "readingTime": 2
+  },
+  {
+    "slug": "2026-04-23-mcp-ecosystem-hits-19-469-servers-week-s-best-new-arrivals",
+    "title": "MCP Ecosystem Hits 19,469 Servers: Week's Best New Arrivals",
+    "description": "900 new MCP servers this week. Here's what actually matters: AI music control, French tax compliance, encrypted agent chat, and a 95% token compressor.",
+    "hook": "900 new MCP servers dropped this week — including one that compresses tokens by 95% and another that lets Claude play a synthesizer. The ecosystem at 19,469 servers is no longer a dev playground. It's infrastructure.",
+    "date": "2026-04-23",
+    "tags": [
+      "weekly",
+      "ecosystem",
+      "new-servers"
+    ],
+    "category": "weekly-roundup",
+    "featuredServers": [
+      "hermes-paperclip-adapter",
+      "mcph",
+      "io-github-cmendezs-mcp-facture-electronique-fr",
+      "https-github-com-containers-kubernetes-mcp-server",
+      "io-github-neptun2000-heor-agent",
+      "vex",
+      "io-github-alexkirienko-safebot-chat",
+      "live-coding-music-mcp",
+      "claude-code-mcp-server",
+      "squeez"
+    ],
+    "readingTime": 5
+  },
+  {
+    "slug": "2026-04-21-open-websearch-8-search-engines-zero-api-keys",
+    "title": "Open WebSearch: 8 Search Engines, Zero API Keys",
+    "description": "Open WebSearch is a 1,020-star MCP server that delivers multi-engine web search and content retrieval with no API keys required.",
+    "hook": "Every other web search MCP wants your credit card first. Open WebSearch skips the gatekeeping — 8 search engines, 4 tools, 1,020 GitHub stars, and not a single API key required.",
+    "date": "2026-04-21",
+    "tags": [
+      "spotlight",
+      "review"
+    ],
+    "category": "server-spotlight",
+    "featuredServers": [
+      "open-websearch"
+    ],
+    "readingTime": 3
+  },
+  {
+    "slug": "2026-04-21-the-agentic-web-stack-mcp-s-hottest-servers-this-week",
+    "title": "The Agentic Web Stack: MCP's Hottest Servers This Week",
+    "description": "TrendRadar gained 579 stars, Context Mode scored 95/100, and Firecrawl hit 111K total. Here's what this week's trending MCP servers reveal.",
+    "hook": "Firecrawl just hit 111,000 GitHub stars — and it's STILL trending this week. Here are the 5 MCP servers gaining the most momentum right now, and the one contrarian bet that could matter most.",
+    "date": "2026-04-21",
+    "tags": [
+      "trending",
+      "stars",
+      "popular"
+    ],
+    "category": "trending",
+    "featuredServers": [
+      "trendradar",
+      "context-mode",
+      "firecrawl",
+      "io-github-chromedevtools-chrome-devtools-mcp",
+      "chrome-devtools-mcp",
+      "gemini-cli",
+      "anything-analyzer",
+      "scrapling",
+      "io-github-d4vinci-scrapling",
+      "io-github-ruvnet-claude-flow"
+    ],
+    "readingTime": 6
+  },
+  {
+    "slug": "2026-04-18-state-of-mcp-security",
+    "title": "The State of MCP Security: Zero Critical CVEs, 182 Code-Execution Servers",
+    "description": "65 open CVEs across 18,855 servers — none critical or high. But 11.7% of the 1,561 servers we could fully scan expose code-execution tool patterns. That's the part to watch.",
+    "hook": "The MCP catalog has 18,855 servers and 65 open CVEs. None are critical. None are high severity. That's the reassuring part. The behavioral-risk scan only reaches 1,561 servers — and 11.7% of those expose code-execution surface.",
+    "date": "2026-04-18",
+    "tags": [
+      "security",
+      "cve",
+      "tool-poisoning",
+      "code-execution"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-04-16-979-new-mcp-servers-this-week-here-s-what-actually-matters",
+    "title": "979 New MCP Servers This Week — Here's What Actually Matters",
+    "description": "From a no-API-key web search server scoring 93/100 to Unreal Engine control with 300+ actions, here's the week's MCP ecosystem breakdown.",
+    "hook": "979 new MCP servers dropped this week. One already has 993 GitHub stars and needs zero API keys. Here's what's worth your attention — and what the trending board is getting wrong.",
+    "date": "2026-04-16",
+    "tags": [
+      "weekly",
+      "ecosystem",
+      "new-servers"
+    ],
+    "category": "weekly-roundup",
+    "featuredServers": [
+      "open-websearch",
+      "io-github-therealfloatdev-agentsbestfriend",
+      "ue-mcp",
+      "io-github-aernouddekker-calendarmcp",
+      "io-github-haomingkoo-japan-seasons",
+      "voice-mcp-server",
+      "scholar-mcp",
+      "traceweave",
+      "phrase-mcp-server",
+      "claude-dj-mcp"
+    ],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-04-16-python-sdk-the-22k-star-foundation-of-mcp-development",
+    "title": "Python SDK: The 22K-Star Foundation of MCP Development",
+    "description": "The official Python SDK for Model Context Protocol earns a 95/100 score and 22,651 stars — here's why it matters.",
+    "hook": "22,651 GitHub stars. A 95/100 quality score. The official Python SDK for Model Context Protocol isn't just popular — it's the foundation that the entire Python AI tooling ecosystem is quietly building on.",
+    "date": "2026-04-16",
+    "tags": [
+      "spotlight",
+      "review"
+    ],
+    "category": "server-spotlight",
+    "featuredServers": [
+      "python-sdk"
+    ],
+    "readingTime": 3
+  },
+  {
+    "slug": "2026-04-16-why-mcppedia",
+    "title": "Why MCPpedia Exists",
+    "description": "18,927 MCP servers. The average one scores 30/100. Only 433 clear 80. Stars don't tell you which is which — here's the case for a directory that does.",
+    "hook": "The MCP catalog has 18,927 servers. The average scores 30 out of 100. Only 2.3% clear an 80. A directory that ranks by stars doesn't help you find the 2.3% — and that's the problem MCPpedia was built to solve.",
+    "date": "2026-04-16",
+    "tags": [
+      "mcppedia",
+      "why",
+      "ecosystem",
+      "trust"
+    ],
+    "category": "category-deep-dive",
+    "featuredServers": [],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-04-15-claude-cheat-codes-the-power-user-reference",
+    "title": "Claude Cheat Codes: The Power User Reference",
+    "description": "A condensed field guide to the prompt codes, XML patterns, thinking triggers, and context systems that separate casual Claude users from power users. Download the full PDF at the end.",
+    "hook": "The biggest gap between casual and power users isn't prompt tricks — it's building systems around every interaction.",
+    "date": "2026-04-15",
+    "tags": [
+      "claude",
+      "prompt-engineering",
+      "claude-code",
+      "reference"
+    ],
+    "category": "category-deep-dive",
+    "featuredServers": [],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-04-10-mcp-vs-traditional-apis-what-s-the-difference-and-when-to-use-each",
+    "title": "MCP vs APIs vs CLI vs Skills: What's the Difference and When to Use Each",
+    "description": "MCP vs APIs vs CLI vs Skills — four interfaces for connecting to tools, each built for a different caller. Here's how they compare and when to use each one.",
+    "hook": "APIs are for apps. CLIs are for humans. MCP is for AI tools. Skills are for AI workflows. Four ways to connect to tools — here's when each one makes sense.",
+    "date": "2026-04-10",
+    "tags": [
+      "guide",
+      "tutorial",
+      "how-to",
+      "seo"
+    ],
+    "category": "category-deep-dive",
+    "featuredServers": [],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-04-09-640-stars-in-a-week-mcp-servers-hit-critical-mass",
+    "title": "640 Stars in a Week: MCP Servers Hit Critical Mass",
+    "description": "MCP ecosystem explodes with 1,771+ new stars this week. Orchestration, cost management, and agent perception tools now dominate. Here's what's actually trending.",
+    "hook": "One MCP server gained 640 stars in a week. The top 10 combined for 1,771+. This isn't hype — it's the moment boring infrastructure gets real. Your AI stack needs these tools now.",
+    "date": "2026-04-09",
+    "tags": [
+      "trending",
+      "stars",
+      "popular"
+    ],
+    "category": "trending",
+    "featuredServers": [
+      "io-github-incorporatedpartners-labelhead-artist-momentum",
+      "nanobot",
+      "ruflo",
+      "ai-com-mcp-skills-search",
+      "litellm",
+      "context7-mcp-server",
+      "chrome-devtools-mcp",
+      "fli",
+      "scrapling",
+      "awesome-mcp-servers"
+    ],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-04-09-supabase-mcp-server-your-database-in-chat",
+    "title": "Supabase MCP Server: Your Database in Chat",
+    "description": "How a 2,592-star MCP server eliminates context-switching between your AI assistant and Supabase projects—with a hard look at its 97-point quality score.",
+    "hook": "Stop copying SQL queries between tabs. The Supabase MCP Server brings execute_sql, migrations, and project management directly into your chat — no dashboard context-switching required. 97-point quality score, but documentation gaps exist.",
+    "date": "2026-04-09",
+    "tags": [
+      "spotlight",
+      "review"
+    ],
+    "category": "server-spotlight",
+    "featuredServers": [
+      "supabase"
+    ],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-04-08-best-mcp-servers-for-claude-desktop",
+    "title": "The 10 Best MCP Servers for Claude Desktop in 2026",
+    "description": "We scored 17,581 MCP servers. These 10 are the ones worth installing in Claude Desktop right now — backed by real security scans, not vibes.",
+    "hook": "17,581 MCP servers exist. We scored them all. Here are the 10 that actually deserve a spot in your Claude Desktop config.",
+    "date": "2026-04-08",
+    "tags": [
+      "claude-desktop",
+      "mcp-servers",
+      "guide",
+      "recommendations"
+    ],
+    "category": "category-deep-dive",
+    "featuredServers": [
+      "supabase",
+      "postgres",
+      "context7",
+      "filesystem",
+      "github",
+      "slack",
+      "brave-search",
+      "puppeteer",
+      "memory",
+      "sequential-thinking"
+    ],
+    "readingTime": 5
+  },
+  {
+    "slug": "2026-04-08-how-to-check-if-mcp-server-is-safe",
+    "title": "How to Check if an MCP Server Is Safe Before Installing",
+    "description": "A practical guide to evaluating MCP server security — with real data from scanning 17,581 servers and the three threats CVE databases completely miss.",
+    "hook": "We scanned 17,581 MCP servers. 64 can execute shell commands. 4 have injection risk patterns. 1 has confirmed tool poisoning. Here's how to not install the wrong one.",
+    "date": "2026-04-08",
+    "tags": [
+      "security",
+      "safety",
+      "mcp-servers",
+      "best-practices"
+    ],
+    "category": "category-deep-dive",
+    "featuredServers": [],
+    "readingTime": 6
+  },
+  {
+    "slug": "2026-04-07-mcppedia-mcp-server-inception",
+    "title": "We Built an MCP Server for Finding MCP Servers",
+    "description": "The MCPpedia MCP Server is live. Now your AI can search, evaluate, and compare 17,000+ MCP servers — without ever leaving the conversation.",
+    "hook": "An MCP server that helps you find MCP servers. It's MCP servers all the way down.",
+    "date": "2026-04-07",
+    "tags": [
+      "launch",
+      "announcement",
+      "mcp-server"
+    ],
+    "category": "server-spotlight",
+    "featuredServers": [],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-04-06-17k-mcp-servers-in-one-week-here-s-what-actually-matters",
+    "title": "We Just Cataloged 17K MCP Servers—Here's What Actually Matters",
+    "description": "MCPpedia launched this week and cataloged 17,303 MCP servers across the ecosystem. We broke down the most important projects and trending servers reshaping AI agent infrastructure.",
+    "hook": "We launched MCPpedia this week and discovered 17K+ MCP servers already out there. Here's which ones actually matter: Firecrawl's scraping dominance (+474 stars), GitNexus's mind-bending growth (+893 stars), and the quiet revolution in healthcare AI.",
+    "date": "2026-04-06",
+    "tags": [
+      "weekly",
+      "ecosystem",
+      "new-servers"
+    ],
+    "category": "weekly-roundup",
+    "featuredServers": [
+      "io-github-cameroncooke-xcodebuildmcp",
+      "xcodebuildmcp",
+      "sequential-thinking",
+      "firecrawl-mcp-server",
+      "mcp-server-qdrant",
+      "tavily-mcp",
+      "arxiv-mcp-server",
+      "io-github-wso2-fhir-mcp-server",
+      "context-mode",
+      "context7"
+    ],
+    "readingTime": 3
+  },
+  {
+    "slug": "2026-04-06-what-is-mcppedia",
+    "title": "What Is MCPpedia?",
+    "description": "The MCP ecosystem exploded faster than anyone could track it. MCPpedia is the directory that tries to make sense of it — automatically, every day.",
+    "hook": "The MCP ecosystem grew faster than any directory could keep up with. So we built one that never sleeps, never stops scanning, and doesn't rely on anyone to submit anything.",
+    "date": "2026-04-06",
+    "tags": [
+      "mcppedia",
+      "about",
+      "overview"
+    ],
+    "category": "weekly-roundup",
+    "featuredServers": [],
+    "readingTime": 3
+  },
+  {
+    "slug": "2026-04-06-xcodebuildmcp-stop-breaking-context-with-your-build-system",
+    "title": "XcodeBuildMCP: Stop Breaking Context With Your Build System",
+    "description": "5,000-star MCP server lets Claude build iOS and macOS apps directly. No more alt-tabbing to Xcode.",
+    "hook": "iOS devs using Claude just lost their best excuse to leave the conversation. XcodeBuildMCP's 5,045 GitHub stars prove Apple developers are tired of manual builds—and ready for AI that actually compiles their code.",
+    "date": "2026-04-06",
+    "tags": [
+      "spotlight",
+      "review"
+    ],
+    "category": "server-spotlight",
+    "featuredServers": [
+      "io-github-cameroncooke-xcodebuildmcp"
+    ],
+    "readingTime": 4
+  },
+  {
+    "slug": "2026-04-05-17000-mcp-servers-and-the-threats-nobody-talks-about",
+    "title": "17,000 MCP Servers — And the Security Threats Nobody Is Talking About",
+    "description": "We're tracking over 17,000 MCP servers. That's remarkable. It also means the attack surface for AI assistants has never been larger. Here's what to watch for.",
+    "hook": "We just crossed 17,000 MCP servers in the catalog. Most security guides still warn you about CVEs. They're missing the three threats that are unique to AI — and far harder to detect.",
+    "date": "2026-04-05",
+    "tags": [
+      "security",
+      "tool-poisoning",
+      "ecosystem",
+      "threats"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 5
+  },
+  {
+    "slug": "2026-04-04-how-we-score-mcp-servers",
+    "title": "How We Score MCP Servers — And Why We Rebuilt It From Scratch",
+    "description": "Our first scoring system was a leaderboard. Our second is an audit. Here's what changed, why it matters, and what each of the five dimensions actually measures.",
+    "hook": "Our first version ranked MCP servers by GitHub stars. It was wrong in every interesting way — and fixing it taught us what 'quality' actually means in the MCP ecosystem.",
+    "date": "2026-04-04",
+    "tags": [
+      "scoring",
+      "methodology",
+      "security",
+      "transparency"
+    ],
+    "category": "category-deep-dive",
+    "featuredServers": [],
+    "readingTime": 7
+  },
+  {
+    "slug": "2026-04-03-the-rise-of-mcp-servers",
+    "title": "The Rise of MCP Servers: Why the Ecosystem Is Exploding in 2026",
+    "description": "MCP servers have gone from niche developer tools to essential AI infrastructure. Here's what's driving the growth and what it means for you.",
+    "hook": "6 months ago nobody knew what MCP servers were. Now there are hundreds and the number doubles every quarter. Here's why this matters for every developer.",
+    "date": "2026-04-03",
+    "tags": [
+      "ecosystem",
+      "growth",
+      "overview"
+    ],
+    "category": "weekly-roundup",
+    "featuredServers": [],
+    "readingTime": 3
+  }
+]

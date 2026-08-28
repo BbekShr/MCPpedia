@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import matter from 'gray-matter'
+import blogIndex from '@/data/blog-index.json'
 
 const blogDir = path.join(process.cwd(), 'content', 'blog')
 
@@ -29,33 +30,17 @@ function estimateReadingTime(content: string): number {
   return Math.max(1, Math.round(words / 238))
 }
 
+// Reads the build-time index, NOT content/*.mdx: this runs at request time on
+// /sitemap.xml, /llms.txt, /llms-full.txt and /blog, and Cloudflare Workers have
+// no filesystem. `npm run content:index` (wired into prebuild) keeps it in sync;
+// it is written date-descending, matching the order this used to sort into.
 export function getAllBlogPosts(): BlogMeta[] {
-  if (!fs.existsSync(blogDir)) return []
-
-  const files = fs.readdirSync(blogDir).filter(f => f.endsWith('.mdx'))
-
-  return files
-    .map(file => {
-      const slug = file.replace(/\.mdx$/, '')
-      const raw = fs.readFileSync(path.join(blogDir, file), 'utf-8')
-      const { data, content } = matter(raw)
-
-      return {
-        slug,
-        title: data.title || slug,
-        description: data.description || '',
-        hook: data.hook || data.description || '',
-        date: data.date || '',
-        updated: data.updated || undefined,
-        tags: data.tags || [],
-        category: data.category || 'weekly-roundup',
-        featuredServers: data.featuredServers || [],
-        readingTime: estimateReadingTime(content),
-      }
-    })
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  return blogIndex as BlogMeta[]
 }
 
+// Reads the post BODY off disk, so it is build-time only. Every segment that
+// calls it (/blog/[slug] and its opengraph-image) sets `dynamicParams = false`
+// and no `revalidate`, which pins them to prerender — see the note there.
 export function getBlogPost(slug: string): { meta: BlogMeta; content: string } | null {
   // Prevent path traversal — only allow alphanumeric, hyphens, underscores
   if (!/^[a-zA-Z0-9_-]+$/.test(slug)) return null

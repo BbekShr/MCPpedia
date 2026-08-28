@@ -72,14 +72,19 @@ export function rateLimitIp(ip: string, action: string, limit = 10, windowMs = 6
 }
 
 /**
- * Extract the client IP from request headers. On Vercel, `x-vercel-forwarded-for`
- * is set by Vercel's edge (not user-settable) so we prefer it. Otherwise we fall
- * back to the leftmost value of `x-forwarded-for` and then `x-real-ip`. `x-real-ip`
- * is easily spoofed on non-Vercel deployments, so it is the last choice.
+ * Extract the client IP from request headers. On Cloudflare, `cf-connecting-ip`
+ * is written by the edge and OVERWRITES anything the client sent, so it is the
+ * only header here that cannot be forged and it is preferred. Otherwise we fall
+ * back to the leftmost value of `x-forwarded-for` and then `x-real-ip`; both are
+ * client-settable off-edge, so they are last resorts.
+ *
+ * `x-vercel-forwarded-for` was preferred here while the site ran on Vercel. It
+ * is deliberately NOT consulted any more: off Vercel nothing rewrites it, so
+ * trusting it would let any caller pick their own rate-limit bucket.
  */
 export function getClientIp(req: Request): string {
-  const vercel = req.headers.get('x-vercel-forwarded-for')
-  if (vercel) return vercel.split(',')[0].trim()
+  const cf = req.headers.get('cf-connecting-ip')
+  if (cf) return cf.split(',')[0].trim()
 
   const xff = req.headers.get('x-forwarded-for')
   if (xff) return xff.split(',')[0].trim()

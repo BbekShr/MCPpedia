@@ -2,9 +2,8 @@ import { CATEGORIES, SITE_URL } from './constants'
 import { getAllBlogPosts } from './blog'
 import { getAllGuides } from './mdx'
 import { getAllSkills } from './skills'
+import { getComparisonPairs } from './comparison-pairs'
 import { isServerIndexable, type IndexableServerFields } from './seo'
-import fs from 'fs'
-import path from 'path'
 
 export const SERVER_CHUNK_SIZE = 10000
 
@@ -125,17 +124,9 @@ export function buildStaticEntries(): SitemapEntry[] {
     lastModified: s.last_updated ? new Date(s.last_updated) : undefined,
   }))
 
-  let comparisonEntries: SitemapEntry[] = []
-  try {
-    const pairsPath = path.join(process.cwd(), 'data', 'comparison-pairs.json')
-    const pairsRaw = fs.readFileSync(pairsPath, 'utf-8')
-    const pairsData = JSON.parse(pairsRaw)
-    comparisonEntries = (pairsData.pairs || []).map((p: { slugA: string; slugB: string }) => ({
-      url: `${SITE_URL}/compare/${p.slugA}-vs-${p.slugB}`,
-    }))
-  } catch {
-    // No pairs file yet
-  }
+  const comparisonEntries: SitemapEntry[] = getComparisonPairs().map(p => ({
+    url: `${SITE_URL}/compare/${p.slugA}-vs-${p.slugB}`,
+  }))
 
   return [
     ...staticPages,

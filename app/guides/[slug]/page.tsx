@@ -4,6 +4,13 @@ import { SITE_URL } from '@/lib/constants'
 import type { Metadata } from 'next'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 
+// Prerender-only: getBlogPost()/getGuide() read the MDX body off disk, and
+// Cloudflare Workers have no filesystem. `dynamicParams = false` (with no
+// `revalidate`) pins this segment to build time, so an unlisted slug 404s from
+// the static shell instead of trying to read content/ inside the Worker. Posts
+// are fs-committed and ship via deploy anyway, so nothing is lost.
+export const dynamicParams = false
+
 export async function generateStaticParams() {
   const guides = getAllGuides()
   return guides.map(g => ({ slug: g.slug }))

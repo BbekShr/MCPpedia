@@ -5,7 +5,7 @@ import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import CompareTray from '@/components/CompareTray'
 import { SITE_NAME, SITE_DESCRIPTION, SITE_URL } from '@/lib/constants'
-import { Analytics } from '@vercel/analytics/next'
+import WebAnalytics from '@/components/WebAnalytics'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains' })
@@ -64,7 +64,7 @@ export default function RootLayout({
         <main id="main-content" className="flex-1">{children}</main>
         <Footer />
         <CompareTray />
-        <Analytics />
+        <WebAnalytics />
       </body>
     </html>
   )
