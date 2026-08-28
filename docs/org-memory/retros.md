@@ -386,6 +386,19 @@ The cycle also produced its own follow-on: the perf lens quantified `/s/[slug]/o
 the same defect ~39,409x over, on the service-role client. Filed as S93, not fixed here — finding
 and fixing stay in separate diffs.
 
+## 2026-08-05 — cycle a (S93: both per-slug OG routes made real ISR)
+
+Two frictions. (1) The S93 row's drafted acceptance criteria
+demanded a manifest proof (`initialRevalidateSeconds` on the `dynamicRoutes` entry) that is impossible
+in non-PPR Next — the researcher caught it before anything was built and the proof set was re-derived;
+hunters drafting criteria about build artifacts should verify the artifact shape first. (2) The main
+checkout carried uncommitted changes matching no backlog row (a HubIntro split), so the cycle ran in a
+git worktree and the /code-review and /security-review skills (which read the current checkout's diff)
+were skipped in favor of the four-lens board — that substitution worked, and the board caught what
+mattered: the plan-stage decision to defer the `revalidateServer` purge line was overturned by three
+lenses independently proving ISR caches 404s. A plan's "out of scope" call is only as good as its
+model of the cache.
+
 ## 2026-08-05 — cycle c closeout (S91/S92 verified in prod)
 
 No friction. The cycle closed the way the previous two suggested it should: the acceptance criteria

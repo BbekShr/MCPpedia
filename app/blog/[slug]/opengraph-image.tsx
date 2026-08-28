@@ -1,7 +1,8 @@
 import { ImageResponse } from 'next/og'
-import { getBlogPost } from '@/lib/blog'
+import { getAllBlogPosts, getBlogPost } from '@/lib/blog'
 
 export const runtime = 'nodejs'
+export const revalidate = 604800 // 7 days — content is fs-committed; changes ship via deploy anyway
 export const alt = 'MCPpedia Blog'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
@@ -22,18 +23,27 @@ const categoryLabels: Record<string, string> = {
   'category-deep-dive': 'Deep Dive',
 }
 
+// fs-only and env-independent (lib/blog.ts reads content/blog/*.mdx), so all
+// ~61 images prerender in the env-less CI build — this is what puts concrete
+// /blog/*/opengraph-image entries with initialHeaders into prerender-manifest.
+export async function generateStaticParams() {
+  return getAllBlogPosts().map(p => ({ slug: p.slug }))
+}
+
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const post = getBlogPost(slug)
 
-  const title = post?.meta.title || slug
-  const hook = post?.meta.hook || ''
-  const category = post?.meta.category || 'weekly-roundup'
-  const date = post?.meta.date
+  if (!post) return new Response('Not Found', { status: 404 })
+
+  const title = post.meta.title
+  const hook = post.meta.hook
+  const category = post.meta.category
+  const date = post.meta.date
     ? new Date(post.meta.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
     : ''
-  const readingTime = post?.meta.readingTime || 3
-  const tags = post?.meta.tags || []
+  const readingTime = post.meta.readingTime
+  const tags = post.meta.tags
   const colors = categoryColors[category] || categoryColors['weekly-roundup']
 
   return new ImageResponse(
@@ -145,6 +155,11 @@ export default async function Image({ params }: { params: Promise<{ slug: string
         </div>
       </div>
     ),
-    { ...size }
+    {
+      ...size,
+      headers: {
+        'Cache-Control': 'public, max-age=3600, s-maxage=604800, stale-while-revalidate=604800',
+      },
+    }
   )
 }
