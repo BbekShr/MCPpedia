@@ -897,6 +897,11 @@ async function runFinalize() {
 
     saveMeta(meta)
 
+    // The workflow reads this to decide whether to fall back to --render. It is
+    // set on every path, including the failure path below, because "the model
+    // step produced nothing" is exactly when the fallback has to fire.
+    setStepOutput('written', String(written))
+
     if (written === 0) {
       // Jobs existed but none produced a usable article — surface as a failure
       // so the workflow's commit step (also gated on job_count) isn't relied on
@@ -912,6 +917,7 @@ async function runFinalize() {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error('Finalize failed:', msg)
+    setStepOutput('written', '0')
     await run.fail(msg)
     process.exit(1)
   }

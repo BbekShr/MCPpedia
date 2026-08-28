@@ -27,17 +27,58 @@ jobs:
 
       - run: npm ci
 
-      # Publish a post only when there is a new critical/high advisory that
-      # .meta.json has not already covered — the bot writes nothing otherwise,
-      # and the commit step below no-ops. Rendered from Supabase data; see the
-      # note in generate-blog.yml for why there is no model call here any more.
-      - name: Render security alert from advisory data
-        run: npx tsx bots/generate-blog.ts --security-only --render
+      # 1) Decide whether there's a new critical/high advisory worth publishing.
+      #    Supabase only — no model call. Emits a prompt file (job 0) when there
+      #    is something to write. Sets job_count + model_0.
+      - name: Prepare security alert job
+        id: prep
+        run: npx tsx bots/generate-blog.ts --security-only --prepare
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      # 2) Write it with the Claude Code action, billed to a Claude subscription
+      #    via CLAUDE_CODE_OAUTH_TOKEN. See generate-blog.yml for why this step
+      #    tolerates failure and why the token needs verifying after a refresh.
+      - name: Generate article with Claude (subscription)
+        if: steps.prep.outputs.job_count == '1'
+        continue-on-error: true
+        uses: anthropics/claude-code-base-action@main
+        timeout-minutes: 15
+        with:
+          prompt_file: blog-work/prompt-0.txt
+          claude_args: "--allowedTools Write --model ${{ steps.prep.outputs.model_0 }}"
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+      # 3) Turn the generated prose into MDX and record the covered CVEs in
+      #    .meta.json so tomorrow's run doesn't republish them.
+      - name: Finalize article
+        id: finalize
+        if: steps.prep.outputs.job_count == '1'
+        continue-on-error: true
+        run: npx tsx bots/generate-blog.ts --security-only --finalize
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      # 4) Fallback. A security advisory is the one post that must not wait for
+      #    a credential to be fixed, so render it from the advisory data instead.
+      - name: Fall back to rendered alert
+        id: fallback
+        if: |
+          steps.prep.outputs.job_count == '1' &&
+          (steps.finalize.outcome != 'success' ||
+           steps.finalize.outputs.written == '0' ||
+           steps.finalize.outputs.written == '')
+        run: |
+          echo "::warning title=Security alert fell back to template::The Claude step produced no article. Run the Verify Claude Token workflow."
+          npx tsx bots/generate-blog.ts --security-only --render
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Commit and push if new alerts
+        if: steps.prep.outputs.job_count == '1'
         run: |
           git config user.name "mcppedia-bot"
           git config user.email "bot@mcppedia.org"
@@ -64,3 +105,13 @@ jobs:
           done
           echo "Push still failing after 5 attempts"
           exit 1
+
+      - name: Report which path produced the alert
+        if: always() && steps.prep.outputs.job_count == '1'
+        run: |
+          if [ "${{ steps.fallback.outcome }}" = "success" ]; then
+            echo "### ⚠️ Security alert published from TEMPLATE, not Claude" >> $GITHUB_STEP_SUMMARY
+            echo "Run **Verify Claude Token**." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ✅ Security alert published from Claude" >> $GITHUB_STEP_SUMMARY
+          fi

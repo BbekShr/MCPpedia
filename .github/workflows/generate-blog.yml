@@ -28,24 +28,81 @@ jobs:
 
       - run: npm ci
 
-      # Plan the article(s) and render each one from Supabase data via the
-      # templates in bots/lib/blog-templates.ts. Supabase is the only credential
-      # in this job.
+      # 1) Plan the article(s) (0-2) and emit a prompt file per article. Touches
+      #    only Supabase — no model call. Sets job_count + model_<i> outputs.
+      - name: Prepare blog jobs
+        id: prep
+        run: npx tsx bots/generate-blog.ts --prepare
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      # 2) Generate each planned article with the Claude Code action. This bills
+      #    a Claude subscription via CLAUDE_CODE_OAUTH_TOKEN instead of Anthropic
+      #    API credits — generate it locally with `claude setup-token` (Pro/Max)
+      #    and store it as the CLAUDE_CODE_OAUTH_TOKEN repository secret.
       #
-      # This replaced a three-step dance around anthropics/claude-code-base-action,
-      # billed to a Claude subscription through CLAUDE_CODE_OAUTH_TOKEN. That
-      # token began returning `authentication_error: Invalid bearer token` on
-      # 2026-06-25; every scheduled run after it died in under two seconds having
-      # written nothing, and two separate token refreshes did not change that.
-      # The blog was dark for nine weeks on one expiring credential, so the
-      # scheduled path deliberately no longer holds one.
-      - name: Render articles from catalog data
-        run: npx tsx bots/generate-blog.ts --render
+      #    Verify the secret with the Verify Claude Token workflow after every
+      #    refresh. This step failed silently from 2026-06-25 to 2026-08-28
+      #    because the stored secret was never a usable token — first 92 chars of
+      #    something unrecognised, then a truncated one, then a full-length one
+      #    with whitespace padding. Each produced a nine-second 401 and an empty
+      #    blog, and nothing verified the value.
+      #
+      #    continue-on-error: the render fallback below is the whole point. A bad
+      #    token must cost one plainer post, not another nine silent weeks.
+      - name: Generate article 0 with Claude (subscription)
+        if: steps.prep.outputs.job_count == '1' || steps.prep.outputs.job_count == '2'
+        continue-on-error: true
+        uses: anthropics/claude-code-base-action@main
+        timeout-minutes: 15
+        with:
+          prompt_file: blog-work/prompt-0.txt
+          claude_args: "--allowedTools Write --model ${{ steps.prep.outputs.model_0 }}"
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+      - name: Generate article 1 with Claude (subscription)
+        if: steps.prep.outputs.job_count == '2'
+        continue-on-error: true
+        uses: anthropics/claude-code-base-action@main
+        timeout-minutes: 15
+        with:
+          prompt_file: blog-work/prompt-1.txt
+          claude_args: "--allowedTools Write --model ${{ steps.prep.outputs.model_1 }}"
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+      # 3) Turn the generated prose back into MDX posts and update .meta.json.
+      #    Emits a `written` output so the fallback below can tell an empty model
+      #    step from a successful one.
+      - name: Finalize articles
+        id: finalize
+        if: steps.prep.outputs.job_count == '1' || steps.prep.outputs.job_count == '2'
+        continue-on-error: true
+        run: npx tsx bots/generate-blog.ts --finalize
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      # 4) Fallback. If the model wrote nothing — expired token, API outage,
+      #    empty output — build the same planned articles from catalog data via
+      #    bots/lib/blog-templates.ts. Plainer posts, but the blog ships.
+      #    .meta.json dedup means anything the model DID write is not repeated.
+      - name: Fall back to rendered articles
+        id: fallback
+        if: |
+          steps.prep.outputs.job_count != '0' &&
+          (steps.finalize.outcome != 'success' ||
+           steps.finalize.outputs.written == '0' ||
+           steps.finalize.outputs.written == '')
+        run: |
+          echo "::warning title=Blog fell back to templates::The Claude step produced no article. Run the Verify Claude Token workflow — the token is the usual cause."
+          npx tsx bots/generate-blog.ts --render
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Commit and push new posts
+        if: steps.prep.outputs.job_count == '1' || steps.prep.outputs.job_count == '2'
         run: |
           git config user.name "mcppedia-bot"
           git config user.email "bot@mcppedia.org"
@@ -71,3 +128,16 @@ jobs:
           done
           echo "Push still failing after 5 attempts"
           exit 1
+
+      # A green run that quietly shipped a template post is how this outage
+      # stayed invisible. Make the degraded path loud in the run summary.
+      - name: Report which path produced the posts
+        if: always() && steps.prep.outputs.job_count != '0'
+        run: |
+          if [ "${{ steps.fallback.outcome }}" = "success" ]; then
+            echo "### ⚠️ Blog published from TEMPLATES, not Claude" >> $GITHUB_STEP_SUMMARY
+            echo "The model step produced nothing. Run **Verify Claude Token** — a stale or malformed CLAUDE_CODE_OAUTH_TOKEN is the usual cause." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ✅ Blog published from Claude" >> $GITHUB_STEP_SUMMARY
+            echo "Articles written: ${{ steps.finalize.outputs.written }}" >> $GITHUB_STEP_SUMMARY
+          fi

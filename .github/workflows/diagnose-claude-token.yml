@@ -11,15 +11,13 @@ name: Verify Claude Token
 #
 # Round-1 findings this encodes: the failure reproduces on the newest CLI with
 # no action wrapper and a two-word prompt, so a red result here means the stored
-# credential, not the blog job.
+# credential, not the blog job. The 2026-08 outage was caused, in sequence, by a
+# value that was not an Anthropic token at all, then a truncated one, then a
+# full-length one with whitespace padding — which is why this checks shape
+# before it checks authentication.
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - claude/blog-publishing-automation-f6f28e
-    paths:
-      - .github/workflows/diagnose-claude-token.yml
 
 permissions:
   contents: read
