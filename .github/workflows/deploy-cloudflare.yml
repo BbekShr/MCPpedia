@@ -29,7 +29,17 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # 22, not 20: wrangler (^4.126.0, a dependency of @opennextjs/cloudflare)
+          # hard-requires Node >= 22 and exits before doing anything on an older
+          # runtime. On 20 it aborted mid-deploy with "Wrangler requires at least
+          # Node.js v22.0.0", which surfaced as the misleading downstream error
+          # `Failed to provision remote R2 bucket ...: wrangler login failed` —
+          # the credentials were never reached, let alone rejected.
+          #
+          # Both workflows are pinned together on purpose. CI's `cf:build` and the
+          # deploy build the SAME artifact, so a version split here would put CI
+          # back to verifying something other than what ships.
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
