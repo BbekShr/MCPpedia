@@ -1,0 +1,99 @@
+name: Diagnose Claude Token
+
+# TEMPORARY. Delete once the CLAUDE_CODE_OAUTH_TOKEN 401 is resolved.
+#
+# The blog's model step has failed since 2026-06-25 with
+# `authentication_error: Invalid bearer token`, surviving two token refreshes.
+# Current action versions swallow the error text, so this runs the same token
+# two ways to tell the two possible causes apart:
+#
+#   cli    — the Claude Code CLI directly, newest version, no action wrapper.
+#   action — anthropics/claude-code-base-action@main, as the blog workflows use.
+#
+# If BOTH fail  -> the token/account is the problem (lapsed plan, revoked token).
+# If only action fails -> CLI/action version skew; pin the action.
+# If BOTH pass  -> the token is fine and the fault is in how the blog job calls it.
+#
+# Never scheduled, never pushes, never touches content/. It triggers on pushes
+# to this diagnostic branch only — workflow_dispatch cannot reach a workflow
+# that is not yet on the default branch, and this one is meant to be deleted
+# before it ever gets there.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - claude/blog-publishing-automation-f6f28e
+    paths:
+      - .github/workflows/diagnose-claude-token.yml
+
+permissions:
+  contents: read
+
+jobs:
+  cli:
+    name: Token via Claude Code CLI (no action wrapper)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Report CLI version
+        run: claude --version || true
+
+      # `|| true` so the raw result is always printed — a non-zero exit here is
+      # the thing being diagnosed, not a reason to hide the output. The token is
+      # a repo secret and stays masked by the runner in anything echoed.
+      - name: Run a trivial prompt
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          echo "--- begin claude output ---"
+          claude -p "Reply with the single word: ok" --output-format json 2>&1 | tee /tmp/cli-result.json || true
+          echo "--- end claude output ---"
+
+      - name: Extract the error, if any
+        run: |
+          echo "Result field:"
+          node -e "
+            const fs = require('fs');
+            let raw = '';
+            try { raw = fs.readFileSync('/tmp/cli-result.json', 'utf8'); } catch { console.log('(no output file)'); process.exit(0); }
+            try {
+              const j = JSON.parse(raw);
+              console.log(JSON.stringify({ is_error: j.is_error, subtype: j.subtype, result: j.result, num_turns: j.num_turns }, null, 2));
+            } catch {
+              console.log(raw.slice(0, 4000));
+            }
+          "
+
+  action:
+    name: Token via claude-code-base-action@main
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write a trivial prompt
+        run: |
+          mkdir -p diag
+          echo "Reply with the single word: ok" > diag/prompt.txt
+
+      - name: Run the action
+        id: run
+        continue-on-error: true
+        uses: anthropics/claude-code-base-action@main
+        with:
+          prompt_file: diag/prompt.txt
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+      # The action saves its full stream to this path and the blog workflows
+      # never read it — which is why the 401 body stopped being visible.
+      - name: Dump the action's raw execution log
+        if: always()
+        run: |
+          echo "--- claude-execution-output.json ---"
+          cat "${RUNNER_TEMP}/claude-execution-output.json" 2>/dev/null || echo "(not written)"
