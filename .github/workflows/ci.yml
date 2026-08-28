@@ -37,14 +37,40 @@ jobs:
       - name: Test
         run: npm test
 
-      - name: Build
+      - name: Build (Cloudflare Workers artifact)
+        # `cf:build`, not `next build`. Production runs on Cloudflare Workers via
+        # OpenNext (open-next.config.ts, wrangler.jsonc), so a green `next build`
+        # was signing off on an artifact this project no longer ships: an adapter
+        # or worker-bundling failure could reach production with CI green.
+        # `cf:build` runs `next build` first and then the OpenNext adapter, so
+        # this is a superset of the gate it replaces, not a swap — everything the
+        # old step caught, this step still catches.
+        #
         # Runs env-less ON PURPOSE — do not add placeholder Supabase env vars.
         # Without env, the Supabase factories fall back to mock clients
         # (lib/supabase/server.ts, public.ts, client.ts) and build-time DB
         # callers skip fetching. A placeholder URL like
         # https://placeholder.supabase.co would defeat those guards and make
         # prerender attempt real network calls, failing or slowing the build.
-        run: npm run build
+        run: npm run cf:build
+
+      - name: Verify Cloudflare artifact
+        # `cf:build` exits 0 even when the OpenNext bundler prints dozens of
+        # `ERROR Failed to copy <pkg>` lines — 40 of them when this step was
+        # written (2026-08-28), every one an ESM-only MDX/remark package that
+        # esbuild then bundled anyway. Confirmed harmless two ways: the packages
+        # are present in .open-next/server-functions, and production renders both
+        # blog MDX and server READMEs correctly. So that error text is NOT the
+        # signal, and gating on its count would redden this job on every
+        # dependency bump for no reason.
+        #
+        # These assert the things whose absence would actually ship a broken
+        # worker: the entrypoint, the static assets, and the markdown pipeline
+        # that /blog/[slug] and ServerReadme render through.
+        run: |
+          test -f .open-next/worker.js
+          test -d .open-next/assets
+          grep -rq unified .open-next/server-functions/
 
   # Governance gate: fails any PR that touches a protected path (CLAUDE.md §5)
   # unless a human has added the `human-approved` label. Agents never add that
