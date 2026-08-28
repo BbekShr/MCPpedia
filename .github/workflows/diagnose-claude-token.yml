@@ -1,0 +1,85 @@
+name: Verify Claude Token
+
+# Checks that CLAUDE_CODE_OAUTH_TOKEN actually authenticates, before trusting it
+# to write the blog. Run this after every token refresh.
+#
+# Why it exists: the blog's model step failed from 2026-06-25 to 2026-08-28 with
+# `401 Invalid bearer token`, and nobody could see it. Two refreshes did not fix
+# it because nothing verified the stored value — the blog workflow was the only
+# thing exercising the token, and it swallowed the error. This makes the check
+# cheap, isolated, and readable: ~40s, no push, no content/ writes.
+#
+# Round-1 findings this encodes: the failure reproduces on the newest CLI with
+# no action wrapper and a two-word prompt, so a red result here means the stored
+# credential, not the blog job. The 2026-08 outage was caused, in sequence, by a
+# value that was not an Anthropic token at all, then a truncated one, then a
+# full-length one with whitespace padding — which is why this checks shape
+# before it checks authentication.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Does the stored token authenticate?
+    runs-on: ubuntu-latest
+    steps:
+      # Shape first — it costs nothing and catches the common paste failures
+      # (truncation, an embedded newline, the wrong credential entirely) with a
+      # clearer message than a bare 401. Nothing here prints the secret; length
+      # and a prefix match are derived facts, and the runner masks the value.
+      - name: Inspect the stored secret's shape
+        env:
+          TOK: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          if [ -z "${TOK}" ]; then
+            echo "SHAPE: secret is EMPTY or not readable by this workflow"
+            exit 1
+          fi
+
+          LEN=$(printf '%s' "${TOK}" | wc -c | tr -d ' ')
+          echo "length: ${LEN} characters"
+
+          case "${TOK}" in
+            sk-ant-oat01-*) echo "prefix: sk-ant-oat01- (expected for setup-token)" ;;
+            sk-ant-api*)    echo "prefix: sk-ant-api - an API KEY, not an OAuth token" ;;
+            sk-ant-*)       echo "prefix: sk-ant-* but NOT oat01" ;;
+            *)              echo "prefix: not sk-ant-* - check this is setup-token output" ;;
+          esac
+
+          if printf '%s' "${TOK}" | LC_ALL=C grep -qE '[[:space:]]'; then
+            echo "whitespace: PRESENT - a newline or space is embedded in the value"
+          else
+            echo "whitespace: none"
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Report CLI version
+        run: claude --version
+
+      # The real test: does it authenticate? Exits non-zero on failure so the
+      # job goes red instead of reporting a green run that produced nothing —
+      # the exact way the blog hid this for nine weeks.
+      - name: Authenticate with a trivial prompt
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          claude -p "Reply with the single word: ok" --output-format json > /tmp/result.json 2>&1 || true
+          node -e "
+            const fs = require('fs');
+            let j;
+            try { j = JSON.parse(fs.readFileSync('/tmp/result.json', 'utf8')); }
+            catch { console.log('unparseable output:'); console.log(fs.readFileSync('/tmp/result.json','utf8').slice(0,2000)); process.exit(1); }
+            console.log(JSON.stringify({ is_error: j.is_error, api_error_status: j.api_error_status, result: j.result, num_turns: j.num_turns }, null, 2));
+            if (j.is_error) { console.log('\nVERDICT: token does NOT authenticate.'); process.exit(1); }
+            console.log('\nVERDICT: token authenticates. The blog can use it.');
+          "

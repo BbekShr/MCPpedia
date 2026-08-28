@@ -23,14 +23,13 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - run: npm ci
 
-      # 1) Decide whether there's a new security advisory worth publishing.
-      #    This only touches Supabase — no model call — and emits a prompt file
-      #    (job 0) for the Claude Code step below when (and only when) there's an
-      #    alert. Sets job_count + model_0 outputs.
+      # 1) Decide whether there's a new critical/high advisory worth publishing.
+      #    Supabase only — no model call. Emits a prompt file (job 0) when there
+      #    is something to write. Sets job_count + model_0.
       - name: Prepare security alert job
         id: prep
         run: npx tsx bots/generate-blog.ts --security-only --prepare
@@ -38,17 +37,12 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
-      # 2) Generate the article with the Claude Code action. This bills a Claude
-      #    subscription via CLAUDE_CODE_OAUTH_TOKEN instead of Anthropic API
-      #    credits, so there's no ANTHROPIC_API_KEY here. Generate `claude
-      #    setup-token` locally (Pro/Max) and store the result as the
-      #    CLAUDE_CODE_OAUTH_TOKEN repository secret. Runs only when step 1 found
-      #    something to publish.
-      # @main, not @beta: the beta ref pins Claude Code 1.0.88, which rejects
-      # OAuth tokens minted by current CLI versions (401 invalid bearer token).
-      # main also renamed the allowed_tools/model inputs into claude_args.
+      # 2) Write it with the Claude Code action, billed to a Claude subscription
+      #    via CLAUDE_CODE_OAUTH_TOKEN. See generate-blog.yml for why this step
+      #    tolerates failure and why the token needs verifying after a refresh.
       - name: Generate article with Claude (subscription)
         if: steps.prep.outputs.job_count == '1'
+        continue-on-error: true
         uses: anthropics/claude-code-base-action@main
         timeout-minutes: 15
         with:
@@ -56,11 +50,29 @@ jobs:
           claude_args: "--allowedTools Write --model ${{ steps.prep.outputs.model_0 }}"
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
-      # 3) Turn the generated prose back into a proper MDX post and record the
-      #    covered CVEs in .meta.json so tomorrow's run doesn't republish them.
+      # 3) Turn the generated prose into MDX and record the covered CVEs in
+      #    .meta.json so tomorrow's run doesn't republish them.
       - name: Finalize article
+        id: finalize
         if: steps.prep.outputs.job_count == '1'
+        continue-on-error: true
         run: npx tsx bots/generate-blog.ts --security-only --finalize
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      # 4) Fallback. A security advisory is the one post that must not wait for
+      #    a credential to be fixed, so render it from the advisory data instead.
+      - name: Fall back to rendered alert
+        id: fallback
+        if: |
+          steps.prep.outputs.job_count == '1' &&
+          (steps.finalize.outcome != 'success' ||
+           steps.finalize.outputs.written == '0' ||
+           steps.finalize.outputs.written == '')
+        run: |
+          echo "::warning title=Security alert fell back to template::The Claude step produced no article. Run the Verify Claude Token workflow."
+          npx tsx bots/generate-blog.ts --security-only --render
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -70,7 +82,13 @@ jobs:
         run: |
           git config user.name "mcppedia-bot"
           git config user.email "bot@mcppedia.org"
-          git add content/blog/
+          # Regenerate the frontmatter index in the same commit — request-time
+          # routes read data/blog-index.json, not content/, so a post committed
+          # without it is invisible to /blog, /sitemap.xml and /llms.txt. The
+          # previous version of this job omitted this and only generate-blog.yml
+          # ever caught the index up.
+          node scripts/generate-content-index.mjs
+          git add content/blog/ data/blog-index.json
           git diff --cached --quiet && echo "No security alerts to publish" && exit 0
           git commit -m "blog: security alert [bot]"
           # Rebase-retry: other bot workflows push to main too, so a push can be
@@ -87,3 +105,13 @@ jobs:
           done
           echo "Push still failing after 5 attempts"
           exit 1
+
+      - name: Report which path produced the alert
+        if: always() && steps.prep.outputs.job_count == '1'
+        run: |
+          if [ "${{ steps.fallback.outcome }}" = "success" ]; then
+            echo "### ⚠️ Security alert published from TEMPLATE, not Claude" >> $GITHUB_STEP_SUMMARY
+            echo "Run **Verify Claude Token**." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ✅ Security alert published from Claude" >> $GITHUB_STEP_SUMMARY
+          fi
