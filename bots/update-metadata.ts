@@ -4,6 +4,11 @@
  */
 
 import { config } from 'dotenv'
+import {
+  decideStarAttribution,
+  fetchNpmRepositoryDirectory,
+  normalizeRepoUrl,
+} from './lib/star-attribution'
 config({ path: '.env.local' })
 
 import { createAdminClient } from './lib/supabase'
@@ -79,6 +84,20 @@ async function main() {
 
   console.log(`Updating metadata for ${servers.length} servers...`)
 
+  // Census of how many servers resolve to each repo. A repo claimed by several
+  // servers cannot have its star count assigned to any one of them — see
+  // lib/star-attribution.ts. Built from the batch already in memory, so this
+  // costs no extra queries.
+  const serversPerRepo = new Map<string, number>()
+  for (const s of servers) {
+    const key = normalizeRepoUrl(s.github_url)
+    if (key) serversPerRepo.set(key, (serversPerRepo.get(key) || 0) + 1)
+  }
+  const sharedRepos = [...serversPerRepo.values()].filter(n => n > 1).length
+  console.log(`  ${sharedRepos} repo(s) back more than one server — their stars will not be attributed`)
+
+  let starsWithheld = 0
+
   let updated = 0
   let errors = 0
 
@@ -111,8 +130,24 @@ async function main() {
     // Only archive forward — never unarchive here. Otherwise we clobber
     // manual archives (e.g. duplicate merges) whenever the upstream GitHub
     // repo looks healthy. Admins can unarchive via /admin if needed.
+    // Only credit the repo's stars when this server IS the repo. An npm package
+    // living in a monorepo subdirectory, or a repo backing several catalog
+    // entries, inherits a following it did not earn — and that following is
+    // worth up to 5 maintenance points and a slot on the trending list.
+    const npmDirectory = server.npm_package
+      ? await fetchNpmRepositoryDirectory(server.npm_package)
+      : null
+    const attribution = decideStarAttribution({
+      npmDirectory,
+      serversSharingRepo: serversPerRepo.get(normalizeRepoUrl(server.github_url) || '') ?? 1,
+    })
+    if (!attribution.attribute && repo.stargazers_count > 0) {
+      starsWithheld++
+      console.log(`  ${server.slug}: withholding ${repo.stargazers_count} stars (${attribution.reason})`)
+    }
+
     const updates: Record<string, unknown> = {
-      github_stars: repo.stargazers_count,
+      github_stars: attribution.attribute ? repo.stargazers_count : 0,
       github_last_commit: repo.pushed_at,
       github_open_issues: repo.open_issues_count,
       health_status: computeHealth(repo.pushed_at, server.is_archived || shouldAutoArchive),
@@ -153,8 +188,8 @@ async function main() {
 
   run.addProcessed(servers.length)
   run.addUpdated(updated)
-  run.setSummary({ updated, errors })
-  console.log(`\nDone. Updated: ${updated}, Errors: ${errors}`)
+  run.setSummary({ updated, errors, starsWithheld })
+  console.log(`\nDone. Updated: ${updated}, Errors: ${errors}, Stars withheld: ${starsWithheld}`)
 
   // A run that updated ZERO servers while erroring on some is NOT a success — it
   // means every GitHub fetch failed (e.g. an expired/invalid BOT_GITHUB_TOKEN or

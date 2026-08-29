@@ -73,3 +73,4 @@ social-posts-and-outreach.md
 .wrangler/
 cloudflare-env.d.ts
 data/open-issues-audit.jsonl
+data/star-attribution-audit.jsonl
