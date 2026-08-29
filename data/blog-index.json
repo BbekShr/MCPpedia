@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-08-29-three-critical-mcp-vulnerabilities-demand-immediate-patching",
+    "title": "Three Critical MCP Vulnerabilities Demand Immediate Patching",
+    "description": "Two CRITICAL RCE flaws in ContextForge and a zero-auth bypass in Deepseek hit this week. If you're running either server, patch now—or isolate it immediately.",
+    "hook": "Two CRITICAL sandbox escapes and a zero-auth session bypass just dropped in ContextForge and Deepseek MCP servers. If you're running either, this isn't a 'patch Tuesday' item—this is a prod incident. Update or isolate today.",
+    "date": "2026-08-29",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 3
+  },
+  {
     "slug": "2026-08-28-1-667-new-mcp-servers-one-suspicious-star-count",
     "title": "1,667 New MCP Servers, One Suspicious Star Count",
     "description": "This week's MCP roundup: 35,074 total servers, a JVM runtime worth watching, a metering server that solves billing, and a trending list with a data quality problem.",

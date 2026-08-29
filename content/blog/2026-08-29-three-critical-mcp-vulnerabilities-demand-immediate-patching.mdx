@@ -1,0 +1,80 @@
+---
+title: "Three Critical MCP Vulnerabilities Demand Immediate Patching"
+description: "Two CRITICAL RCE flaws in ContextForge and a zero-auth bypass in Deepseek hit this week. If you're running either server, patch now—or isolate it immediately."
+hook: "Two CRITICAL sandbox escapes and a zero-auth session bypass just dropped in ContextForge and Deepseek MCP servers. If you're running either, this isn't a 'patch Tuesday' item—this is a prod incident. Update or isolate today."
+date: "2026-08-29"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+## Security Alert: Three Critical Vulnerabilities in Popular MCP Servers
+
+Five security advisories dropped this week targeting **ContextForge and Deepseek MCP servers**. Two are **CRITICAL** — arbitrary code execution with no authentication required in one case. If you're running either server in production, you need to act now.
+
+---
+
+<SectionLabel>The Threat Landscape</SectionLabel>
+
+We're looking at a pattern here: a sandbox-escape chain (RestrictedPython bypass), an unsandboxed template engine (Jinja2 SSTI), and a session enumeration flaw with zero authentication. These aren't subtle. They're the kind of bugs that get chained into full compromise in the wild.
+
+<Callout type="fire">
+2 CRITICAL vulnerabilities. Both in ContextForge. Both allow unauthenticated or low-privilege RCE.
+</Callout>
+
+---
+
+<SectionLabel>Vulnerability Breakdown</SectionLabel>
+
+### 1. Deepseek Authorization Bypass (CVE-2026-55604) — HIGH
+
+[io.github.arikusi/deepseek](/s/io-github-arikusi-deepseek) versions up to 1.6.0 expose a process-global `SessionStore` that accepts caller-supplied `session_id` values without binding them to any authenticated principal or transport session.
+
+**What this means:** An attacker can enumerate session IDs and access other users' data. **No authentication required.** The vulnerability lives in the fact that the server trusts the caller to provide a valid session ID without verification.
+
+**Action:** Update immediately. If you can't update, firewall access to this server to trusted clients only.
+
+---
+
+### 2. ContextForge Server-Side Template Injection (GHSA-vwf3-4xxj-qg6h) — HIGH
+
+[Mcp Context Forge](/s/mcp-context-forge) and [Mcp Contextforge Gateway](/s/mcp-contextforge-gateway) both render user-supplied prompt templates using Jinja2's plain `Environment()` instead of `SandboxedEnvironment`. 
+
+An authenticated user with permission to register or update prompt templates can inject arbitrary Python code that executes with the privileges of the gateway process. This is SSTI leading to RCE.
+
+**The catch:** It requires authentication and template-update permissions. That's lower impact than the next one — but it's still remote code execution on your infrastructure.
+
+**Action:** Update both servers. Audit who has template-update permissions in your deployment.
+
+---
+
+### 3. ContextForge Sandbox Bypass (CVE-2026-53710) — CRITICAL
+
+This is the one that keeps you up at night. The `python_sandbox_server` component in [Mcp Context Forge](/s/mcp-context-forge) and [Mcp Contextforge Gateway](/s/mcp-contextforge-gateway) uses RestrictedPython with a **broken sandbox**. 
+
+The vulnerability chains three weaknesses:
+
+- Raw `getattr` is exposed in `safe_builtins`, bypassing RestrictedPython's `_getattr_` mediation
+- The `validate_code` check looks for literal dangerous strings but misses payloads that construct them at runtime
+- No mitigation prevents access to the `__builtins__` namespace
+
+An attacker can write Python code that looks "safe" at validation time but escapes the sandbox entirely at runtime. Arbitrary code execution. No authentication required if the server is exposed.
+
+<PullQuote>RestrictedPython sandbox bypass + SSTI in the same server = full host compromise in the hands of someone with basic Python knowledge.</PullQuote>
+
+**Action:** Patch immediately. If you're running these servers, treat this as a prod incident. Do not deploy new template code until both CVE-2026-55604 and CVE-2026-53710 are patched.
+
+---
+
+<SectionLabel>What You Should Do Right Now</SectionLabel>
+
+1. **Check your inventory.** Do you run Deepseek, ContextForge, or ContextForge Gateway? Run `grep -r "deepseek\|contextforge" docker-compose.yml Dockerfile .env` to be sure.
+
+2. **Upgrade or isolate.** Patch to the latest version. If you can't patch immediately, restrict network access to these servers to trusted clients behind authentication (VPN, IAM, etc.).
+
+3. **Audit permissions.** Who has template-update or code-execution permissions in ContextForge? Revoke unnecessary access now.
+
+4. **Monitor logs.** Look for unusual `session_id` patterns in Deepseek logs or suspicious template renders in ContextForge. If you see them, assume compromise and investigate.
+
+---
+
+**The takeaway:** ContextForge has serious infrastructure problems. This is not a one-off patch. Until they restructure how they sandbox code and validate templates, treat any ContextForge deployment as high-risk. For Deepseek, the authorization bypass is more contained — but it's still unauthenticated. Both need your attention today.
