@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-08-30-praisonai-7-security-advisories-patch-now",
+    "title": "PraisonAI: 7 Security Advisories — Patch Now",
+    "description": "Critical and high-severity auth bypasses in PraisonAI MCP server. Unauthenticated job execution, CSRF, and WebSocket hijacking. Immediate action required.",
+    "hook": "7 security advisories just dropped against PraisonAI—including a critical WebSocket bypass and 6 auth holes that make every --api-key flag worthless. If you're running it in production, patch now or take it offline.",
+    "date": "2026-08-30",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 3
+  },
+  {
     "slug": "2026-08-29-three-critical-mcp-vulnerabilities-demand-immediate-patching",
     "title": "Three Critical MCP Vulnerabilities Demand Immediate Patching",
     "description": "Two CRITICAL RCE flaws in ContextForge and a zero-auth bypass in Deepseek hit this week. If you're running either server, patch now—or isolate it immediately.",

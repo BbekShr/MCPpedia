@@ -1,0 +1,85 @@
+---
+title: "PraisonAI: 7 Security Advisories — Patch Now"
+description: "Critical and high-severity auth bypasses in PraisonAI MCP server. Unauthenticated job execution, CSRF, and WebSocket hijacking. Immediate action required."
+hook: "7 security advisories just dropped against PraisonAI—including a critical WebSocket bypass and 6 auth holes that make every --api-key flag worthless. If you're running it in production, patch now or take it offline."
+date: "2026-08-30"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+PraisonAI: 7 Security Advisories — Immediate Patching Required
+
+In a single disclosure wave, **7 security advisories** have landed against [PraisonAI](/s/io-github-mervinpraison-praisonai-mervinpraison), including one **critical severity** vulnerability and six high-severity auth bypasses. The scope is staggering: from completely unauthenticated APIs to authentication flags that parse but never actually wire into the server. If you're running PraisonAI in production, this demands immediate action.
+
+---
+
+## What Happened
+
+PraisonAI, a popular MCP agent framework, exposed multiple authentication and validation gaps across its serve, jobs, and recipe endpoints. More troubling: **some are patch bypasses** — fixes that were supposed to close prior CVEs but failed to properly anchor checks or implement validation.
+
+An attacker with network access to a running PraisonAI instance can invoke agents under the operator's credentials, steal job results, submit new jobs, cancel running tasks, or trigger server-side request forgery — **all without a token, key, or any authentication**. The vulnerabilities span WebSocket validation, HTTP origin checks, and API endpoints that were supposed to be protected but never received authentication middleware.
+
+<Callout type="warning">
+**If you run PraisonAI on a network-accessible interface (not just localhost), you have an open door right now.** Patch immediately. If you've configured `--api-key` or `--auth`, those flags are currently non-functional.
+</Callout>
+
+---
+
+<SectionLabel>The Seven Vulnerabilities</SectionLabel>
+
+### 1. WebSocket Origin Regex Bypass (CVE-2026-55536) — CRITICAL
+
+The Chrome extension origin validation uses `re.match()` with an **unanchored regex**: `chrome-extension://[a-z0-9]{32}`. Because `re.match()` only anchors at the string start (not the end), any origin beginning with that pattern — followed by arbitrary trailing characters — passes validation. This bypasses GHSA-8x8f-54wf-vv92, a prior patch attempt on the same vulnerability.
+
+**Impact:** Unauthenticated WebSocket connections from forged origins.
+
+### 2. Origin Prefix Match Bypass (CVE-2026-55532) — HIGH
+
+The HTTP-stream transport checks allowed origins using `.startswith()`, so `http://localhost` or `http://127.0.0.1` match any string beginning with those prefixes — including `http://localhost.attacker.com`.
+
+**Impact:** Cross-site request forgery enabling agent invocation and data theft.
+
+### 3. Unauthenticated Jobs API (CVE-2026-55539) — HIGH
+
+The `/api/v1/runs` endpoint installs **no authentication middleware** at any level — not on the router, not per-route. Any caller can submit jobs, enumerate all jobs, read other jobs' results, cancel running jobs, or delete completed ones.
+
+**Impact:** Job execution as the operator, full result theft, denial of service.
+
+### 4. Recipe Server Auth Fail-Open (CVE-2026-55533) — HIGH
+
+When configured with `--auth api-key` or `--auth jwt` but no secret is provided, the server **silently allows unauthenticated requests**. No error, no warning — it just runs wide open.
+
+**Impact:** Authentication completely bypassed on potentially public interfaces.
+
+### 5. Ignored API Key Flags (CVE-2026-55541 & CVE-2026-55538) — HIGH
+
+Both `praisonai serve` and `praisonai serve agents` accept `--api-key` for authentication, but the CLI flag is parsed and **never wired into FastAPI** — no middleware, no header checks. The configured key is a no-op.
+
+**Impact:** Authentication is advertised but doesn't exist; users believe they're protected when they're not.
+
+### 6. Webhook SSRF with DNS Fail-Open (CVE-2026-55537) — HIGH
+
+Webhook URL validation resolves hostnames to check for private IPs. But **when DNS fails, the check silently passes**. A second bypass: even if DNS succeeds at submit time, the webhook fires later with a fresh DNS lookup — an attacker can use DNS rebinding to bypass the check and target internal services.
+
+**Impact:** Server-side request forgery; another patch bypass of CVE-2026-40114.
+
+---
+
+<SectionLabel>What You Must Do Now</SectionLabel>
+
+<PullQuote>
+Stop running PraisonAI immediately or isolate it to localhost-only until you upgrade. These aren't hypothetical edge cases — they're trivial to exploit.
+</PullQuote>
+
+**Action items:**
+
+- **Upgrade immediately:** Pull the latest version from the PraisonAI repository once patches are published. Check the project's releases page and security advisories for patch details.
+- **Isolate now:** If you can't upgrade immediately, restrict network access to localhost only. Don't expose the server to untrusted networks.
+- **Audit your instance:** If your PraisonAI instance was network-accessible, assume potential compromise. Review logs for unexpected POST requests to `/agents`, `/api/v1/runs`, webhook endpoints, or WebSocket connections.
+- **Remove false trust:** Don't rely on `--api-key` or `--auth` flags until patches land — they provide zero protection right now.
+
+---
+
+The pattern here is alarming: multiple authentication mechanisms that don't work, regex anchors that fail, and validation checks that silently pass on error. This isn't one bad commit — it's incomplete implementations across the board. Before deploying PraisonAI in production again, the maintainers need to wire end-to-end authentication, add tests that verify auth actually blocks unauthenticated requests, and treat validation failures as errors instead of silent passes.
+
+**For now: patch or isolate. No middle ground.**
