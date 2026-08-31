@@ -137,6 +137,10 @@ export default function EditServerPage() {
   const supabase = createClient()
 
   const [user, setUser] = useState<User | null>(null)
+  // Distinguishes "haven't resolved auth yet" from "confirmed signed out" —
+  // without it, a transient getUser() failure/rejection reads as signed-out
+  // and the page shows "Sign in" to an already-authenticated user (issue #68).
+  const [authLoading, setAuthLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const [server, setServer] = useState<Server | null>(null)
   const [original, setOriginal] = useState<FormState | null>(null)
@@ -150,14 +154,38 @@ export default function EditServerPage() {
   const [conflicts, setConflicts] = useState<{ field: FieldKey; label: string; mineSnapshot: unknown; theirsCurrent: unknown }[] | null>(null)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user)
-      if (data.user) {
-        supabase.from('profiles').select('role').eq('id', data.user.id).single().then(({ data: p }) => {
-          setIsAdmin(p?.role === 'admin' || p?.role === 'maintainer')
-        })
+    // Shared by both auth paths below so the admin-role fetch fires off
+    // whichever one actually resolves with a user — see the onAuthStateChange
+    // comment for why getUser() alone can't be trusted for that.
+    function loadRole(userId: string) {
+      supabase.from('profiles').select('role').eq('id', userId).single().then(({ data: p }) => {
+        setIsAdmin(p?.role === 'admin' || p?.role === 'maintainer')
+      })
+    }
+
+    supabase.auth.getUser().then(({ data, error }) => {
+      if (error) {
+        console.error('Failed to fetch current user:', error.message)
+        return
       }
+      setUser(data.user)
+      if (data.user) loadRole(data.user.id)
+    }).catch(err => {
+      // getUser() is a real network round-trip to /auth/v1/user and can REJECT
+      // outright (e.g. NavigatorLockAcquireTimeoutError, which isn't returned
+      // as `error` above) rather than resolve with one. onAuthStateChange below
+      // is the source of truth for `user`/`authLoading`, backed by the local
+      // session cookie rather than a network call, so a rejection here just
+      // costs the (redundant) early paint this call would have provided.
+      console.error('getUser() rejected:', err)
     })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+      if (session?.user) loadRole(session.user.id)
+      setAuthLoading(false)
+    })
+
     supabase.from('servers').select(PUBLIC_SERVER_FIELDS).eq('slug', slug).single().then(({ data }) => {
       if (data) {
         const s = data as unknown as Server
@@ -167,6 +195,8 @@ export default function EditServerPage() {
         setForm(initial)
       }
     })
+
+    return () => subscription.unsubscribe()
   }, [slug, supabase])
 
   // Compute the set of fields whose form value differs from the loaded server.
@@ -303,6 +333,8 @@ export default function EditServerPage() {
       setSubmitting(false)
     }
   }
+
+  if (authLoading) return <div className="max-w-3xl mx-auto px-4 py-12 text-text-muted">Loading...</div>
 
   if (!user) {
     return (
