@@ -11,6 +11,9 @@ export interface Server {
   github_url: string | null
   npm_package: string | null
   pip_package: string | null
+  // The endpoint a hosted/remote server is reached at — null for a genuinely
+  // local, clone-and-run server. See 20260830120000_remote_url_column.sql.
+  remote_url: string | null
   homepage_url: string | null
   license: string | null
   author_name: string | null

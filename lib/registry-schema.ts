@@ -36,6 +36,18 @@ export type RegistryOfficialMeta = {
   isLatest?: boolean
 }
 
+/**
+ * Shape shared by `packages[].environmentVariables[]` and `remotes[].headers[]` —
+ * both are "a secret this server needs to connect", one delivered as an env var,
+ * the other as an HTTP header. `isRequired`/`isSecret` are what distinguishes a
+ * mandatory Bearer token from an optional debug flag.
+ */
+export type RegistrySecretDeclaration = {
+  name?: string
+  isRequired?: boolean
+  isSecret?: boolean
+}
+
 export type RegistryPackage = {
   registryType?: string
   registryBaseUrl?: string
@@ -49,12 +61,13 @@ export type RegistryPackage = {
   // npm_package/pip_package = null (see PR #93), so both shapes stay readable.
   registry_name?: string
   name?: string
+  environmentVariables?: RegistrySecretDeclaration[]
 }
 
 export type RegistryRemote = {
   type?: string
   url?: string
-  headers?: unknown
+  headers?: RegistrySecretDeclaration[]
   variables?: unknown
 }
 
@@ -89,6 +102,14 @@ export type ParsedRegistryServer = {
   unmappedTransports: string[]
   remoteUrls: string[]
   hasMappedPackage: boolean
+  /**
+   * Whether the registry declares a REQUIRED secret — a package env var or a
+   * remote header with both `isRequired` and `isSecret` true. This is a
+   * presence signal, not an absence one: `false` means "no such declaration was
+   * found", never "this server needs no authentication" (the registry has no
+   * field for the latter, and asserting it from silence is issue #68).
+   */
+  hasRequiredSecret: boolean
 }
 
 /**
@@ -237,6 +258,27 @@ export function deriveTransports(
   return { transports, unmapped }
 }
 
+/**
+ * Whether the registry declares at least one REQUIRED secret — a package env
+ * var or a remote header with both `isRequired` and `isSecret` true.
+ *
+ * This only ever returns a positive finding, never a negative one: a server
+ * with no such declaration comes back `false`, but that is "not detected",
+ * not "does not require authentication" — plenty of hosted servers gate on a
+ * key the registry entry simply doesn't declare. Callers must not treat
+ * `false` as proof of the negative (issue #68).
+ */
+function hasRequiredSecret(server: RegistryServer): boolean {
+  const declares = (list: unknown): boolean =>
+    Array.isArray(list) &&
+    list.some(item => isRecord(item) && item.isRequired === true && item.isSecret === true)
+
+  return (
+    packageList(server).some(p => declares(p.environmentVariables)) ||
+    remoteList(server).some(r => declares(r.headers))
+  )
+}
+
 /** Statuses that positively mean "not in the catalog". Everything else is kept. */
 const EXCLUDED_STATUSES = new Set(['deleted', 'deprecated', 'removed'])
 
@@ -297,6 +339,7 @@ export function parseRegistryEntry(entry: unknown): ParseResult {
         .map(r => r.url)
         .filter((u): u is string => typeof u === 'string' && u.length > 0),
       hasMappedPackage: npmPackage !== null || pipPackage !== null,
+      hasRequiredSecret: hasRequiredSecret(server),
     },
   }
 }
