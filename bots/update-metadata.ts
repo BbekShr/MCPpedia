@@ -88,8 +88,17 @@ async function main() {
   // servers cannot have its star count assigned to any one of them — see
   // lib/star-attribution.ts. Built from the batch already in memory, so this
   // costs no extra queries.
+  //
+  // Archived rows are excluded: a duplicate merge (bots/detect-duplicates.ts)
+  // archives the losing row but never clears its github_url, so an active
+  // server's permanent post-merge state is sharing a URL with its own archived
+  // duplicate. Counting that as a second claimant would zero the active row's
+  // real stars every single day. Verified against prod: 696 active servers
+  // with github_stars > 0 share a github_url with >=1 archived row (largest:
+  // chrome-devtools-mcp at 50,197 stars) — this is not a hypothetical case.
   const serversPerRepo = new Map<string, number>()
   for (const s of servers) {
+    if (s.is_archived) continue
     const key = normalizeRepoUrl(s.github_url)
     if (key) serversPerRepo.set(key, (serversPerRepo.get(key) || 0) + 1)
   }
