@@ -17,6 +17,7 @@ import {
   type ParsedRegistryServer,
   type SkipReason,
 } from '../lib/registry-schema'
+import { buildLinkedRowRefresh, type LinkedRowCurrent } from '../lib/sync-registry-refresh'
 
 /** Mirrors the per-page retry in bots/lib/supabase.ts `fetchAllRows`. */
 const PAGE_FETCH_ATTEMPTS = 3
@@ -180,8 +181,15 @@ async function fetchRegistryServers(): Promise<FetchResult> {
   return { servers: all, skipped, fetchFailed, unmappedTransports: [...unmappedTransports] }
 }
 
+/** A `servers` row's id plus every field the linked-row refresh can gap-fill. */
+type LinkedRow = LinkedRowCurrent & { id: string }
+
+/** Columns `getExistingRegistryRows`/`findRowByGithubUrl` load beyond `id`, for `buildLinkedRowRefresh`. */
+const LINKED_ROW_REFRESH_COLUMNS = 'transport, npm_package, pip_package, description, tagline, description_source, github_url'
+
 /**
- * Map registry_id -> servers.id for every already-synced row.
+ * Map registry_id -> the linked row (id plus its refreshable fields) for every
+ * already-synced row.
  *
  * Keyed on the primary key rather than `registry_id` because `servers.registry_id`
  * has NO index (plain nullable text,
@@ -209,16 +217,16 @@ async function fetchRegistryServers(): Promise<FetchResult> {
  * finds no `existingRow`, falls to the URL branch, and re-stamps that archived
  * row. Cosmetic churn, no new rows.
  */
-async function getExistingRegistryRowIds(): Promise<Map<string, string>> {
-  const rows = await fetchAllRows<{ id: string; registry_id: string }>(
+async function getExistingRegistryRows(): Promise<Map<string, LinkedRow>> {
+  const rows = await fetchAllRows<LinkedRow & { registry_id: string }>(
     supabase
       .from('servers')
-      .select('id, registry_id')
+      .select(`id, registry_id, ${LINKED_ROW_REFRESH_COLUMNS}`)
       .not('registry_id', 'is', null)
       .eq('is_archived', false)
       .order('id')
   )
-  return new Map(rows.map(s => [s.registry_id, s.id]))
+  return new Map(rows.map(s => [s.registry_id, s]))
 }
 
 /**
@@ -264,20 +272,24 @@ async function getExistingGithubUrls(): Promise<Set<string>> {
  * `getExistingGithubUrls`; the two reads must agree, or a URL found in the set
  * but filtered out here becomes a permanent link miss.
  */
-async function findRowByGithubUrl(githubUrl: string): Promise<{ id: string } | null> {
+async function findRowByGithubUrl(githubUrl: string): Promise<LinkedRow | null> {
   const { data: matches } = await supabase
     .from('servers')
-    .select('id, github_url')
+    .select(`id, ${LINKED_ROW_REFRESH_COLUMNS}`)
     .ilike('github_url', `%${escapeLikeValue(githubUrl.replace(/^https:\/\//, ''))}%`)
 
-  return (matches || []).find(m => normalizeGithubUrl(m.github_url) === githubUrl) ?? null
+  return ((matches as LinkedRow[]) || []).find(m => normalizeGithubUrl(m.github_url) === githubUrl) ?? null
 }
+
+/** Logs proposed writes without executing them — a safety net for this cycle's newly-live refresh path. */
+const dryRun = process.argv.includes('--dry-run')
 
 async function main() {
   const run = await BotRun.start('sync-registry')
   try {
   console.log('=== MCPpedia Registry Sync ===')
   console.log(new Date().toISOString())
+  if (dryRun) console.log('=== DRY RUN: no writes will be made ===')
 
   const { servers: fetched, skipped, fetchFailed, unmappedTransports } = await fetchRegistryServers()
 
@@ -355,7 +367,7 @@ async function main() {
     return
   }
 
-  const existingRowIds = await getExistingRegistryRowIds()
+  const existingRowIds = await getExistingRegistryRows()
   const existingUrls = await getExistingGithubUrls()
   let synced = 0
   let updated = 0
@@ -363,24 +375,28 @@ async function main() {
   let duplicates = 0
   let insertFailures = 0
   let writeFailures = 0
+  let fieldRefreshes = 0
+  let transferSkipped = 0
 
   for (const parsed of registryServers) {
     const githubUrl = parsed.githubUrl
     const stamp = { registry_synced_at: new Date().toISOString(), registry_verified: true }
 
-    // Already linked: restamp and stop. `registry_verified` is written here too,
-    // not just on first link — it was otherwise set exactly once, so any row
-    // that missed it stayed stuck.
-    //
-    // KNOWN LIMITATION, deliberately deferred (own backlog row): once
-    // `registry_id` is populated, a later repo TRANSFER or org rename is never
-    // re-linked — this path just refreshes the stamp, so the row keeps the old
-    // `github_url`. Moving a registry identity between rows is what two review
-    // rounds found new bugs in; the trade is a stale URL on a transferred repo
-    // against resurrected rows and identities handed to the wrong sibling.
-    const existingId = existingRowIds.get(parsed.registryId)
-    if (existingId) {
-      const { error } = await supabase.from('servers').update(stamp).eq('id', existingId)
+    // Already linked: restamp, PLUS gap-fill/refresh whatever
+    // `buildLinkedRowRefresh` finds stale (transport/npm_package/pip_package
+    // drift shapes, non-human description/tagline, a transferred repository
+    // URL). `registry_verified` is written here too, not just on first link —
+    // it was otherwise set exactly once, so any row that missed it stayed
+    // stuck.
+    const existingRow = existingRowIds.get(parsed.registryId)
+    if (existingRow) {
+      const refresh = buildLinkedRowRefresh(existingRow, parsed, existingUrls)
+      const { error } = dryRun
+        ? { error: null }
+        : await supabase
+            .from('servers')
+            .update({ ...stamp, ...refresh.update })
+            .eq('id', existingRow.id)
       // The counters used to increment regardless of the result, so a summary of
       // "updated: 39000" could describe zero writes landing.
       if (error) {
@@ -388,6 +404,18 @@ async function main() {
         writeFailures++
       } else {
         updated++
+        if (refresh.changedFields.length > 0) {
+          fieldRefreshes++
+          console.log(`  ${dryRun ? '[dry-run] Would refresh' : 'Refreshed'} ${parsed.registryId}: ${refresh.changedFields.join(', ')}`)
+        }
+        // Keep the in-memory snapshot current — a registry `name` repeating
+        // later in this same run must see the fields it just wrote, not the
+        // pre-refresh row (mirrors the existing insert-path absorb below).
+        existingRowIds.set(parsed.registryId, { ...existingRow, ...refresh.update })
+      }
+      if (refresh.transferSkippedCollision) {
+        transferSkipped++
+        console.warn(`  Repo transfer detected for ${parsed.registryId} (${existingRow.github_url} -> ${parsed.githubUrl}) but skipped: another row already has that github_url`)
       }
       continue
     }
@@ -402,15 +430,27 @@ async function main() {
         linkMisses++
         continue
       }
-      const { error } = await supabase
-        .from('servers')
-        .update({ ...stamp, registry_id: parsed.registryId })
-        .eq('id', target.id)
+      // `checkGithubTransfer: false` — this row was matched BY its github_url,
+      // so any remaining string difference from `parsed.githubUrl` is a
+      // normalization artifact, not a repo transfer (that detection is scoped
+      // to the confirmed registry_id-linked branch above).
+      const refresh = buildLinkedRowRefresh(target, parsed, existingUrls, false)
+      const { error } = dryRun
+        ? { error: null }
+        : await supabase
+            .from('servers')
+            .update({ ...stamp, registry_id: parsed.registryId, ...refresh.update })
+            .eq('id', target.id)
       if (error) {
         console.error(`  Error linking ${parsed.registryId}: ${error.message}`)
         writeFailures++
       } else {
         updated++
+        if (refresh.changedFields.length > 0) {
+          fieldRefreshes++
+          console.log(`  ${dryRun ? '[dry-run] Would refresh' : 'Refreshed'} ${parsed.registryId}: ${refresh.changedFields.join(', ')}`)
+        }
+        existingRowIds.set(parsed.registryId, { ...target, ...refresh.update })
       }
       continue
     }
@@ -459,7 +499,9 @@ async function main() {
     // Insert new server. The id comes back so `existingRowIds` can absorb it —
     // the map was snapshotted before the loop, and a registry `name` repeating
     // later in the same run would otherwise insert a second row for it.
-    const { data: inserted, error } = await supabase.from('servers').insert({
+    const { data: inserted, error } = dryRun
+      ? { data: null, error: null }
+      : await supabase.from('servers').insert({
       slug,
       name: parsed.name || slug,
       tagline: parsed.description || null,
@@ -490,8 +532,22 @@ async function main() {
         insertFailures++
       }
     } else {
-      console.log(`  New: ${slug}`)
-      if (inserted) existingRowIds.set(parsed.registryId, inserted.id)
+      console.log(`  ${dryRun ? '[dry-run] Would insert' : 'New'}: ${slug}`)
+      // Mirrors the exact insert payload above so a registry `name` repeating
+      // later in this same run hits the refresh path against the row it just
+      // created, instead of re-inserting.
+      if (inserted) {
+        existingRowIds.set(parsed.registryId, {
+          id: inserted.id,
+          transport: parsed.transports,
+          npm_package: parsed.npmPackage,
+          pip_package: parsed.pipPackage,
+          description: null,
+          tagline: parsed.description || null,
+          description_source: 'bot',
+          github_url: githubUrl,
+        })
+      }
       synced++
     }
 
@@ -507,13 +563,15 @@ async function main() {
     ...baseSummary,
     new: synced,
     updated,
+    fieldRefreshes,
+    transferSkipped,
     linkMisses,
     duplicates,
     insertFailures,
     writeFailures,
   })
   run.addUpdated(synced + updated)
-  console.log(`\nDone. New: ${synced}, Updated: ${updated}, Link misses: ${linkMisses}, Duplicates: ${duplicates}, Insert failures: ${insertFailures}, Write failures: ${writeFailures}`)
+  console.log(`\nDone. New: ${synced}, Updated: ${updated} (${fieldRefreshes} with a field refresh, ${transferSkipped} repo-transfer collisions skipped), Link misses: ${linkMisses}, Duplicates: ${duplicates}, Insert failures: ${insertFailures}, Write failures: ${writeFailures}`)
 
   // A partial fetch still alarms — but only now that the pages that did arrive
   // have been written.
