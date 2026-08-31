@@ -106,7 +106,7 @@ Automated bots run via GitHub Actions to keep data fresh:
 | `track-trending` | Daily 9:30am UTC | Tracks trending servers |
 | `blog-security-alerts` | Daily 9:30am UTC | Generates blog posts for security alerts |
 | `publish-scheduled-blog` | Daily 12pm UTC | Publishes scheduled blog posts |
-| `generate-blog` | Tue & Thu 9am UTC | Auto-generates blog articles |
+| `generate-blog` | Tue 9am UTC | Auto-generates blog articles |
 | `send-digest` | Tuesday 3pm UTC | Sends the weekly newsletter digest |
 | `generate-comparisons` | Sunday 9am UTC | Pre-generates head-to-head server comparison pages |
 | `check-broken-links` | Sunday 9am UTC | Checks for broken links across the site |

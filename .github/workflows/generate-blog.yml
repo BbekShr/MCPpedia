@@ -3,7 +3,6 @@ name: Blog Generator
 on:
   schedule:
     - cron: '0 9 * * 2'  # Tuesday 9am UTC / 4am CST (after scores at 3am)
-    - cron: '0 9 * * 4'  # Thursday 9am UTC / 4am CST
   workflow_dispatch:
 
 # Serialize every workflow that pushes to main so their push windows don't
@@ -28,7 +27,7 @@ jobs:
 
       - run: npm ci
 
-      # 1) Plan the article(s) (0-2) and emit a prompt file per article. Touches
+      # 1) Plan the article(s) (0-1) and emit a prompt file per article. Touches
       #    only Supabase — no model call. Sets job_count + model_<i> outputs.
       - name: Prepare blog jobs
         id: prep

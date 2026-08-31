@@ -81,7 +81,7 @@ async function main() {
   // and a `cve_count` of 0. Without this arm the corrective rescore would wait
   // a full week, leaving a server that may well have a real CVE advertising
   // "no CVEs found". Three days of daily rescoring covers the enrichment
-  // pipeline's Mon/Thu cadence.
+  // pipeline's Tuesday cadence.
   //
   // Cost of the window: a score, its CVE count and its advisory reconciliation
   // can lag reality by up to SCORE_STALE_DAYS. That matches the lag /s/{slug}
