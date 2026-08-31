@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
 import { rateLimitUser } from '@/lib/rate-limit'
+import { revalidateServer } from '@/lib/revalidate'
 
 const archiveSchema = z.object({
   server_id: z.string().uuid(),
@@ -71,6 +72,16 @@ export async function POST(request: Request) {
   if (auditErr) {
     console.error('archive audit insert failed:', auditErr.message)
   }
+
+  // Refresh the affected server page so the archive/unarchive is visible
+  // immediately instead of waiting out the 7-day ISR TTL — unarchiving in
+  // particular is otherwise invisible on the live site for up to 7 days.
+  const { data: server } = await supabase
+    .from('servers')
+    .select('slug')
+    .eq('id', server_id)
+    .single()
+  if (server?.slug) revalidateServer(server.slug)
 
   return NextResponse.json({
     ok: true,

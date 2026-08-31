@@ -10,11 +10,11 @@
  * Three invariants the caller depends on:
  *
  * 1. **This helper must never sort.** `keep = group[0]` is correct ONLY because
- *    the caller orders its query by `data_quality desc nullsFirst:false, id asc`
- *    (detect-duplicates.ts:144-149) — the keeper rule lives in the SQL
- *    `ORDER BY`, and `Map` preserving insertion order is what carries it here.
- *    A helper that re-sorted would silently change which row survives an
- *    irreversible archive.
+ *    the caller orders its query by `publisher_verified desc nullsFirst:false,
+ *    score_total desc nullsFirst:false, created_at asc, id asc`
+ *    (detect-duplicates.ts) — the keeper rule lives in the SQL `ORDER BY`, and
+ *    `Map` preserving insertion order is what carries it here. A helper that
+ *    re-sorted would silently change which row survives an irreversible archive.
  * 2. A group is returned only when it holds **two or more distinct ids**. The
  *    same row appearing twice (an offset-pagination hazard when the caller's
  *    ordering is not unique) is not a duplicate group, and returning it would

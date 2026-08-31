@@ -10,6 +10,7 @@ import { createAdminClient, fetchAllRows } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
 import { CURATED_FIELDS, pickCuratedBackfill } from '../lib/curated-merge'
 import { buildDuplicateGroups } from '../lib/duplicate-groups'
+import { computeTrustFlagUpdate } from '../lib/duplicate-keeper'
 
 const supabase = createAdminClient('bot-detect-duplicates')
 
@@ -129,22 +130,60 @@ async function backfillCurated(
   return { filled, error: null }
 }
 
+/**
+ * Transfers `publisher_verified`/`claimed_by` from a verified dupe onto the
+ * keeper. Deliberately separate from `backfillCurated` — those two columns
+ * aren't in `CURATED_FIELDS` because the generic `isGap` gap-fill treats a
+ * keeper's `publisher_verified: false` as a real value, which would block the
+ * transfer. Runs BEFORE the archive write and gates it like the curated
+ * backfill: archiving before a failed transfer lands would silently drop the
+ * verified badge on the now-hidden dupe. Mutates `keeper` in place so a
+ * second verified dupe in the same group is a no-op.
+ */
+async function transferTrustFlag(
+  keeper: Record<string, unknown>,
+  dupe: Record<string, unknown>
+): Promise<{ transferred: boolean; error: string | null }> {
+  const update = computeTrustFlagUpdate(
+    keeper as { publisher_verified: boolean | null },
+    dupe as { publisher_verified: boolean | null; claimed_by: string | null }
+  )
+  if (!update) return { transferred: false, error: null }
+
+  const { error } = await supabase
+    .from('servers')
+    .update(update)
+    .eq('id', keeper.id as string)
+
+  if (error) return { transferred: false, error: error.message }
+
+  Object.assign(keeper, update)
+  return { transferred: true, error: null }
+}
+
 async function main() {
   const run = await BotRun.start('detect-duplicates')
   try {
     console.log('=== MCPpedia Duplicate Detector ===')
     console.log(new Date().toISOString())
 
-    const servers = await fetchAllRows<{ id: string; slug: string; name: string; github_url: string; data_quality: number | null; score_total: number | null }>(
+    const servers = await fetchAllRows<{ id: string; slug: string; name: string; github_url: string; publisher_verified: boolean | null; score_total: number | null; created_at: string }>(
       supabase
         .from('servers')
-        .select('id, slug, name, github_url, data_quality, score_total')
+        .select('id, slug, name, github_url, publisher_verified, score_total, created_at')
         .not('github_url', 'is', null)
         .eq('is_archived', false)
-        .order('data_quality', { ascending: false, nullsFirst: false })
-        // `data_quality` is a non-unique integer, so its tie groups are enormous and
-        // Postgres may order them differently between offset pages — a row could be
-        // returned twice and end up in its own duplicate group, archiving the keeper.
+        // Was ordered by `data_quality`, but nothing in the codebase ever writes that
+        // column (compute_data_quality/compute_all_data_quality, defined in
+        // 20260403050000_data_quality.sql, are never called) — it is a constant 0, so
+        // the real tiebreak was `id`, i.e. the keeper was chosen at random (#91, #136).
+        // Order by signals that actually have writers instead: a publisher-claimed
+        // listing outranks an unclaimed one, then a higher score, then the older
+        // (more established) row.
+        .order('publisher_verified', { ascending: false, nullsFirst: false })
+        .order('score_total', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: true })
+        // Non-unique tie groups can still order differently between offset pages —
         // `id` is the unique tiebreak that makes the pagination deterministic.
         .order('id', { ascending: true })
     )
@@ -162,19 +201,24 @@ async function main() {
     const backfilled: { keeper: string; dupe: string; fields: string[] }[] = []
     const backfillFailures: { dupe: string; reason: string }[] = []
     const curatedReadFailures: string[] = []
+    const trustFlagTransfers: { keeper: string; dupe: string }[] = []
+    const trustFlagFailures: { dupe: string; reason: string }[] = []
 
     for (const { url, keep, dupes } of groups) {
       const group = [keep, ...dupes]
 
       console.log(`  Duplicates for ${url}:`)
-      console.log(`    KEEP: ${keep.slug} (quality: ${keep.data_quality}, score: ${keep.score_total})`)
+      console.log(`    KEEP: ${keep.slug} (verified: ${keep.publisher_verified}, score: ${keep.score_total})`)
 
       // Curated columns, fetched per group rather than for the whole table:
       // pulling the heavy JSONB (tools, install_configs) for every server on
       // the site to merge a handful of duplicates is not worth the payload.
+      // publisher_verified/claimed_by ride along here too (per-group, same
+      // reasoning) but are handled by transferTrustFlag below, not by the
+      // CURATED_FIELDS gap-fill.
       const { data: curatedRows, error: curatedError } = await supabase
         .from('servers')
-        .select(`id, ${CURATED_FIELDS.join(', ')}`)
+        .select(`id, publisher_verified, claimed_by, ${CURATED_FIELDS.join(', ')}`)
         .in('id', group.map(s => s.id))
 
       if (curatedError || !curatedRows) {
@@ -197,7 +241,7 @@ async function main() {
           console.warn(`    SKIP: ${dupe.slug} is the keeper itself`)
           continue
         }
-        console.log(`    MERGE: ${dupe.slug} (quality: ${dupe.data_quality}, score: ${dupe.score_total})`)
+        console.log(`    MERGE: ${dupe.slug} (verified: ${dupe.publisher_verified}, score: ${dupe.score_total})`)
 
         // Move the columns before the child rows: a failure here must stop the
         // archive, same discipline as a reparent failure.
@@ -213,6 +257,17 @@ async function main() {
           if (filled.length > 0) {
             console.log(`    BACKFILL onto ${keep.slug}: ${filled.join(', ')}`)
             backfilled.push({ keeper: keep.slug, dupe: dupe.slug, fields: filled })
+          }
+
+          const { transferred, error: transferError } = await transferTrustFlag(keeperCurated, dupeCurated)
+          if (transferError) {
+            console.error(`    SKIP archive ${dupe.slug}: trust-flag transfer failed (${transferError}) — leaving the duplicate visible so the next run retries`)
+            trustFlagFailures.push({ dupe: dupe.slug, reason: transferError })
+            continue
+          }
+          if (transferred) {
+            console.log(`    TRANSFER publisher_verified/claimed_by onto ${keep.slug} from ${dupe.slug}`)
+            trustFlagTransfers.push({ keeper: keep.slug, dupe: dupe.slug })
           }
         }
 
@@ -239,6 +294,7 @@ async function main() {
     run.setSummary({
       duplicateGroups, archived, merged, reparentFailures,
       backfilled, backfillFailures, curatedReadFailures,
+      trustFlagTransfers, trustFlagFailures,
     })
     console.log(`\nDone. Duplicate groups: ${duplicateGroups}, Archived: ${archived}, Backfilled: ${backfilled.length}, Reparent failures: ${reparentFailures.length}`)
     if (merged.length > 0) {
@@ -255,6 +311,7 @@ async function main() {
     const blocked = [
       ...reparentFailures.map(f => `${f.dupe} (reparent: ${f.tables.join(', ')})`),
       ...backfillFailures.map(f => `${f.dupe} (curated backfill: ${f.reason})`),
+      ...trustFlagFailures.map(f => `${f.dupe} (trust-flag transfer: ${f.reason})`),
       ...curatedReadFailures.map(url => `${url} (curated read)`),
     ]
     if (blocked.length > 0) {
