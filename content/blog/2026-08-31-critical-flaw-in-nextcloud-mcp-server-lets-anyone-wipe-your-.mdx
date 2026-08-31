@@ -1,0 +1,49 @@
+---
+title: "Critical Flaw in Nextcloud MCP Server Lets Anyone Wipe Your Vector Data"
+description: "CVE-2026-55640 exposes an unauthenticated webhook in Nextcloud MCP Server that lets attackers delete any user's vector embeddings when WEBHOOK_SECRET is left unset."
+hook: "One unset environment variable and a stranger on the internet can delete your Nextcloud MCP server's vector memory for any user — no login required. CVE-2026-55640 is critical, and it's the default config that's vulnerable."
+date: "2026-08-31"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+A **critical, unauthenticated data-deletion bug** just landed in an MCP server that talks to Nextcloud — and the default configuration is the vulnerable one. If you're running it, stop and read this before your next deploy.
+
+<Callout type="warning">CVE-2026-55640 — critical severity, published August 25, 2026. Affects [Nextcloud MCP Server](/s/nextcloud-mcp-server).</Callout>
+
+## What's broken
+
+The [Nextcloud MCP Server](/s/nextcloud-mcp-server) exposes a `POST /webhooks/nextcloud` endpoint meant to receive events from a Nextcloud instance. The problem: authentication on that endpoint is opt-in, not opt-out.
+
+`WEBHOOK_SECRET` defaults to `None`, and nothing at startup forces an operator to set it. Ship the server with default settings, and the webhook receiver will happily accept **any unauthenticated POST request** from anyone on the internet who finds the endpoint.
+
+It gets worse from there. The vulnerable code — `nextcloud_mcp_server/vector/webhook_receiver.py` — pulls `user_id` straight out of the attacker-controlled request body and hands it to Qdrant, the vector database backing the server's embeddings. There's no cross-check against a session, a token, or anything tied to a real identity.
+
+<PullQuote>An attacker doesn't need credentials — they just need to know the URL and pick a `user_id`.</PullQuote>
+
+## The impact
+
+Put those two facts together and the result is straightforward: an unauthenticated attacker can delete or corrupt vector embeddings for **any user** on the instance, simply by POSTing a crafted payload with a chosen `user_id`. No login, no API key, no exploit chain required — just a missing default.
+
+For a server whose whole job is storing and retrieving semantic memory over Nextcloud data, that's not a minor inconvenience. It's a way to quietly destroy another user's indexed knowledge base with a single HTTP request.
+
+---
+
+## What to do right now
+
+<ScoreBreakdown>
+<ScoreRow label="Set WEBHOOK_SECRET" points="Required" description="Do not run with this unset — it is the entire fix for the auth gap" />
+<ScoreRow label="Audit exposure" points="Check now" description="If your instance has been running with WEBHOOK_SECRET unset, treat any vector data as potentially tampered" />
+<ScoreRow label="Restrict network access" points="Recommended" description="Firewall /webhooks/nextcloud to only the Nextcloud instance's IP as defense in depth" />
+</ScoreBreakdown>
+
+If you operate this server:
+
+- **Set `WEBHOOK_SECRET` immediately.** This is the whole vulnerability — an unset secret means no authentication at all on the webhook endpoint.
+- **Don't trust the default config as safe.** The absence of startup validation means the insecure state is silent; nothing will warn you that the endpoint is open.
+- **Assume compromise if you've been exposed.** If this server has been internet-reachable with `WEBHOOK_SECRET` unset, review your Qdrant collections for unexpected deletions or corruption before trusting them again.
+- **Watch for a patched release.** The real long-term fix is startup validation that refuses to boot — or refuses to serve the webhook route — without a secret configured. Until that lands upstream, the operator-side mitigation above is what stands between you and an open door.
+
+---
+
+This is a textbook case of a **secure-by-default failure**: the feature works fine when configured correctly, but nothing stops you from running it wrong. If your MCP server tooling has an auth flag that defaults to "off," that flag is a liability sitting in your stack right now — go check it.

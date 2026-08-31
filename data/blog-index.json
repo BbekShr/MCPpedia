@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-08-31-critical-flaw-in-nextcloud-mcp-server-lets-anyone-wipe-your-",
+    "title": "Critical Flaw in Nextcloud MCP Server Lets Anyone Wipe Your Vector Data",
+    "description": "CVE-2026-55640 exposes an unauthenticated webhook in Nextcloud MCP Server that lets attackers delete any user's vector embeddings when WEBHOOK_SECRET is left unset.",
+    "hook": "One unset environment variable and a stranger on the internet can delete your Nextcloud MCP server's vector memory for any user — no login required. CVE-2026-55640 is critical, and it's the default config that's vulnerable.",
+    "date": "2026-08-31",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 2
+  },
+  {
     "slug": "2026-08-30-praisonai-7-security-advisories-patch-now",
     "title": "PraisonAI: 7 Security Advisories — Patch Now",
     "description": "Critical and high-severity auth bypasses in PraisonAI MCP server. Unauthenticated job execution, CSRF, and WebSocket hijacking. Immediate action required.",
