@@ -72,3 +72,4 @@ social-posts-and-outreach.md
 .open-next/
 .wrangler/
 cloudflare-env.d.ts
+data/open-issues-audit.jsonl
