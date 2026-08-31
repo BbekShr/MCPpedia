@@ -1,6 +1,7 @@
 /**
  * Blog Generator — auto-generates blog posts from MCPpedia data.
- * Runs twice weekly (Mon + Thu) via GitHub Actions. Produces 1-2 MDX articles per run.
+ * Runs weekly (Tuesday) via GitHub Actions. Produces 1 MDX article per run, on
+ * Sonnet 5.
  * Also runs daily in --security-only mode to publish urgent CVE alerts immediately.
  *
  * --render (the mode both workflows now use) builds each article from Supabase
@@ -18,6 +19,7 @@ import path from 'path'
 import { createAdminClient } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
 import { renderArticle } from './lib/blog-templates'
+import { MAX_JOBS, DEFAULT_MODEL, modelForType } from './lib/blog-planning'
 
 const supabase = createAdminClient('bot-generate-blog')
 const blogDir = path.join(process.cwd(), 'content', 'blog')
@@ -194,18 +196,6 @@ function daysAgo(n: number): string {
   return d.toISOString()
 }
 
-// Model tiering keeps quality where it matters while cutting cost. Evergreen,
-// SEO-bearing articles (roundups, spotlights, SEO guides, category deep dives)
-// stay on Sonnet; ephemeral/templated posts (security alerts, trending) run on
-// Haiku 4.5 — ~3x cheaper ($1/$5 vs $3/$15 per 1M tokens) and plenty capable
-// for these short, data-driven formats.
-const DEFAULT_MODEL = 'claude-sonnet-5'
-const HAIKU_MODEL = 'claude-haiku-4-5'
-
-function modelForType(type: ArticlePlan['type']): string {
-  return type === 'security-alert' || type === 'trending' ? HAIKU_MODEL : DEFAULT_MODEL
-}
-
 async function callClaude(
   systemPrompt: string,
   userPrompt: string,
@@ -367,9 +357,6 @@ const finalizeMode = process.argv.includes('--finalize')
 // has no credential in it at all.
 const renderMode = process.argv.includes('--render')
 
-// runFull produces at most 2 articles, so prepare emits at most 2 jobs.
-const MAX_JOBS = 2
-
 // Scratch files exchanged with the Claude Code action, one set per planned
 // article (job-0, job-1, ...). These live outside content/blog/ so the
 // workflow's `git add content/blog/` never commits them.
@@ -431,7 +418,7 @@ async function planArticles(meta: Meta): Promise<ArticlePlan[]> {
   }
 
   // Priority 3: Server spotlight
-  if (plans.length < 2) {
+  if (plans.length < MAX_JOBS) {
     const spotlight = await getHighestScoredNewServer(meta.lastSpotlightSlugs)
     if (spotlight && spotlight.score_total > 30) {
       plans.push({
@@ -443,7 +430,7 @@ async function planArticles(meta: Meta): Promise<ArticlePlan[]> {
   }
 
   // Priority 4: Trending
-  if (plans.length < 2) {
+  if (plans.length < MAX_JOBS) {
     const trending = await getTrendingServers()
     if (trending.length >= 5) {
       plans.push({
@@ -461,7 +448,7 @@ async function planArticles(meta: Meta): Promise<ArticlePlan[]> {
   // explainers ("how to build an MCP server"), which a template can only pad
   // out; thin filler on a high-intent keyword is worse for the site than no
   // article. Those topics stay queued in .meta.json for the model-backed path.
-  if (plans.length < 2 && !renderMode) {
+  if (plans.length < MAX_JOBS && !renderMode) {
     const unpublishedTopics = SEO_TOPICS.filter(t => !meta.publishedSeoTopics.includes(t.keyword))
     if (unpublishedTopics.length > 0) {
       // Pick the next unpublished topic in order
@@ -513,7 +500,7 @@ async function planArticles(meta: Meta): Promise<ArticlePlan[]> {
   }
 
   // Priority 6: Category deep dive (fallback)
-  if (plans.length < 2) {
+  if (plans.length < MAX_JOBS) {
     const lastCategory = meta.lastCategoryDeepDive
     const candidates = CATEGORIES.filter(c => c !== lastCategory)
     const category = candidates[Math.floor(Math.random() * candidates.length)]
@@ -527,8 +514,8 @@ async function planArticles(meta: Meta): Promise<ArticlePlan[]> {
     }
   }
 
-  // Return at most 2
-  return plans.slice(0, 2)
+  // Return at most MAX_JOBS
+  return plans.slice(0, MAX_JOBS)
 }
 
 function daysBetween(dateA: string, dateB: string): number {
