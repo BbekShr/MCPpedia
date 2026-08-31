@@ -467,6 +467,10 @@ async function main() {
       npm_package: parsed.npmPackage,
       pip_package: parsed.pipPackage,
       transport: parsed.transports,
+      // The endpoint a hosted/remote server is actually reached at — previously
+      // parsed and discarded (issue #68), which left the FAQ/install UI with no
+      // way to tell a remote-only server from a genuinely local one.
+      remote_url: parsed.remoteUrls[0] ?? null,
       compatible_clients: inferCompatibleClients(),
       api_pricing: inferPricing(null, parsed.name || slug, parsed.description ?? undefined),
       author_type: inferAuthorType(githubUrl ? githubUrl.split('/').slice(-2, -1)[0] : null, githubUrl),
@@ -476,6 +480,10 @@ async function main() {
       registry_synced_at: new Date().toISOString(),
       registry_verified: true,
       verified: false,
+      // A required-secret declaration is positive evidence of authentication;
+      // its absence is not evidence of the opposite, so the column is left at
+      // its `default false` rather than asserted false here (issue #68).
+      ...(parsed.hasRequiredSecret ? { has_authentication: true } : {}),
     }).select('id').single()
 
     if (error) {

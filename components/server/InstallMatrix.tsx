@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { CLIENT_LABELS, type CompatibleClient } from '@/lib/constants'
 import type { Server } from '@/lib/types'
+import { isRemoteOnly } from '@/lib/server-remote'
 import { Icon } from './helpers'
 
 type ClientKey = CompatibleClient
@@ -78,13 +79,27 @@ function slugify(name: string): string {
     .replace(/^-|-$/g, '')
 }
 
-function generateConfig(
+type GenerateConfigServer = Pick<
+  Server,
+  'name' | 'npm_package' | 'pip_package' | 'requires_api_key' | 'install_configs' | 'transport' | 'remote_url'
+>
+
+/** `http`/`sse` — the transport values `claude mcp add --transport` accepts. */
+function remoteCliTransport(server: Pick<Server, 'transport'>): 'http' | 'sse' {
+  return (server.transport ?? []).includes('sse') ? 'sse' : 'http'
+}
+
+// Exported for direct unit testing (__tests__/faq-truthfulness.test.ts) — this
+// repo has no component-rendering test harness, so the pure decision logic is
+// the testable seam.
+export function generateConfig(
   client: ClientKey,
-  server: Pick<Server, 'name' | 'npm_package' | 'pip_package' | 'requires_api_key' | 'install_configs'>,
+  server: GenerateConfigServer,
 ): { config: Record<string, unknown> | string; isCli: boolean } {
   const stored = server.install_configs?.[client] as Record<string, unknown> | undefined
   const hasReal = stored && Object.keys(stored).length > 0
   const slug = slugify(server.name)
+  const remoteOnly = isRemoteOnly(server)
 
   // claude-code: convert stored JSON → CLI one-liner, or synthesise one
   if (client === 'claude-code') {
@@ -103,6 +118,14 @@ function generateConfig(
       const env = server.requires_api_key ? { API_KEY: '<your-api-key>' } : undefined
       return { config: cliCommand(slug, 'uvx', [server.pip_package], env), isCli: true }
     }
+    if (remoteOnly) {
+      // A remote server has no local command to shell out to — the stdio
+      // `-- <command> <args>` stub would fabricate one. `--transport` is how
+      // this CLI form points at an endpoint instead of a local process.
+      const transport = remoteCliTransport(server)
+      const url = server.remote_url ?? '<see-readme-for-url>'
+      return { config: `claude mcp add --transport ${transport} ${shellQuote(slug)} ${shellQuote(url)}`, isCli: true }
+    }
     return { config: `# See README for setup\nclaude mcp add ${slug} -- <command> <args>`, isCli: true }
   }
 
@@ -118,6 +141,14 @@ function generateConfig(
     const base: Record<string, unknown> = { command: 'uvx', args: [server.pip_package] }
     if (server.requires_api_key) base.env = { API_KEY: '<your-api-key>' }
     return { config: { mcpServers: { [slug]: base } }, isCli: false }
+  }
+  if (remoteOnly) {
+    // No local package to run — describe the endpoint, not a fabricated stdio
+    // command. `url` is the shape MCP clients use for a remote server entry.
+    return {
+      config: { mcpServers: { [slug]: { url: server.remote_url ?? '<see-readme-for-url>' } } },
+      isCli: false,
+    }
   }
   return {
     config: { mcpServers: { [slug]: { command: '<see-readme>', args: [] } } },

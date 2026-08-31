@@ -1,5 +1,6 @@
 import type { Server } from '@/lib/types'
 import type { FAQItem } from '@/lib/seo'
+import { isRemoteOnly } from '@/lib/server-remote'
 
 export function buildServerFAQs(server: Server): FAQItem[] {
   const faqs: FAQItem[] = []
@@ -11,10 +12,14 @@ export function buildServerFAQs(server: Server): FAQItem[] {
   let safetyAnswer: string
   if (cveCount === 0) {
     safetyAnswer = `${server.name} has no known CVEs as of the latest MCPpedia security scan.`
-    if (server.has_authentication) {
+    // `has_authentication` and `requires_api_key` are both positive signals —
+    // neither being set means "not detected", never "confirmed open". Only the
+    // positive case is safe to assert; asserting the negative from absent data
+    // is exactly the false claim issue #68 reported.
+    if (server.has_authentication || server.requires_api_key) {
       safetyAnswer += ' It requires authentication to connect, which limits unauthorized access.'
     } else {
-      safetyAnswer += ' It does not require authentication, so any local process can connect — keep this in mind in shared environments.'
+      safetyAnswer += ' Authentication requirements were not detected automatically — check the project\'s documentation before connecting in a shared environment.'
     }
     if (server.license && server.license !== 'NOASSERTION') {
       safetyAnswer += ` Licensed under ${server.license}.`
@@ -37,6 +42,8 @@ export function buildServerFAQs(server: Server): FAQItem[] {
     installAnswer = `Install ${server.name} via npm: \`npx ${server.npm_package}\`. Then add it to your MCP client config file.`
   } else if (server.pip_package) {
     installAnswer = `Install ${server.name} via pip: \`pip install ${server.pip_package}\`. Then configure it in your MCP client.`
+  } else if (isRemoteOnly(server)) {
+    installAnswer = `${server.name} is a hosted remote MCP server — there is no local package to install. Configure your MCP client to connect to its endpoint${server.remote_url ? ` (${server.remote_url})` : ''} instead of running it locally.`
   } else {
     installAnswer = `${server.name} can be installed by cloning its GitHub repository and following the setup instructions in the README.`
   }
