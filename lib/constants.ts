@@ -122,7 +122,7 @@ export const PUBLIC_SERVER_FIELDS = [
   'id', 'slug', 'name', 'tagline', 'description',
   'github_url', 'npm_package', 'pip_package', 'homepage_url',
   'license', 'author_name', 'author_github', 'author_type',
-  'transport', 'compatible_clients', 'install_configs',
+  'transport', 'remote_url', 'compatible_clients', 'install_configs',
   'tools', 'resources', 'prompts',
   'api_name', 'api_pricing', 'api_rate_limits', 'requires_api_key',
   'github_stars', 'github_last_commit', 'github_open_issues', 'npm_weekly_downloads',
