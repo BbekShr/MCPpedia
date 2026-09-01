@@ -107,13 +107,14 @@ async function reparent(keeperId: string, dupeId: string): Promise<string[]> {
   // counters and feeds (home_stats.open_cves, /security, the homepage feed,
   // snapshot-metrics) count raw advisory rows with no is_archived filter, so
   // an advisory left on an archived dupe double-counts the same CVE forever.
-  // The rows are regenerable from the keeper's own package scan, and this is
-  // durable only because compute-scores freezes BOTH the advisory rows (it
-  // skips reconciliation for archived servers) and the CVE-derived columns
-  // (cve_count et al. are guarded on is_archived) — otherwise the dupe's next
-  // archived-tier rescan would re-insert the shared package's CVEs and
-  // re-inflate the count zeroed below. Null cve_ids never collide (nulls are
-  // distinct in the unique index) so they always move.
+  // The rows are regenerable from the keeper's own package scan. KNOWN
+  // RESIDUAL (pre-existing, not introduced here): the archived dupe keeps its
+  // package columns and stays in compute-scores' archived-tier rotation, so a
+  // later rescan can re-insert the shared package's CVEs onto it — the same
+  // was true of the old blind move. Making the cleanup durable needs the
+  // archived-server advisory work (scan tier, counters, and refresh-score's
+  // is_archived handling), filed as follow-up. Null cve_ids never collide
+  // (nulls are distinct in the unique index) so they always move.
   {
     const table = 'security_advisories'
     const { data: dupeRows, error: dupeError } = await supabase
