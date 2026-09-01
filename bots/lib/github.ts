@@ -92,6 +92,18 @@ export async function searchReposPaginated(query: string, maxPages = 10, perPage
   return all
 }
 
+/** Read a response body, catching mid-stream socket errors: a connection can
+ *  drop AFTER headers arrive, which rejects text()/json() outside safeFetch's
+ *  reach. Returns the fallback on throw. */
+async function safeBody<T, F>(read: () => Promise<T>, fallback: F): Promise<T | F> {
+  try {
+    return await read()
+  } catch (err) {
+    console.warn(`response body read failed: ${err instanceof Error ? err.message : err}`)
+    return fallback
+  }
+}
+
 export async function getRepo(owner: string, repo: string): Promise<GitHubRepo | null> {
   const res = await safeFetch(`https://api.github.com/repos/${owner}/${repo}`, {
     headers: headers(),
@@ -102,11 +114,11 @@ export async function getRepo(owner: string, repo: string): Promise<GitHubRepo |
       // Retry once after sleeping
       const retry = await safeFetch(`https://api.github.com/repos/${owner}/${repo}`, { headers: headers() })
       if (!retry?.ok) return null
-      return retry.json()
+      return safeBody(() => retry.json(), null)
     }
     return null
   }
-  return res.json()
+  return safeBody(() => res.json(), null)
 }
 
 /** Sentinel: the README fetch failed inconclusively — network error, 5xx,
@@ -134,11 +146,11 @@ export async function getReadmeResult(owner: string, repo: string): Promise<Read
       // (5xx, 401 expired token, 403 secondary rate limit, 429) is
       // inconclusive and must not be scored as an absent README.
       if (!retry.ok) return retry.status === 404 ? null : README_FETCH_FAILED
-      return retry.text()
+      return safeBody(() => retry.text(), README_FETCH_FAILED)
     }
     return res.status === 404 ? null : README_FETCH_FAILED
   }
-  return res.text()
+  return safeBody(() => res.text(), README_FETCH_FAILED)
 }
 
 export async function getReadme(owner: string, repo: string): Promise<string | null> {
