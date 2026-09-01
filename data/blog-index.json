@@ -1,5 +1,21 @@
 [
   {
+    "slug": "2026-09-01-tachyon-brings-full-mcp-protocol-support-to-the-jvm-and-scor",
+    "title": "Tachyon Brings Full MCP Protocol Support to the JVM — and Scores a 93",
+    "description": "Tachyon is a Java/Kotlin MCP runtime with native Netty transports and a perfect security score, built for teams who don't want to leave the JVM for MCP.",
+    "hook": "A 30-star JVM runtime just scored a perfect 30/30 on security and 93/100 overall — while most MCP servers are still Python scripts, Tachyon is passing conformance suites for two separate protocol revisions.",
+    "date": "2026-09-01",
+    "tags": [
+      "spotlight",
+      "review"
+    ],
+    "category": "server-spotlight",
+    "featuredServers": [
+      "tachyon"
+    ],
+    "readingTime": 3
+  },
+  {
     "slug": "2026-08-31-critical-flaw-in-nextcloud-mcp-server-lets-anyone-wipe-your-",
     "title": "Critical Flaw in Nextcloud MCP Server Lets Anyone Wipe Your Vector Data",
     "description": "CVE-2026-55640 exposes an unauthenticated webhook in Nextcloud MCP Server that lets attackers delete any user's vector embeddings when WEBHOOK_SECRET is left unset.",

@@ -1,0 +1,60 @@
+---
+title: "Tachyon Brings Full MCP Protocol Support to the JVM — and Scores a 93"
+description: "Tachyon is a Java/Kotlin MCP runtime with native Netty transports and a perfect security score, built for teams who don't want to leave the JVM for MCP."
+hook: "A 30-star JVM runtime just scored a perfect 30/30 on security and 93/100 overall — while most MCP servers are still Python scripts, Tachyon is passing conformance suites for two separate protocol revisions."
+date: "2026-09-01"
+tags: ["spotlight","review"]
+category: "server-spotlight"
+featuredServers: ["tachyon"]
+---
+Most MCP servers you'll find in the wild are Python or TypeScript scripts wrapping an API. [Tachyon](/s/tachyon) is neither — it's a JVM-native MCP **runtime**, built for Java and Kotlin shops that don't want to bolt a side-process onto their stack just to speak MCP.
+
+That framing matters. And the numbers back it up: a **93/100** total score on MCPpedia, built almost entirely on hard engineering fundamentals rather than hype.
+
+---
+
+## What it actually is
+
+Tachyon isn't a single tool wrapping a single API — it's infrastructure for *running* MCP servers on the JVM. It speaks Streamable HTTP and ships native Netty transports, which means it's meant to sit in the request path of real production traffic, not just answer occasional tool calls from a desktop assistant.
+
+According to the project's docs, it implements the **full MCP surface**: tools, tasks, resources, prompts, completions, and resumable sessions, with support for stateless deployment. That's the complete protocol checklist, not a partial implementation — and it's verified against the official conformance suites for **two separate protocol revisions**, 2025-11-25 and 2026-07-28. Tracking two conformance targets at once is the kind of detail that signals a team keeping pace with a moving spec rather than freezing on day one.
+
+<PullQuote>A JVM runtime that implements the full MCP surface and still auto-detects io_uring, epoll, kqueue, and NIO transports is doing infrastructure work most MCP servers skip entirely.</PullQuote>
+
+On the resources side, Tachyon supports static URIs, dynamic handlers, and URI templates — the building blocks for exposing anything from a fixed config file to a parameterized data lookup. It also has its own extensions mechanism for custom protocol extensions and negotiation, which is unusual: most servers take the spec as given, but Tachyon leaves a documented door open for extending it.
+
+---
+
+## Where the score comes from
+
+<ScoreBreakdown>
+<ScoreRow label="Security" points="30" description="Full marks — the maximum available on MCPpedia's rubric." />
+<ScoreRow label="Efficiency" points="20" description="Native transport auto-detection (io_uring → epoll → kqueue → NIO) pays off here." />
+<ScoreRow label="Maintenance" points="18" description="Active development signal on a young project." />
+<ScoreRow label="Documentation" points="15" description="Quickstart, resources, and extensions docs all exist and are linked from the repo." />
+<ScoreRow label="Compatibility" points="10" description="Room to grow — the lowest of the five categories." />
+</ScoreBreakdown>
+
+A **perfect 30/30 on security** is rare on this catalog, and it's the anchor of the whole score. Pair that with a 20/20 on efficiency — earned by a transport layer that automatically picks the fastest I/O primitive your OS offers, falling back gracefully from `io_uring` all the way down to plain NIO — and you get a server that reads like it was engineered by people who ship backend infrastructure for a living, not a weekend wrapper.
+
+<Callout type="info">
+Tachyon is licensed Apache 2.0, has 30 GitHub stars, and lives under [kpavlov/tachyon](https://github.com/kpavlov/tachyon) — categorized on MCPpedia under both AI/ML and DevOps.
+</Callout>
+
+Compatibility sits at 10, the one category with headroom. For a server this new, that's not a red flag so much as a place to watch as adoption broadens.
+
+---
+
+## Who should care
+
+If you're building or operating MCP servers on the JVM — Java or Kotlin, no exceptions — Tachyon is doing the plumbing so you don't have to reimplement Streamable HTTP transport handling, session resumption, and conformance-suite compliance yourself. The 5-minute quickstart in the docs is aimed squarely at getting a working server up before you've finished your coffee.
+
+<Callout type="tip">
+The stateless deployment support is worth flagging for anyone running on Kubernetes or serverless-style JVM deployments — it means you're not forced into sticky sessions just to keep MCP working.
+</Callout>
+
+It's also relevant to DevOps teams evaluating MCP infrastructure for internal tooling: a runtime that auto-tunes its I/O layer per-OS and passes conformance against two protocol versions is a safer bet for something you intend to keep running for years, not months.
+
+---
+
+30 stars is still a small community. But the fundamentals here — full protocol coverage, dual conformance testing, native transport tuning, a perfect security score — look like a project built for the long haul, not a demo. For JVM teams tired of reaching for Python just to get an MCP server running, [Tachyon](/s/tachyon) is worth the look.
