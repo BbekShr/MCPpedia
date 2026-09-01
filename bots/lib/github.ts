@@ -109,10 +109,11 @@ export async function getRepo(owner: string, repo: string): Promise<GitHubRepo |
   return res.json()
 }
 
-/** Sentinel: the README fetch failed transiently (network error or GitHub
- *  5xx) — the README's existence is UNKNOWN, unlike `null`, which means the
- *  repo genuinely has none (404). Score writers must not overwrite good data
- *  when they see this. */
+/** Sentinel: the README fetch failed inconclusively — network error, 5xx,
+ *  or auth/rate-limit rejections (401/403/429, e.g. an expired token or a
+ *  secondary rate limit). The README's existence is UNKNOWN, unlike `null`,
+ *  which means the repo affirmatively has none (404). Score writers must not
+ *  overwrite good data when they see this. */
 export const README_FETCH_FAILED = Symbol('readme-fetch-failed')
 export type ReadmeResult = string | null | typeof README_FETCH_FAILED
 
@@ -129,10 +130,13 @@ export async function getReadmeResult(owner: string, repo: string): Promise<Read
         headers: { ...headers(), Accept: 'application/vnd.github.raw+json' },
       })
       if (!retry) return README_FETCH_FAILED
-      if (!retry.ok) return retry.status >= 500 ? README_FETCH_FAILED : null
+      // Only a 404 is affirmative evidence of "no README" — anything else
+      // (5xx, 401 expired token, 403 secondary rate limit, 429) is
+      // inconclusive and must not be scored as an absent README.
+      if (!retry.ok) return retry.status === 404 ? null : README_FETCH_FAILED
       return retry.text()
     }
-    return res.status >= 500 ? README_FETCH_FAILED : null
+    return res.status === 404 ? null : README_FETCH_FAILED
   }
   return res.text()
 }

@@ -410,6 +410,16 @@ async function main() {
     if (updateError) {
       console.error(`  Error updating ${server.slug}: ${updateError.message}`)
       serverUpdateFailures++
+    } else if (server.is_archived) {
+      // Archived servers stay in the scoring rotation (30-day tier above), but
+      // their advisory rows must NOT be reconciled: reconcileAdvisories is the
+      // creator of security_advisories rows, and the sitewide CVE counters and
+      // feeds (home_stats.open_cves, /security, homepage feed, snapshot-metrics)
+      // count raw rows with no is_archived filter. Recreating advisories on an
+      // archived row double-counts every CVE its live twin also carries — and
+      // undoes the advisory de-duplication detect-duplicates performs when it
+      // archives a duplicate (its dupes share the keeper's package, so the scan
+      // would re-insert the exact rows just moved to the keeper).
     } else {
       // Upsert this scan's advisories and close the ones it no longer reports.
       // The helper decides what is safe to close from `scan_status` — see the

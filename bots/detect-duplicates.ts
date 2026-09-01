@@ -107,8 +107,11 @@ async function reparent(keeperId: string, dupeId: string): Promise<string[]> {
   // counters and feeds (home_stats.open_cves, /security, the homepage feed,
   // snapshot-metrics) count raw advisory rows with no is_archived filter, so
   // an advisory left on an archived dupe double-counts the same CVE forever.
-  // The rows are regenerable from the keeper's own package scan. Null cve_ids
-  // never collide (nulls are distinct in the unique index) so they always move.
+  // The rows are regenerable from the keeper's own package scan, and this is
+  // durable only because compute-scores skips advisory reconciliation for
+  // archived rows — otherwise the dupe's next archived-tier rescan would
+  // re-insert the shared package's CVEs. Null cve_ids never collide (nulls
+  // are distinct in the unique index) so they always move.
   {
     const table = 'security_advisories'
     const { data: dupeRows, error: dupeError } = await supabase
@@ -179,7 +182,21 @@ async function reparent(keeperId: string, dupeId: string): Promise<string[]> {
       if (error) {
         console.warn(`    reparent ${table} (null cve rows): ${error.message}`)
         failures.push(table)
+        return failures
       }
+    }
+
+    // Every CVE row is now off the dupe — keep its cve_count column in step.
+    // Without this, a dupe left live by a later archive failure renders the
+    // row-based "No known CVEs" badge (Hero) beside a column-based non-zero
+    // CVE count (SecurityPanel) for up to a week until the next weekly run.
+    const { error: countError } = await supabase
+      .from('servers')
+      .update({ cve_count: 0 })
+      .eq('id', dupeId)
+    if (countError) {
+      console.warn(`    reparent ${table} (zero dupe cve_count): ${countError.message}`)
+      failures.push(table)
     }
   }
 
