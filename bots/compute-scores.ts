@@ -343,9 +343,12 @@ async function main() {
         // failed. Every column derived from `security.evidence` moves together
         // with the evidence array itself — writing fresh flags beside a stale
         // evidence list makes the row self-contradictory where ScorePanel
-        // renders both.
+        // renders both. Archived servers are frozen too: their advisory ROWS
+        // are not reconciled (see the skip below), so rewriting cve_count here
+        // would contradict the row set — in particular re-inflating a count
+        // detect-duplicates just zeroed when it archived a duplicate.
         has_authentication: security.has_authentication,
-        ...(osvFailed ? {} : {
+        ...(osvFailed || server.is_archived ? {} : {
           cve_count: security.cve_count,
           security_evidence: security.evidence,
           has_code_execution: security.evidence.some(e => e.id === 'tool-safety' && e.pass === false),
@@ -420,6 +423,16 @@ async function main() {
       // undoes the advisory de-duplication detect-duplicates performs when it
       // archives a duplicate (its dupes share the keeper's package, so the scan
       // would re-insert the exact rows just moved to the keeper).
+      //
+      // KNOWN TRADE for archived servers with NO live twin (archived by
+      // update-metadata, check-broken-links, or an admin, not by dedup): their
+      // existing 'open' advisory rows are now frozen and never close, even if
+      // upstream ships a fix — reconcileAdvisories was their only closer. Those
+      // rows keep counting in the sitewide open-CVE figures until the counters
+      // and feeds learn to filter archived servers (filed as follow-up work);
+      // a close-only reconcile mode is the alternative if that filtering is
+      // rejected. Accepted because recreating/refreshing advisories on rows the
+      // site never renders is strictly worse for the dedup case.
     } else {
       // Upsert this scan's advisories and close the ones it no longer reports.
       // The helper decides what is safe to close from `scan_status` — see the
