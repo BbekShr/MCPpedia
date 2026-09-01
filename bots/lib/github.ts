@@ -5,6 +5,22 @@ function headers() {
   return h
 }
 
+/** fetch that catches thrown network errors (socket resets, DNS blips) and
+ *  retries once after a short backoff. Returns null when both attempts throw,
+ *  so one flaky connection can't crash a multi-thousand-repo bot run. */
+async function safeFetch(url: string, init: RequestInit): Promise<Response | null> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return await fetch(url, init)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.warn(`fetch failed for ${url}: ${msg}${attempt === 0 ? ' — retrying in 5s' : ''}`)
+      if (attempt === 0) await new Promise(r => setTimeout(r, 5000))
+    }
+  }
+  return null
+}
+
 /** Sleep until the GitHub rate-limit resets, then return true; returns false
  *  if the response was not a rate-limit error so the caller can handle it. */
 async function handleRateLimit(res: Response): Promise<boolean> {
@@ -76,35 +92,68 @@ export async function searchReposPaginated(query: string, maxPages = 10, perPage
   return all
 }
 
+/** Read a response body, catching mid-stream socket errors: a connection can
+ *  drop AFTER headers arrive, which rejects text()/json() outside safeFetch's
+ *  reach. Returns the fallback on throw. */
+async function safeBody<T, F>(read: () => Promise<T>, fallback: F): Promise<T | F> {
+  try {
+    return await read()
+  } catch (err) {
+    console.warn(`response body read failed: ${err instanceof Error ? err.message : err}`)
+    return fallback
+  }
+}
+
 export async function getRepo(owner: string, repo: string): Promise<GitHubRepo | null> {
-  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+  const res = await safeFetch(`https://api.github.com/repos/${owner}/${repo}`, {
     headers: headers(),
   })
+  if (!res) return null
   if (!res.ok) {
     if (await handleRateLimit(res)) {
       // Retry once after sleeping
-      const retry = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers: headers() })
-      if (!retry.ok) return null
-      return retry.json()
+      const retry = await safeFetch(`https://api.github.com/repos/${owner}/${repo}`, { headers: headers() })
+      if (!retry?.ok) return null
+      return safeBody(() => retry.json(), null)
     }
     return null
   }
-  return res.json()
+  return safeBody(() => res.json(), null)
+}
+
+/** Sentinel: the README fetch failed inconclusively — network error, 5xx,
+ *  or auth/rate-limit rejections (401/403/429, e.g. an expired token or a
+ *  secondary rate limit). The README's existence is UNKNOWN, unlike `null`,
+ *  which means the repo affirmatively has none (404). Score writers must not
+ *  overwrite good data when they see this. */
+export const README_FETCH_FAILED = Symbol('readme-fetch-failed')
+export type ReadmeResult = string | null | typeof README_FETCH_FAILED
+
+/** Like getReadme but transient failures come back as README_FETCH_FAILED
+ *  instead of being conflated with "no README". */
+export async function getReadmeResult(owner: string, repo: string): Promise<ReadmeResult> {
+  const res = await safeFetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
+    headers: { ...headers(), Accept: 'application/vnd.github.raw+json' },
+  })
+  if (!res) return README_FETCH_FAILED
+  if (!res.ok) {
+    if (await handleRateLimit(res)) {
+      const retry = await safeFetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
+        headers: { ...headers(), Accept: 'application/vnd.github.raw+json' },
+      })
+      if (!retry) return README_FETCH_FAILED
+      // Only a 404 is affirmative evidence of "no README" — anything else
+      // (5xx, 401 expired token, 403 secondary rate limit, 429) is
+      // inconclusive and must not be scored as an absent README.
+      if (!retry.ok) return retry.status === 404 ? null : README_FETCH_FAILED
+      return safeBody(() => retry.text(), README_FETCH_FAILED)
+    }
+    return res.status === 404 ? null : README_FETCH_FAILED
+  }
+  return safeBody(() => res.text(), README_FETCH_FAILED)
 }
 
 export async function getReadme(owner: string, repo: string): Promise<string | null> {
-  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
-    headers: { ...headers(), Accept: 'application/vnd.github.raw+json' },
-  })
-  if (!res.ok) {
-    if (await handleRateLimit(res)) {
-      const retry = await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
-        headers: { ...headers(), Accept: 'application/vnd.github.raw+json' },
-      })
-      if (!retry.ok) return null
-      return retry.text()
-    }
-    return null
-  }
-  return res.text()
+  const result = await getReadmeResult(owner, repo)
+  return result === README_FETCH_FAILED ? null : result
 }

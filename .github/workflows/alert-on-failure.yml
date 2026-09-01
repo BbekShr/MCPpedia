@@ -43,6 +43,10 @@ jobs:
       - name: Open or update a tracking issue
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # No checkout step in this job — without a git repo on disk, gh needs
+          # the target repository spelled out or every command dies with
+          # "failed to run git: fatal: not a git repository".
+          GH_REPO: ${{ github.repository }}
           WF_NAME: ${{ github.event.workflow_run.name }}
           RUN_URL: ${{ github.event.workflow_run.html_url }}
           RUN_NUMBER: ${{ github.event.workflow_run.run_number }}

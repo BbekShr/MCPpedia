@@ -21,7 +21,6 @@ const REPARENT_TABLES = [
   'edits',
   'changelogs',
   'health_checks',
-  'security_advisories',
 ] as const
 
 // Tables with a (server_id, user_id) unique constraint — re-parent only when
@@ -97,6 +96,110 @@ async function reparent(keeperId: string, dupeId: string): Promise<string[]> {
         console.warn(`    reparent ${table}: ${error.message}`)
         failures.push(table)
       }
+    }
+  }
+
+  // security_advisories has a (server_id, cve_id) unique index — a blind move
+  // fires it whenever the keeper already carries an advisory for the same CVE
+  // (common: duplicates of one repo share the same package, so the scan writes
+  // the same CVEs to both). Move only the CVEs the keeper lacks; rows whose
+  // CVE the keeper already has are DELETED, not left behind: the sitewide CVE
+  // counters and feeds (home_stats.open_cves, /security, the homepage feed,
+  // snapshot-metrics) count raw advisory rows with no is_archived filter, so
+  // an advisory left on an archived dupe double-counts the same CVE forever.
+  // The rows are regenerable from the keeper's own package scan. KNOWN
+  // RESIDUAL (pre-existing, not introduced here): the archived dupe keeps its
+  // package columns and stays in compute-scores' archived-tier rotation, so a
+  // later rescan can re-insert the shared package's CVEs onto it — the same
+  // was true of the old blind move. Making the cleanup durable needs the
+  // archived-server advisory work (scan tier, counters, and refresh-score's
+  // is_archived handling), filed as follow-up. Null cve_ids never collide
+  // (nulls are distinct in the unique index) so they always move.
+  {
+    const table = 'security_advisories'
+    const { data: dupeRows, error: dupeError } = await supabase
+      .from(table)
+      .select('cve_id')
+      .eq('server_id', dupeId)
+    if (dupeError) {
+      console.warn(`    reparent ${table} (read dupe rows): ${dupeError.message}`)
+      failures.push(table)
+      return failures
+    }
+    if (!dupeRows?.length) return failures
+
+    // Chunked: `.in()` values travel in the request URL, and a server with a
+    // large vulnerable dependency set can hold hundreds of CVEs — enough to
+    // blow the gateway URL limit in one call.
+    const CHUNK = 100
+    const dupeCves = dupeRows.map(r => r.cve_id).filter((c): c is string => c !== null)
+    const keeperCves = new Set<string>()
+    for (let i = 0; i < dupeCves.length; i += CHUNK) {
+      const { data: keeperRows, error: keeperError } = await supabase
+        .from(table)
+        .select('cve_id')
+        .eq('server_id', keeperId)
+        .in('cve_id', dupeCves.slice(i, i + CHUNK))
+      if (keeperError) {
+        console.warn(`    reparent ${table} (read keeper rows): ${keeperError.message}`)
+        failures.push(table)
+        return failures
+      }
+      for (const r of keeperRows || []) keeperCves.add(r.cve_id as string)
+    }
+
+    const movableCves = dupeCves.filter(c => !keeperCves.has(c))
+    for (let i = 0; i < movableCves.length; i += CHUNK) {
+      const { error } = await supabase
+        .from(table)
+        .update({ server_id: keeperId })
+        .eq('server_id', dupeId)
+        .in('cve_id', movableCves.slice(i, i + CHUNK))
+      if (error) {
+        console.warn(`    reparent ${table}: ${error.message}`)
+        failures.push(table)
+        return failures
+      }
+    }
+
+    const redundantCves = dupeCves.filter(c => keeperCves.has(c))
+    for (let i = 0; i < redundantCves.length; i += CHUNK) {
+      const { error } = await supabase
+        .from(table)
+        .delete()
+        .eq('server_id', dupeId)
+        .in('cve_id', redundantCves.slice(i, i + CHUNK))
+      if (error) {
+        console.warn(`    reparent ${table} (delete redundant rows): ${error.message}`)
+        failures.push(table)
+        return failures
+      }
+    }
+
+    if (dupeRows.some(r => r.cve_id === null)) {
+      const { error } = await supabase
+        .from(table)
+        .update({ server_id: keeperId })
+        .eq('server_id', dupeId)
+        .is('cve_id', null)
+      if (error) {
+        console.warn(`    reparent ${table} (null cve rows): ${error.message}`)
+        failures.push(table)
+        return failures
+      }
+    }
+
+    // Every CVE row is now off the dupe — keep its cve_count column in step.
+    // Without this, a dupe left live by a later archive failure renders the
+    // row-based "No known CVEs" badge (Hero) beside a column-based non-zero
+    // CVE count (SecurityPanel) for up to a week until the next weekly run.
+    const { error: countError } = await supabase
+      .from('servers')
+      .update({ cve_count: 0 })
+      .eq('id', dupeId)
+    if (countError) {
+      console.warn(`    reparent ${table} (zero dupe cve_count): ${countError.message}`)
+      failures.push(table)
     }
   }
 
