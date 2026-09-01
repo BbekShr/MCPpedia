@@ -109,20 +109,35 @@ export async function getRepo(owner: string, repo: string): Promise<GitHubRepo |
   return res.json()
 }
 
-export async function getReadme(owner: string, repo: string): Promise<string | null> {
+/** Sentinel: the README fetch failed transiently (network error or GitHub
+ *  5xx) — the README's existence is UNKNOWN, unlike `null`, which means the
+ *  repo genuinely has none (404). Score writers must not overwrite good data
+ *  when they see this. */
+export const README_FETCH_FAILED = Symbol('readme-fetch-failed')
+export type ReadmeResult = string | null | typeof README_FETCH_FAILED
+
+/** Like getReadme but transient failures come back as README_FETCH_FAILED
+ *  instead of being conflated with "no README". */
+export async function getReadmeResult(owner: string, repo: string): Promise<ReadmeResult> {
   const res = await safeFetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
     headers: { ...headers(), Accept: 'application/vnd.github.raw+json' },
   })
-  if (!res) return null
+  if (!res) return README_FETCH_FAILED
   if (!res.ok) {
     if (await handleRateLimit(res)) {
       const retry = await safeFetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
         headers: { ...headers(), Accept: 'application/vnd.github.raw+json' },
       })
-      if (!retry?.ok) return null
+      if (!retry) return README_FETCH_FAILED
+      if (!retry.ok) return retry.status >= 500 ? README_FETCH_FAILED : null
       return retry.text()
     }
-    return null
+    return res.status >= 500 ? README_FETCH_FAILED : null
   }
   return res.text()
+}
+
+export async function getReadme(owner: string, repo: string): Promise<string | null> {
+  const result = await getReadmeResult(owner, repo)
+  return result === README_FETCH_FAILED ? null : result
 }

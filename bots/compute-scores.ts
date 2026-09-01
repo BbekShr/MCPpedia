@@ -11,7 +11,7 @@ import fs from 'fs'
 import path from 'path'
 import { createAdminClient } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
-import { getReadme } from './lib/github'
+import { getReadmeResult, README_FETCH_FAILED } from './lib/github'
 import {
   scanSecurity,
   measureTokenEfficiency,
@@ -45,6 +45,9 @@ const SCORING_FIELDS = [
   'is_archived', 'verified', 'security_verified', 'has_authentication',
   'tool_definition_hash',
   'score_total', 'score_security', 'last_security_scan',
+  // The README-fetch-failure guard needs the previous documentation component
+  // and the "was this row ever scored" signal (score_computed_at).
+  'score_documentation', 'score_computed_at',
 ].join(', ')
 
 function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
@@ -236,7 +239,7 @@ async function main() {
     // GitHub README fetch are independent network calls; overlapping them
     // roughly halves per-server wall time across ~19k servers.
     const parsed = server.github_url ? parseGitHubUrl(server.github_url) : null
-    const [security, readme] = await Promise.all([
+    const [security, readmeResult] = await Promise.all([
       scanSecurity(
         server.npm_package,
         server.pip_package,
@@ -247,8 +250,10 @@ async function main() {
         tools,
         server.tool_definition_hash || null
       ),
-      parsed ? getReadme(parsed.owner, parsed.repo) : Promise.resolve(null),
+      parsed ? getReadmeResult(parsed.owner, parsed.repo) : Promise.resolve(null),
     ])
+    const readmeFetchFailed = readmeResult === README_FETCH_FAILED
+    const readme = readmeFetchFailed ? null : readmeResult
     console.log(`  Security: ${security.score}/${SCORE_WEIGHTS.security} (${security.cve_count} CVEs, ${security.evidence.length} checks)`)
     const efficiency = measureTokenEfficiency(tools)
     console.log(`  Efficiency: ${efficiency.score}/${SCORE_WEIGHTS.efficiency} (${efficiency.total_tool_tokens} tokens, grade ${efficiency.grade})`)
@@ -263,7 +268,22 @@ async function main() {
       server.github_url,
       server.homepage_url
     )
-    console.log(`  Documentation: ${docs.score}/${SCORE_WEIGHTS.documentation} (README: ${docs.readme_quality})`)
+    // README fetch failed at the network layer — the fresh docs score was
+    // computed as if the repo had no README, which would overwrite a good
+    // documentation component with a degraded one and hold it for
+    // SCORE_STALE_DAYS. Mirror the OSV guard: preserve the previous component
+    // when the row has been scored before (`score_computed_at` is the honest
+    // "ever scored" signal, like `last_security_scan` in lib/score-merge.ts).
+    const preserveDocs =
+      readmeFetchFailed &&
+      server.score_computed_at != null &&
+      typeof server.score_documentation === 'number'
+    const docScore = preserveDocs ? server.score_documentation : docs.score
+    console.log(
+      preserveDocs
+        ? `  Documentation: ${docScore}/${SCORE_WEIGHTS.documentation} (README fetch failed — preserving previous component)`
+        : `  Documentation: ${docs.score}/${SCORE_WEIGHTS.documentation} (README: ${docs.readme_quality})`
+    )
 
     // 4. COMPATIBILITY — transport + client checks
     const compat = scoreCompatibility(
@@ -290,7 +310,7 @@ async function main() {
     const merged = mergeScoresOnOsvFailure(server, {
       scan_status: security.scan_status,
       security_score: security.score,
-      other_score_total: efficiency.score + docs.score + compat.score + maint.score,
+      other_score_total: efficiency.score + docScore + compat.score + maint.score,
     })
     const osvFailed = merged.osv_failed
     console.log(`  TOTAL: ${merged.score_total}/100\n`)
@@ -315,7 +335,7 @@ async function main() {
         score_total: merged.score_total,
         score_security: merged.score_security,
         score_maintenance: maint.score,
-        score_documentation: docs.score,
+        score_documentation: docScore,
         score_compatibility: compat.score,
         score_efficiency: efficiency.score,
         score_computed_at: new Date().toISOString(),
@@ -346,13 +366,18 @@ async function main() {
         total_tool_tokens: efficiency.total_tool_tokens,
         estimated_tokens_per_call: efficiency.estimated_tokens_per_call,
         token_efficiency_grade: efficiency.grade,
-        // Documentation evidence
-        doc_readme_quality: docs.readme_quality,
-        doc_has_setup: docs.has_setup_instructions,
-        doc_has_examples: docs.has_examples,
-        doc_tool_schema_ratio: tools.length > 0
-          ? tools.filter(t => t.input_schema && Object.keys(t.input_schema).length > 0).length / tools.length
-          : null,
+        // Documentation evidence — skipped when the README fetch failed and the
+        // previous component was preserved: fresh "no README" evidence beside a
+        // preserved score would make the row self-contradictory, same reasoning
+        // as the CVE-derived columns above.
+        ...(preserveDocs ? {} : {
+          doc_readme_quality: docs.readme_quality,
+          doc_has_setup: docs.has_setup_instructions,
+          doc_has_examples: docs.has_examples,
+          doc_tool_schema_ratio: tools.length > 0
+            ? tools.filter(t => t.input_schema && Object.keys(t.input_schema).length > 0).length / tools.length
+            : null,
+        }),
       })
       .eq('id', server.id)
 
