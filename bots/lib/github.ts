@@ -5,6 +5,22 @@ function headers() {
   return h
 }
 
+/** fetch that catches thrown network errors (socket resets, DNS blips) and
+ *  retries once after a short backoff. Returns null when both attempts throw,
+ *  so one flaky connection can't crash a multi-thousand-repo bot run. */
+async function safeFetch(url: string, init: RequestInit): Promise<Response | null> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return await fetch(url, init)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.warn(`fetch failed for ${url}: ${msg}${attempt === 0 ? ' — retrying in 5s' : ''}`)
+      if (attempt === 0) await new Promise(r => setTimeout(r, 5000))
+    }
+  }
+  return null
+}
+
 /** Sleep until the GitHub rate-limit resets, then return true; returns false
  *  if the response was not a rate-limit error so the caller can handle it. */
 async function handleRateLimit(res: Response): Promise<boolean> {
@@ -77,14 +93,15 @@ export async function searchReposPaginated(query: string, maxPages = 10, perPage
 }
 
 export async function getRepo(owner: string, repo: string): Promise<GitHubRepo | null> {
-  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+  const res = await safeFetch(`https://api.github.com/repos/${owner}/${repo}`, {
     headers: headers(),
   })
+  if (!res) return null
   if (!res.ok) {
     if (await handleRateLimit(res)) {
       // Retry once after sleeping
-      const retry = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers: headers() })
-      if (!retry.ok) return null
+      const retry = await safeFetch(`https://api.github.com/repos/${owner}/${repo}`, { headers: headers() })
+      if (!retry?.ok) return null
       return retry.json()
     }
     return null
@@ -93,15 +110,16 @@ export async function getRepo(owner: string, repo: string): Promise<GitHubRepo |
 }
 
 export async function getReadme(owner: string, repo: string): Promise<string | null> {
-  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
+  const res = await safeFetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
     headers: { ...headers(), Accept: 'application/vnd.github.raw+json' },
   })
+  if (!res) return null
   if (!res.ok) {
     if (await handleRateLimit(res)) {
-      const retry = await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
+      const retry = await safeFetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
         headers: { ...headers(), Accept: 'application/vnd.github.raw+json' },
       })
-      if (!retry.ok) return null
+      if (!retry?.ok) return null
       return retry.text()
     }
     return null

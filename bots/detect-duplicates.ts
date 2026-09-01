@@ -21,7 +21,6 @@ const REPARENT_TABLES = [
   'edits',
   'changelogs',
   'health_checks',
-  'security_advisories',
 ] as const
 
 // Tables with a (server_id, user_id) unique constraint — re-parent only when
@@ -95,6 +94,68 @@ async function reparent(keeperId: string, dupeId: string): Promise<string[]> {
         .in('user_id', movableUserIds)
       if (error) {
         console.warn(`    reparent ${table}: ${error.message}`)
+        failures.push(table)
+      }
+    }
+  }
+
+  // security_advisories has a (server_id, cve_id) unique index — a blind move
+  // fires it whenever the keeper already carries an advisory for the same CVE
+  // (common: duplicates of one repo share the same package, so the scan writes
+  // the same CVEs to both). Move only the CVEs the keeper lacks; rows whose
+  // CVE the keeper already has are redundant copies and safe to leave behind
+  // on the archived dupe. Null cve_ids never collide (nulls are distinct in
+  // the unique index) so they always move.
+  {
+    const table = 'security_advisories'
+    const { data: dupeRows, error: dupeError } = await supabase
+      .from(table)
+      .select('cve_id')
+      .eq('server_id', dupeId)
+    if (dupeError) {
+      console.warn(`    reparent ${table} (read dupe rows): ${dupeError.message}`)
+      failures.push(table)
+      return failures
+    }
+    if (!dupeRows?.length) return failures
+
+    const dupeCves = dupeRows.map(r => r.cve_id).filter((c): c is string => c !== null)
+    let keeperCves = new Set<string>()
+    if (dupeCves.length > 0) {
+      const { data: keeperRows, error: keeperError } = await supabase
+        .from(table)
+        .select('cve_id')
+        .eq('server_id', keeperId)
+        .in('cve_id', dupeCves)
+      if (keeperError) {
+        console.warn(`    reparent ${table} (read keeper rows): ${keeperError.message}`)
+        failures.push(table)
+        return failures
+      }
+      keeperCves = new Set((keeperRows || []).map(r => r.cve_id as string))
+    }
+
+    const movableCves = dupeCves.filter(c => !keeperCves.has(c))
+    if (movableCves.length > 0) {
+      const { error } = await supabase
+        .from(table)
+        .update({ server_id: keeperId })
+        .eq('server_id', dupeId)
+        .in('cve_id', movableCves)
+      if (error) {
+        console.warn(`    reparent ${table}: ${error.message}`)
+        failures.push(table)
+        return failures
+      }
+    }
+    if (dupeRows.some(r => r.cve_id === null)) {
+      const { error } = await supabase
+        .from(table)
+        .update({ server_id: keeperId })
+        .eq('server_id', dupeId)
+        .is('cve_id', null)
+      if (error) {
+        console.warn(`    reparent ${table} (null cve rows): ${error.message}`)
         failures.push(table)
       }
     }
