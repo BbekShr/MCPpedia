@@ -58,24 +58,33 @@ jobs:
 
       - name: Commit post to trigger deployment
         if: steps.check.outputs.found == 'true'
+        # Frontmatter values reach bash through env, never through `${{ }}`
+        # interpolation. A post title/hook is bot-written prose that routinely
+        # contains backticks (e.g. "just `pnpm install` on the wrong repo") —
+        # interpolated straight into a double-quoted string those become command
+        # substitution, which killed the 2026-09-02 run with "pnpm: command not
+        # found" and would run anything a `$(...)` in a title asked for.
+        env:
+          POST: ${{ steps.check.outputs.post }}
+          TITLE: ${{ steps.check.outputs.title }}
         run: |
           git config user.name "MCPpedia Bot"
           git config user.email "bot@mcppedia.com"
 
           # Touch the file to update its timestamp and trigger revalidation
-          touch "${{ steps.check.outputs.post }}"
+          touch "$POST"
           # data/blog-index.json is the frontmatter index that request-time
           # routes (/sitemap.xml, /llms.txt, /blog) read instead of walking
           # content/ — Cloudflare Workers have no filesystem. Regenerate it in
           # the same commit so the committed copy never lags the posts.
           node scripts/generate-content-index.mjs
-          git add "${{ steps.check.outputs.post }}" data/blog-index.json
+          git add "$POST" data/blog-index.json
 
           # Only commit if there are actual changes
           if git diff --staged --quiet; then
             echo "No changes to commit — post was already published"
           else
-            git commit -m "Publish: ${{ steps.check.outputs.title }}"
+            git commit -m "Publish: $TITLE"
             # Rebase-retry: other bot workflows push to main too, so a push can
             # be rejected (non-fast-forward) if main moved since checkout. Rebase
             # onto the latest and retry instead of failing the job (which sent a
@@ -96,15 +105,19 @@ jobs:
 
       - name: Print HN submission link
         if: steps.check.outputs.found == 'true'
+        # Same reason as the commit step: env, not `${{ }}`. python3 reads the
+        # values out of os.environ too — quoting them into `-c` source made an
+        # apostrophe in a title a syntax error.
+        env:
+          TITLE: ${{ steps.check.outputs.title }}
+          HOOK: ${{ steps.check.outputs.hook }}
+          SLUG: ${{ steps.check.outputs.slug }}
         run: |
-          TITLE="${{ steps.check.outputs.title }}"
-          HOOK="${{ steps.check.outputs.hook }}"
-          SLUG="${{ steps.check.outputs.slug }}"
           URL="https://mcppedia.com/blog/${SLUG}"
 
           # URL-encode for HN submit link
-          ENCODED_TITLE=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$TITLE'))")
-          ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$URL'))")
+          ENCODED_TITLE=$(python3 -c "import os,urllib.parse; print(urllib.parse.quote(os.environ['TITLE']))")
+          ENCODED_URL=$(URL="$URL" python3 -c "import os,urllib.parse; print(urllib.parse.quote(os.environ['URL']))")
 
           HN_LINK="https://news.ycombinator.com/submitlink?u=${ENCODED_URL}&t=${ENCODED_TITLE}"
 
