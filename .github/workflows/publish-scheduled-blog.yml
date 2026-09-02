@@ -113,7 +113,7 @@ jobs:
           HOOK: ${{ steps.check.outputs.hook }}
           SLUG: ${{ steps.check.outputs.slug }}
         run: |
-          URL="https://mcppedia.com/blog/${SLUG}"
+          URL="https://mcppedia.org/blog/${SLUG}"
 
           # URL-encode for HN submit link
           ENCODED_TITLE=$(python3 -c "import os,urllib.parse; print(urllib.parse.quote(os.environ['TITLE']))")
