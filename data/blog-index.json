@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-09-02-pnpm-proxy-flaw-leaks-secrets-across-10-mcp-servers",
+    "title": "pnpm Proxy Flaw Leaks Secrets Across 10 MCP Servers",
+    "description": "A high-severity pnpm vulnerability lets a malicious repo exfiltrate NPM_TOKEN and GITHUB_TOKEN via proxy settings, hitting 10 MCPpedia-listed servers.",
+    "hook": "One pnpm bug, ten MCP servers, zero lines of malicious code needed — just `pnpm install` on the wrong repo can leak your GITHUB_TOKEN through a poisoned pnpm-workspace.yaml.",
+    "date": "2026-09-02",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 2
+  },
+  {
     "slug": "2026-09-01-tachyon-brings-full-mcp-protocol-support-to-the-jvm-and-scor",
     "title": "Tachyon Brings Full MCP Protocol Support to the JVM — and Scores a 93",
     "description": "Tachyon is a Java/Kotlin MCP runtime with native Netty transports and a perfect security score, built for teams who don't want to leave the JVM for MCP.",
