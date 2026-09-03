@@ -104,6 +104,31 @@ async function safeBody<T, F>(read: () => Promise<T>, fallback: F): Promise<T | 
   }
 }
 
+/** Code search — used to confirm a repo actually contains a given filename
+ *  (e.g. SKILL.md) rather than just matching on topic/description keywords.
+ *  Code search has its own, stricter rate limit (10/min authenticated), so
+ *  callers must space these out separately from searchRepos calls. */
+export async function repoHasFile(owner: string, repo: string, filename: string): Promise<boolean> {
+  const query = encodeURIComponent(`filename:${filename} repo:${owner}/${repo}`)
+  const res = await safeFetch(`https://api.github.com/search/code?q=${query}&per_page=1`, {
+    headers: headers(),
+  })
+  if (!res) return false
+  if (!res.ok) {
+    if (await handleRateLimit(res)) {
+      const retry = await safeFetch(`https://api.github.com/search/code?q=${query}&per_page=1`, {
+        headers: headers(),
+      })
+      if (!retry?.ok) return false
+      const data = await safeBody(() => retry.json(), null)
+      return !!data && (data as { total_count?: number }).total_count! > 0
+    }
+    return false
+  }
+  const data = await safeBody(() => res.json(), null)
+  return !!data && (data as { total_count?: number }).total_count! > 0
+}
+
 export async function getRepo(owner: string, repo: string): Promise<GitHubRepo | null> {
   const res = await safeFetch(`https://api.github.com/repos/${owner}/${repo}`, {
     headers: headers(),

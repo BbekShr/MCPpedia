@@ -1827,5 +1827,217 @@
     "install": {
       "manual": "brew install --cask drawio   # then follow the SKILL.md install steps"
     }
+  },
+  {
+    "slug": "academic-research-skills",
+    "name": "Academic Research Skills",
+    "tagline": "Guides Claude Code through the full academic research pipeline: research, write, review, revise, finalize.",
+    "repo": "Imbad0202/academic-research-skills",
+    "github_url": "https://github.com/Imbad0202/academic-research-skills",
+    "author": "Imbad0202",
+    "author_type": "community",
+    "license": null,
+    "stars": 45885,
+    "last_updated": "2026-09-01",
+    "category": "research",
+    "tags": ["academic-writing", "literature-review", "peer-review", "ai-research"],
+    "compatible_with": ["claude-code"],
+    "type": "skill-collection",
+    "install": {
+      "manual": "Clone Imbad0202/academic-research-skills and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "reverse-skill",
+    "name": "Reverse Skill",
+    "tagline": "Reverse-engineering and authorized pentesting skill pack with AI-routed, on-demand toolchains.",
+    "repo": "zhaoxuya520/reverse-skill",
+    "github_url": "https://github.com/zhaoxuya520/reverse-skill",
+    "author": "zhaoxuya520",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 34292,
+    "last_updated": "2026-09-03",
+    "category": "development-workflow",
+    "tags": ["reverse-engineering", "security", "pentesting"],
+    "compatible_with": ["claude-code", "cursor"],
+    "type": "skill-collection",
+    "install": {
+      "manual": "Clone zhaoxuya520/reverse-skill and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "diagram-design",
+    "name": "Diagram Design",
+    "tagline": "38 editorial diagram types for Claude Code — self-contained HTML + SVG, no Mermaid clutter.",
+    "repo": "cathrynlavery/diagram-design",
+    "github_url": "https://github.com/cathrynlavery/diagram-design",
+    "homepage_url": "https://cathrynlavery.github.io/diagram-design/",
+    "author": "cathrynlavery",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 30164,
+    "last_updated": "2026-09-03",
+    "category": "design",
+    "tags": ["diagrams", "data-visualization", "svg", "mermaid"],
+    "compatible_with": ["claude-code", "codex"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone cathrynlavery/diagram-design and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "frontend-slides",
+    "name": "Frontend Slides",
+    "tagline": "Build polished presentation slides in the browser using a coding agent's frontend skills.",
+    "repo": "zarazhangrui/frontend-slides",
+    "github_url": "https://github.com/zarazhangrui/frontend-slides",
+    "author": "zarazhangrui",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 28669,
+    "last_updated": "2026-06-23",
+    "category": "design",
+    "tags": ["presentation", "slides", "generative-ui", "html"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone zarazhangrui/frontend-slides and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "book-to-skill",
+    "name": "Book to Skill",
+    "tagline": "Turns any technical book PDF into a ready-to-use Claude Code skill.",
+    "repo": "virgiliojr94/book-to-skill",
+    "github_url": "https://github.com/virgiliojr94/book-to-skill",
+    "author": "virgiliojr94",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 28087,
+    "last_updated": "2026-09-01",
+    "category": "meta",
+    "tags": ["document-processing", "pdf-to-markdown", "study-tools", "knowledge-base"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone virgiliojr94/book-to-skill and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "i-have-adhd",
+    "name": "I Have ADHD",
+    "tagline": "Stops your coding agent from burying the answer — ADHD-friendly, front-loaded output.",
+    "repo": "ayghri/i-have-adhd",
+    "github_url": "https://github.com/ayghri/i-have-adhd",
+    "author": "ayghri",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 26896,
+    "last_updated": "2026-09-01",
+    "category": "development-workflow",
+    "tags": ["adhd", "productivity", "developer-tools"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone ayghri/i-have-adhd and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "humanizer-zh",
+    "name": "Humanizer (Chinese)",
+    "tagline": "Chinese localization of Humanizer — strips AI-generated tells from text.",
+    "repo": "op7418/Humanizer-zh",
+    "github_url": "https://github.com/op7418/Humanizer-zh",
+    "author": "op7418",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 16593,
+    "last_updated": "2026-01-19",
+    "category": "writing",
+    "tags": ["humanizer", "ai-detection", "chinese"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone op7418/Humanizer-zh and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "android-reverse-engineering-skill",
+    "name": "Android Reverse Engineering Skill",
+    "tagline": "Supports Android app reverse engineering workflows in Claude Code.",
+    "repo": "SimoneAvogadro/android-reverse-engineering-skill",
+    "github_url": "https://github.com/SimoneAvogadro/android-reverse-engineering-skill",
+    "author": "SimoneAvogadro",
+    "author_type": "community",
+    "license": "Apache-2.0",
+    "stars": 7687,
+    "last_updated": "2026-06-10",
+    "category": "development-workflow",
+    "tags": ["android", "reverse-engineering", "mobile"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone SimoneAvogadro/android-reverse-engineering-skill and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "guizang-social-card-skill",
+    "name": "Guizang Social Card Skill",
+    "tagline": "Generates Xiaohongshu carousels and WeChat cover pairs from editorial, Swiss-style templates.",
+    "repo": "op7418/guizang-social-card-skill",
+    "github_url": "https://github.com/op7418/guizang-social-card-skill",
+    "homepage_url": "https://github.com/op7418/guizang-social-card-skill",
+    "author": "op7418",
+    "author_type": "community",
+    "license": "AGPL-3.0",
+    "stars": 6813,
+    "last_updated": "2026-07-01",
+    "category": "design",
+    "tags": ["social-cards", "editorial-design", "xiaohongshu", "wechat", "image-generation"],
+    "compatible_with": ["claude-code", "codex"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone op7418/guizang-social-card-skill and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "qiaomu-anything-to-notebooklm",
+    "name": "Anything to NotebookLM",
+    "tagline": "Feeds WeChat articles, web pages, YouTube, and PDFs into NotebookLM-style podcasts, decks, and mind maps.",
+    "repo": "joeseesun/qiaomu-anything-to-notebooklm",
+    "github_url": "https://github.com/joeseesun/qiaomu-anything-to-notebooklm",
+    "author": "joeseesun",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 5910,
+    "last_updated": "2026-04-28",
+    "category": "writing",
+    "tags": ["notebooklm", "content-processing", "automation"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone joeseesun/qiaomu-anything-to-notebooklm and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "anthropic-claude-plugins-official",
+    "name": "Claude Code Plugins Directory",
+    "tagline": "Anthropic's official, curated directory of high-quality Claude Code plugins.",
+    "repo": "anthropics/claude-plugins-official",
+    "github_url": "https://github.com/anthropics/claude-plugins-official",
+    "homepage_url": "https://code.claude.com/docs/en/plugins",
+    "author": "Anthropic",
+    "author_type": "official",
+    "license": "Apache-2.0",
+    "stars": 35863,
+    "last_updated": "2026-09-03",
+    "category": "meta",
+    "tags": ["plugins", "marketplace", "directory"],
+    "compatible_with": ["claude-code"],
+    "type": "marketplace",
+    "install": {
+      "manual": "Browse plugins at code.claude.com/docs/en/plugins, or run /plugin marketplace add anthropics/claude-plugins-official in Claude Code."
+    }
   }
 ]

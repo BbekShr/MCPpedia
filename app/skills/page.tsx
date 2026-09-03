@@ -10,6 +10,7 @@ import {
 import {
   getAllSkills,
   getFeaturedSkills,
+  getTrendingSkills,
   getSkillCategoriesWithCounts,
 } from '@/lib/skills'
 import SkillsBrowser from '@/components/SkillsBrowser'
@@ -31,6 +32,7 @@ export const metadata: Metadata = {
 export default function SkillsPage() {
   const all = getAllSkills()
   const featured = getFeaturedSkills(6)
+  const trending = getTrendingSkills(6)
   const categoriesWithCounts = getSkillCategoriesWithCounts()
 
   // Derived from the directory itself so the numbers cannot go stale: adding a
@@ -90,10 +92,12 @@ export default function SkillsPage() {
             `A skill is not an MCP server: an MCP server gives an agent new tools to call over a protocol, ` +
             `while a skill gives it instructions, context and a workflow for a task it can already do. ` +
             `Most real setups end up using both.`,
-          `Every entry here is hand-checked rather than scraped — it links to the source repository, says ` +
-            `which clients it works with, and shows when it was last updated, because an abandoned skill ` +
-            `is worse than no skill: it will confidently walk an agent through a workflow that no longer ` +
-            `matches the tool it is driving.`,
+          `Every entry here is checked against concrete criteria, not just scraped off a topic listing — ` +
+            `it must actually ship a SKILL.md, links to the source repository, says which clients it works ` +
+            `with, and shows when it was last updated, because an abandoned skill is worse than no skill: ` +
+            `it will confidently walk an agent through a workflow that no longer matches the tool it is ` +
+            `driving. A weekly bot scans GitHub for new entries that clear that bar; the list above is ` +
+            `refreshed automatically rather than by hand.`,
         ]}
         siblingsLabel="Also see"
         siblings={[
@@ -108,6 +112,7 @@ export default function SkillsPage() {
       <SkillsBrowser
         skills={all}
         featured={featured}
+        trending={trending}
         categoriesWithCounts={categoriesWithCounts}
       />
 
