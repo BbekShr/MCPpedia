@@ -62,9 +62,20 @@ async function main() {
       .from('servers')
       .select('id, slug, github_url, npm_package, is_archived, license')
       .not('github_url', 'is', null)
-      // Offset paging needs a unique sort key — without one, rows shifting
+      // Stalest-first, not id-first: this loop does not reliably finish in one
+      // run (GitHub-hosted runners hard-cap a job at 6h, and the catalog has
+      // grown past what a 6h sequential sweep — one GitHub + one npm fetch per
+      // server, rate-limited — can cover; verified against prod: 27k/31k
+      // servers with a github_url had health_checked_at = NULL because every
+      // run restarted from the same id and never got past the first ~13k).
+      // Ordering by staleness means a run that gets killed partway still made
+      // real progress: tomorrow's run picks up the servers today's run didn't
+      // reach, instead of re-doing the same head of the table forever.
+      // `id` breaks ties (many rows share health_checked_at = NULL) and keeps
+      // paging deterministic — without a unique sort key, rows shifting
       // between page fetches silently drop servers from the day's refresh.
-      .order('id')
+      .order('health_checked_at', { ascending: true, nullsFirst: true })
+      .order('id', { ascending: true })
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
     if (batchError) {
