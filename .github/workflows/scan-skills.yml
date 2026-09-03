@@ -1,0 +1,57 @@
+name: Skills Scanner
+
+on:
+  schedule:
+    - cron: '0 10 * * 3'  # Wednesday 10am UTC / 5am CST — once a week
+  workflow_dispatch:
+
+# Serialize every workflow that pushes to main so their push windows don't
+# overlap. Combined with the rebase-retry push below, this eliminates the
+# non-fast-forward rejections that emailed spurious "workflow failed" notices.
+concurrency:
+  group: content-push-main
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - run: npm ci
+
+      - name: Scan for new Claude Code skills
+        run: npx tsx bots/scan-skills.ts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GITHUB_TOKEN: ${{ secrets.BOT_GITHUB_TOKEN }}
+
+      - name: Commit and push new skills
+        run: |
+          git config user.name "mcppedia-bot"
+          git config user.email "bot@mcppedia.org"
+          git add data/skills.json
+          git diff --cached --quiet && echo "No new skills found" && exit 0
+          git commit -m "skills: scan for new Claude Code skills [bot]"
+          # Rebase-retry: other bot workflows push to main too, so a push can be
+          # rejected (non-fast-forward) if main moved since checkout. Rebase onto
+          # the latest and retry instead of failing the job — the old plain
+          # `git push` emailed a spurious failure even when the content was fine.
+          for attempt in 1 2 3 4 5; do
+            if git push; then
+              echo "Pushed on attempt $attempt"
+              exit 0
+            fi
+            echo "Push rejected (attempt $attempt) — rebasing onto origin/main"
+            git pull --rebase --autostash origin main || true
+          done
+          echo "Push still failing after 5 attempts"
+          exit 1

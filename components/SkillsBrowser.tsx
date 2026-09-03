@@ -8,6 +8,7 @@ import SkillCard from './SkillCard'
 interface Props {
   skills: Skill[]
   featured: Skill[]
+  trending: Skill[]
   categoriesWithCounts: { category: SkillCategory; count: number }[]
 }
 
@@ -36,7 +37,7 @@ const CHIP_INACTIVE =
 const CHIP_ACTIVE =
   'border-accent bg-accent text-accent-fg hover:bg-accent-hover'
 
-export default function SkillsBrowser({ skills, featured, categoriesWithCounts }: Props) {
+export default function SkillsBrowser({ skills, featured, trending, categoriesWithCounts }: Props) {
   const [query, setQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<SkillCategory | 'all'>('all')
   const q = query.trim()
@@ -130,6 +131,23 @@ export default function SkillsBrowser({ skills, featured, categoriesWithCounts }
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {featured.map(skill => (
+              <SkillCard key={skill.slug} skill={skill} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Trending — only on pristine default view */}
+      {!searching && selectedCategory === 'all' && trending.length > 0 && (
+        <section aria-labelledby="trending-heading" className="mb-8">
+          <div className="flex items-baseline justify-between mb-3">
+            <h2 id="trending-heading" className="text-lg font-semibold text-text-primary">
+              Trending
+            </h2>
+            <span className="text-xs text-text-muted">Popular &amp; recently updated</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {trending.map(skill => (
               <SkillCard key={skill.slug} skill={skill} />
             ))}
           </div>

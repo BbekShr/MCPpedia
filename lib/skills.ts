@@ -128,3 +128,20 @@ export function getSkillCategoriesWithCounts(): { category: SkillCategory; count
     .map(category => ({ category, count: counts.get(category) ?? 0 }))
     .filter(c => c.count > 0)
 }
+
+const TRENDING_WINDOW_DAYS = 60
+
+/**
+ * Trending = actively maintained (pushed within TRENDING_WINDOW_DAYS) and
+ * popular (sorted by stars), excluding whatever's already in Featured so the
+ * two sections don't repeat the same handful of entries.
+ */
+export function getTrendingSkills(limit = 6, now: Date = new Date()): Skill[] {
+  const featuredSlugs = new Set(getFeaturedSkills().map(s => s.slug))
+  const cutoff = now.getTime() - TRENDING_WINDOW_DAYS * 24 * 60 * 60 * 1000
+  return getAllSkills()
+    .filter(s => !featuredSlugs.has(s.slug))
+    .filter(s => s.last_updated && new Date(s.last_updated).getTime() >= cutoff)
+    .sort((a, b) => (b.stars || 0) - (a.stars || 0))
+    .slice(0, limit)
+}
