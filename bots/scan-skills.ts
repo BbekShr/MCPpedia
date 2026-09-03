@@ -89,6 +89,38 @@ function toDateOnly(iso: string): string {
   return iso.slice(0, 10)
 }
 
+/** data/skills.json keeps `tags`/`compatible_with` as one-line arrays and only
+ *  breaks `install` across lines — plain `JSON.stringify(arr, null, 2)`
+ *  ignores that and reformats every array multi-line, which would turn a
+ *  handful of new rows into a thousand-line diff against the existing file.
+ *  Mirror the file's own style instead of reformatting it. */
+function stringifySkills(skills: Skill[]): string {
+  const objLines = skills.map((skill, i) => {
+    const keys = Object.keys(skill) as (keyof Skill)[]
+    const fieldLines = keys.map((key, ki) => {
+      const value = skill[key]
+      const comma = ki === keys.length - 1 ? '' : ','
+      let rendered: string
+      if (Array.isArray(value)) {
+        rendered = `[${value.map(v => JSON.stringify(v)).join(', ')}]`
+      } else if (value !== null && typeof value === 'object') {
+        const innerKeys = Object.keys(value)
+        const innerLines = innerKeys.map((ik, iki) => {
+          const innerComma = iki === innerKeys.length - 1 ? '' : ','
+          return `      ${JSON.stringify(ik)}: ${JSON.stringify((value as Record<string, unknown>)[ik])}${innerComma}`
+        })
+        rendered = `{\n${innerLines.join('\n')}\n    }`
+      } else {
+        rendered = JSON.stringify(value)
+      }
+      return `    ${JSON.stringify(key)}: ${rendered}${comma}`
+    })
+    const closer = i === skills.length - 1 ? '  }' : '  },'
+    return `  {\n${fieldLines.join('\n')}\n${closer}`
+  })
+  return `[\n${objLines.join('\n')}\n]\n`
+}
+
 interface Existing {
   skills: Skill[]
   repos: Set<string>
@@ -193,7 +225,7 @@ async function main() {
     }
 
     if (added.length > 0) {
-      fs.writeFileSync(DATA_PATH, JSON.stringify(existing.skills, null, 2) + '\n')
+      fs.writeFileSync(DATA_PATH, stringifySkills(existing.skills))
     }
 
     run.setSummary({
