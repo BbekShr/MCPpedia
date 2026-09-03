@@ -2,49 +2,95 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-// Bot definitions — what each bot does and its GitHub workflow
+// Bot definitions — what each bot does and its GitHub workflow.
+// Schedules here are a manually-kept mirror of the cron in each
+// .github/workflows/*.yml — they drift when a schedule is retuned there
+// without updating this display copy, so cross-check against the workflow
+// file's `cron:` line (not a prior version of this map) when editing.
 const BOT_REGISTRY: Record<string, { name: string; description: string; workflow: string | null; schedule: string }> = {
   'sync-registry': {
     name: 'Sync Registry',
     description: 'Pulls servers from the official MCP Registry',
     workflow: 'sync-registry.yml',
-    schedule: 'Daily 1am UTC',
+    schedule: 'Daily 4am UTC',
   },
   'discover': {
     name: 'Discovery',
     description: 'Finds new MCP servers on GitHub',
     workflow: 'discover.yml',
-    schedule: 'Daily 2am UTC',
+    schedule: 'Mon+Thu 5am UTC',
   },
   'update-metadata': {
     name: 'Update Metadata',
     description: 'Refreshes GitHub stars, downloads, health status',
     workflow: 'update-metadata.yml',
-    schedule: 'Daily 3am UTC',
+    schedule: 'Daily 6am UTC',
+  },
+  'extract-install-info': {
+    name: 'Extract Install Info',
+    description: 'Parses READMEs for npm/pip packages and install configs',
+    workflow: 'extract-install-info.yml',
+    schedule: 'Mon+Thu 7am UTC',
+  },
+  'enrich-descriptions': {
+    name: 'Enrich Descriptions',
+    description: 'Fills in missing server descriptions from READMEs',
+    workflow: 'enrich-descriptions.yml',
+    schedule: 'Mon+Thu 7:30am UTC',
   },
   'extract-schemas': {
     name: 'Extract Schemas',
     description: 'Extracts MCP tools from READMEs using Claude Haiku',
     workflow: 'extract-schemas.yml',
-    schedule: 'Daily 4am UTC',
+    schedule: 'Daily 8am UTC',
   },
   'compute-scores': {
     name: 'Compute Scores',
     description: 'Computes security, efficiency, documentation, and compatibility scores',
     workflow: 'compute-scores.yml',
-    schedule: 'Daily 5am UTC',
+    schedule: 'Daily 8am UTC',
   },
-  'extract-install-info': {
-    name: 'Extract Install Info',
-    description: 'Parses READMEs for npm/pip packages and install configs',
-    workflow: null,
-    schedule: 'Manual only',
+  'snapshot-metrics': {
+    name: 'Snapshot Metrics',
+    description: 'Writes the nightly ecosystem aggregate snapshot powering /analytics',
+    workflow: 'snapshot-metrics.yml',
+    schedule: 'Daily 8:30am UTC',
   },
-  'detect-changelogs': {
-    name: 'Detect Changelogs',
-    description: 'Detects new versions from GitHub releases',
-    workflow: null,
-    schedule: 'Manual only',
+  'track-trending': {
+    name: 'Track Trending',
+    description: 'Updates the trending servers list from recent star/download velocity',
+    workflow: 'track-trending.yml',
+    schedule: 'Daily 9:30am UTC',
+  },
+  'generate-blog': {
+    name: 'Generate Blog',
+    description: 'Writes weekly roundup posts and same-day security advisory alerts',
+    workflow: 'generate-blog.yml',
+    schedule: 'Tue 9am UTC (+ daily 9:30am security check)',
+  },
+  'detect-duplicates': {
+    name: 'Detect Duplicates',
+    description: 'Finds and archives duplicate server entries',
+    workflow: 'detect-duplicates.yml',
+    schedule: 'Weekly Mon 9am UTC',
+  },
+  'generate-comparisons': {
+    name: 'Generate Comparisons',
+    description: 'Builds head-to-head server comparison pages',
+    workflow: 'generate-comparisons.yml',
+    schedule: 'Weekly Sun 9am UTC',
+  },
+  'check-broken-links': {
+    name: 'Check Broken Links',
+    description: 'Flags servers whose GitHub/npm links are dead',
+    workflow: 'check-broken-links.yml',
+    schedule: 'Weekly Sun 9am UTC',
+  },
+  'send-digest': {
+    name: 'Send Digest',
+    description: 'Emails the weekly digest to subscribed users',
+    workflow: 'send-digest.yml',
+    schedule: 'Weekly Tue 3pm UTC',
   },
 }
 

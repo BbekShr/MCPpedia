@@ -33,6 +33,24 @@ export class BotRun {
 
   static async start(botName: string): Promise<BotRun> {
     const run = new BotRun(botName)
+
+    // GitHub-hosted runners hard-cap a job at 6h. If a run is killed by that
+    // limit (or the runner otherwise dies) mid-work, neither finish() nor
+    // fail() ever executes and its row is stuck at status='running' forever —
+    // the admin Bots tab then shows that bot as perpetually "running" with no
+    // way to tell it apart from one that's genuinely in progress. Reap any
+    // row for this bot well past that ceiling before starting a new one.
+    const orphanCutoff = new Date(Date.now() - 7 * 60 * 60 * 1000).toISOString()
+    await db().from('bot_runs')
+      .update({
+        status: 'failed',
+        finished_at: new Date().toISOString(),
+        error_message: "Orphaned: run never reported completion (runner likely killed by GitHub Actions' 6h job limit)",
+      })
+      .eq('bot_name', botName)
+      .eq('status', 'running')
+      .lt('started_at', orphanCutoff)
+
     const { data, error } = await db()
       .from('bot_runs')
       .insert({ bot_name: botName, status: 'running' })
