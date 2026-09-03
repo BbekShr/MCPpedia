@@ -111,8 +111,15 @@ function passesHeuristics(repo: GitHubRepo, existingRepos: Set<string>): boolean
   if (repo.stargazers_count < MIN_STARS) return false
   const ageMs = Date.now() - new Date(repo.pushed_at).getTime()
   if (ageMs > MAX_AGE_DAYS * 24 * 60 * 60 * 1000) return false
-  const hay = `${repo.full_name} ${repo.description ?? ''}`.toLowerCase()
+  const hay = `${repo.full_name} ${repo.description ?? ''} ${repo.topics.join(' ')}`.toLowerCase()
   if (FALSE_POSITIVE_KEYWORDS.some(kw => hay.includes(kw))) return false
+  // The search queries above are keyword/topic matches on GitHub's side, which
+  // is loose enough to surface totally unrelated popular repos (observed:
+  // prisma/orm, firecrawl/firecrawl, punkpeye/awesome-mcp-servers — none of
+  // which mention Claude skills at all). Require "claude" AND "skill" to both
+  // actually appear before a repo is even considered a candidate; the SKILL.md
+  // check below only confirms the winners, it doesn't filter the pool.
+  if (!hay.includes('claude') || !hay.includes('skill')) return false
   return true
 }
 
