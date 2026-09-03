@@ -1,0 +1,51 @@
+---
+title: "Two High-Severity pnpm CVEs Turn Install Into Arbitrary File Write"
+description: "CVE-2026-82392 and CVE-2026-82393 let attacker-controlled lockfiles or tarball manifests write files outside node_modules, affecting the Arcmira MCP server."
+hook: "A crafted pnpm-lock.yaml or tarball package.json can now overwrite your .zshrc during a normal install — two high-severity CVEs just hit Arcmira, and one is a botched fix of an older bug."
+date: "2026-09-03"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+Two high-severity CVEs just landed against the same MCP server, and both of them turn `pnpm install` into a weapon. If you run [Arcmira](/s/io-github-arcmira-arcmira), stop and read this before your next dependency update.
+
+Both advisories trace back to how pnpm's installer decides where to write files on disk. Get that logic wrong, and a malicious lockfile or package can write outside `node_modules` entirely — onto your `.zshrc`, your `.git/hooks`, anywhere the process has permission to touch.
+
+---
+
+## CVE-2026-82392 — Lockfile path traversal in the virtual store linker
+
+<Callout type="warning">**Severity: High.** Affects [Arcmira](/s/io-github-arcmira-arcmira) via its pnpm dependency chain.</Callout>
+
+The virtual store linker builds install directories with `path.join(modules, pkgName)`, where `pkgName` comes straight from a lockfile `packages` key — no validation. Slip a traversal sequence into that key (`../../../tmp/pwned@1.0.0`), and pnpm happily writes package contents to that path during install.
+
+<PullQuote>A `pnpm-lock.yaml` file, the thing everyone trusts by default, becomes the attack surface.</PullQuote>
+
+What makes this one sting is that it's a **second attempt**. It's an incomplete fix of an earlier advisory (GHSA-fr4h-3cph-29xv) — the previous patch, `safeJoinModulesDir`, didn't fully contain the traversal. If you patched the first time and moved on, you're not covered.
+
+## CVE-2026-82393 — Tarball manifest name escapes node_modules
+
+<Callout type="warning">**Severity: High.** Also affects [Arcmira](/s/io-github-arcmira-arcmira).</Callout>
+
+This one hides in the package manifest instead of the lockfile. pnpm uses a resolved package's `name` field as a raw path segment when linking it into place. A tarball dependency whose `package.json` declares a scoped traversal name (`@x/../../../…/<absolute path>`) gets extracted **outside `node_modules`** — to a path the attacker chooses.
+
+That means arbitrary file **overwrite**, not just write. Attacker-controlled destination, filename, and contents adds up to code execution — overwrite a shell rc file or a git hook and the next command you run does their bidding.
+
+---
+
+<ScoreBreakdown>
+<ScoreRow label="Same root cause" points="—" description="Both CVEs stem from pnpm trusting attacker-influenced strings (lockfile keys, manifest names) as literal filesystem path segments." />
+<ScoreRow label="Same blast radius" points="—" description="Arbitrary file write/overwrite anywhere the install process has permissions — not confined to the project directory." />
+<ScoreRow label="Same fix path" points="—" description="Update pnpm to a version that patches both the lockfile depPath parsing and the manifest-name linking logic." />
+</ScoreBreakdown>
+
+## What to actually do
+
+- **Update pnpm now.** Both CVEs are installer-level bugs, not application bugs — the fix has to come from a patched pnpm release, not from Arcmira's own code.
+- **Don't trust lockfiles from outside your org.** Since CVE-2026-82392 is an incomplete fix of a prior advisory, treat any `pnpm-lock.yaml` from an unfamiliar fork or PR as untrusted input until you've confirmed your pnpm version is current.
+- **Audit tarball dependencies.** CVE-2026-82393 specifically targets tarball-resolved packages rather than registry ones — if your install pulls from tarball URLs, that's your highest-risk path.
+- **Check what already landed.** If you installed Arcmira dependencies recently on a vulnerable pnpm version, look for unexpected files outside `node_modules` before assuming you're clean.
+
+<Callout type="fire">Two CVEs, one root cause, one server flagged: [Arcmira](/s/io-github-arcmira-arcmira). Patch pnpm before you run another install.</Callout>
+
+Installers are supposed to be the boring, trusted part of the stack. When the boring part starts writing files wherever attacker-controlled strings point, "boring" is exactly the assumption you can't afford anymore.

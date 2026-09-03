@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-09-03-two-high-severity-pnpm-cves-turn-install-into-arbitrary-file",
+    "title": "Two High-Severity pnpm CVEs Turn Install Into Arbitrary File Write",
+    "description": "CVE-2026-82392 and CVE-2026-82393 let attacker-controlled lockfiles or tarball manifests write files outside node_modules, affecting the Arcmira MCP server.",
+    "hook": "A crafted pnpm-lock.yaml or tarball package.json can now overwrite your .zshrc during a normal install — two high-severity CVEs just hit Arcmira, and one is a botched fix of an older bug.",
+    "date": "2026-09-03",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 2
+  },
+  {
     "slug": "2026-09-02-pnpm-proxy-flaw-leaks-secrets-across-10-mcp-servers",
     "title": "pnpm Proxy Flaw Leaks Secrets Across 10 MCP Servers",
     "description": "A high-severity pnpm vulnerability lets a malicious repo exfiltrate NPM_TOKEN and GITHUB_TOKEN via proxy settings, hitting 10 MCPpedia-listed servers.",
