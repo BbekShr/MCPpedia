@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { sanitizeSearchQuery } from '@/lib/validators'
 import { rateLimitIp, getClientIp } from '@/lib/rate-limit'
+import {
+  MAX_PLAUSIBLE_WEEKLY_DOWNLOADS,
+  npmPackageDenylistFilter,
+} from '@/lib/npm-package-denylist'
 
 const MAX_LIMIT = 100
 const DEFAULT_LIMIT = 20
@@ -90,7 +94,13 @@ export async function GET(request: NextRequest) {
       query = query.order('github_stars', { ascending: false })
       break
     case 'downloads':
-      query = query.order('npm_weekly_downloads', { ascending: false })
+      // Same guard as the homepage trending list. Without it this endpoint
+      // ranks build tooling that was mis-scraped as a server's own package,
+      // and it is the endpoint other people build on.
+      query = query
+        .not('npm_package', 'in', `(${npmPackageDenylistFilter()})`)
+        .lte('npm_weekly_downloads', MAX_PLAUSIBLE_WEEKLY_DOWNLOADS)
+        .order('npm_weekly_downloads', { ascending: false })
       break
     case 'newest':
       query = query.order('created_at', { ascending: false })

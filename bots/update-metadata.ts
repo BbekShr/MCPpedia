@@ -14,7 +14,7 @@ config({ path: '.env.local' })
 import { createAdminClient } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
 import { getRepo } from './lib/github'
-import { isDeniedNpmPackage } from '../lib/npm-package-denylist'
+import { isDeniedNpmPackage, isImplausibleDownloadCount } from '../lib/npm-package-denylist'
 
 const supabase = createAdminClient('bot-update-metadata')
 
@@ -141,6 +141,16 @@ async function main() {
     let downloads = 0
     if (server.npm_package && !isDeniedNpmPackage(server.npm_package)) {
       downloads = await fetchNpmDownloads(server.npm_package)
+      // A figure this large did not come from this server: the package name was
+      // scraped off a README's tooling line. Store 0 rather than the number,
+      // so the row cannot rank on it even before extract-install-info clears
+      // the bad name, and log it so the misses are visible.
+      if (isImplausibleDownloadCount(downloads)) {
+        console.warn(
+          `  ${server.slug}: ignoring ${downloads.toLocaleString()}/wk from "${server.npm_package}" (implausible, package is almost certainly not this server's)`
+        )
+        downloads = 0
+      }
     }
 
     // Auto-archive: no commit in 2+ years AND 0 stars AND 0 downloads

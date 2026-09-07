@@ -24,7 +24,10 @@ import UseCases from '@/components/home/UseCases'
 import Advisories, { type HomeAdvisory } from '@/components/home/Advisories'
 import CategoriesGrid from '@/components/home/CategoriesGrid'
 import ScoringExplainer from '@/components/home/ScoringExplainer'
-import { npmPackageDenylistFilter } from '@/lib/npm-package-denylist'
+import {
+  MAX_PLAUSIBLE_WEEKLY_DOWNLOADS,
+  npmPackageDenylistFilter,
+} from '@/lib/npm-package-denylist'
 
 // Skip prerender at build time — home_stats can hit Postgres statement
 // timeouts (57014) under build-worker concurrency, which would fail the
@@ -98,9 +101,11 @@ const getHomeData = unstable_cache(
   // v3: unstable_cache persists across deployments and the callback text is
   // unchanged, so a pre-S81 entry holding zeroed use-case/category tiles could
   // otherwise survive up to 24h and hide the fix.
-  // v4: same reasoning for the trending denylist filter — a v3 entry holds the
+  // v4: same reasoning for the trending denylist filter - a v3 entry holds the
   // ten pnpm rows and would keep serving them for 24h after this deploys.
-  ['home-page-data-v4'],
+  // v5: and again for the download ceiling, which replaced the pnpm rows with
+  // vite/vitest rows rather than with real ones.
+  ['home-page-data-v5'],
   { revalidate: 86400, tags: ['home-page'] },
 )
 
@@ -142,6 +147,10 @@ async function fetchHomeData() {
       .eq('is_archived', false)
       .gt('npm_weekly_downloads', 0)
       .not('npm_package', 'in', `(${npmPackageDenylistFilter()})`)
+      // The name filter can only exclude offenders already seen. The ceiling is
+      // the backstop that catches the next unseen one without a deploy: see
+      // MAX_PLAUSIBLE_WEEKLY_DOWNLOADS for why 5M/week cannot be a real server.
+      .lte('npm_weekly_downloads', MAX_PLAUSIBLE_WEEKLY_DOWNLOADS)
       .order('npm_weekly_downloads', { ascending: false })
       .limit(10),
     supabase.rpc('home_use_cases'),
