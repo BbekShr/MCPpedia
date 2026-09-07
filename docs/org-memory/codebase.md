@@ -1019,7 +1019,17 @@ the main checkout's `.env.local` with `node` + `pg`; there is no `psql` on this 
   applied.** Its row is present in `supabase_migrations.schema_migrations` with all **13 statements
   recorded**, byte-matching the file on disk. Yet not one of its six effects exists in prod. All 56
   repo migrations are recorded; this is the only one whose effects are missing.
-- **Root cause is NOT established.** The leading hypothesis is a blanket
+- **MECHANISM ESTABLISHED 2026-09-07 (same cycle, follow-up).** The first `main` run of
+  `.github/workflows/migrate.yml` — run `30970737218`, 2026-08-05T02:55:27Z, the run that first
+  executed `supabase db push` against prod — logged exactly one line: **"Remote database is up to
+  date."** So by the time automated application existed, `20260610000000` was ALREADY listed in
+  `schema_migrations`, and `db push` skipped it. It merged 2026-06-10, during the documented
+  hand-apply era, so the row was written without the SQL running. **`db push` will never apply it**
+  — the ledger says done. That is the whole mechanism, and it is self-sealing: the only automated
+  applier the repo has is the one thing guaranteed to ignore this migration forever.
+  `migrate.yml` has run 9 times total (earliest 2026-08-05), only twice on `main`, because it
+  triggers only on paths `supabase/migrations/**`.
+- **Root cause of the ledger row itself is still NOT proven.** The leading hypothesis is a blanket
   `supabase migration repair --status applied <version>`: PR #110's own body (which introduced
   `.github/workflows/migrate.yml`, 2026-08-04) instructs exactly that to baseline a remote history
   where files had been applied by hand via the SQL editor, and the timeline fits — `20260610000000`
@@ -1072,6 +1082,18 @@ the main checkout's `.env.local` with `node` + `pg`; there is no `psql` on this 
   idiom is `DROP POLICY IF EXISTS "X"; CREATE POLICY "X" …` — the name is present with the OLD body.
   Real drift detection must compare policy **definitions** (`pg_policies.qual` / `.with_check`) and
   `pg_proc.proconfig`, not identifiers.
+- **A definition-level sweep was run 2026-09-07 and prod is otherwise CLEAN — this is a one-off, not
+  a class.** The sweep compares, for every file in `supabase/migrations/**`: the last intended
+  CREATE/DROP per `(table, policy)` with prod's `pg_policies.qual`/`.with_check` (token-level, so it
+  flags intended constraints MISSING from prod), `SET search_path` intent vs `pg_proc.proconfig`,
+  every `ADD COLUMN` vs `information_schema.columns`, every `ENABLE ROW LEVEL SECURITY` vs
+  `pg_class.relrowsecurity`, and every `CREATE TRIGGER` vs `pg_trigger`. It independently
+  rediscovered **exactly** the six `20260610000000` effects and nothing else — no other policy
+  drift, no other unpinned `search_path`, no RLS drift, no trigger drift. Two `ADD COLUMN` hits
+  (`health_checks.last_health_check_status`, `karma_events.karma`) were regex artifacts of the
+  `alter table X … add column Y` pattern spanning statement boundaries; the real statements are
+  `alter table servers …` and `alter table profiles …`, and both columns exist in prod. Script kept
+  in the cycle scratchpad; M19 covers making it a standing check.
 - **Forensics: no evidence of exploitation** (2026-09-07). `edits` — 65 rows, all `approved`, 61
   reviewed by the admin account and 4 with `reviewed_by IS NULL` (the auto-approve path, correctly
   excluded from S48's trust count); **zero** self-reviewed rows. `servers` — 8 user-submitted rows;
