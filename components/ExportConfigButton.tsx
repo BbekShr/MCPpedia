@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Icon } from '@/components/ui/icons'
 
 interface Props {
   config: Record<string, unknown>
@@ -36,9 +37,7 @@ export default function ExportConfigButton({ config, count }: Props) {
       onClick={handleExport}
       className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-accent text-accent hover:bg-accent hover:text-white transition-colors"
     >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
-      </svg>
+      <Icon name="download" size={16} />
       {copied ? `Copied ${count} server configs!` : `Export all ${count} configs`}
     </button>
   )

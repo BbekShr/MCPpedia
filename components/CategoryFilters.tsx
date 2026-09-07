@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Suspense, useState, useEffect, useRef } from 'react'
+import { Icon } from '@/components/ui/icons'
 
 const SORT_OPTIONS = [
   { value: 'score', label: 'Top Score' },
@@ -75,15 +76,7 @@ function CategoryFiltersInner() {
     <div className="space-y-3">
       {/* Search within category */}
       <div className="relative">
-        <svg
-          width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-          className="absolute left-3 top-2.5 text-text-muted"
-          aria-hidden="true"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
+        <Icon name="search" size={16} className="absolute left-3 top-2.5 text-text-muted" />
         <input
           type="text"
           value={localQ}

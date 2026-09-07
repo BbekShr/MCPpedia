@@ -11,6 +11,7 @@ import {
   MockWindow,
   MockCode,
 } from '@/components/MockWindow'
+import { Icon } from '@/components/ui/icons'
 
 type Client = 'claude-desktop' | 'cursor' | 'claude-code' | 'vscode'
 
@@ -230,11 +231,7 @@ function StepCard({ step, index, total }: { step: Step; index: number; total: nu
 
         {step.tip && (
           <div className="flex gap-2 p-3 rounded-md bg-accent-subtle text-sm">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" className="shrink-0 mt-0.5">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="12" y1="16" x2="12" y2="12"/>
-              <line x1="12" y1="8" x2="12.01" y2="8"/>
-            </svg>
+            <Icon name="info" size={16} className="shrink-0 mt-0.5" style={{ color: 'var(--accent)' }} />
             <p className="text-text-muted text-xs">{step.tip}</p>
           </div>
         )}

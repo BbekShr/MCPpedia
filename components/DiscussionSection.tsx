@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Discussion, Profile } from '@/lib/types'
 import type { User } from '@supabase/supabase-js'
+import { Icon } from '@/components/ui/icons'
 
 interface DiscussionWithProfile extends Discussion {
   profile: Profile
@@ -141,7 +142,7 @@ export default function DiscussionSection({ serverId }: { serverId: string }) {
                     disabled={!user}
                     aria-label={`Upvote comment by @${d.profile?.username || 'anonymous'}`}
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><polyline points="18 15 12 9 6 15" /></svg>
+                    <Icon name="chevronUp" size={14} />
                   </button>
                   <span className="text-xs font-medium" aria-live="polite">{d.upvotes}</span>
                   <button
@@ -151,7 +152,7 @@ export default function DiscussionSection({ serverId }: { serverId: string }) {
                     disabled={!user}
                     aria-label={`Downvote comment by @${d.profile?.username || 'anonymous'}`}
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg>
+                    <Icon name="chevronDown" size={14} />
                   </button>
                 </div>
 

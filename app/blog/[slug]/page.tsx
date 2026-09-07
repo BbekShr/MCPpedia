@@ -11,6 +11,7 @@ import NewsletterSignup from '@/components/NewsletterSignup'
 import ShareButtons from '@/components/blog/ShareButtons'
 import TableOfContents from '@/components/blog/TableOfContents'
 import { blogComponents } from '@/components/blog'
+import { Icon } from '@/components/ui/icons'
 
 const categoryLabels: Record<BlogCategory, string> = {
   'weekly-roundup': 'Weekly Roundup',
@@ -222,11 +223,7 @@ export default async function BlogPostPage({
         {post.meta.featuredServers?.length > 0 && (
           <div className="mt-8 p-6 rounded-xl bg-bg-secondary border border-border">
             <h3 className="text-sm font-bold text-text-primary mb-3 flex items-center gap-2">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <rect x="2" y="3" width="20" height="14" rx="2" />
-                <line x1="8" y1="21" x2="16" y2="21" />
-                <line x1="12" y1="17" x2="12" y2="21" />
-              </svg>
+              <Icon name="monitor" size={16} />
               Servers mentioned
             </h3>
             <div className="flex flex-wrap gap-2">
@@ -276,9 +273,7 @@ export default async function BlogPostPage({
 
         {/* AI disclaimer */}
         <div className="mt-14 pt-6 border-t border-border flex items-start gap-3 text-xs text-text-muted">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0 mt-0.5 opacity-60">
-            <path d="M12 2a4 4 0 0 1 4 4v2h1a3 3 0 0 1 3 3v2a3 3 0 0 1-3 3h-1v2a4 4 0 0 1-8 0v-2H7a3 3 0 0 1-3-3v-2a3 3 0 0 1 3-3h1V6a4 4 0 0 1 4-4z" />
-          </svg>
+          <Icon name="key" size={16} className="shrink-0 mt-0.5 opacity-60" />
           <p className="leading-relaxed">
             This article was written by AI, powered by Claude and real-time MCPpedia data.
             All facts and figures are sourced from our database - but AI can make mistakes.

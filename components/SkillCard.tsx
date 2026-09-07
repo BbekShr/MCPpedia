@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { Skill } from '@/lib/skills'
 import { SKILL_CATEGORY_ICONS, SKILL_CATEGORY_LABELS } from '@/lib/skills'
+import { Icon } from '@/components/ui/icons'
 
 function formatNumber(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
@@ -75,9 +76,7 @@ export default function SkillCard({ skill }: { skill: Skill }) {
       <div className="relative z-10 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted pointer-events-none">
         {skill.stars > 0 && (
           <span className="flex items-center gap-1 shrink-0">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-            </svg>
+            <Icon name="star" size={11} filled />
             {formatNumber(skill.stars)}
           </span>
         )}

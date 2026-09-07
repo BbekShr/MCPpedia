@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import type { Skill, SkillCategory } from '@/lib/skills'
 import { SKILL_CATEGORY_ICONS, SKILL_CATEGORY_LABELS } from '@/lib/skills'
 import SkillCard from './SkillCard'
+import { Icon } from '@/components/ui/icons'
 
 interface Props {
   skills: Skill[]
@@ -75,20 +76,7 @@ export default function SkillsBrowser({ skills, featured, trending, categoriesWi
           Search skills
         </label>
         <div className="relative">
-          <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            aria-hidden="true"
-          >
-            <circle cx="11" cy="11" r="7" />
-            <path d="M21 21l-4.3-4.3" />
-          </svg>
+          <Icon name="search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
           <input
             id="skills-search"
             type="search"
@@ -105,9 +93,7 @@ export default function SkillsBrowser({ skills, featured, trending, categoriesWi
               className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary p-1 rounded"
               aria-label="Clear search"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-                <path d="M18 6L6 18M6 6l12 12" />
-              </svg>
+              <Icon name="x" size={16} />
             </button>
           )}
         </div>

@@ -8,6 +8,7 @@ import {
   COMPARE_MAX,
   type CompareItem,
 } from '@/lib/compareStore'
+import { Icon } from '@/components/ui/icons'
 
 interface Props {
   item: CompareItem
@@ -45,37 +46,9 @@ export default function CompareToggleButton({ item, className = '' }: Props) {
       aria-pressed={inList}
     >
       {inList ? (
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="var(--accent)"
-          stroke="var(--accent)"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <rect x="3" y="3" width="18" height="18" rx="3" />
-          <path d="M9 12l2 2 4-4" stroke="var(--accent-fg, #fff)" fill="none" />
-        </svg>
+        <Icon name="checkboxOn" size={16} style={{ color: 'var(--accent)' }} />
       ) : (
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="transition-all group-hover:stroke-[var(--accent)] group-hover:scale-110"
-          aria-hidden="true"
-        >
-          <rect x="3" y="3" width="18" height="18" rx="3" />
-          <line x1="12" y1="8" x2="12" y2="16" />
-          <line x1="8" y1="12" x2="16" y2="12" />
-        </svg>
+        <Icon name="squarePlus" size={16} className="transition-all group-hover:stroke-[var(--accent)] group-hover:scale-110" />
       )}
     </button>
   )

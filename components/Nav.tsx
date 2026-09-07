@@ -8,6 +8,7 @@ import ThemeToggle from './ThemeToggle'
 import BlinkLogo from './BlinkLogo'
 import NotificationBell from './NotificationBell'
 import type { User } from '@supabase/supabase-js'
+import { Icon } from '@/components/ui/icons'
 
 export default function Nav() {
   const pathname = usePathname()
@@ -117,9 +118,7 @@ export default function Nav() {
                 }`}
               >
                 <span className="flex items-center gap-1">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                  </svg>
+                  <Icon name="heart" size={14} />
                   My Servers
                 </span>
               </Link>
@@ -163,17 +162,7 @@ export default function Nav() {
             aria-expanded={mobileOpen}
             aria-controls="mobile-nav"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              {mobileOpen ? (
-                <path d="M18 6L6 18M6 6l12 12" />
-              ) : (
-                <>
-                  <line x1="3" y1="6" x2="21" y2="6" />
-                  <line x1="3" y1="12" x2="21" y2="12" />
-                  <line x1="3" y1="18" x2="21" y2="18" />
-                </>
-              )}
-            </svg>
+            <Icon name={mobileOpen ? 'x' : 'menu'} size={18} />
           </button>
         </div>
       </div>
