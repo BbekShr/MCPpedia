@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useRef, useState, useEffect, Suspense, useId } from 'react'
 import Link from 'next/link'
+import { Icon } from '@/components/ui/icons'
 
 interface Suggestion {
   slug: string
@@ -159,14 +160,7 @@ function SearchBarInner({
     <div ref={wrapperRef} className="relative w-full">
       <form onSubmit={handleSubmit}>
         <div className="relative">
-          <svg
-            width="18" height="18" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-            className={`absolute left-3 text-text-muted ${large ? 'top-4' : 'top-2.5'}`}
-          >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
+          <Icon name="search" size={18} className={`absolute left-3 text-text-muted ${large ? 'top-4' : 'top-2.5'}`} />
           <input
             ref={inputRef}
             type="text"

@@ -5,6 +5,7 @@ import ScoreBadge from './ScoreBadge'
 import CopyConfigButton from './CopyConfigButton'
 import FavoriteButton from './FavoriteButton'
 import CompareToggleButton from './CompareToggleButton'
+import { Icon } from '@/components/ui/icons'
 
 function formatNumber(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
@@ -92,26 +93,20 @@ export default function ServerCard({ server }: { server: Server }) {
       <div className="relative z-10 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted pointer-events-none">
         {toolCount > 0 && (
           <span className="flex items-center gap-1 shrink-0">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
-              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-            </svg>
+            <Icon name="wrench" size={11} />
             {toolCount} tools
           </span>
         )}
         <span className="shrink-0">{hasRemote ? 'remote' : transports[0] || 'stdio'}</span>
         {server.github_stars > 0 && (
           <span className="flex items-center gap-1 shrink-0">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-            </svg>
+            <Icon name="star" size={11} filled />
             {formatNumber(server.github_stars)}
           </span>
         )}
         {server.npm_weekly_downloads > 0 && (
           <span className="flex items-center gap-1 shrink-0">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
-            </svg>
+            <Icon name="download" size={11} />
             {formatNumber(server.npm_weekly_downloads)}/wk
           </span>
         )}

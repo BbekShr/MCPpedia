@@ -6,6 +6,7 @@ import { PUBLIC_CARD_FIELDS } from '@/lib/constants'
 import type { Server } from '@/lib/types'
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { Icon } from '@/components/ui/icons'
 
 export const metadata: Metadata = {
   title: 'My Servers',
@@ -78,9 +79,7 @@ export default async function MyServersPage() {
         </div>
       ) : (
         <div className="text-center py-16 border border-border rounded-lg bg-bg-secondary">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round" className="mx-auto mb-4 opacity-40" aria-hidden="true">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-          </svg>
+          <Icon name="heart" size={48} className="mx-auto mb-4 opacity-40" style={{ color: 'var(--text-muted)', display: 'block' }} />
           <p className="text-text-muted mb-4">No saved servers yet.</p>
           <p className="text-sm text-text-muted mb-6">Click the heart icon on any server card to save it here.</p>
           <Link

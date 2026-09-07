@@ -40,6 +40,7 @@ import {
 } from '@/lib/seo'
 import type { Server, Changelog, SecurityAdvisory } from '@/lib/types'
 import type { Metadata } from 'next'
+import { Icon } from '@/components/ui/icons'
 
 // 30d, not 7d. Every expiry is a cold render: the full PUBLIC_SERVER_FIELDS row
 // (`tools`/`resources`/`prompts` JSONB included), changelogs, advisories and four
@@ -292,9 +293,7 @@ export default async function ServerDetailPage({
               <section className="border border-accent/20 rounded-md p-4 bg-accent/5 mt-6">
                 <div className="flex items-start gap-3 mb-3">
                   <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round">
-                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                    </svg>
+                    <Icon name="heart" size={16} style={{ color: 'var(--accent)' }} />
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-text-primary">Are you the author?</p>

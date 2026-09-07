@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, Suspense } from 'react'
 import { CATEGORIES, CATEGORY_LABELS, HEALTH_STATUSES, TRANSPORTS, API_PRICING_OPTIONS } from '@/lib/constants'
 import type { Category, Transport } from '@/lib/constants'
+import { Icon } from '@/components/ui/icons'
 
 function FilterSelect({
   label,
@@ -196,9 +197,7 @@ function FilterBarInner() {
               className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-accent/10 text-accent hover:bg-accent/20 transition-colors"
             >
               {f.label}
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
+              <Icon name="x" size={12} />
             </button>
           ))}
           <button

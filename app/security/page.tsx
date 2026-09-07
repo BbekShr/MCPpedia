@@ -6,6 +6,7 @@ import LiveDataUnavailable from '@/components/LiveDataUnavailable'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { SITE_URL } from '@/lib/constants'
+import { Icon } from '@/components/ui/icons'
 
 // Skip prerender at build time — the home_stats RPC times out during
 // `next build` (Postgres 57014). Caching happens at the data layer below
@@ -234,7 +235,7 @@ export default async function SecurityPage() {
         <div className="grid grid-cols-3 gap-4">
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded bg-red/10 flex items-center justify-center shrink-0 mt-0.5">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <Icon name="alert" size={16} style={{ color: 'var(--red)' }} />
             </div>
             <div>
               <div className="text-xl font-bold text-text-primary">{toolPoisoningCount}</div>
@@ -244,7 +245,7 @@ export default async function SecurityPage() {
           </div>
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded bg-yellow/10 flex items-center justify-center shrink-0 mt-0.5">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <Icon name="alertCircle" size={16} style={{ color: 'var(--yellow)' }} />
             </div>
             <div>
               <div className="text-xl font-bold text-text-primary">{injectionRiskCount}</div>
@@ -254,7 +255,7 @@ export default async function SecurityPage() {
           </div>
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded bg-red/10 flex items-center justify-center shrink-0 mt-0.5">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2" strokeLinecap="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+              <Icon name="terminal" size={16} style={{ color: 'var(--red)' }} />
             </div>
             <div>
               <div className="text-xl font-bold text-text-primary">{codeExecutionCount}</div>
