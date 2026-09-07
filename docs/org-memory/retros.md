@@ -411,3 +411,35 @@ deployed artifact, not the source.** Cycle a found a self-contradicting HTML doc
 a response header, cycle c confirmed a fix by downloading and looking at a PNG. Every gate this org
 runs — typecheck, lint, test, build — reads source. All three genuine findings today were invisible
 to every one of them.
+
+## 2026-09-07-a — S48 → S98/S99/S100/S101/M19 (records-only)
+
+Picked S48, the top open P1. Its one remaining criterion was "a human with prod access checks
+`pg_policies`" — which the org had treated as permanently blocked. It was not: `SUPABASE_DB_URL` in
+the main checkout's `.env.local` reaches prod Postgres with `node` + `pg`, a fact already recorded in
+session memory. **A criterion labelled "needs a human" had been rotting for five weeks behind an
+assumption nobody re-tested.** The check took one query.
+
+The answer inverted the row: `20260610000000_security_hardening.sql` is recorded as applied and
+never ran. That falsified S48's diagnosis, S13's diagnosis, and a "Critical/confirmed" item in
+`PLATFORM_REVIEW_2026-07.md` — three records that each read a merged migration file as the schema of
+record. It also surfaced a five-week production outage (no `profiles` self-update policy → usernames
+unsettable for every non-admin) that no gate could see.
+
+Direct continuation of the previous three cycles' lesson, one layer down: **verify against the
+deployed artifact, not the source** — and for schema, the deployed artifact is `pg_policies`, not
+`supabase/migrations/`. Every gate this org runs reads files.
+
+Friction worth fixing, both now filed: (1) the org's own memory asserted file-derived policy state as
+prod fact in `codebase.md` (corrected in this PR, and M19 files the drift check that would have
+caught it); (2) BACKLOG M2 said "there is NO deploy-time migration runner" — stale since 2026-08-04,
+and the researcher had to refute it mid-cycle. Status drift keeps costing real agent time; that is
+M11's existing complaint, now with a third data point.
+
+One process note in the CEO's favour and one against. For: routing the untrusted-input screen and the
+refutation tests through the CEO rather than a subagent caught the thing that mattered — the DB I was
+querying might not have been prod, and one query on the project ref settled it before any claim was
+filed. Against: I wrote "this was NOT a blank `supabase migration repair`" into `codebase.md` from
+the presence of recorded `statements`, which does not license that conclusion; the researcher's brief
+made the repair hypothesis look likely and I had to correct my own record in the same session.
+Recording a root cause is exactly where the evidence bar should be highest, and I dropped it.

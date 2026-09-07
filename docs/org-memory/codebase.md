@@ -392,6 +392,15 @@ _(record "audited <ground> under <lens>: clean" entries here so discovery skips 
 
 ## Edits, auto-approve & the trust gate (2026-08-01, S48)
 
+> **CORRECTED 2026-09-07 (cycle 2026-09-07-a, S97).** The bullet immediately below describes the
+> `edits` RLS set **as written in the migration files**, and was mistaken for a description of
+> production. It is NOT what prod runs. A direct read of prod `pg_policies` on 2026-09-07 shows
+> `20260610000000_security_hardening.sql` is recorded in `supabase_migrations.schema_migrations`
+> but **none of its statements are in effect** — prod's `edits` INSERT `WITH CHECK` is
+> `(auth.uid() = user_id)` only, with **no `status = 'pending'` pin**. See the
+> "Prod schema drift" section below for the full evidence and blast radius. Treat every claim in
+> this section that cites `20260610000000` as describing intent, not prod.
+
 - The converged `edits` RLS set is exactly four policies and — unlike `profiles` (S23) or
   `search_servers` (S21) — carries **no permissive-OR hazard**: SELECT `using (true)`
   (`20260402000000_initial_schema.sql:316-317`), ONE INSERT pinning
@@ -998,3 +1007,96 @@ on measured production evidence rather than build artifacts alone.
   `linear-gradient` background is the likely reason this card is ~1.8x the per-slug card's 47,946 B
   (PNG encodes gradients poorly); a flat background would plausibly cut it ~65%, on a payload every
   unfurl pays forever. Not filed — noting it here as a cheap win if anyone touches this file.
+
+## Prod schema drift: the migration ledger is NOT evidence of application (2026-09-07, cycle 2026-09-07-a, S97)
+
+Established by direct read-only queries against production Postgres (project ref
+`ajbazcumocvpdphbaohm` — confirmed identical to the ref in `NEXT_PUBLIC_SUPABASE_URL`, so this is
+the DB the live site reads; 55,796 `servers`, 40 `profiles`). Access is via `SUPABASE_DB_URL` in
+the main checkout's `.env.local` with `node` + `pg`; there is no `psql` on this machine.
+
+- **`supabase/migrations/20260610000000_security_hardening.sql` is recorded as applied and is not
+  applied.** Its row is present in `supabase_migrations.schema_migrations` with all **13 statements
+  recorded**, byte-matching the file on disk. Yet not one of its six effects exists in prod. All 56
+  repo migrations are recorded; this is the only one whose effects are missing.
+- **Root cause is NOT established.** The leading hypothesis is a blanket
+  `supabase migration repair --status applied <version>`: PR #110's own body (which introduced
+  `.github/workflows/migrate.yml`, 2026-08-04) instructs exactly that to baseline a remote history
+  where files had been applied by hand via the SQL editor, and the timeline fits — `20260610000000`
+  merged 2026-06-10 during the documented hand-apply era, `20260725000000` merged 2026-08-01 and
+  DID execute, `migrate.yml` merged 2026-08-04. **The recorded `statements` do not refute this**: a
+  populated `statements` array rules out only a hand-written blank row, not a CLI repair that reads
+  the local file. What WOULD settle it: the Actions run log for the first `migrate` job, or
+  `supabase migration list`. A partial-execution failure IS refuted by the observed shape — not one
+  of the six sections landed, including the very first statement, so execution never began.
+- **The evidence that isolates it** (this is the reusable technique): the migration re-defines
+  exactly three `SECURITY DEFINER` functions with `SET search_path = public` — `vote_and_recount`,
+  `increment_mcp_usage`, `toggle_community_verify`. Those three are the **only** `SECURITY DEFINER`
+  functions in `public` with `proconfig = NULL`; all 18 others carry a pinned `search_path`. No
+  other explanation fits that signature.
+- **What prod actually has vs. what the migration intends:**
+
+  | Object | Migration intends | Prod has |
+  |---|---|---|
+  | `servers` INSERT | `+ verified=false, publisher_verified=false, author_type='community', score_total=0, claimed_by IS NULL` | `(auth.uid() = submitted_by)` only |
+  | `edits` INSERT | `+ status='pending'` | `(auth.uid() = user_id)` only |
+  | `publisher_claims` INSERT | `+ verified=false, verified_by IS NULL, verified_at IS NULL` | `(auth.uid() = user_id)` only |
+  | `discussions` UPDATE | `USING + WITH CHECK (auth.uid()=user_id)` | `USING` only, **no `WITH CHECK`** |
+  | `profiles` UPDATE (self) | hardened policy freezing role/created_at/karma/counters | **no self-update policy at all** |
+  | 3 `SECURITY DEFINER` fns | `SET search_path = public` | `proconfig = NULL` |
+
+- **`anon` and `authenticated` hold full SELECT/INSERT/UPDATE/DELETE grants on `servers`, `edits`,
+  `publisher_claims`, `discussions` and `profiles`**, so RLS is the ONLY boundary for anon-key
+  PostgREST traffic. Every rate limit in this repo is route-side — `lib/rate-limit.ts:34-40` calls
+  `check_rate_limit` via `createAdminClient` *from inside the handler*, i.e. a counter the route
+  voluntarily consults, not a trigger or policy. It compensates for nothing against a direct
+  anon-key + JWT request.
+- **The cascade that broke onboarding.** `20260725000000_fix_profiles_privilege_escalation.sql` DID
+  run (its `profiles_counter_forensics` table and `trg_sync_discussions_count` trigger both exist in
+  prod). Its part 1 drops `"Users can update own profile except role"` on the explicit, stated
+  assumption (`20260725000000:47-51`) that `20260610000000` had created a hardened
+  `"Users can update own profile"`. It had not — so `profiles` was left with only
+  `"Admins can update any profile"`, whose `USING` matches `role = 'admin'` **only, not
+  `maintainer`** (`20260417210403_tighten_admin_rls.sql:7-16`).
+- **The natural experiment that dates it**: every one of the 24 profiles created before
+  **2026-07-29 07:59** has `username_set = true`; every one of the 16 created after it has
+  `username_set = false`, through to the newest signup. Zero exceptions in either direction.
+- **A migration that hardens an existing policy assumes its predecessor landed.** `20260725000000`
+  is careful, well-commented, and correct *given* its stated premise — and it still caused a
+  five-week user-facing outage because that premise was never verified against prod. Any migration
+  whose safety depends on an earlier migration's effect must assert that effect (or be written to be
+  safe if it is absent), not assume it.
+- **A name-existence sweep cannot detect this class.** Checking that every `CREATE TABLE/INDEX/
+  FUNCTION/POLICY` identifier in `supabase/migrations/**` exists in prod finds only the missing
+  `profiles` self-update policy. The other five effects hide perfectly, because the migration's
+  idiom is `DROP POLICY IF EXISTS "X"; CREATE POLICY "X" …` — the name is present with the OLD body.
+  Real drift detection must compare policy **definitions** (`pg_policies.qual` / `.with_check`) and
+  `pg_proc.proconfig`, not identifiers.
+- **Forensics: no evidence of exploitation** (2026-09-07). `edits` — 65 rows, all `approved`, 61
+  reviewed by the admin account and 4 with `reviewed_by IS NULL` (the auto-approve path, correctly
+  excluded from S48's trust count); **zero** self-reviewed rows. `servers` — 8 user-submitted rows;
+  the two carrying flags are explained (`mcp-server-mcpindex`'s `publisher_verified` matches an
+  admin-approved claim; `github-mcp-server`'s `author_type='official'` comes from `inferAuthorType`,
+  `bots/lib/categorize.ts:388` via `bots/sync-registry.ts:518`). `publisher_claims` — all 7 verified
+  rows verified by the admin. `discussions` — **zero rows**. `karma` and `edits_approved` show no
+  drift from derived values. `profiles_counter_forensics` is empty. Caveat: for `servers` this is
+  weak evidence, since bots overwrite those columns on every scoring run.
+- **`supabase_migrations.schema_migrations` has a `statements text[]` column**, so what was
+  submitted for any version can be read back and diffed against the file on disk. That is the
+  cheapest available check for "was this file edited after it was applied?" (here: it was not).
+
+## PostgREST: an RLS `USING` filter-out is NOT an error (2026-09-07, cycle 2026-09-07-a, S99)
+
+- Postgres raises `42501` only on a **`WITH CHECK`** violation. A row excluded by a policy's
+  **`USING`** clause is simply not updated — no error. A Supabase `.update()` with no `.select()`
+  sends `Prefer: return=minimal`, so PostgREST answers `204` with `error === null` and zero rows
+  written.
+- Consequence, live in prod: `app/api/username/route.ts:69-72` updates `profiles` on the **authed**
+  client, is filtered out by RLS for every non-`admin` caller, sees `updateErr === null`, and
+  returns **HTTP 200 `{ ok: true, username: <chosen> }`** having written nothing.
+  `app/welcome/page.tsx:132-145` then renders the "You're in, @alice" celebration. The next sign-in
+  sends them back to `/welcome` (`app/auth/callback/route.ts:18-28`), forever.
+- **Checking the route's `error` is not evidence that a write landed.** A write that must affect a
+  row needs `.select()` (or `count`) and an explicit zero-row check. This is a DISTINCT trap from
+  the S58 fact "the Supabase JS client resolves rather than throws on a failed write" — there, an
+  error exists and is ignored; here, there is no error at all.

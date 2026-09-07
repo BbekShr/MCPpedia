@@ -13,6 +13,22 @@
 >
 > ⚠️ **Correction (2026-07-19, post-incident):** an earlier version of this doc said "migrations apply on deploy." **That is false and it caused a production incident.** There is **no** deploy-time migration step — CI only *guards* the `supabase/migrations/` path, the build is a plain `next build`, and nothing runs `supabase db push`. Merging a PR does **not** apply its migration; a human must apply it manually (Supabase CLI or SQL editor). A migration file being merged to `main` therefore does **not** mean it is live. See §6 and the servers-listing timeout incident.
 
+> ⚠️ **Correction (2026-09-07, cycle 2026-09-07-a, BACKLOG S98):** §1 item 1 ("Admin audit-trail
+> loss", marked Critical/confirmed) has a **false diagnosis**. It reasons from the `edits` INSERT
+> policy in `20260610000000_security_hardening.sql:28-33`. A direct read of prod `pg_policies` on
+> 2026-09-07 shows that migration is **recorded in `supabase_migrations.schema_migrations` but never
+> executed** — prod's `edits` INSERT `WITH CHECK` is `(auth.uid() = user_id)` only, with no
+> `status='pending'` pin. So RLS was **not** rejecting those audit inserts, and admin archive/verify
+> actions **have** been audited since 2026-06-10. The remediation that shipped (PR #57 — route the
+> insert through the service-role client and log the error) is still correct and becomes
+> load-bearing once the pin lands; only the diagnosis and severity were wrong.
+>
+> The general lesson, recorded in `docs/org-memory/codebase.md`: **a file in
+> `supabase/migrations/` proves only that it was merged.** Confirm the policy exists in
+> `pg_policies` before diagnosing an RLS-caused bug. Also note the correction above is itself now
+> partly superseded — `.github/workflows/migrate.yml` has applied migrations on push to `main`
+> since 2026-08-04 (PR #110).
+
 ---
 
 ## 0. Executive summary — the drastic version
