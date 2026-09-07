@@ -71,7 +71,7 @@ export function formatExactCount(n: number | null, fallback: string): string {
 export function buildSiteDescription(total: number | null): string {
   if (!total || total < 1000) return SITE_DESCRIPTION
   return (
-    `Discover and compare ${formatApproxTotal(total)} MCP servers — each scored on security, ` +
+    `Discover and compare ${formatApproxTotal(total)} MCP servers - each scored on security, ` +
     `maintenance, and efficiency with real CVE scanning. Find the right server before you install.`
   )
 }

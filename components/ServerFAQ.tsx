@@ -19,7 +19,7 @@ export function buildServerFAQs(server: Server): FAQItem[] {
     if (server.has_authentication || server.requires_api_key) {
       safetyAnswer += ' It requires authentication to connect, which limits unauthorized access.'
     } else {
-      safetyAnswer += ' Authentication requirements were not detected automatically — check the project\'s documentation before connecting in a shared environment.'
+      safetyAnswer += ' Authentication requirements were not detected automatically - check the project\'s documentation before connecting in a shared environment.'
     }
     if (server.license && server.license !== 'NOASSERTION') {
       safetyAnswer += ` Licensed under ${server.license}.`
@@ -43,7 +43,7 @@ export function buildServerFAQs(server: Server): FAQItem[] {
   } else if (server.pip_package) {
     installAnswer = `Install ${server.name} via pip: \`pip install ${server.pip_package}\`. Then configure it in your MCP client.`
   } else if (isRemoteOnly(server)) {
-    installAnswer = `${server.name} is a hosted remote MCP server — there is no local package to install. Configure your MCP client to connect to its endpoint${server.remote_url ? ` (${server.remote_url})` : ''} instead of running it locally.`
+    installAnswer = `${server.name} is a hosted remote MCP server - there is no local package to install. Configure your MCP client to connect to its endpoint${server.remote_url ? ` (${server.remote_url})` : ''} instead of running it locally.`
   } else {
     installAnswer = `${server.name} can be installed by cloning its GitHub repository and following the setup instructions in the README.`
   }
@@ -76,7 +76,7 @@ export function buildServerFAQs(server: Server): FAQItem[] {
   if (server.github_last_commit) {
     const daysSince = Math.floor((Date.now() - new Date(server.github_last_commit).getTime()) / 86400000)
     const maintenanceStatus = daysSince < 30 ? 'actively maintained' : daysSince < 90 ? 'recently maintained' : daysSince < 365 ? 'less actively maintained' : 'not actively maintained'
-    let maintAnswer = `${server.name} is ${maintenanceStatus} — last commit was ${daysSince} day${daysSince !== 1 ? 's' : ''} ago.`
+    let maintAnswer = `${server.name} is ${maintenanceStatus} - last commit was ${daysSince} day${daysSince !== 1 ? 's' : ''} ago.`
     if (server.github_stars > 0) {
       maintAnswer += ` It has ${server.github_stars.toLocaleString()} GitHub stars.`
     }

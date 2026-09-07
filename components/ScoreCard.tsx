@@ -281,7 +281,7 @@ export default function ScoreCard({ server }: { server: Server }) {
           ) : (
             <Evidence
               pass={null}
-              text={`${toolCount} tools — token cost not yet measured`}
+              text={`${toolCount} tools - token cost not yet measured`}
             />
           )}
         </ScoreBar>

@@ -15,7 +15,7 @@ function LoginForm() {
   const isSignup = mode === 'signup'
   const heading = isSignup ? 'Create your MCPpedia account' : 'Sign in to MCPpedia'
   const subheading = isSignup
-    ? 'Join the catalog — earn karma for every contribution.'
+    ? 'Join the catalog - earn karma for every contribution.'
     : 'Welcome back. Sign in to keep contributing.'
   const altLinkHref = isSignup
     ? `/login?redirect=${encodeURIComponent(redirect)}`

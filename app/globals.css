@@ -20,14 +20,14 @@
   --yellow: #9a6700;
   --red: #cf222e;
   --tag-bg: #e0f2fe;
-  --tag-text: #0284c7;
+  --tag-text: #0369a1;
   --code-bg: #f6f8fa;
   --border-muted: #e7ebef;
 
   /* Score category colors */
   --cat-security: #3730a3;
   --cat-maintenance: #0f766e;
-  --cat-efficiency: #0891b2;
+  --cat-efficiency: #0e7490;
   --cat-documentation: #4d7c0f;
   --cat-compatibility: #b45309;
 
@@ -37,7 +37,7 @@
   --card-pad: 16px;
 
   /* Gradients */
-  --hero-gradient: linear-gradient(135deg, #e0f2fe 0%, #f8fafc 40%, #f5f3ff 100%);
+  --hero-gradient: linear-gradient(135deg, #e0f2fe 0%, #f8fafc 45%, #eef4f8 100%);
 
   /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
@@ -71,7 +71,7 @@
   --cat-documentation: #a3e635;
   --cat-compatibility: #fbbf24;
 
-  --hero-gradient: linear-gradient(135deg, #0c1929 0%, #0d1117 40%, #170d24 100%);
+  --hero-gradient: linear-gradient(135deg, #0c1929 0%, #0d1117 45%, #101a24 100%);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
   --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -178,6 +178,77 @@ a, button, input, select, textarea {
 .stagger-2 { animation-delay: 0.1s; }
 .stagger-3 { animation-delay: 0.15s; }
 .stagger-4 { animation-delay: 0.2s; }
+
+/* ============================================
+   Entrance motion
+   ============================================
+   Both effects below are pure CSS and purely additive: the resting state of
+   every element is *visible*. This is deliberate. The previous Framer Motion
+   version set `initial={{ opacity: 0 }}`, which React serialises into the SSR
+   HTML — so the hero and all seven homepage sections shipped as
+   `opacity:0;filter:blur(12px)` and only became visible once hydration ran.
+   Anything that does not execute rAF (JS disabled, a hydration error, a
+   link-preview renderer, an offscreen screenshot) saw a blank page, and the
+   LCP element sat behind a 0.5s delay plus a 1.5s spring.
+
+   Keeping the animation in CSS means the markup is never hidden, the effect
+   degrades to "content is simply there", and `prefers-reduced-motion` is
+   honoured by the single media query at the bottom of this file. */
+
+/* Hero load sequence. `backwards` fill applies the from-state only while the
+   delay is running, so nothing is hidden once the animation has finished. */
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.hero-rise {
+  animation: riseIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.hero-rise-1 { animation-delay: 0.04s; }
+.hero-rise-2 { animation-delay: 0.12s; }
+.hero-rise-3 { animation-delay: 0.20s; }
+
+/* Section reveal, driven by scroll position rather than by JavaScript.
+   `animation-timeline: view()` is Chromium 115+ and Safari 26+; Firefox has
+   not shipped it, and there the rule is simply ignored and the section renders
+   static. That is the intended fallback, so the whole block sits behind
+   @supports and is never load-bearing.
+
+   The range completes at `entry 30%`, early enough that a section can never be
+   left stranded mid-fade at the bottom of the document. Only transform and
+   opacity are animated: the old version cross-faded `filter: blur(12px)`
+   across seven full-width sections, which forces a real GPU blur pass on each. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: riseIn 1ms linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 30%;
+    }
+  }
+}
+
+/* Reading-progress bar on article pages, filled by document scroll position.
+   This replaced a `window.addEventListener('scroll')` handler that called
+   setState on every frame. The fill rests at scaleX(0), so a browser without
+   scroll-driven animation shows no bar rather than a stuck full one. */
+@keyframes scrollProgress {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+.reading-progress {
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+}
+
+@supports (animation-timeline: scroll()) {
+  .reading-progress {
+    animation: scrollProgress linear both;
+    animation-timeline: scroll(root block);
+  }
+}
 
 /* Scrollbar styling for dark mode */
 [data-theme="dark"] ::-webkit-scrollbar {
@@ -327,4 +398,30 @@ a, button, input, select, textarea {
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation-duration: 0.15s;
+}
+
+/* ============================================
+   Reduced motion (WCAG 2.3.3)
+   ============================================
+   Sitewide opt-out, deliberately last so it wins over everything above.
+   Animations are collapsed to a single final frame rather than removed, so
+   `backwards`/`both` fill modes still resolve to the visible end state and no
+   element is left hidden. Transitions and smooth scrolling are cut outright,
+   and view transitions are disabled because the cross-fade is itself motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
 }

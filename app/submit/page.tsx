@@ -52,7 +52,7 @@ function SubmitForm() {
         const data = await res.json().catch(() => null)
         setError(
           (typeof data?.error === 'string' ? data.error : 'Could not fetch repository metadata.') +
-          ' Auto-fill is optional — you can enter the details yourself.'
+          ' Auto-fill is optional - you can enter the details yourself.'
         )
         // Auto-fill is a convenience; never block manual entry on its failure.
         setStep(s => Math.max(s, 2))
@@ -68,7 +68,7 @@ function SubmitForm() {
       setAuthorGithub(meta.owner || '')
       setStep(s => Math.max(s, 2))
     } catch {
-      setError('Failed to fetch metadata. Auto-fill is optional — you can enter the details yourself.')
+      setError('Failed to fetch metadata. Auto-fill is optional - you can enter the details yourself.')
       setStep(s => Math.max(s, 2))
     }
     setFetching(false)

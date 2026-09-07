@@ -50,7 +50,7 @@ function getSteps(client: Client): Step[] {
         code: `// Config file location:
 // macOS:   ~/Library/Application Support/Claude/claude_desktop_config.json
 // Windows: %APPDATA%\\Claude\\claude_desktop_config.json`,
-        tip: 'You can add multiple servers — just add more entries inside "mcpServers". Make sure the JSON has no trailing commas.',
+        tip: 'You can add multiple servers - just add more entries inside "mcpServers". Make sure the JSON has no trailing commas.',
       },
       {
         title: 'Restart and verify',
@@ -72,7 +72,7 @@ function getSteps(client: Client): Step[] {
         title: 'Add MCP Server',
         description: 'Click "Add MCP Server". Enter the server name and paste the config from MCPpedia.',
         visual: <CursorSettingsMock step="mcp" />,
-        tip: 'The server name can be anything — it\'s just a label. Use something short like "github" or "slack".',
+        tip: 'The server name can be anything - it\'s just a label. Use something short like "github" or "slack".',
       },
       {
         title: 'Restart Cursor',
@@ -144,7 +144,7 @@ function getSteps(client: Client): Step[] {
       title: 'Install GitHub Copilot',
       description: 'Open Extensions (⌘+Shift+X), search "GitHub Copilot", install it, and sign in with your GitHub account.',
       visual: (
-        <MockWindow title="VS Code — Extensions" dark>
+        <MockWindow title="VS Code - Extensions" dark>
           <div className="flex items-center gap-2 px-2 py-1 bg-[#2d2d2d] border border-[#444] rounded mb-2">
             <span className="text-[10px] text-[#999]">🔍</span>
             <span className="text-[11px] text-[#d4d4d4]">GitHub Copilot</span>
@@ -329,10 +329,10 @@ export default function SetupPage() {
                   <div>
                     <p className="font-medium text-text-primary">Is the config file in the right place?</p>
                     <p>Open a terminal and run this to check if your file exists:</p>
-                    <pre className="bg-code-bg p-2 rounded mt-1 text-xs font-mono">{`# macOS — Claude Desktop
+                    <pre className="bg-code-bg p-2 rounded mt-1 text-xs font-mono">{`# macOS - Claude Desktop
 cat ~/Library/Application\\ Support/Claude/claude_desktop_config.json
 
-# Windows — Claude Desktop
+# Windows - Claude Desktop
 type %APPDATA%\\Claude\\claude_desktop_config.json`}</pre>
                     <p className="mt-1">If it says &quot;No such file&quot;, you saved it in the wrong location.</p>
                   </div>
@@ -401,7 +401,7 @@ type %APPDATA%\\Claude\\claude_desktop_config.json`}</pre>
     }
   }
 }`}</pre>
-              <p>If Option A doesn&apos;t work, try Option B. If neither works, the server might be down — use the &quot;Test This Server&quot; button on its MCPpedia page.</p>
+              <p>If Option A doesn&apos;t work, try Option B. If neither works, the server might be down - use the &quot;Test This Server&quot; button on its MCPpedia page.</p>
             </div>
           </details>
 
@@ -439,7 +439,7 @@ type %APPDATA%\\Claude\\claude_desktop_config.json`}</pre>
               How to add multiple servers
             </summary>
             <div className="px-4 py-3 border-t border-border text-text-muted">
-              <p>Add more entries inside <code className="bg-code-bg px-1 rounded">mcpServers</code> — each server gets its own key:</p>
+              <p>Add more entries inside <code className="bg-code-bg px-1 rounded">mcpServers</code> - each server gets its own key:</p>
               <pre className="bg-code-bg p-2 rounded mt-1 text-xs font-mono">{`{
   "mcpServers": {
     "filesystem": {

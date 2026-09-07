@@ -177,7 +177,7 @@ export async function generateMetadata({
     score: r.data?.score_total || 0,
   }))
 
-  const title = `${servers.map(s => s.name).join(' vs ')} — MCP Server Comparison`
+  const title = `${servers.map(s => s.name).join(' vs ')} - MCP Server Comparison`
   const description = `Compare ${servers
     .map(s => `${s.name} (score: ${s.score})`)
     .join(', ')} side-by-side. See security scores, tools, maintenance, downloads, and compatibility.`
@@ -273,7 +273,7 @@ export default async function ComparePage({
     {
       '@context': 'https://schema.org',
       '@type': 'WebPage',
-      name: `${namesJoined} — MCP Server Comparison`,
+      name: `${namesJoined} - MCP Server Comparison`,
       description: verdict || `Side-by-side comparison of ${namesJoined} MCP servers.`,
       url: `${SITE_URL}/compare/${slugsParam}`,
     },

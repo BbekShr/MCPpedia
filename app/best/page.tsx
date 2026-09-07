@@ -7,10 +7,10 @@ import type { Category } from '@/lib/constants'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: { absolute: 'Best MCP Servers by Category — MCPpedia' },
-  description: 'Find the best MCP servers for every use case — each ranked by MCPpedia\'s security score, maintenance, and efficiency. Backed by daily CVE scanning.',
+  title: { absolute: 'Best MCP Servers by Category - MCPpedia' },
+  description: 'Find the best MCP servers for every use case - each ranked by MCPpedia\'s security score, maintenance, and efficiency. Backed by daily CVE scanning.',
   openGraph: {
-    title: 'Best MCP Servers by Category — MCPpedia',
+    title: 'Best MCP Servers by Category - MCPpedia',
     description: 'Security-scored MCP server rankings across 23 categories.',
     url: `${SITE_URL}/best`,
   },
@@ -66,7 +66,7 @@ export default async function BestPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-text-primary mb-2">Best MCP Servers by Category</h1>
         <p className="text-text-muted max-w-2xl">
-          Every ranking is powered by MCPpedia&apos;s security score — combining daily CVE scanning, maintenance status, documentation quality, and token efficiency.
+          Every ranking is powered by MCPpedia&apos;s security score - combining daily CVE scanning, maintenance status, documentation quality, and token efficiency.
         </p>
       </div>
 
@@ -76,7 +76,7 @@ export default async function BestPage() {
           `MCPpedia tracks ${catalogSize} MCP servers across ${CATEGORIES.length} categories, and ranks the ` +
             `top ten in each. The ranking is not a popularity count: GitHub stars measure how many people ` +
             `bookmarked a repository, not whether its tool definitions are safe to hand an agent.`,
-          `Each server is scored 0-100 on five weighted inputs — security (CVE scanning, tool-poisoning ` +
+          `Each server is scored 0-100 on five weighted inputs - security (CVE scanning, tool-poisoning ` +
             `detection, and whether the server authenticates at all), maintenance (commit recency, release ` +
             `cadence, download trend), documentation, client compatibility, and token efficiency, which is ` +
             `how much of your context window the tool definitions consume before you have asked anything. ` +

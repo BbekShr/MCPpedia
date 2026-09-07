@@ -16,7 +16,7 @@ export default function LiveDataUnavailable({ title }: { title: string }) {
       <meta name="robots" content="noindex, nofollow" />
       <h1 className="text-xl font-semibold text-text-primary mb-2">{title}</h1>
       <p className="text-text-muted mb-6 text-sm">
-        Live catalog data is temporarily unavailable — the database is not
+        Live catalog data is temporarily unavailable - the database is not
         reachable right now. Nothing has been lost, and this page will fill back
         in on its own once the connection is restored.
       </p>

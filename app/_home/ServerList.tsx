@@ -126,7 +126,7 @@ export async function CVESection({ withCVEsCount }: { withCVEsCount: number }) {
   return (
     <ServerSection
       title="Servers with known CVEs"
-      subtitle={`${withCVEsCount} servers have vulnerabilities — check before you install`}
+      subtitle={`${withCVEsCount} servers have vulnerabilities - check before you install`}
       viewAllHref="/security"
       viewAllLabel="All advisories"
       servers={(data as Server[]) || []}

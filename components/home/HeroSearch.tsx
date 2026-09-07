@@ -96,10 +96,12 @@ export default function HeroSearch({ totalServers }: { totalServers: number }) {
     }
     compute()
     window.addEventListener('resize', compute)
-    window.addEventListener('scroll', compute, true)
+    // Capture phase so scrolls inside nested containers also reposition the
+    // dropdown; passive so the handler can never block the scroll itself.
+    window.addEventListener('scroll', compute, { capture: true, passive: true })
     return () => {
       window.removeEventListener('resize', compute)
-      window.removeEventListener('scroll', compute, true)
+      window.removeEventListener('scroll', compute, { capture: true })
     }
   }, [open])
 
@@ -234,7 +236,7 @@ export default function HeroSearch({ totalServers }: { totalServers: number }) {
               <span className="text-text-primary opacity-55 whitespace-nowrap">
                 {totalServers.toLocaleString()} servers
               </span>
-              <span className="hidden sm:inline whitespace-nowrap">&nbsp;—&nbsp;try&nbsp;</span>
+              <span className="hidden sm:inline whitespace-nowrap">&nbsp;-&nbsp;try&nbsp;</span>
               <span className="hidden sm:flex flex-1 min-w-0 overflow-hidden">
                 <RotatingHint idx={hintIdx} />
               </span>

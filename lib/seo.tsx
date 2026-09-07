@@ -410,10 +410,10 @@ export function buildServerTitle(server: ServerTitleFields): string {
   const candidates = saysMcpServer
     ? [`${name} for Claude & Cursor`, name]
     : [
-        category && `${name} — ${category} MCP Server for Claude & Cursor`,
-        category && `${name} — ${category} MCP Server`,
-        `${name} — MCP Server for Claude & Cursor`,
-        `${name} — MCP Server`,
+        category && `${name} - ${category} MCP Server for Claude & Cursor`,
+        category && `${name} - ${category} MCP Server`,
+        `${name} - MCP Server for Claude & Cursor`,
+        `${name} - MCP Server`,
         name,
       ].filter((c): c is string => typeof c === 'string' && c.length > 0)
 

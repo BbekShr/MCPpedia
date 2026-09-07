@@ -11,6 +11,7 @@ import { createAdminClient, fetchAllRows } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
 import { getReadme } from './lib/github'
 import { categorize } from './lib/categorize'
+import { NPM_PACKAGE_DENYLIST } from '../lib/npm-package-denylist'
 
 const supabase = createAdminClient('bot-extract-install-info')
 
@@ -20,18 +21,10 @@ function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
   return { owner: match[1], repo: match[2].replace(/\.git$/, '') }
 }
 
-// Known installer/CLI tools that are never the actual MCP server package
-const NPX_SKIP_PACKAGES = new Set([
-  '@smithery/cli',
-  '@modelcontextprotocol/inspector',
-  '@modelcontextprotocol/conformance',
-  'mcp-remote',
-  'tsx',
-  'ts-node',
-  'add-mcp',
-  'chrome-devtools-mcp',
-  '-y',
-])
+// Installer tooling, package managers and runtimes that are never the actual
+// MCP server package. Shared with the homepage trending query so the two can
+// not drift — see lib/npm-package-denylist.ts for why pnpm is on the list.
+const NPX_SKIP_PACKAGES = new Set(NPM_PACKAGE_DENYLIST)
 
 function extractNpmPackage(readme: string): string | null {
   // Handle: npx @smithery/cli install @actual/package
@@ -47,12 +40,15 @@ function extractNpmPackage(readme: string): string | null {
   }
 
   // Match: npm install @scope/package
+  // The skip check matters most here: a "Prerequisites" section reading
+  // `npm install -g pnpm` is about the toolchain, not about this server, and
+  // without the guard it was scraped as the server's own package.
   const npmInstall = readme.match(/npm\s+install\s+(?:-[gD]\s+)?(@[\w.-]+\/[\w.-]+|[\w][\w.-]*)/m)
-  if (npmInstall) return npmInstall[1]
+  if (npmInstall && !NPX_SKIP_PACKAGES.has(npmInstall[1])) return npmInstall[1]
 
   // Match from package.json "name" field if present
   const pkgName = readme.match(/"name"\s*:\s*"(@[\w.-]+\/[\w.-]+|[\w][\w.-]*)"/m)
-  if (pkgName && pkgName[1].includes('mcp')) return pkgName[1]
+  if (pkgName && pkgName[1].includes('mcp') && !NPX_SKIP_PACKAGES.has(pkgName[1])) return pkgName[1]
 
   return null
 }
@@ -215,8 +211,15 @@ async function main() {
         const isDefaultTransport = !currentTransport || (currentTransport.length === 1 && currentTransport[0] === 'stdio')
         if (transport.length > 0 && isDefaultTransport) updates.transport = transport
 
-        // Use the best available package name for config generation
-        const effectiveNpm = server.npm_package || npmPkg
+        // Use the best available package name for config generation. Read the
+        // *decided* value rather than the stored column: when the stored name
+        // was toolchain (pnpm et al) this pass is correcting it, and building
+        // install_configs from the stale value would re-pin the wrong package
+        // in the very run that was supposed to clear it.
+        const decidedNpm = 'npm_package' in updates
+          ? (updates.npm_package as string | null)
+          : server.npm_package
+        const effectiveNpm = decidedNpm || npmPkg
         const effectivePip = server.pip_package || pipPkg
 
         // Build install config — prefer README-sourced config over auto-generated
@@ -255,6 +258,12 @@ async function main() {
               }
             }
           }
+        } else if (hasWrongNpm) {
+          // The stored package was toolchain and the README offers no
+          // replacement, so nothing above produced a config. Without this the
+          // row keeps the config generated from the bad name and goes on
+          // telling users to run `npx -y pnpm`.
+          updates.install_configs = {}
         }
       } else {
         // No README but we have package names from registry — generate configs

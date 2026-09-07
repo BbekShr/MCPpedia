@@ -34,7 +34,7 @@ const ACTION_COPY: Record<string, { verb: string; icon: string; color: string }>
   edit_approved:          { verb: 'Edit approved on',     icon: '✓',  color: 'text-green' },
   edit_rejected_refund:   { verb: 'Edit rejected on',     icon: '✗',  color: 'text-red' },
   edit_unapproved_refund: { verb: 'Edit reverted on',     icon: '↺',  color: 'text-red' },
-  submit_server_refund:   { verb: 'Server removed:',      icon: '—',  color: 'text-red' },
+  submit_server_refund:   { verb: 'Server removed:',      icon: '-',  color: 'text-red' },
   discussion_post:        { verb: 'Posted in',            icon: '💬', color: 'text-text-primary' },
   verification:           { verb: 'Verified',             icon: '👍', color: 'text-green' },
   verification_refund:    { verb: 'Un-verified',          icon: '↺',  color: 'text-text-muted' },

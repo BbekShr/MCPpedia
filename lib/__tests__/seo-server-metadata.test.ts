@@ -22,13 +22,13 @@ describe('buildServerTitle', () => {
 
   it('uses the full pattern when it fits in 60 characters', () => {
     expect(buildServerTitle({ name: 'Notion', categories: ['productivity'] })).toBe(
-      'Notion — Productivity MCP Server | MCPpedia',
+      'Notion - Productivity MCP Server | MCPpedia',
     )
   })
 
   it('keeps the Claude & Cursor clause when there is room', () => {
     expect(buildServerTitle({ name: 'Git', categories: [] })).toBe(
-      'Git — MCP Server for Claude & Cursor | MCPpedia',
+      'Git - MCP Server for Claude & Cursor | MCPpedia',
     )
   })
 
@@ -61,7 +61,7 @@ describe('buildServerTitle', () => {
     // category. Spending title characters on it describes no use case.
     const title = buildServerTitle({ name: 'MCP HN', categories: ['other'] })
     expect(title).not.toContain('Other')
-    expect(title).toBe('MCP HN — MCP Server for Claude & Cursor | MCPpedia')
+    expect(title).toBe('MCP HN - MCP Server for Claude & Cursor | MCPpedia')
   })
 
   it('tolerates a missing category', () => {

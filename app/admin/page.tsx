@@ -357,7 +357,7 @@ export default function AdminPage() {
       }
 
       if (!sawTerminal) {
-        setCatResult('Run ended before finishing (server timeout?) — click again to continue')
+        setCatResult('Run ended before finishing (server timeout?) - click again to continue')
         setCatError(true)
         setCatProgress(null)
       }
@@ -805,7 +805,7 @@ export default function AdminPage() {
                     {bot.recentRuns.map(r => (
                       <div
                         key={r.id}
-                        title={`${new Date(r.startedAt).toLocaleString('en-US', { timeZone: 'America/Chicago' })} — ${r.status} — ${r.serversProcessed} processed`}
+                        title={`${new Date(r.startedAt).toLocaleString('en-US', { timeZone: 'America/Chicago' })} - ${r.status} - ${r.serversProcessed} processed`}
                         className={`w-3 h-3 rounded-sm ${
                           r.status === 'success' ? 'bg-green' :
                           r.status === 'running' ? 'bg-accent' :

@@ -130,7 +130,7 @@ export async function GET() {
 
         const parts = [`Categorized ${updated} of ${total} servers`]
         if (failed > 0) parts.push(`${failed} failed (first: ${firstFailure})`)
-        if (capped) parts.push(`hit the ${MAX_PER_RUN}-row cap for this run — more remain, click again to continue`)
+        if (capped) parts.push(`hit the ${MAX_PER_RUN}-row cap for this run - more remain, click again to continue`)
         send({ type: 'done', total, updated, failed, capped, message: parts.join('; ') })
       } catch (err) {
         console.error('categorize error:', err)

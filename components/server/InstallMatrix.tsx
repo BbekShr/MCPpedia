@@ -23,7 +23,7 @@ const CLIENT_META: Record<ClientKey, { letter: string; color: string; path: stri
   'claude-code': {
     letter: 'CC',
     color: 'oklch(0.62 0.15 35)',
-    path: 'claude mcp add — one-liner below',
+    path: 'claude mcp add - one-liner below',
     shortLabel: 'Code',
   },
   'windsurf': {

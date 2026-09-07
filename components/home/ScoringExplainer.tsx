@@ -54,7 +54,7 @@ export default function ScoringExplainer() {
         <SectionHeader
           eyebrow="How we score"
           title="What the number actually means"
-          desc="Every server gets a 0–100 grade from five weighted signals. No opinion — only what we can measure from source, registry, and runtime."
+          desc="Every server gets a 0-100 grade from five weighted signals. No opinion - only what we can measure from source, registry, and runtime."
           right={
             <Link href="/methodology" className="text-[13px] text-accent">
               Scoring rubric →
@@ -116,11 +116,11 @@ export default function ScoringExplainer() {
           <span>
             Grades:{' '}
             <b style={{ color: 'var(--green)' }}>A (≥80)</b> ·{' '}
-            <b style={{ color: 'var(--accent)' }}>B (60–79)</b> ·{' '}
-            <b style={{ color: 'var(--yellow)' }}>C (40–59)</b> ·{' '}
+            <b style={{ color: 'var(--accent)' }}>B (60-79)</b> ·{' '}
+            <b style={{ color: 'var(--yellow)' }}>C (40-59)</b> ·{' '}
             <b style={{ color: 'var(--red)' }}>D/F (&lt;40)</b>
           </span>
-          <span className="hidden sm:inline">Scoring is open-source and versioned — the rubric file is in the repo.</span>
+          <span className="hidden sm:inline">Scoring is open-source and versioned - the rubric file is in the repo.</span>
         </div>
       </div>
     </section>

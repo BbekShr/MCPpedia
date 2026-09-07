@@ -37,7 +37,7 @@ export type Server = Record<string, unknown>;
 export function formatServerLine(s: Server): string {
   const grade = gradeFromScore(s.score_total);
   const parts = [
-    `**${sanitize(s.name)}** (${sanitize(s.slug)}) — Score: ${num(s.score_total)}/100 [${grade}]`,
+    `**${sanitize(s.name)}** (${sanitize(s.slug)}) - Score: ${num(s.score_total)}/100 [${grade}]`,
   ];
   if (s.tagline) parts.push(`  ${sanitize(s.tagline)}`);
   const meta: string[] = [];

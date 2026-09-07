@@ -94,7 +94,7 @@ export const SITE_NAME = 'MCPpedia'
 // Surfaces that can read the live snapshot build their copy with
 // `buildSiteDescription` (lib/live-counts.ts) instead; this is the fallback for
 // the ones that genuinely cannot await, and for when the snapshot is down.
-export const SITE_DESCRIPTION = 'Discover and compare every MCP server — each scored on security, maintenance, and efficiency with real CVE scanning. Find the right server before you install.'
+export const SITE_DESCRIPTION = 'Discover and compare every MCP server - each scored on security, maintenance, and efficiency with real CVE scanning. Find the right server before you install.'
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://mcppedia.org'
 
 // Smaller field set for list/card views (homepage, category, /servers, /best, etc.).

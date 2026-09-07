@@ -182,7 +182,7 @@ export async function POST(request: Request) {
   }
 
   if (!bot.workflow) {
-    return NextResponse.json({ error: 'Bot has no GitHub workflow — run it manually' }, { status: 400 })
+    return NextResponse.json({ error: 'Bot has no GitHub workflow - run it manually' }, { status: 400 })
   }
 
   // Trigger GitHub Actions workflow_dispatch

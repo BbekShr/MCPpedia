@@ -16,7 +16,7 @@ const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jet
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} — The Trusted Source for MCP Servers`,
+    default: `${SITE_NAME} - The Trusted Source for MCP Servers`,
     template: `%s - ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
@@ -56,7 +56,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-screen flex flex-col" suppressHydrationWarning>
+      <body className="min-h-[100dvh] flex flex-col" suppressHydrationWarning>
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-accent focus:text-accent-fg focus:rounded-md">
           Skip to content
         </a>

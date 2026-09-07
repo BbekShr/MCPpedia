@@ -616,7 +616,7 @@ function checkToolDefinitionStability(
     return {
       evidence: {
         id: 'tool-stability', label: 'Tool stability', pass: null,
-        detail: 'First scan — baseline recorded', points: 0, max_points: 1,
+        detail: 'First scan - baseline recorded', points: 0, max_points: 1,
       },
       currentHash,
     }

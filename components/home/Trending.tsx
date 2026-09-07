@@ -16,7 +16,7 @@ export interface TrendingRow {
 
 function Row({ row, rank }: { row: TrendingRow; rank: number }) {
   const score = row.score_total || 0
-  const publisher = row.author_name || row.author_github || '—'
+  const publisher = row.author_name || row.author_github || '-'
   const cat = row.categories?.[0]
   const rankColor = rank <= 3 ? 'var(--accent)' : 'var(--text-muted)'
   const rankWeight = rank <= 3 ? 700 : 500
@@ -43,7 +43,7 @@ function Row({ row, rank }: { row: TrendingRow; rank: number }) {
           </div>
         </div>
         <div className="font-mono text-right shrink-0 text-[12px]" style={{ color: 'var(--text)' }}>
-          {row.npm_weekly_downloads > 0 ? `${formatNumber(row.npm_weekly_downloads)}/wk` : '—'}
+          {row.npm_weekly_downloads > 0 ? `${formatNumber(row.npm_weekly_downloads)}/wk` : '-'}
         </div>
       </div>
 
@@ -86,7 +86,7 @@ function Row({ row, rank }: { row: TrendingRow; rank: number }) {
         </div>
 
         <div className="font-mono text-right" style={{ fontSize: 12.5, color: 'var(--text)' }}>
-          {row.npm_weekly_downloads > 0 ? formatNumber(row.npm_weekly_downloads) : '—'}
+          {row.npm_weekly_downloads > 0 ? formatNumber(row.npm_weekly_downloads) : '-'}
         </div>
       </div>
     </Link>

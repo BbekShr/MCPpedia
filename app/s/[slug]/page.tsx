@@ -231,7 +231,7 @@ export default async function ServerDetailPage({
   ]
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-[100dvh]">
       <JsonLdScript
         data={[
           generateServerJsonLd(s),
@@ -284,7 +284,7 @@ export default async function ServerDetailPage({
               <SectionHeader
                 eyebrow="Step 1"
                 title="Install in your client"
-                desc="Config is the same across clients — only the file and path differ."
+                desc="Config is the same across clients - only the file and path differ."
               />
               <InstallMatrix server={s} />
 
@@ -331,7 +331,7 @@ export default async function ServerDetailPage({
                 >
                   <p className="m-0 text-text-primary font-medium">No description provided.</p>
                   <p className="mt-1 mb-2">
-                    This server is thin — proceed with caution.{' '}
+                    This server is thin - proceed with caution.{' '}
                     <Link href={`/s/${s.slug}/edit`} rel="nofollow" className="text-accent">
                       Help improve this page →
                     </Link>
@@ -361,7 +361,7 @@ export default async function ServerDetailPage({
               <SectionHeader
                 eyebrow="Scored, not listed"
                 title="Why this score"
-                desc="Five weighted categories — click any category to see the underlying evidence."
+                desc="Five weighted categories - click any category to see the underlying evidence."
               />
               <div className="flex flex-col gap-4">
                 <ScorePanel server={s} />

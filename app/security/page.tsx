@@ -230,7 +230,7 @@ export default async function SecurityPage() {
 
       {/* Beyond CVEs */}
       <div className="border border-border rounded-md p-4 mb-4">
-        <div className="text-xs font-medium text-text-muted uppercase tracking-wide mb-3">Beyond CVEs — AI-specific threats</div>
+        <div className="text-xs font-medium text-text-muted uppercase tracking-wide mb-3">Beyond CVEs - AI-specific threats</div>
         <div className="grid grid-cols-3 gap-4">
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded bg-red/10 flex items-center justify-center shrink-0 mt-0.5">
@@ -266,7 +266,7 @@ export default async function SecurityPage() {
         <p className="text-xs text-text-muted mt-3">
           Computed against the <strong className="text-text-primary tabular-nums">{scannedServers.toLocaleString()}</strong> servers
           {totalServers > 0 && ` (${((scannedServers / totalServers) * 100).toFixed(1)}% of the catalog)`}
-          {' '}whose tool manifests were successfully fetched. Counts exclude servers without a live endpoint — the true surface is likely larger.
+          {' '}whose tool manifests were successfully fetched. Counts exclude servers without a live endpoint - the true surface is likely larger.
         </p>
       </div>
 

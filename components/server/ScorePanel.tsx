@@ -51,7 +51,7 @@ function buildFactors(id: CategoryId, server: Server): Factor[] {
         label: 'Auth & permissions model',
         max: 5,
         delta: server.has_authentication ? 4 : 5,
-        note: server.has_authentication ? 'Requires API key — token-scope unclear' : 'Local-only, no credentials',
+        note: server.has_authentication ? 'Requires API key - token-scope unclear' : 'Local-only, no credentials',
       },
       {
         label: 'License',

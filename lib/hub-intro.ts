@@ -92,7 +92,7 @@ const SCORE_EXPLAINER =
   'Every score is the same five weighted inputs: security (CVE scanning, tool-poisoning ' +
   'detection, and whether the server authenticates at all), maintenance (commit recency, ' +
   'release cadence, and download trend), documentation, client compatibility, and token ' +
-  'efficiency — how much of your context window the tool definitions consume before you ' +
+  'efficiency - how much of your context window the tool definitions consume before you ' +
   'have asked anything.'
 
 /**
@@ -118,7 +118,7 @@ export function buildHubIntro({
   paragraphs.push(
     `MCPpedia tracks ${agg.total.toLocaleString()} ${subject}. ` +
       `${agg.scored50.toLocaleString()} of them score at least 50 out of 100, and ` +
-      `${agg.scored70.toLocaleString()} clear 70 — about ${pct(agg.scored70, agg.total)}% of what has been ` +
+      `${agg.scored70.toLocaleString()} clear 70 - about ${pct(agg.scored70, agg.total)}% of what has been ` +
       `published in this space. The remaining ${thin.toLocaleString()} are thinner: registry entries ` +
       `with no description, no published tool schema, or no commit in the last year. They are all still ` +
       `listed here, because knowing a server exists and is unmaintained is worth as much as knowing ` +
@@ -143,14 +143,14 @@ export function buildHubIntro({
       ? `${agg.official.toLocaleString()} of these servers are published by the vendor behind the ` +
         `underlying API rather than by a third party, which is usually the difference between an ` +
         `integration that tracks upstream changes and one that quietly stops working.`
-      : `None of these servers are vendor-published yet — they are all community builds, so upstream ` +
+      : `None of these servers are vendor-published yet - they are all community builds, so upstream ` +
         `API changes are the thing to watch.`
 
   const security =
     agg.withCves > 0
       ? ` ${agg.withCves.toLocaleString()} currently carry an open CVE; those are flagged on the ` +
         `server's own page with the advisory and its severity.`
-      : ` None currently carry an open CVE, though that is a snapshot — advisories are re-scanned daily.`
+      : ` None currently carry an open CVE, though that is a snapshot - advisories are re-scanned daily.`
 
   paragraphs.push(provenance + security)
 
@@ -213,7 +213,7 @@ export function buildCompareVerdict(
         ? `${winner.name} exposes ${winner.toolCount} tools against ${loser.name}'s ${loser.toolCount}, so the choice comes down to whether you need that extra surface area or would rather keep your context window small`
         : `they are close enough on every measure that the deciding factor is which upstream service you already use`
     return (
-      `Short answer: it is close. ${a.name} scores ${a.score}/100 and ${b.name} scores ${b.score}/100 — ` +
+      `Short answer: it is close. ${a.name} scores ${a.score}/100 and ${b.name} scores ${b.score}/100 - ` +
       `a ${margin}-point gap, which is inside the noise of a weekly rescore. ${tiebreak}.`
     )
   }
@@ -237,7 +237,7 @@ export function buildCompareVerdict(
 
   return (
     `Short answer: pick ${winner.name}. It scores ${winner.score}/100 to ${loser.name}'s ${loser.score}/100, ` +
-    `and ${joinClauses(reasons)}. ${loser.name} is still worth a look if you are already invested in it — ` +
+    `and ${joinClauses(reasons)}. ${loser.name} is still worth a look if you are already invested in it - ` +
     `the full breakdown below shows exactly where the ${margin} points go.`
   )
 }

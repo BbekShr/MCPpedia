@@ -133,7 +133,7 @@ export default function GetStartedPage() {
             <div className="border border-accent/20 rounded-lg p-5 bg-accent/5">
               <p className="font-semibold text-base mb-1">The short version</p>
               <p className="text-text-muted">
-                MCP lets your AI assistant <strong className="text-text-primary">use real tools</strong> — search Slack, manage GitHub repos, read files, query databases, and hundreds more. Without MCP, your AI can only talk. With MCP, it can <em>do things</em>.
+                MCP lets your AI assistant <strong className="text-text-primary">use real tools</strong> - search Slack, manage GitHub repos, read files, query databases, and hundreds more. Without MCP, your AI can only talk. With MCP, it can <em>do things</em>.
               </p>
             </div>
 
@@ -197,7 +197,7 @@ export default function GetStartedPage() {
             onClick={() => setStep('client')}
             className="mt-8 w-full px-4 py-3 rounded-md bg-accent text-accent-fg font-medium hover:bg-accent-hover transition-colors"
           >
-            Got it — let&apos;s set one up
+            Got it - let&apos;s set one up
           </button>
         </div>
       )}
