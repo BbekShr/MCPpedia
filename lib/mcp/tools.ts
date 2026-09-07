@@ -145,11 +145,11 @@ export function registerTools(server: McpServer): void {
 
           const sections: string[] = [
             `# Security Report: ${sanitize(s.name)}`,
-            `**${verdict}** — Security score: ${secScore}/30`,
+            `**${verdict}** - Security score: ${secScore}/30`,
             "",
             "## Key Indicators",
             `- CVEs found: ${num(s.cve_count)}`,
-            `- Tool poisoning: ${s.has_tool_poisoning ? "YES — " + arr<string>(s.tool_poisoning_flags).join(", ") : "None detected"}`,
+            `- Tool poisoning: ${s.has_tool_poisoning ? "YES - " + arr<string>(s.tool_poisoning_flags).join(", ") : "None detected"}`,
             `- Code execution: ${s.has_code_execution ? "YES" : "No"}`,
             `- Injection risk: ${s.has_injection_risk ? "YES" : "No"}`,
             // Both columns are 0-3 point tallies from the security evidence, and
@@ -284,7 +284,7 @@ export function registerTools(server: McpServer): void {
     "compare_servers",
     {
       title: "Compare MCP servers",
-      description: "Compare 2–5 MCP servers side-by-side across every scoring dimension.",
+      description: "Compare 2-5 MCP servers side-by-side across every scoring dimension.",
       inputSchema: { slugs: z.array(z.string()).min(2).max(5) },
       outputSchema: {
         servers: z.array(serverSummarySchema),
@@ -447,7 +447,7 @@ export function registerTools(server: McpServer): void {
         ];
         if (configKey && configKey !== targetClient) {
           sections.push(
-            `Note: no ${targetClient}-specific config is on record — the config below is the stored "${sanitize(configKey)}" config and may need adjusting for ${targetClient}.`
+            `Note: no ${targetClient}-specific config is on record - the config below is the stored "${sanitize(configKey)}" config and may need adjusting for ${targetClient}.`
           );
         }
         if (compatible.length) {
@@ -597,7 +597,7 @@ export function registerTools(server: McpServer): void {
 
         const lines = cats
           .sort((a, b) => num(b.count) - num(a.count))
-          .map((c) => `- **${sanitize(c.name)}** (${c.slug}) — ${num(c.count)} servers`);
+          .map((c) => `- **${sanitize(c.name)}** (${c.slug}) - ${num(c.count)} servers`);
 
         return {
           content: [{ type: "text" as const, text: `# Categories\n\n${lines.join("\n")}` }],

@@ -261,7 +261,7 @@ function WelcomeForm() {
         </div>
 
         <ul className="text-xs text-text-muted list-disc pl-5 mt-4 space-y-0.5">
-          <li>{USERNAME_MIN_LENGTH}–{USERNAME_MAX_LENGTH} characters.</li>
+          <li>{USERNAME_MIN_LENGTH}-{USERNAME_MAX_LENGTH} characters.</li>
           <li>Lowercase letters, numbers, hyphens, and underscores.</li>
           <li>Must start and end with a letter or number.</li>
           <li>No reserved names (admin, api, mcppedia, …).</li>

@@ -5,7 +5,7 @@ import { JsonLdScript, generateCollectionJsonLd, generateBreadcrumbJsonLd } from
 import NewsletterSignup from '@/components/NewsletterSignup'
 import type { Metadata } from 'next'
 
-const blogDescription = 'Weekly insights on the MCP ecosystem — new servers, trending projects, security alerts, and deep dives.'
+const blogDescription = 'Weekly insights on the MCP ecosystem - new servers, trending projects, security alerts, and deep dives.'
 
 export const metadata: Metadata = {
   title: 'Blog',
@@ -62,7 +62,7 @@ export default function BlogPage() {
       <div className="mb-10">
         <h1 className="text-3xl font-bold text-text-primary tracking-tight mb-2">Blog</h1>
         <p className="text-lg text-text-muted max-w-2xl">
-          Weekly insights on the MCP ecosystem — new servers, trending projects, security alerts, and deep dives. All auto-generated from real data.
+          Weekly insights on the MCP ecosystem - new servers, trending projects, security alerts, and deep dives. All auto-generated from real data.
         </p>
       </div>
 

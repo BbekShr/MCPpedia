@@ -50,7 +50,7 @@ export async function GET(request: Request) {
         )
       case 'not_found':
         return NextResponse.json(
-          { error: 'Repository not found on GitHub. Check the URL — private repositories cannot be auto-filled.' },
+          { error: 'Repository not found on GitHub. Check the URL - private repositories cannot be auto-filled.' },
           { status: 404 }
         )
       default:

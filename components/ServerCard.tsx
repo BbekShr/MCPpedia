@@ -31,7 +31,7 @@ export default function ServerCard({ server }: { server: Server }) {
   const transports = server.transport || []
   const hasRemote = transports.includes('http') || transports.includes('sse')
   const grade = score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 40 ? 'C' : score >= 20 ? 'D' : 'F'
-  const a11yLabel = `${server.name} — score ${score}/100, grade ${grade}, ${server.cve_count === 0 ? 'no CVEs' : `${server.cve_count} CVEs`}, ${server.health_status || 'unknown'} status`
+  const a11yLabel = `${server.name} - score ${score}/100, grade ${grade}, ${server.cve_count === 0 ? 'no CVEs' : `${server.cve_count} CVEs`}, ${server.health_status || 'unknown'} status`
 
   // Overlay-link pattern: the card is <article>, a stretched invisible <Link>
   // covers it for whole-card navigation, and interactive children sit above

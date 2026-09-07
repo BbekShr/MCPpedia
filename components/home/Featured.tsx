@@ -119,7 +119,7 @@ export default function Featured({
         <SectionHeader
           eyebrow="Editor's picks"
           title="Start here"
-          desc="Three servers we recommend if you're new — highest-scored, well-documented, and actively maintained."
+          desc="Three servers we recommend if you're new - highest-scored, well-documented, and actively maintained."
           right={
             <Link
               href="/servers?sort=score"

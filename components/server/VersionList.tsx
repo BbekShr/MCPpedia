@@ -23,7 +23,7 @@ export default function VersionList({ changelogs }: { changelogs: Changelog[] })
               year: 'numeric',
             })}
           </span>
-          <span className="truncate">{cl.changes_summary || '—'}</span>
+          <span className="truncate">{cl.changes_summary || '-'}</span>
           {cl.github_release_url ? (
             <a
               href={cl.github_release_url}

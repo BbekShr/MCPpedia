@@ -23,7 +23,7 @@ const MONTHLY_ADDITIONS_BUDGET_MS = 30_000
 
 export const metadata: Metadata = {
   title: 'MCP Ecosystem Analytics',
-  description: 'Stats on the MCP server ecosystem — scores, categories, health, security, and more. Updated daily.',
+  description: 'Stats on the MCP server ecosystem - scores, categories, health, security, and more. Updated daily.',
 }
 
 type Counts = Record<string, number>

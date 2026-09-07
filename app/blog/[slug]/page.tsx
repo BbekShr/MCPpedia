@@ -281,7 +281,7 @@ export default async function BlogPostPage({
           </svg>
           <p className="leading-relaxed">
             This article was written by AI, powered by Claude and real-time MCPpedia data.
-            All facts and figures are sourced from our database — but AI can make mistakes.
+            All facts and figures are sourced from our database - but AI can make mistakes.
             If something looks off, <Link href="/about" className="text-accent hover:underline">let us know</Link>.
           </p>
         </div>

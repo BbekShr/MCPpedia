@@ -14,6 +14,7 @@ config({ path: '.env.local' })
 import { createAdminClient } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
 import { getRepo } from './lib/github'
+import { isDeniedNpmPackage } from '../lib/npm-package-denylist'
 
 const supabase = createAdminClient('bot-update-metadata')
 
@@ -133,9 +134,12 @@ async function main() {
       continue
     }
 
-    // Fetch npm downloads if applicable
+    // Fetch npm downloads if applicable. Toolchain names are skipped: a row
+    // whose npm_package is still `pnpm` (extract-install-info clears these,
+    // but it may not have run yet) would otherwise be credited with pnpm's
+    // ~177M weekly downloads and take over the homepage trending list.
     let downloads = 0
-    if (server.npm_package) {
+    if (server.npm_package && !isDeniedNpmPackage(server.npm_package)) {
       downloads = await fetchNpmDownloads(server.npm_package)
     }
 

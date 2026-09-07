@@ -11,7 +11,7 @@ import BadgePreview from '@/components/BadgePreview'
 export const revalidate = 86400
 
 export const metadata: Metadata = {
-  title: { absolute: `MCPpedia Security Badges — Show your MCP server's score` },
+  title: { absolute: `MCPpedia Security Badges - Show your MCP server's score` },
   description: 'Add MCPpedia security badges to your GitHub README. Show your MCP server\'s overall score and security grade, backed by daily CVE scanning.',
   openGraph: {
     title: 'MCPpedia Security Badges',
@@ -158,7 +158,7 @@ export default async function BadgePage() {
         </h1>
         <p className="text-lg text-text-muted max-w-2xl">
           Show your MCP server&apos;s security posture directly in your GitHub README.
-          Badges update automatically as scores change — zero maintenance required.
+          Badges update automatically as scores change - zero maintenance required.
         </p>
       </div>
 
@@ -173,7 +173,7 @@ export default async function BadgePage() {
               <ScoreBadgeSVG score={82} />
             </div>
             <p className="text-xs text-text-muted mb-3">
-              Combined MCPpedia score (0–100) covering security, maintenance, docs, compatibility, and efficiency.
+              Combined MCPpedia score (0-100) covering security, maintenance, docs, compatibility, and efficiency.
             </p>
             <code className="text-xs bg-code-bg border border-border rounded px-2 py-1.5 block break-all font-mono">
               /api/badge/<span className="text-accent">YOUR-SLUG</span>
@@ -187,7 +187,7 @@ export default async function BadgePage() {
               <SecurityBadgeSVG secScore={28} cves={0} />
             </div>
             <p className="text-xs text-text-muted mb-3">
-              Security-specific grade (A–F) from daily CVE scanning, plus open CVE count.
+              Security-specific grade (A-F) from daily CVE scanning, plus open CVE count.
             </p>
             <code className="text-xs bg-code-bg border border-border rounded px-2 py-1.5 block break-all font-mono">
               /api/badge/<span className="text-accent">YOUR-SLUG</span>?type=security
@@ -344,7 +344,7 @@ export default async function BadgePage() {
           </table>
         </div>
         <p className="text-xs text-text-muted mt-3">
-          All badge endpoints return SVG with CORS headers enabled. Cached for 1 hour. Free to use — no API key needed.
+          All badge endpoints return SVG with CORS headers enabled. Cached for 1 hour. Free to use - no API key needed.
         </p>
       </section>
 

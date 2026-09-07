@@ -58,7 +58,7 @@ export async function fetchRepoMetadataResult(githubUrl: string): Promise<RepoMe
       (res.status === 403 && res.headers.get('x-ratelimit-remaining') === '0')
     console.error(
       `github metadata fetch for ${parsed.owner}/${parsed.repo} returned ${res.status}` +
-      (rateLimited ? ' (rate limited — check GITHUB_TOKEN)' : '')
+      (rateLimited ? ' (rate limited - check GITHUB_TOKEN)' : '')
     )
     if (rateLimited) return { ok: false, error: 'rate_limited' }
     if (res.status === 404) return { ok: false, error: 'not_found' }

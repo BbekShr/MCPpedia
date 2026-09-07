@@ -507,7 +507,7 @@ export default function EditServerPage() {
           <h1 className="text-2xl font-semibold text-text-primary">Edit: {server.name}</h1>
           <p className="text-sm text-text-muted">
             {isAdmin
-              ? 'Admin mode — changes save directly when you confirm.'
+              ? 'Admin mode - changes save directly when you confirm.'
               : 'Edit any field, then review and submit. Your changes go to a moderator before they appear.'}
           </p>
         </div>
@@ -538,7 +538,7 @@ export default function EditServerPage() {
 
         <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wide pt-4">About</h2>
         <Field {...fieldProps('description', 'textarea', 6, {
-          hint: 'Supports markdown — **bold**, *italic*, [links](url), `code`, lists.',
+          hint: 'Supports markdown - **bold**, *italic*, [links](url), `code`, lists.',
         })} />
 
         <h2 className="text-sm font-semibold text-text-muted uppercase tracking-wide pt-4">Tools & Resources</h2>

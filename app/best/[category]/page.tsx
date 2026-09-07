@@ -14,13 +14,13 @@ import type { Metadata } from 'next'
 export const revalidate = 604800 // 7d
 
 const CATEGORY_DESCRIPTIONS: Record<Category, string> = {
-  'productivity': 'MCP servers for Slack, email, calendar, task management, and workflow automation — scored on security and reliability.',
-  'developer-tools': 'MCP servers for GitHub, databases, filesystems, code review, and developer tooling — each scored on security and maintenance.',
-  'data': 'MCP servers for SQL databases, data pipelines, ETL, and data lake access — scored on security and maintenance.',
-  'finance': 'MCP servers for financial data, accounting, payment APIs, and market data feeds — verified and security-scored.',
-  'ai-ml': 'MCP servers for AI memory, vector search, model APIs, and LLM tooling — scored on security and token efficiency.',
+  'productivity': 'MCP servers for Slack, email, calendar, task management, and workflow automation - scored on security and reliability.',
+  'developer-tools': 'MCP servers for GitHub, databases, filesystems, code review, and developer tooling - each scored on security and maintenance.',
+  'data': 'MCP servers for SQL databases, data pipelines, ETL, and data lake access - scored on security and maintenance.',
+  'finance': 'MCP servers for financial data, accounting, payment APIs, and market data feeds - verified and security-scored.',
+  'ai-ml': 'MCP servers for AI memory, vector search, model APIs, and LLM tooling - scored on security and token efficiency.',
   'communication': 'MCP servers for Slack, email, Discord, SMS, and team communication tools.',
-  'cloud': 'MCP servers for AWS, GCP, Azure, and cloud resource management — scored on security and maintenance.',
+  'cloud': 'MCP servers for AWS, GCP, Azure, and cloud resource management - scored on security and maintenance.',
   'security': 'MCP servers for vulnerability scanning, secrets management, compliance, and security tooling.',
   'analytics': 'MCP servers for analytics platforms, metrics APIs, BI tools, and data visualization.',
   'design': 'MCP servers for Figma, design systems, image generation, and creative tooling.',
@@ -35,7 +35,7 @@ const CATEGORY_DESCRIPTIONS: Record<Category, string> = {
   'ecommerce': 'MCP servers for online stores, payment processing, inventory management, and e-commerce APIs.',
   'legal': 'MCP servers for legal document analysis, contract management, and compliance tooling.',
   'browser': 'MCP servers for web browser automation, scraping, and web interaction.',
-  'other': 'MCP servers that span multiple categories or serve specialized use cases — all security-scored.',
+  'other': 'MCP servers that span multiple categories or serve specialized use cases - all security-scored.',
 }
 
 export async function generateStaticParams() {
@@ -54,7 +54,7 @@ export async function generateMetadata({
   const description = CATEGORY_DESCRIPTIONS[category as Category]
 
   return {
-    title: { absolute: `Best ${label} MCP Servers — MCPpedia` },
+    title: { absolute: `Best ${label} MCP Servers - MCPpedia` },
     description,
     openGraph: {
       title: `Best ${label} MCP Servers`,

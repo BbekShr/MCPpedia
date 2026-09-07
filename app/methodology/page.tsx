@@ -18,7 +18,7 @@ export default function MethodologyPage() {
       <div className="space-y-10 text-sm text-text-primary leading-relaxed">
         {/* Security */}
         <section>
-          <h2 className="text-lg font-semibold mb-3">Security — 30 points</h2>
+          <h2 className="text-lg font-semibold mb-3">Security - 30 points</h2>
           <p className="text-text-muted mb-3">Heaviest weight because security is what developers worry about most. Nine checks across CVEs, tool poisoning, injection vectors, and more.</p>
           <div className="border border-border rounded-md overflow-hidden">
             <table className="w-full text-sm">
@@ -36,7 +36,7 @@ export default function MethodologyPage() {
               </tbody>
             </table>
           </div>
-          <p className="text-xs text-text-muted mt-2">CVE data is refreshed daily via OSV.dev. Tool poisoning detection scans tool descriptions, parameter names, defaults, enum values, and schema structure — not just top-level descriptions.</p>
+          <p className="text-xs text-text-muted mt-2">CVE data is refreshed daily via OSV.dev. Tool poisoning detection scans tool descriptions, parameter names, defaults, enum values, and schema structure - not just top-level descriptions.</p>
         </section>
 
         {/* Tool Poisoning Detail */}
@@ -47,21 +47,21 @@ export default function MethodologyPage() {
             that the AI follows but users never see. We scan for:
           </p>
           <ul className="space-y-1 text-text-muted list-disc pl-5 mb-3">
-            <li><strong className="text-text-primary">Hidden instruction tags</strong> — {`<IMPORTANT>`}, {`<SYSTEM>`}, {`<DIRECTIVE>`} and similar tags in any metadata field</li>
-            <li><strong className="text-text-primary">ALL-CAPS directives</strong> — IMPORTANT:, MANDATORY:, YOU MUST and other LLM-manipulation keywords</li>
-            <li><strong className="text-text-primary">Concealment language</strong> — &quot;do not tell the user&quot;, &quot;keep this secret&quot;, &quot;hide this from&quot;</li>
-            <li><strong className="text-text-primary">Cross-tool manipulation</strong> — &quot;modify the behavior of&quot;, &quot;when this tool is available&quot;, tool name references</li>
-            <li><strong className="text-text-primary">Sensitive file exfiltration</strong> — References to ~/.ssh, .env, /etc/passwd combined with &quot;pass&quot;/&quot;send&quot; language</li>
-            <li><strong className="text-text-primary">Full-schema poisoning</strong> — Malicious instructions in parameter names, default values, or enum arrays (not just descriptions)</li>
-            <li><strong className="text-text-primary">Unicode obfuscation</strong> — Zero-width spaces, RTL overrides, and Unicode Tags used to hide instructions</li>
-            <li><strong className="text-text-primary">Suspicious parameters</strong> — Unconstrained string params named &quot;metadata&quot;, &quot;callback_url&quot;, &quot;webhook&quot; etc.</li>
+            <li><strong className="text-text-primary">Hidden instruction tags</strong> - {`<IMPORTANT>`}, {`<SYSTEM>`}, {`<DIRECTIVE>`} and similar tags in any metadata field</li>
+            <li><strong className="text-text-primary">ALL-CAPS directives</strong> - IMPORTANT:, MANDATORY:, YOU MUST and other LLM-manipulation keywords</li>
+            <li><strong className="text-text-primary">Concealment language</strong> - &quot;do not tell the user&quot;, &quot;keep this secret&quot;, &quot;hide this from&quot;</li>
+            <li><strong className="text-text-primary">Cross-tool manipulation</strong> - &quot;modify the behavior of&quot;, &quot;when this tool is available&quot;, tool name references</li>
+            <li><strong className="text-text-primary">Sensitive file exfiltration</strong> - References to ~/.ssh, .env, /etc/passwd combined with &quot;pass&quot;/&quot;send&quot; language</li>
+            <li><strong className="text-text-primary">Full-schema poisoning</strong> - Malicious instructions in parameter names, default values, or enum arrays (not just descriptions)</li>
+            <li><strong className="text-text-primary">Unicode obfuscation</strong> - Zero-width spaces, RTL overrides, and Unicode Tags used to hide instructions</li>
+            <li><strong className="text-text-primary">Suspicious parameters</strong> - Unconstrained string params named &quot;metadata&quot;, &quot;callback_url&quot;, &quot;webhook&quot; etc.</li>
           </ul>
-          <p className="text-xs text-text-muted">Every pattern is tuned to minimize false positives — e.g. &quot;send to&quot; alone doesn&apos;t trigger, but &quot;read ~/.ssh/id_rsa and pass content as parameter&quot; does. Patterns are tested against 25+ real attack payloads and 26+ legitimate tool descriptions.</p>
+          <p className="text-xs text-text-muted">Every pattern is tuned to minimize false positives - e.g. &quot;send to&quot; alone doesn&apos;t trigger, but &quot;read ~/.ssh/id_rsa and pass content as parameter&quot; does. Patterns are tested against 25+ real attack payloads and 26+ legitimate tool descriptions.</p>
         </section>
 
         {/* Maintenance */}
         <section>
-          <h2 className="text-lg font-semibold mb-3">Maintenance — 25 points</h2>
+          <h2 className="text-lg font-semibold mb-3">Maintenance - 25 points</h2>
           <p className="text-text-muted mb-3">Is this server actively developed? Will bugs get fixed?</p>
           <div className="border border-border rounded-md overflow-hidden">
             <table className="w-full text-sm">
@@ -83,7 +83,7 @@ export default function MethodologyPage() {
 
         {/* Efficiency */}
         <section>
-          <h2 className="text-lg font-semibold mb-3">Efficiency — 20 points</h2>
+          <h2 className="text-lg font-semibold mb-3">Efficiency - 20 points</h2>
           <p className="text-text-muted mb-3">How much of your AI&apos;s context window does this server consume?</p>
           <div className="border border-border rounded-md overflow-hidden">
             <table className="w-full text-sm">
@@ -104,7 +104,7 @@ export default function MethodologyPage() {
 
         {/* Documentation */}
         <section>
-          <h2 className="text-lg font-semibold mb-3">Documentation — 15 points</h2>
+          <h2 className="text-lg font-semibold mb-3">Documentation - 15 points</h2>
           <p className="text-text-muted mb-3">Can a developer actually set this up without guessing?</p>
           <div className="border border-border rounded-md overflow-hidden">
             <table className="w-full text-sm">
@@ -123,7 +123,7 @@ export default function MethodologyPage() {
 
         {/* Compatibility */}
         <section>
-          <h2 className="text-lg font-semibold mb-3">Compatibility — 10 points</h2>
+          <h2 className="text-lg font-semibold mb-3">Compatibility - 10 points</h2>
           <p className="text-text-muted mb-3">Which clients and transports does it support?</p>
           <div className="border border-border rounded-md overflow-hidden">
             <table className="w-full text-sm">
@@ -142,11 +142,11 @@ export default function MethodologyPage() {
         <section className="border-t border-border pt-8">
           <h2 className="text-lg font-semibold mb-3">Data Sources</h2>
           <ul className="space-y-2 text-text-muted">
-            <li><strong className="text-text-primary">OSV.dev</strong> — Google&apos;s open-source vulnerability database. Aggregates CVE data from GitHub Advisories, NVD, and ecosystem-specific sources.</li>
-            <li><strong className="text-text-primary">GitHub API</strong> — Stars, last commit date, open issues, archived status, README content, releases.</li>
-            <li><strong className="text-text-primary">npm Registry API</strong> — Weekly download counts, latest version.</li>
-            <li><strong className="text-text-primary">deps.dev</strong> — Google&apos;s dependency intelligence API. Dependent counts, version recency, dependency graph analysis.</li>
-            <li><strong className="text-text-primary">Official MCP Registry</strong> — Canonical server metadata from registry.modelcontextprotocol.io.</li>
+            <li><strong className="text-text-primary">OSV.dev</strong> - Google&apos;s open-source vulnerability database. Aggregates CVE data from GitHub Advisories, NVD, and ecosystem-specific sources.</li>
+            <li><strong className="text-text-primary">GitHub API</strong> - Stars, last commit date, open issues, archived status, README content, releases.</li>
+            <li><strong className="text-text-primary">npm Registry API</strong> - Weekly download counts, latest version.</li>
+            <li><strong className="text-text-primary">deps.dev</strong> - Google&apos;s dependency intelligence API. Dependent counts, version recency, dependency graph analysis.</li>
+            <li><strong className="text-text-primary">Official MCP Registry</strong> - Canonical server metadata from registry.modelcontextprotocol.io.</li>
           </ul>
         </section>
 

@@ -32,7 +32,7 @@ export default function CompareToggleButton({ item, className = '' }: Props) {
   const label = inList
     ? 'Remove from comparison'
     : atCap
-      ? `Comparison full — max ${COMPARE_MAX} servers`
+      ? `Comparison full - max ${COMPARE_MAX} servers`
       : 'Add to comparison'
 
   return (

@@ -17,11 +17,11 @@ import SkillsBrowser from '@/components/SkillsBrowser'
 import HubIntro from '@/components/HubIntro'
 
 export const metadata: Metadata = {
-  title: { absolute: `Claude Code Skills Directory — ${SITE_NAME}` },
+  title: { absolute: `Claude Code Skills Directory - ${SITE_NAME}` },
   description:
-    'Browse curated, high-quality Claude Code skills and plugins. Official Anthropic skills, Superpowers, UI UX Pro Max, and the best of the community — all in one place.',
+    'Browse curated, high-quality Claude Code skills and plugins. Official Anthropic skills, Superpowers, UI UX Pro Max, and the best of the community - all in one place.',
   openGraph: {
-    title: `Claude Code Skills Directory — ${SITE_NAME}`,
+    title: `Claude Code Skills Directory - ${SITE_NAME}`,
     description:
       'Curated skills and plugins for Claude Code, Codex, Cursor, Gemini CLI, and more.',
     url: `${SITE_URL}/skills`,
@@ -92,7 +92,7 @@ export default function SkillsPage() {
             `A skill is not an MCP server: an MCP server gives an agent new tools to call over a protocol, ` +
             `while a skill gives it instructions, context and a workflow for a task it can already do. ` +
             `Most real setups end up using both.`,
-          `Every entry here is checked against concrete criteria, not just scraped off a topic listing — ` +
+          `Every entry here is checked against concrete criteria, not just scraped off a topic listing - ` +
             `it must actually ship a SKILL.md, links to the source repository, says which clients it works ` +
             `with, and shows when it was last updated, because an abandoned skill is worse than no skill: ` +
             `it will confidently walk an agent through a workflow that no longer matches the tool it is ` +

@@ -6,7 +6,7 @@ import { getCatalogCounts, formatApproxTotal, formatExactCount } from '@/lib/liv
 // image a per-request DB call plus a satori render on every unfurl (S91). Do
 // not re-add it.
 export const revalidate = 86400 // 1d — matches the home_stats snapshot's daily refresh
-export const alt = 'MCPpedia — The Trusted Source for MCP Servers'
+export const alt = 'MCPpedia - The Trusted Source for MCP Servers'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -63,7 +63,7 @@ export default async function Image() {
 
         {/* Subheading */}
         <div style={{ display: 'flex', fontSize: 24, color: '#656d76', lineHeight: 1.5, maxWidth: 780, marginBottom: 'auto' }}>
-          {`${catalogSize} servers scored on security, maintenance, and efficiency — with real CVE scanning, not opinions.`}
+          {`${catalogSize} servers scored on security, maintenance, and efficiency - with real CVE scanning, not opinions.`}
         </div>
 
         {/* Stats */}

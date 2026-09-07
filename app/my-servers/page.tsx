@@ -9,7 +9,7 @@ import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'My Servers',
-  description: 'Your saved MCP servers — manage your favorites and export configs.',
+  description: 'Your saved MCP servers - manage your favorites and export configs.',
 }
 
 export default async function MyServersPage() {

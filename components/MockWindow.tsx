@@ -239,7 +239,7 @@ export function TerminalMock({ lines }: { lines: Array<{ prompt?: boolean; text:
 
 export function VSCodeSettingsMock() {
   return (
-    <MockWindow title="VS Code — Settings" dark>
+    <MockWindow title="VS Code - Settings" dark>
       <div className="flex gap-3">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2 px-2 py-1 bg-[#2d2d2d] border border-[#444] rounded">

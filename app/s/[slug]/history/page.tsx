@@ -45,7 +45,7 @@ type TimelineEntry =
     }
 
 function formatValue(v: unknown): string {
-  if (v == null) return '—'
+  if (v == null) return '-'
   if (typeof v === 'string') return v
   return JSON.stringify(v, null, 2)
 }
@@ -163,7 +163,7 @@ export default async function EditHistoryPage({
         <div>
           <h1 className="text-2xl font-semibold text-text-primary">Edit history</h1>
           <p className="text-sm text-text-muted mt-1">
-            Every change to this entry — bots, contributors, and approved proposals.
+            Every change to this entry - bots, contributors, and approved proposals.
           </p>
         </div>
         <Link

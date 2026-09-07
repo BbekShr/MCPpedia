@@ -102,7 +102,7 @@ export async function GET(request: Request) {
 async function renderLanding(): Promise<string> {
   const { totalServers } = await getCatalogCounts()
   const catalogSize = formatApproxTotal(totalServers)
-  const title = `MCPpedia MCP Server — Search ${catalogSize} MCP Servers From Your Agent | MCPpedia`
+  const title = `MCPpedia MCP Server - Search ${catalogSize} MCP Servers From Your Agent | MCPpedia`
   const description =
     `Connect MCPpedia's own MCP server to Claude, Cursor or Claude Code and search, compare and ` +
     `install from ${catalogSize} scored MCP servers without leaving your agent. Free, no auth.`
@@ -172,7 +172,7 @@ Windsurf and you can search, compare and install from ${escapeHtml(catalogSize)}
 without leaving your agent. It is free, needs no API key, and no account.</p>
 
 <h2>Connect it as a remote server</h2>
-<p>Add this to your client's MCP config — the same JSON works in every client, only the file path differs:</p>
+<p>Add this to your client's MCP config - the same JSON works in every client, only the file path differs:</p>
 <pre>{
   "mcpServers": {
     "mcppedia": { "url": "${SITE_URL}/mcp" }
@@ -184,11 +184,11 @@ without leaving your agent. It is free, needs no API key, and no account.</p>
 
 <h2>What it can do</h2>
 <ul>
-  <li><code>search_servers</code> — search the catalog by keyword, category, transport or score</li>
-  <li><code>get_trending</code> — what is gaining stars and downloads this week</li>
-  <li><code>get_server_details</code> — full record for one server, including its security findings</li>
-  <li><code>compare_servers</code> — put two or more candidates side by side</li>
-  <li><code>get_install_config</code> — the exact config block to paste into a client</li>
+  <li><code>search_servers</code> - search the catalog by keyword, category, transport or score</li>
+  <li><code>get_trending</code> - what is gaining stars and downloads this week</li>
+  <li><code>get_server_details</code> - full record for one server, including its security findings</li>
+  <li><code>compare_servers</code> - put two or more candidates side by side</li>
+  <li><code>get_install_config</code> - the exact config block to paste into a client</li>
 </ul>
 <p class="muted">Every server is scored 0-100 across security (CVE scanning, tool poisoning, auth),
 maintenance, documentation, compatibility and token efficiency. See the

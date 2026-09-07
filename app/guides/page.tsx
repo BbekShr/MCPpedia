@@ -5,7 +5,7 @@ import { SITE_URL } from '@/lib/constants'
 
 export const metadata: Metadata = {
   title: 'Guides',
-  description: 'Learn about MCP servers — what they are, how to set them up, and which ones to use.',
+  description: 'Learn about MCP servers - what they are, how to set them up, and which ones to use.',
   alternates: { canonical: `${SITE_URL}/guides` },
 }
 
@@ -16,7 +16,7 @@ export default function GuidesPage() {
     <div className="max-w-3xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-semibold text-text-primary mb-2">Guides</h1>
       <p className="text-text-muted mb-8">
-        Learn about MCP servers — what they are, how to set them up, and which ones to use.
+        Learn about MCP servers - what they are, how to set them up, and which ones to use.
       </p>
 
       <div className="space-y-6">

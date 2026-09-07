@@ -29,7 +29,7 @@ const TYPE_LABELS: Record<Skill['type'], string> = {
 }
 
 export default function SkillCard({ skill }: { skill: Skill }) {
-  const a11yLabel = `${skill.name} — ${skill.tagline}${skill.stars ? `, ${formatNumber(skill.stars)} stars` : ''}`
+  const a11yLabel = `${skill.name} - ${skill.tagline}${skill.stars ? `, ${formatNumber(skill.stars)} stars` : ''}`
   return (
     <article className="group relative block border border-border rounded-md p-4 bg-bg hover:shadow-[var(--shadow-card-hover),inset_3px_0_0_var(--accent)] hover:-translate-y-[1px] transition-all duration-150 focus-within:outline focus-within:outline-2 focus-within:outline-accent">
       <Link

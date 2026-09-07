@@ -24,6 +24,7 @@ import UseCases from '@/components/home/UseCases'
 import Advisories, { type HomeAdvisory } from '@/components/home/Advisories'
 import CategoriesGrid from '@/components/home/CategoriesGrid'
 import ScoringExplainer from '@/components/home/ScoringExplainer'
+import { npmPackageDenylistFilter } from '@/lib/npm-package-denylist'
 
 // Skip prerender at build time — home_stats can hit Postgres statement
 // timeouts (57014) under build-worker concurrency, which would fail the
@@ -38,7 +39,7 @@ export const dynamic = 'force-dynamic'
 export async function generateMetadata(): Promise<Metadata> {
   const { totalServers } = await getCatalogCounts()
   const description = buildSiteDescription(totalServers)
-  const title = `${SITE_NAME} — Find the Right MCP Server`
+  const title = `${SITE_NAME} - Find the Right MCP Server`
   return {
     title,
     description,
@@ -97,7 +98,9 @@ const getHomeData = unstable_cache(
   // v3: unstable_cache persists across deployments and the callback text is
   // unchanged, so a pre-S81 entry holding zeroed use-case/category tiles could
   // otherwise survive up to 24h and hide the fix.
-  ['home-page-data-v3'],
+  // v4: same reasoning for the trending denylist filter — a v3 entry holds the
+  // ten pnpm rows and would keep serving them for 24h after this deploys.
+  ['home-page-data-v4'],
   { revalidate: 86400, tags: ['home-page'] },
 )
 
@@ -126,11 +129,19 @@ async function fetchHomeData() {
       .not('score_total', 'is', null)
       .order('score_total', { ascending: false })
       .limit(3),
+    // Trending. The denylist exclusion is load-bearing, not belt-and-braces:
+    // servers whose npm_package was mis-scraped as toolchain carry that
+    // package's download count, and pnpm's ~177M/wk beats every real MCP
+    // server, so the whole top 10 was one number repeated ten times. The bots
+    // now refuse to write those names and clear the ones already stored, but
+    // that only lands on their next scheduled run; filtering here means the
+    // list is correct from the moment this deploys.
     supabase
       .from('servers')
       .select(CARD_FIELDS)
       .eq('is_archived', false)
       .gt('npm_weekly_downloads', 0)
+      .not('npm_package', 'in', `(${npmPackageDenylistFilter()})`)
       .order('npm_weekly_downloads', { ascending: false })
       .limit(10),
     supabase.rpc('home_use_cases'),
@@ -270,11 +281,11 @@ export default async function HomePage() {
   const homepageFaqs = [
     {
       question: 'What is an MCP server?',
-      answer: 'An MCP (Model Context Protocol) server is a small program that exposes tools, data, or actions to AI assistants like Claude Desktop, Claude Code, Cursor, and Windsurf. Servers can read files, query databases, call APIs, search the web, or trigger workflows — the AI agent calls them just like a function.',
+      answer: 'An MCP (Model Context Protocol) server is a small program that exposes tools, data, or actions to AI assistants like Claude Desktop, Claude Code, Cursor, and Windsurf. Servers can read files, query databases, call APIs, search the web, or trigger workflows - the AI agent calls them just like a function.',
     },
     {
       question: 'How does MCPpedia score MCP servers?',
-      answer: 'Every server gets a 0–100 score across five axes: Security (CVE scanning, tool-poisoning detection, auth requirements, license), Maintenance (commit recency, GitHub stars, open issues, weekly downloads), Documentation (README quality, setup steps, examples, schema coverage), Compatibility (transports and confirmed clients), and Efficiency (total tool tokens, tokens per call). Methodology is fully public.',
+      answer: 'Every server gets a 0-100 score across five axes: Security (CVE scanning, tool-poisoning detection, auth requirements, license), Maintenance (commit recency, GitHub stars, open issues, weekly downloads), Documentation (README quality, setup steps, examples, schema coverage), Compatibility (transports and confirmed clients), and Efficiency (total tool tokens, tokens per call). Methodology is fully public.',
     },
     {
       question: 'Which MCP server should I install first?',
@@ -382,16 +393,19 @@ export default async function HomePage() {
               <div className="flex-1">
                 <h2 className="text-lg font-semibold text-text-primary mb-1">New to MCP?</h2>
                 <p className="text-sm text-text-muted">
-                  MCP lets your AI assistant use real tools — search Slack, manage GitHub, query
+                  MCP lets your AI assistant use real tools - search Slack, manage GitHub, query
                   databases. Set up your first server in 2 minutes.
                 </p>
               </div>
               <div className="flex gap-3 shrink-0">
+                {/* Label matches the nav item pointing at the same route. One
+                    destination reached by two different names ("Get Started" up
+                    top, "What is MCP?" here) reads as two separate places. */}
                 <Link
                   href="/get-started"
                   className="px-4 py-2 text-sm rounded-md bg-accent text-accent-fg hover:bg-accent-hover transition-colors"
                 >
-                  What is MCP?
+                  Get started
                 </Link>
                 <Link
                   href="/setup"

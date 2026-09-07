@@ -43,7 +43,7 @@ export default function ScoreBadge({ score, size = 'sm', showGrade = true }: Pro
   return (
     <span
       className={`inline-flex items-center font-bold rounded border ${styles} ${sizeClasses}`}
-      title={`MCPpedia Score: ${score}/100 (Grade ${grade}) — based on security, maintenance, docs, efficiency, and compatibility`}
+      title={`MCPpedia Score: ${score}/100 (Grade ${grade}) - based on security, maintenance, docs, efficiency, and compatibility`}
       role="img"
       aria-label={`Score ${score} out of 100, grade ${grade}`}
     >

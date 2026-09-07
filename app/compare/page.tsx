@@ -4,7 +4,7 @@ import { SITE_URL } from '@/lib/constants'
 import { getComparisonPairs, type ComparisonPair } from '@/lib/comparison-pairs'
 
 export const metadata: Metadata = {
-  title: 'Compare MCP Servers — Side-by-Side Comparisons',
+  title: 'Compare MCP Servers - Side-by-Side Comparisons',
   description: 'Compare MCP servers side-by-side. See scores, security, tools, downloads, and compatibility for the top MCP servers.',
   alternates: {
     canonical: `${SITE_URL}/compare`,
