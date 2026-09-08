@@ -36,13 +36,26 @@ export async function POST(request: Request) {
 
   const { server_id, verified } = parsed.data
 
-  const { error } = await supabase
+  // Authed client: the servers UPDATE policy is role-gated
+  // (20260417210403_tighten_admin_rls.sql:18-26) and a USING-clause exclusion is
+  // zero rows, not an error. Prove the write landed before the audit row below
+  // records a change that never happened.
+  //
+  // The gate above already asserted the exact roles that policy requires, so
+  // zero rows here means no server carries this id — 404, not another 403 to be
+  // confused with the "Insufficient permissions" one.
+  const { data: updated, error } = await supabase
     .from('servers')
     .update({ verified })
     .eq('id', server_id)
+    .select('id')
 
   if (error) {
     return NextResponse.json({ error: 'Failed to update' }, { status: 500 })
+  }
+
+  if (!updated || updated.length === 0) {
+    return NextResponse.json({ error: 'No server with that id — nothing was updated' }, { status: 404 })
   }
 
   // Audit row must go through the service-role client: the `edits` INSERT
