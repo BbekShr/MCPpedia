@@ -1,5 +1,31 @@
 [
   {
+    "slug": "2026-09-08-this-week-in-mcp-2-257-new-servers-and-the-rise-of-verificat",
+    "title": "This Week in MCP: 2,257 New Servers and the Rise of Verification Tools",
+    "description": "37,836 MCP servers and counting — this week's standouts pair record growth with a new wave of tools built to catch AI agents lying.",
+    "hook": "37,836 MCP servers now exist, and this week the fastest-scoring newcomers weren't scrapers or automators — they were built specifically to catch AI agents making things up.",
+    "date": "2026-09-08",
+    "tags": [
+      "weekly",
+      "ecosystem",
+      "new-servers"
+    ],
+    "category": "weekly-roundup",
+    "featuredServers": [
+      "io-github-arcmira-arcmira",
+      "io-github-drexthealpha-knos",
+      "io-github-wolfe-jam-mcp-context-card",
+      "reverify",
+      "agent-brain",
+      "trustabl-cursor",
+      "io-github-aliengineering-byte-resilireplay",
+      "io-github-arhancanli-canli-validation-mcp",
+      "ai-inite-inite-visibility",
+      "io-github-forgemeshlabs-gov-transparency-mcp"
+    ],
+    "readingTime": 4
+  },
+  {
     "slug": "2026-09-03-two-high-severity-pnpm-cves-turn-install-into-arbitrary-file",
     "title": "Two High-Severity pnpm CVEs Turn Install Into Arbitrary File Write",
     "description": "CVE-2026-82392 and CVE-2026-82393 let attacker-controlled lockfiles or tarball manifests write files outside node_modules, affecting the Arcmira MCP server.",
