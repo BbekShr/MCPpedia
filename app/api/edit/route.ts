@@ -64,9 +64,23 @@ export async function POST(request: Request) {
   // stored `profiles.edits_approved` counter: that counter was forgeable through
   // the stale profiles UPDATE policy (S23), and
   // 20260725000000_fix_profiles_privilege_escalation.sql:209-211 names this very
-  // gate as the door that forgery opened. A filtered count is un-forgeable under
-  // every RLS state, so this no longer depends on whether that migration is
-  // applied. Authed client on purpose: the `edits` SELECT policy is
+  // gate as the door that forgery opened. Deriving it moves the trust question
+  // off `profiles` — but NOT out of RLS's hands: the count is only as
+  // un-forgeable as the `edits` INSERT policy, because a user who can insert
+  // their own `edits` rows can mint whatever this counts. Pinning
+  // `status = 'pending'` on that policy is what makes trust unmintable: the only
+  // `edits` UPDATE policy requires role IN ('editor','admin','maintainer')
+  // (20260417210403_tighten_admin_rls.sql:28-37), so a non-privileged user
+  // cannot flip their own pending row to 'approved' afterwards. Pinning
+  // `reviewed_by IS NULL` on top is defence-in-depth rather than the load-bearing
+  // half — it keeps the discriminator this count filters on out of the
+  // inserter's hands, so the gate survives a future loosening of that UPDATE
+  // policy. 20260908000000_restore_security_hardening.sql section 2 pins both.
+  // Until it lands, production pins NEITHER — 20260610000000 was recorded in the
+  // migration ledger but never executed, leaving the original
+  // `auth.uid() = user_id` check live — so this count is forgeable today, by
+  // inserting rows with status='approved' and a non-null `reviewed_by` (S101).
+  // Authed client on purpose: the `edits` SELECT policy is
   // `using (true)` (20260402000000_initial_schema.sql:316-317) so nothing is
   // RLS-filtered here, the predicate is scoped to this user so the count stays
   // complete even if that policy is later tightened to owner-only, and it keeps
@@ -108,8 +122,11 @@ export async function POST(request: Request) {
 
   // The insert must go through the service-role client when the row is
   // 'approved': the `edits` INSERT policy pins `auth.uid() = user_id AND
-  // status = 'pending'` (20260610000000_security_hardening.sql:28-35), so an
-  // authed insert of an approved row is RLS-denied. The pending path stays on
+  // status = 'pending' AND reviewed_by IS NULL`
+  // (20260908000000_restore_security_hardening.sql section 2 — NOT
+  // 20260610000000, which declared the weaker two-column version and never
+  // executed), so an authed insert of an approved row is RLS-denied once that
+  // migration lands, and is merely unused before it. The pending path stays on
   // the authed client so ordinary proposals keep going through RLS. Unlike the
   // best-effort audit insert in admin/archive, this one is load-bearing — the
   // route returns the row and needs `edit.id` — so its error stays fatal. No
