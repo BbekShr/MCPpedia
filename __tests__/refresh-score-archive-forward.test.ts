@@ -114,7 +114,8 @@ async function postRefresh() {
 // than one `servers` update and their order is an implementation detail.
 const serversUpdates = () => calls.filter(c => c.table === 'servers' && c.op === 'update')
 const payloads = () => serversUpdates().map(c => c.args[0] as Record<string, unknown>)
-const metadataPayload = () => payloads().find(p => 'health_checked_at' in p)!
+const metadataPayloads = () => payloads().filter(p => 'health_checked_at' in p)
+const metadataPayload = () => metadataPayloads()[0]
 
 /** `isArchived` is positional argument 4 in both scorers (lib/scoring.ts:843, :1151). */
 const ARCHIVED_ARG = 4
@@ -147,10 +148,13 @@ describe('POST /api/server/[slug]/refresh-score — archive forward only', () =>
 
     const res = await postRefresh()
     expect(res.status).toBe(200)
-    // Teeth: without this the absence assertion below could pass on an early bail.
+    // Teeth: without this the assertions below could pass on an early bail.
     expect(serversUpdates()).toHaveLength(2)
 
-    expect(metadataPayload()).not.toHaveProperty('is_archived')
+    // Teeth: `metadataPayload()` is an index into a filtered list, so a payload that
+    // stopped carrying `is_archived` at all would read `undefined` and pass silently.
+    expect(metadataPayloads()).toHaveLength(1)
+    expect(metadataPayload().is_archived).toBe(true)
     expect(scanSecurityArgs.current[ARCHIVED_ARG]).toBe(true)
     expect(scoreMaintenanceArgs.current[ARCHIVED_ARG]).toBe(true)
   })
@@ -162,19 +166,25 @@ describe('POST /api/server/[slug]/refresh-score — archive forward only', () =>
     expect(res.status).toBe(200)
     expect(serversUpdates()).toHaveLength(2)
 
+    // Teeth: `metadataPayload()` is an index into a filtered list, so a payload that
+    // stopped carrying `is_archived` at all would read `undefined` and pass silently.
+    expect(metadataPayloads()).toHaveLength(1)
     expect(metadataPayload().is_archived).toBe(true)
     expect(scanSecurityArgs.current[ARCHIVED_ARG]).toBe(true)
     expect(scoreMaintenanceArgs.current[ARCHIVED_ARG]).toBe(true)
   })
 
-  it('writes no is_archived at all when both sides say live', async () => {
+  it('writes is_archived false when both sides say live', async () => {
     setUp(false, false)
 
     const res = await postRefresh()
     expect(res.status).toBe(200)
     expect(serversUpdates()).toHaveLength(2)
 
-    expect(metadataPayload()).not.toHaveProperty('is_archived')
+    // Teeth: `metadataPayload()` is an index into a filtered list, so a payload that
+    // stopped carrying `is_archived` at all would read `undefined` and pass silently.
+    expect(metadataPayloads()).toHaveLength(1)
+    expect(metadataPayload().is_archived).toBe(false)
     expect(scanSecurityArgs.current[ARCHIVED_ARG]).toBe(false)
     expect(scoreMaintenanceArgs.current[ARCHIVED_ARG]).toBe(false)
   })
@@ -186,6 +196,9 @@ describe('POST /api/server/[slug]/refresh-score — archive forward only', () =>
     expect(res.status).toBe(200)
     expect(serversUpdates()).toHaveLength(2)
 
+    // Teeth: `metadataPayload()` is an index into a filtered list, so a payload that
+    // stopped carrying `is_archived` at all would read `undefined` and pass silently.
+    expect(metadataPayloads()).toHaveLength(1)
     expect(metadataPayload().is_archived).toBe(true)
     expect(scanSecurityArgs.current[ARCHIVED_ARG]).toBe(true)
     expect(scoreMaintenanceArgs.current[ARCHIVED_ARG]).toBe(true)
