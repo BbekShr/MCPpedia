@@ -1122,3 +1122,74 @@ the main checkout's `.env.local` with `node` + `pg`; there is no `psql` on this 
   row needs `.select()` (or `count`) and an explicit zero-row check. This is a DISTINCT trap from
   the S58 fact "the Supabase JS client resolves rather than throws on a failed write" — there, an
   error exists and is ignored; here, there is no error at all.
+
+## Parsing migrations to check them: the traps (2026-09-08, cycle 2026-09-07-e, M19)
+
+`scripts/check-schema-drift.ts` compares migration INTENT against the LIVE catalog by
+DEFINITION — `pg_policies.qual`/`.with_check` per policy, `pg_proc.proconfig` per SECURITY
+DEFINER function, plus columns, RLS flags and triggers. Run it with `npm run check:schema-drift`;
+the recorded decision on where it should run lives in `docs/SCHEMA_DRIFT.md`. Every trap below
+was hit while building it, and each one makes a checker fail **green** — reporting clean because
+it saw nothing, which is worse than no checker at all.
+
+- **`pg-query-emscripten`'s module instance degrades after ~28 `parse()` calls.** The wasm
+  function table goes stale and every later call throws `Ma[F[…]] is not a function`. Measured
+  precisely: file 29 of 56 failed, and a fresh `await require('pg-query-emscripten').default()`
+  parsed that same file standalone. A multi-file parse MUST re-instantiate and retry, or it
+  silently loses half its input. This extends the M14 recipe recorded above, which captured the
+  async-factory trap but not the per-instance ceiling.
+- **`CreateFunctionStmt.options[].DefElem.arg` is a WRAPPED node, not the payload.**
+  `SET search_path` arrives as `{VariableSetStmt:{name,args}}` and `SECURITY DEFINER` as
+  `{Boolean:{boolval}}`. Reading `.arg.name` / `.arg.boolval` directly yields `undefined` — which
+  silently means "no search_path declared, not SECURITY DEFINER", so the check reports clean for
+  every function. This was live in the first production run: 32 function intents, 0 function
+  findings, while all three `20260610000000` functions were genuinely drifted.
+- **Postgres deparse rewrites `IN` into `= ANY (ARRAY[…])`**, which alone produced 9 false
+  positives on 9 clean policies. `AEXPR_IN` (whose `rexpr` is `{List:{items}}`) and
+  `AEXPR_OP_ANY` (whose `rexpr` is `{A_ArrayExpr:{elements}}`) must fold onto one node. The cast
+  and paren noise everyone anticipates is the easy half; the three that actually bite are this
+  `IN`→`ANY` rewrite, sub-select aliasing (`FROM profiles profiles_1`), and a dropped `public.`
+  prefix.
+- **`stmt_location` is a BYTE offset and includes the preceding comment block.** These migrations
+  contain em dashes, so slicing a JS string misaligns every statement; slice a Buffer. And because
+  the comment block is inside the slice, selecting a statement by substring can match the PREVIOUS
+  one when its trailing comment mentions the name — identify by AST field (`funcname`), never by
+  substring.
+- **`pg.parse()` leaves BOTH kinds of `$$` body opaque, `do $$ … $$` included.** A migration whose
+  DDL lives inside a `DO` block for idempotence gets essentially zero coverage from a whole-file
+  parse — it reports one `DoStmt` and moves on, so a typo in a constraint definition passes
+  untouched. Re-parse the extracted body with `parsePlpgsql`, wrapped in a throwaway
+  `create function probe(<REAL param list>) returns <REAL type> language plpgsql as $$…$$;`. The
+  real parameter list matters: a no-arg wrapper false-fails an assignment statement with
+  `"p_threshold" is not a known variable` while reads of the same identifier fall through as
+  column refs — so it breaks exactly the clamp/normalisation patches worth checking.
+- **Always run a deliberately-broken negative control, and break the GRAMMAR.** Both parsers do
+  return real error objects, so a null error is only meaningful once you have watched them reject
+  garbage.
+
+## Constraints and the auth trigger (2026-09-08, cycle 2026-09-07-d, S102/S103)
+
+- **A CHECK constraint on any column `handle_new_user` writes is a SIGNUP OUTAGE, not a rejected
+  write.** That function (`20260421020000_username_rules.sql:46-84`) copies provider metadata
+  verbatim — `full_name`/`name` → `display_name`, `avatar_url`/`picture` → `avatar_url`,
+  `user_name` → `github_username` — with no truncation, trim or scheme check, and fires
+  `after insert on auth.users` (`20260402000000_initial_schema.sql:268-270`). A violation aborts
+  the auth transaction and GoTrue returns "Database error saving new user"; no route-side code can
+  recover. A 100-char `display_name` bound would have permanently blocked signup for anyone whose
+  GitHub name exceeds it (GitHub allows 255). Bound such columns ABOVE the provider's own maximum,
+  or only alongside truncation inside that function. `bio` is the one column of the four with no
+  writer at all, so it is the only one that can be bounded tight.
+- **`->>` on an empty JSON string yields `''`, not NULL.** So `avatar_url like 'https://%'` is a
+  signup hazard rather than merely an ineffective control — on top of being case-sensitive and
+  satisfied by `https://attacker.example/track.gif`. Dropped for that reason.
+- **`ADD CONSTRAINT … CHECK NOT VALID` does not buy a weaker lock** — ACCESS EXCLUSIVE in both
+  forms; `SHARE UPDATE EXCLUSIVE` belongs to `VALIDATE CONSTRAINT`. And `supabase db push` applies
+  each file as ONE implicit transaction (`migrate.yml:112`), so a failing `VALIDATE` rolls the
+  whole file back — the two-step form leaves nothing "in place and enforced". Its only real
+  benefit is that a failure names the offending constraint.
+- **The hardened `profiles` self-UPDATE policy IS present in the migration files.**
+  `20260610000000:55-68` creates it and nothing ever drops it (`20260725000000:55` drops only the
+  differently-named `"…except role"`). So any environment built from `supabase/migrations/**` — a
+  `db reset`, CI, a fresh project — HAS it, and `username`/`display_name`/`avatar_url`/`bio`/
+  `github_username` are self-writable there today. Only PRODUCTION lacks it. Never state one half
+  without the other.
