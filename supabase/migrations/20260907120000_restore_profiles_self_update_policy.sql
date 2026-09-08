@@ -1,9 +1,14 @@
+-- BACKLOG ID NOTE (2026-09-08): this row and its siblings were renumbered from
+-- S98/S99/S100 to S106/S107/S108 after PR #157 merged three unrelated rows under
+-- the original IDs while this migration was in an unmerged PR. Commit messages and
+-- the PR body predate the renumber and still say S98/S99 — they mean S106/S107.
+--
 -- Restore the `profiles` self-UPDATE policy that production has been missing
 -- since 2026-07-29, which has RLS-filtered every non-admin's /api/username call.
 --
 -- SUPERSEDES §4 of 20260610000000_security_hardening.sql:51-68. That file is
 -- recorded in supabase_migrations.schema_migrations with all 13 of its
--- statements, but NONE of them are in effect in production (BACKLOG S98 — a
+-- statements, but NONE of them are in effect in production (BACKLOG S106 — a
 -- direct read of prod `pg_policies` on 2026-09-07 shows the hardened policy
 -- absent). Applied migrations are never edited in this repo, so a correction is
 -- a new, later-versioned file; precedent 20260725000000:62-65 ("that file is
@@ -26,10 +31,10 @@
 --
 -- VERSION ORDERING: .github/workflows/migrate.yml:107-112 deliberately withholds
 -- `--include-all`, so `supabase db push` will only apply a version that sorts
--- AFTER the last applied one. If BACKLOG S98's sibling migration merges before
+-- AFTER the last applied one. If BACKLOG S106's sibling migration merges before
 -- this one, THIS FILE MUST BE RENAMED to a later version before merge.
 --
--- SCOPE — deliberately narrow. S98's other five sections (the `servers` INSERT
+-- SCOPE — deliberately narrow. S106's other five sections (the `servers` INSERT
 -- pin, the `edits` INSERT status pin, the `publisher_claims` INSERT policy, the
 -- `discussions` UPDATE WITH CHECK, and the three SECURITY DEFINER search_path
 -- pins) are NOT in this file. `supabase db push` applies a file atomically, so
@@ -166,7 +171,7 @@ create policy "Users can update own profile"
     -- `using (true)` (20260402000000_initial_schema.sql:307-308) — so it is a
     -- no-op. It exists so that narrowing that SELECT policy DENIES self-updates
     -- outright, instead of silently permitting a write that NULLs all six
-    -- frozen columns. The whole S98/S99 incident is a documented assumption
+    -- frozen columns. The whole S106/S107 incident is a documented assumption
     -- that did not hold, so this one is enforced rather than asserted in prose.
     and exists (select 1 from public.profiles p where p.id = auth.uid())
   );
@@ -181,7 +186,7 @@ create policy "Users can update own profile"
 -- not re-execute a version already recorded in
 -- supabase_migrations.schema_migrations (docs/org-memory/codebase.md:1022-1029).
 -- It therefore CANNOT detect future drift of any kind. It also cannot detect
--- the S98 class — "recorded in schema_migrations but never executed" — because
+-- the S106 class — "recorded in schema_migrations but never executed" — because
 -- it lives inside the very thing that did not execute. The detector for BOTH is
 -- BACKLOG M19's standing definition-level sweep plus the post-merge
 -- `pg_policies` read.
@@ -207,7 +212,7 @@ begin
 
   if v_total <> 2 then
     raise exception
-      'S99: expected exactly 2 permissive UPDATE policies on public.profiles (this self policy + "Admins can update any profile"), observed %. A third permissive UPDATE policy is ORed in and the WEAKEST decides.',
+      'S107: expected exactly 2 permissive UPDATE policies on public.profiles (this self policy + "Admins can update any profile"), observed %. A third permissive UPDATE policy is ORed in and the WEAKEST decides.',
       v_total;
   end if;
 end
