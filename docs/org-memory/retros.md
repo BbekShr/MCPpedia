@@ -523,3 +523,37 @@ into codebase.md so future mutation-check plans budget one mutation per assertio
 
 The review board earned its cost this cycle: four lenses, one CONFIRMED defect in the fix, one CONFIRMED
 vacuous-test hole, and three out-of-diff findings filed as S98/S99/S100 rather than folded into the diff.
+
+## 2026-09-07-b — S107 (restore the `profiles` self-update policy)
+
+The review board earned its keep twice, and both times against something I had already read and
+approved.
+
+I read the migration before dispatching the board and did not notice that its `do $$` assertion
+block was three tautologies — every condition guaranteed by the `drop`+`create` 40 lines above it.
+Worse, I accepted its comment's claim that the block would catch a future weaker-sibling regression.
+It cannot: a migration's DO block runs once at apply and never again. Both reviewers found it
+independently; the correctness lens supplied the decisive reason. **A guard that asserts what the
+file just did is not a guard, and I should treat "this block validates itself" as a claim needing
+refutation rather than a comfort.**
+
+The second one is mine end to end. I told the architect that `is not distinct from` was "already the
+repo idiom, `20260725000000:240`". Line 240 uses `is distinct from` — a different operator doing
+change-detection in a `WHERE`. `is not distinct from` had zero prior uses in the repo. The error
+originated in a research brief, I promoted it to a dispatch without checking, the architect put it
+in the plan, and the implementer wrote it into a comment that will outlive all of us. Four stages,
+no friction, because a grep for one operator silently matches the other. The operator was still the
+right call — only the justification was fabricated.
+
+Process that worked: dispatching correctness and security as separate adversarial lenses produced
+genuinely different findings (security found the reserved-username and unbounded-column exposure;
+correctness found the tautology and the citation error) with only partial overlap. Filing S102/S103
+rather than fixing them kept a P1 outage fix from growing into a security refactor — both are
+RESTORED pre-existing gaps, not defects this diff invents, and saying so plainly in the PR is more
+honest than quietly widening the scope.
+
+Process that did not: the recorded gate baseline in `codebase.md` was stale by 5 warnings and 292
+tests, and two separate agents spent effort flagging it as a possible regression. Fixed in this PR.
+That is the third cycle running in which a stale org record cost an agent real time (M11, M2, now
+this), and the pattern is always the same — a figure or a premise recorded as fact, true when
+written, never re-measured.

@@ -1258,3 +1258,59 @@ it saw nothing, which is worse than no checker at all.
 - **`createAdminClient` (`lib/supabase/admin.ts:15-25`) returns an UNTYPED client** (no `Database` generic),
   so `.update()` payload shapes and `.select('*').single()` rows get zero `tsc` coverage. Conditional-spread
   payloads in API routes are checked by route tests or by nothing.
+
+## Migrations: what a gate can and cannot tell you (2026-09-07, cycle 2026-09-07-b, S107)
+
+- **Every gate in CLAUDE.md §2 is structurally blind to `supabase/migrations/**`.** Typecheck, lint,
+  test and build never read the directory, so a `.sql`-only PR is green **by construction**. QA
+  stated the consequence exactly: all 513 tests pass identically if the migration file is empty, or
+  if it contains a policy with the opposite meaning. "Gates green" must never be reported as
+  verification of a migration's effect — only that the diff is inert on the app.
+- **A `do $$ … raise exception` block at the foot of a migration is almost always a tautology.** It
+  can only assert the state its own preceding statements just created. The first draft of
+  `20260907120000` asserted three things the `drop`+`create` 40 lines above already guaranteed, so
+  none of its three exceptions was reachable. A migration-embedded guard is non-vacuous ONLY if it
+  asserts something the file's own DDL does not determine — here, a COUNT of **all** permissive
+  UPDATE policies on the table (which catches a third alias the two `DROP … IF EXISTS` cannot name).
+- **And it runs exactly once.** `supabase db push` never re-executes a recorded version, so such a
+  block cannot detect *future* drift no matter what it asserts — the first draft's comment claimed
+  it would turn a future weaker-sibling regression into a red `migrate` job, which is false. It also
+  cannot detect the S106 class ("recorded but never applied"), because it lives inside the thing that
+  did not execute. Both detectors live outside the file: M19's standing sweep and a post-apply
+  `pg_policies` read.
+- **`IS NOT DISTINCT FROM` is NOT a NULL-safe drop-in for `=` in a policy that freezes a column.**
+  Against a scalar subquery returning zero rows the subquery is NULL, so `col IS NOT DISTINCT FROM
+  NULL` reduces to `col IS NULL` — which *permits* a crafted all-NULL write rather than denying it.
+  `=` fails closed there; `IS NOT DISTINCT FROM` fails open. It is still the right operator (it
+  avoids the NULL-lockout trap at `20260725000000:216-219`), but the fail-closed property must be
+  enforced structurally — `20260907120000` adds `and exists (select 1 from public.profiles p where
+  p.id = auth.uid())` as a final conjunct — not merely asserted in a comment.
+- **`IS NOT DISTINCT FROM` had ZERO uses in `supabase/migrations/**` before 2026-09-07.** The repo's
+  actual idiom is the *different* operator `IS DISTINCT FROM`, used for change-detection in backfill
+  `WHERE`s and trigger bodies (`20260725000000:240`, `20260804120000:116-121`). A grep for one
+  silently matches the other, which is how a false "already the repo idiom" claim survived a
+  research brief, a CEO dispatch and an architect plan before a reviewer caught it. **Grep for the
+  exact operator string, not a substring of it.**
+- **`SECURITY DEFINER` confers no RLS exemption.** The exemption comes from the function's OWNER
+  being the TABLE owner, absent `FORCE ROW LEVEL SECURITY` — and no table in
+  `supabase/migrations/**` sets that (grep, repo-wide, exit 1). So every counter-maintaining trigger
+  (`apply_karma_event` `20260421030000:59-67`, `sync_servers_submitted`/`sync_edits_approved`
+  `20260421000000:13,59`, `sync_discussions_count` `20260725000000:93`) depends on the owner bypass.
+  Adding `FORCE ROW LEVEL SECURITY` to `profiles` would run them with `auth.uid()` NULL, make both
+  UPDATE policies' `USING` false, and stop karma and counter sync **silently** — a `USING`
+  filter-out is not an error.
+- **`pg_query`'s offline parser is a real gate for `.sql` diffs, with two traps.**
+  `npm install --no-save pg-query-emscripten@5.1.0` (outside the repo, so the lockfile stays clean);
+  `const pg = await require('pg-query-emscripten').default()` — **`.default` is an ASYNC factory
+  that must be called AND awaited**. `pg.parse()` gives statement structure but treats `$$…$$` as an
+  opaque literal, so it proves NOTHING about a `do` block body; that body must go through
+  `parsePlpgsql` separately, **wrapped** in a throwaway
+  `create function probe() returns void language plpgsql as $$<body>$$;` — a bare
+  `declare…begin…end` fails with a misleading `syntax error at or near "int"` that reads like a real
+  defect. Always run a deliberately-broken negative control: both parsers do return real error
+  objects, so a null error is only meaningful once you have seen them reject garbage.
+- The parse is also useful structurally, not just for syntax: it confirmed the added `exists`
+  conjunct landed as conjunct **[7]** of a single flat 8-way AND inside the `CreatePolicyStmt`'s
+  `with_check`, rather than detaching into its own statement — with the six frozen columns visible
+  as `AEXPR_NOT_DISTINCT` nodes. It still does no name resolution: `pg_policies`, `auth.uid()` and
+  every column were never resolved against a catalog.
