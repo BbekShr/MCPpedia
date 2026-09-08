@@ -1193,3 +1193,68 @@ it saw nothing, which is worse than no checker at all.
   `db reset`, CI, a fresh project — HAS it, and `username`/`display_name`/`avatar_url`/`bio`/
   `github_username` are self-writable there today. Only PRODUCTION lacks it. Never state one half
   without the other.
+## 2026-09-07 — cycle deep (S52: refresh-score archive-forward)
+
+- **`is_archived` has SIX writers and exactly ONE can clear it.** Archive-only: `bots/update-metadata.ts:191`,
+  `bots/check-broken-links.ts:89`, `bots/detect-duplicates.ts:385`, and now
+  `app/api/server/[slug]/refresh-score/route.ts:100`. Insert-only: `app/api/submit/route.ts:159`,
+  `bots/discover.ts:403`. The only writer that can set it back to `false` is
+  `app/api/admin/archive/route.ts:46`. Note this is an app-surface statement, not repo-wide:
+  production un-archives have actually been done twice by direct script
+  (`scripts/fix-open-issues.ts:41-60`, incidents #136/#91).
+- **The dominant archive source is a heuristic, not a human.** `bots/update-metadata.ts:160-162` archives on
+  `repo.archived || (daysSinceCommit > 730 && stars === 0 && downloads === 0)` — a condition that stops
+  holding when a repo revives, and which nothing ever re-evaluates. Anything treating `is_archived` as
+  ground truth for "this project is dead" is wrong. Filed as S98.
+- **`servers.is_archived` is NULLABLE and NULL is invisible sitewide.** `boolean default false` at
+  `supabase/migrations/20260402000000_initial_schema.sql:44`, but typed non-nullable at `lib/types.ts:37`.
+  There are 48 `.eq('is_archived', false)` call sites and NULL matches none of them, while
+  `bots/compute-scores.ts:105` (`is_archived.not.is.true`) treats the same row as LIVE — so a NULL row is
+  scanned weekly yet renders nowhere. `bots/extract-install-info.ts:136-138` documents deliberately not
+  filtering on the column for this reason. **Consequence for writers:** omitting an `is_archived` key to
+  "leave the value alone" also drops the NULL→false normalization, so prefer writing the computed value.
+- **A no-op column write is free, so "don't rewrite it, you'll pollute the audit log" is a false constraint.**
+  The `servers_audit` trigger inserts a `server_changes` row only when `v_old is distinct from v_new`
+  (`supabase/migrations/20260416010000_server_changes_audit.sql:85-89`), and
+  `servers_touch_content_updated_at` (`20260804120000:120`) is guarded the same way. Unchanged values cost
+  one trigger evaluation and zero rows.
+- **`refresh-score` mutates the in-memory row it just wrote, and that row is the scoring input.**
+  `app/api/server/[slug]/refresh-score/route.ts:109` feeds `scanSecurity` (`:132`) and `scoreMaintenance`
+  (`:167`); `is_archived` is worth 14 points (`lib/scoring.ts:820` −4, `:1180` −10). Because `:184` stamps
+  `score_computed_at`, a divergence between the persisted column and the mirrored value is NOT self-healing —
+  `bots/compute-scores.ts` will not revisit an archived row for `ARCHIVED_STALE_DAYS = 30` (`:98,105-106`).
+  Any fix to a column in that update payload must change the mirror in the same edit.
+- **CORRECTION to a prior record: `bots/compute-scores.ts` does NOT skip advisory reconcile for archived rows.**
+  Its stale filter deliberately includes them on the 30-day tier (`:105-106`) and the reconcile at `:410-425`
+  runs for every row it updates, with the wider `closeOn: 'success-or-pending'` policy. Any durability
+  argument for advisory cleanups resting on "archived rows are skipped since PR #145" needs re-deriving.
+- **`bots/update-metadata.ts:113`'s `if (s.is_archived) continue` is inside the star-attribution map build,**
+  not the main update loop — archived rows ARE still fetched (`:64`, no filter) and updated by that bot.
+- **`/api/server/[slug]/refresh-score` has ZERO in-repo callers.** No button, no fetch under `app/**` or
+  `components/**`; `app/admin/page.tsx` posts only to `/api/admin/*`. It is an out-of-band maintainer
+  endpoint bounded by `rateLimitUser(user.id, 'refresh-score', 30, 60_000)` (`route.ts:53`), so behaviour
+  changes there have no UI blast radius — and no operator-visible affordance either.
+- **Route handlers ARE directly testable here, unlike bots.** `__tests__/helpers/route-supabase-stub.ts`
+  (`createRouteSupabaseHarness`) plus `vi.mock` of `@/lib/supabase/{server,admin}`, `@/lib/rate-limit`,
+  `@/lib/github` is the established pattern (`__tests__/refresh-score-advisories.test.ts`). The M17
+  "extract a pure helper into `lib/` first" workaround applies to `bots/**` only; reaching for it on a route
+  buys nothing and leaves the call site unpinned.
+- **`__tests__/refresh-score-advisories.test.ts` is structurally pinned to `github_url: null` +
+  `npm_package: null`** — that is what keeps `servers` updates singular for its four `toHaveLength(1)` teeth,
+  and its `vi.mock('@/lib/github')` is file-scoped and returns `null`. Any refresh-score test needing the
+  GitHub-metadata branch belongs in a NEW file.
+- **GATE BASELINES, re-measured 2026-09-07 (the recorded ones were badly stale).** `npm test` is
+  **517 tests / 41 files** in ~3.5s (this file previously said 221/16). `npm run lint` is **0 errors /
+  6 warnings** (previously recorded as 1): `app/admin/page.tsx:246`, `bots/lib/blog-planning.ts:22`, and
+  four `@next/next/no-location-assign-relative-destination` in
+  `components/{CategoryEditor,ClaimServer,CommunityVerify,FavoriteButton}.tsx`. A cycle using "1 warning"
+  as its regression check reads five pre-existing warnings as new findings.
+- **Env-less build signature, for comparison:** the empty-string recipe (NOT `env -u`, which re-enables
+  `.env.local`) yields `.next/prerender-manifest.json` `routes` with **0** `/s/` and **0** `/compare/`
+  entries while still holding 301 `routes` and 9 `dynamicRoutes`. "301 routes prerendered" is NOT evidence
+  that env leaked — only the `/s/` and `/compare/` counts are.
+- **Vitest aborts a test at its FIRST failing `expect`.** A mutation check predicting "case N fails on
+  assertions A *and* B" will only ever observe A. Pinning B needs its own mutation that leaves A green.
+- **`createAdminClient` (`lib/supabase/admin.ts:15-25`) returns an UNTYPED client** (no `Database` generic),
+  so `.update()` payload shapes and `.select('*').single()` rows get zero `tsc` coverage. Conditional-spread
+  payloads in API routes are checked by route tests or by nothing.

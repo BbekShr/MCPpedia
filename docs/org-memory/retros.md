@@ -495,3 +495,31 @@ I was standing on, moving S99's local pointer to main. Nothing was lost because 
 already pushed, but `&&` was the whole difference. Also: agents running `npm install --no-save` in
 the shared scratchpad root pruned my `pg` install twice mid-session; isolating DB scripts in their
 own subdirectory with their own `node_modules` fixed it.
+## 2026-09-07 — cycle deep (S52: refresh-score archive-forward)
+
+Friction, and it was the plan's own reasoning rather than any agent or rule. The architect chose to OMIT
+the `is_archived` key unless archiving, justified by "echoing the prior value can write a literal NULL" —
+and the justification was false of the value actually being echoed (`isArchived` is an OR, and
+`null || false === false`). Two lenses caught it independently and from opposite directions: correctness
+called the stated rationale hypothetical, regression showed the omission dropped a NULL→false
+normalization the old code performed, on a column where NULL is invisible to all 48
+`.eq('is_archived', false)` listings. Neither lens argued omission was BETTER — one said its reason was
+imaginary, the other said its effect was harmful — which is what made the adjudication easy. Worth naming
+as a pattern: **a plan that justifies a shape with a hazard should be checked against whether the hazard
+is reachable from the value in hand.** The CEO approved the shape without doing that check, and only the
+board caught it.
+
+Second, smaller: the plan's verification section carried stale baselines ("1 lint warning", and a sibling
+suite of 8 tests that is actually 9), inherited from `docs/org-memory/codebase.md` records that were
+stale by a wide margin (221 tests recorded vs 517 actual). The implementer reported the drift rather than
+quietly matching it, which is the right behaviour, but a cycle that had trusted the recorded numbers would
+have read five pre-existing lint warnings as new findings. Baselines are now re-measured in codebase.md.
+Filed nothing for this — the correction IS the fix.
+
+Third, a technique note that cost a mutation: **Vitest aborts a test at its first failing `expect`**, so
+the plan's prediction that one case would fail on "both its payload and its scoring assertions" was
+unobservable. Isolating the second assertion needed its own mutation that left the first green. Carried
+into codebase.md so future mutation-check plans budget one mutation per assertion they intend to pin.
+
+The review board earned its cost this cycle: four lenses, one CONFIRMED defect in the fix, one CONFIRMED
+vacuous-test hole, and three out-of-diff findings filed as S98/S99/S100 rather than folded into the diff.

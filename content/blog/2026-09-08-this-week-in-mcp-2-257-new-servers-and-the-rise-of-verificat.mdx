@@ -1,0 +1,74 @@
+---
+title: "This Week in MCP: 2,257 New Servers and the Rise of Verification Tools"
+description: "37,836 MCP servers and counting — this week's standouts pair record growth with a new wave of tools built to catch AI agents lying."
+hook: "37,836 MCP servers now exist, and this week the fastest-scoring newcomers weren't scrapers or automators — they were built specifically to catch AI agents making things up."
+date: "2026-09-08"
+tags: ["weekly","ecosystem","new-servers"]
+category: "weekly-roundup"
+featuredServers: ["io-github-arcmira-arcmira","io-github-drexthealpha-knos","io-github-wolfe-jam-mcp-context-card","reverify","agent-brain","trustabl-cursor","io-github-aliengineering-byte-resilireplay","io-github-arhancanli-canli-validation-mcp","ai-inite-inite-visibility","io-github-forgemeshlabs-gov-transparency-mcp"]
+---
+Another 2,257 servers landed in the registry this week. The catalog now sits at **37,836 MCP servers** — which is either a sign of an ecosystem in its adolescent growth spurt, or a sign that "MCP server" has become the easiest possible wrapper for anything with an API key. Probably both.
+
+<StatGrid>
+<Stat value="37,836" label="Total Servers" detail="Cataloged on MCPpedia" />
+<Stat value="2,257" label="New This Week" detail="Net additions" />
+<Stat value="91" label="Top New Score" detail="Three servers tied" />
+</StatGrid>
+
+What's actually worth your attention this week isn't the volume — it's a cluster of new entrants built around a theme that keeps resurfacing: **agents lie, and someone has to check their work.**
+
+---
+
+## The new servers: verification is having a moment
+
+Three of this week's highest-scoring newcomers all tied at **91/100**, and two of them are explicitly about stopping AI from making things up.
+
+### 1. Reverify — the loudest pitch of the week
+
+[Reverify](/s/reverify) already ships with **1,002 GitHub stars**, which is an unusual amount of traction for a server that just showed up in the registry. Its premise: the model proposes, deterministic tools decide, and every claim gets checked against ground truth with evidence attached. Five tools, score of 91. If you've ever watched an agent confidently cite a function that doesn't exist, you understand the market this is chasing.
+
+<PullQuote>Reverify's entire thesis is that reverse engineering is the proving ground — if grounding survives a decompiled binary, it survives your codebase.</PullQuote>
+
+### 2. Agent Brain — memory with an OAuth layer
+
+[Agent Brain](/s/agent-brain) takes a different angle on the same problem: give agents persistent, local-first memory instead of re-deriving context every session. It combines hybrid search with GraphRAG, ships an MCP server with OAuth 2.1, and plugs into Claude Code, OpenCode, and Codex. **118 stars, 16 tools, score of 90** — the tool count alone suggests this is trying to be a full memory platform, not a single-purpose utility.
+
+### 3. Trustabl Cursor — scoring the scorers
+
+[Trustabl Cursor](/s/trustabl-cursor) brings a safety-and-reliability scanner into Cursor: point it at your agents, tools, or MCP servers, and it returns a production-readiness score with severity-ranked findings. Six tools, score of 90, 17 stars. Notably meta for a registry that also assigns 0–100 scores to servers — but the instinct is sound. As more of daily work routes through MCP tool calls, "is this thing safe to point an agent at" becomes its own product category.
+
+<Callout type="info">
+Also worth a look: [io.github.arcmira/arcmira](/s/io-github-arcmira-arcmira) (score 91) indexes YouTube and podcast transcripts for search, and [gov-transparency-mcp](/s/io-github-forgemeshlabs-gov-transparency-mcp) turns congressional stock trades, federal contracts, and lobbying records into queryable tools — "watch the watchers," as the tagline puts it.
+</Callout>
+
+Not every new server this week is chasing trust and verification, but the theme is dense enough — Reverify, Agent Brain, Trustabl Cursor, plus [resilireplay](/s/io-github-aliengineering-byte-resilireplay) running deterministic reliability tests against MCP servers themselves — that it looks less like coincidence and more like the ecosystem correcting for a year of "agent said it worked, ship it" energy.
+
+---
+
+<SectionLabel>Trending This Week</SectionLabel>
+
+## Star gains: browser automation still eats the leaderboard
+
+If new-server activity is about trust, the trending chart is still overwhelmingly about **control**. Six of this week's top ten movers by star gain are scraping, browsing, or workflow-automation tools.
+
+<ScoreBreakdown>
+<ScoreRow label="Scrapling" points="+380 stars" description="79,306 total · score 92 · stealth HTTP, real browsers, Cloudflare bypass" />
+<ScoreRow label="browser-use" points="+380 stars" description="113,066 total · score 61 · controls a real Chrome browser end to end" />
+<ScoreRow label="Headroom" points="+318 stars" description="69,427 total · score 95 · compresses tool output 60–95% before it hits the LLM" />
+<ScoreRow label="Ripwire" points="+220 stars" description="1,098 total · score 41 · deterministic repo maps for coding agents" />
+<ScoreRow label="n8n" points="+118 stars" description="203,640 total · score 59 · 400+ integration workflow automation" />
+</ScoreBreakdown>
+
+[Scrapling](/s/scrapling) and [browser-use](/s/com-browser-use-browser-use) tied for the week's biggest star gain at **+380** each, but they're solving different problems: Scrapling is about not getting blocked, browser-use is about actually completing multi-step tasks in a real browser (filling forms, booking flights). Between them they're closing in on **200,000 combined GitHub stars** — this is not a niche.
+
+The more interesting mover is [Headroom](/s/headroom), up **318 stars** and sitting at a **95 score**, the highest of anything on this week's trending list. Its pitch — 60-95% fewer tokens reaching the LLM with the same answers — addresses a cost problem that gets worse, not better, as agents chain more tool calls together. A server whose entire job is making other MCP servers cheaper to talk to is a good bet to keep climbing.
+
+<Callout type="warning">
+Score-to-popularity mismatch of the week: [Ripwire](/s/ripwire) gained 220 stars on a **41** score, and [n8n](/s/n8n) gained 118 on a **59**. Stars measure attention, not the underlying quality bar MCPpedia scores for — worth remembering before you install on reputation alone.
+</Callout>
+
+Rounding out the list: [Apify Mcp Server](/s/apify-mcp-server) (+121, score 95) gives access to thousands of pre-built scrapers, while [Konnect](/s/konnect) (+59) is the week's oddest riser — a Rust-native KiCAD plugin exposing 171 PCB design tools to Claude. Electronics design meeting MCP is not a trend yet. It's one data point. But it's a fun one.
+
+---
+
+**The takeaway:** browser control and scraping remain the ecosystem's gravity well, but the fastest-scoring new entrants this week weren't scrapers — they were verification and safety tooling. If 37,836 servers has taught the market anything, it's that quantity was never the bottleneck. Trust was.
