@@ -82,6 +82,8 @@ export default function NotificationBell({ userId }: { userId: string }) {
       })
 
     const now = new Date().toISOString()
+    // Fire-and-forget: zero rows updated is the normal case (nothing unread),
+    // so there is nothing to prove here and no result to report.
     supabase
       .from('notifications')
       .update({ read_at: now })

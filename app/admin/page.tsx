@@ -257,11 +257,12 @@ export default function AdminPage() {
   }
 
   async function toggleArchived(serverId: string, current: boolean) {
-    await fetch('/api/admin/archive', {
+    const res = await fetch('/api/admin/archive', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ server_id: serverId, archive: !current, reason: 'Admin action' }),
     })
+    if (!res.ok) return
     // Update locally instead of refetching
     setServers(prev => prev.map(s => s.id === serverId ? { ...s, is_archived: !current } : s))
   }
