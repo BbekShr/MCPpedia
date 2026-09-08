@@ -5,7 +5,7 @@
 -- !! MERGE ORDER: PR #156 (20260907120000) MUST LAND FIRST !!
 -- =====================================================================
 --
--- 20260907120000_restore_profiles_self_update_policy.sql (S99) fixes a LIVE
+-- 20260907120000_restore_profiles_self_update_policy.sql (S107) fixes a LIVE
 -- outage — 16 accounts cannot update their own profile row. If THIS file
 -- merges to `main` first, the remote high-water mark in
 -- `supabase_migrations.schema_migrations` becomes 20260908000000 and
@@ -50,7 +50,7 @@
 -- Sections 1, 2, 3, 5 and 6 of 20260610000000, renumbered 1-5 here (each
 -- section names its original). Section 4 of that file (the `profiles` UPDATE
 -- policy) is DELIBERATELY EXCLUDED: it already shipped as
--- 20260907120000_restore_profiles_self_update_policy.sql (S99). Restating it
+-- 20260907120000_restore_profiles_self_update_policy.sql (S107). Restating it
 -- here would be a duplicate create of a policy another in-flight migration
 -- owns.
 --
