@@ -9,10 +9,13 @@
  * - `trackClient` — record which client (`authed`/`admin`) made each call. Off by
  *   default so a recorded call deep-equals `{ table, op, args }`.
  * - `keyByWriteOp` — key a builder's resolved value by the write verb it saw
- *   (`edits:insert`) instead of `edits:await`. Needed only when ONE builder sees a
- *   write verb before a `.single()`, i.e. an `insert().select().single()` chain
- *   whose read would otherwise collide with a plain `:single` read of the same
- *   table; turning it on changes existing keys.
+ *   (`edits:insert`) instead of `edits:await`. Needed whenever one request touches
+ *   the same table with two operations that would otherwise share a key: an
+ *   `insert().select().single()` chain colliding with a plain `:single` read
+ *   (`edits` in `edit-auto-approve.test.ts:57`), or a read and a write that both
+ *   land on `:await` (`profiles` in `username-zero-row.test.ts` — POST
+ *   /api/username head-counts then updates, so without the flag the update
+ *   inherits the count probe's queued rows). Turning it on changes existing keys.
  *
  * A key that is NOT queued resolves differently per terminator, mirroring real
  * PostgREST: `.single()` misses resolve `data: null` (no rows), a plain `await`
@@ -94,6 +97,7 @@ export function createRouteSupabaseHarness(
       update(...args: unknown[]) { writeOp = 'update'; return builder._record('update', args) },
       upsert(...args: unknown[]) { writeOp = 'upsert'; return builder._record('upsert', args) },
       eq(...args: unknown[]) { return builder._record('eq', args) },
+      neq(...args: unknown[]) { return builder._record('neq', args) },
       in(...args: unknown[]) { return builder._record('in', args) },
       not(...args: unknown[]) { return builder._record('not', args) },
       single() { return resolveFor(key('single'), true) },

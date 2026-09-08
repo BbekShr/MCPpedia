@@ -298,8 +298,15 @@ export default function EditServerPage() {
         if (submittableChanges.some(c => c.name === 'description')) {
           update.description_source = 'human'
         }
-        const { error: err } = await supabase.from('servers').update(update).eq('id', server.id)
+        // The browser client is RLS-scoped and a row excluded by the servers
+        // UPDATE policy's USING clause returns no error, just zero rows — which
+        // would route the admin to the server page as if the edit had saved.
+        const { data: saved, error: err } = await supabase
+          .from('servers').update(update).eq('id', server.id).select('id')
         if (err) throw new Error(err.message)
+        if (!saved || saved.length === 0) {
+          throw new Error('Nothing was saved — your account may no longer have permission to edit this server.')
+        }
       } else {
         // One /api/edit POST per field — moderators decide each independently.
         // The shared edit summary becomes the per-row reason.
