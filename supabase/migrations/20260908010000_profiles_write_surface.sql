@@ -28,7 +28,7 @@
 --     everyone"` (SELECT) and `"Admins can update any profile"` (UPDATE), with
 --     no self-update policy at all. The reason is that `20260610000000` is
 --     recorded in `supabase_migrations.schema_migrations` but was never
---     executed (BACKLOG S98; PR #156 restores it).
+--     executed (BACKLOG S106; PR #156 restores it).
 --
 -- ============================================================================
 -- MERGE ORDER WARNING — read before merging this PR.
