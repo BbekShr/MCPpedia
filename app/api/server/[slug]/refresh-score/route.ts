@@ -72,13 +72,26 @@ export async function POST(
   if (server.github_url) {
     repoMeta = await fetchRepoMetadata(server.github_url)
     if (repoMeta) {
+      // Archive forward only — never unarchive here. GitHub reporting the repo live
+      // does not mean this catalog row is live: rows are archived by duplicate merges
+      // (bots/detect-duplicates.ts:385), broken-link sweeps (bots/check-broken-links.ts:88)
+      // and admins, and GitHub knows about none of those reasons. Writing
+      // `repoMeta.archived` straight through resurrected a merged duplicate on one
+      // maintainer click and handed back the 14 points `is_archived` costs
+      // (lib/scoring.ts:820, :1180). Same invariant as bots/update-metadata.ts:164-166;
+      // /api/admin/archive stays the one place that can clear the flag.
+      const isArchived = server.is_archived || repoMeta.archived
+
       await supabase
         .from('servers')
         .update({
           github_stars: repoMeta.stars,
           github_last_commit: repoMeta.lastCommit,
           github_open_issues: repoMeta.openIssues,
-          is_archived: repoMeta.archived,
+          // Omitted rather than re-written when not archiving: `servers.is_archived` is
+          // nullable in SQL (20260402000000_initial_schema.sql:44) but non-nullable in
+          // lib/types.ts:37, so echoing the prior value can write a literal NULL.
+          ...(repoMeta.archived ? { is_archived: true } : {}),
           health_checked_at: new Date().toISOString(),
         })
         .eq('id', server.id)
@@ -87,7 +100,7 @@ export async function POST(
       server.github_stars = repoMeta.stars
       server.github_last_commit = repoMeta.lastCommit
       server.github_open_issues = repoMeta.openIssues
-      server.is_archived = repoMeta.archived
+      server.is_archived = isArchived
     }
   }
 
