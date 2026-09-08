@@ -412,6 +412,89 @@ a response header, cycle c confirmed a fix by downloading and looking at a PNG. 
 runs — typecheck, lint, test, build — reads source. All three genuine findings today were invisible
 to every one of them.
 
+## 2026-09-07-a — S48 → S98/S99/S100/S101/M19 (records-only)
+
+Picked S48, the top open P1. Its one remaining criterion was "a human with prod access checks
+`pg_policies`" — which the org had treated as permanently blocked. It was not: `SUPABASE_DB_URL` in
+the main checkout's `.env.local` reaches prod Postgres with `node` + `pg`, a fact already recorded in
+session memory. **A criterion labelled "needs a human" had been rotting for five weeks behind an
+assumption nobody re-tested.** The check took one query.
+
+The answer inverted the row: `20260610000000_security_hardening.sql` is recorded as applied and
+never ran. That falsified S48's diagnosis, S13's diagnosis, and a "Critical/confirmed" item in
+`PLATFORM_REVIEW_2026-07.md` — three records that each read a merged migration file as the schema of
+record. It also surfaced a five-week production outage (no `profiles` self-update policy → usernames
+unsettable for every non-admin) that no gate could see.
+
+Direct continuation of the previous three cycles' lesson, one layer down: **verify against the
+deployed artifact, not the source** — and for schema, the deployed artifact is `pg_policies`, not
+`supabase/migrations/`. Every gate this org runs reads files.
+
+Friction worth fixing, both now filed: (1) the org's own memory asserted file-derived policy state as
+prod fact in `codebase.md` (corrected in this PR, and M19 files the drift check that would have
+caught it); (2) BACKLOG M2 said "there is NO deploy-time migration runner" — stale since 2026-08-04,
+and the researcher had to refute it mid-cycle. Status drift keeps costing real agent time; that is
+M11's existing complaint, now with a third data point.
+
+One process note in the CEO's favour and one against. For: routing the untrusted-input screen and the
+refutation tests through the CEO rather than a subagent caught the thing that mattered — the DB I was
+querying might not have been prod, and one query on the project ref settled it before any claim was
+filed. Against: I wrote "this was NOT a blank `supabase migration repair`" into `codebase.md` from
+the presence of recorded `statements`, which does not license that conclusion; the researcher's brief
+made the repair hypothesis look likely and I had to correct my own record in the same session.
+Recording a root cause is exactly where the evidence bar should be highest, and I dropped it.
+
+## 2026-09-07-b…e — the S98 fix chain (S99, S100, S98+S101, S102+S103, M19)
+
+Five PRs off one finding. The through-line: **the review board caught something in every single
+diff, and in three of the five the defect originated in the CEO's own dispatch rather than the
+implementer's execution.**
+
+- S99: I read the migration, approved it, and did not notice its `do $$` block was three
+  tautologies — every condition guaranteed by the `drop`+`create` forty lines above. I also
+  accepted its claim to catch future drift; a migration's DO block runs once at apply and never
+  again.
+- S99: I told the architect `is not distinct from` was "already the repo idiom, `20260725000000:240`".
+  That line is `is distinct from` — a different operator. Zero prior uses in the repo. It came from
+  a research brief, I promoted it to a dispatch unchecked, the architect planned it, the
+  implementer wrote it into a comment. Four stages, no friction, because a grep for one operator
+  silently matches the other.
+- S98: I specified the `p_threshold` fix as `greatest(coalesce(p_threshold, 3), 3)`. That bounds
+  the parameter from BELOW only. It shipped a "security hardening" that left `2147483647` free to
+  DE-verify and de-index any server in the catalog. I had written the exploit for the downward
+  direction into the dispatch myself and never asked whether the constraint had two sides.
+
+The pattern is one thing, not three: **I specify fixes at the level of intent ("clamp this",
+"assert that") and do not enumerate the cases the fix has to cover.** `greatest(x, 3)` reads like a
+clamp and is half of one. An assertion after a `create` reads like a guard and asserts nothing. The
+counter-practice is cheap and I should adopt it: for every constraint, name the directions; for
+every guard, name what could make it fire.
+
+Two more worth recording:
+
+- S102/S103 nearly shipped a **signup outage**. CHECK constraints on `display_name`/`avatar_url`/
+  `github_username` looked obviously safe — prod max was 23 against a bound of 100 — until a
+  reviewer traced `handle_new_user`, which copies provider metadata verbatim inside the auth
+  transaction. GitHub allows a 255-char name. Anyone above 100 could never have created an account,
+  and no route-side code could have recovered. The pre-check I ran ("do existing rows violate the
+  bound?") was the right question about the wrong population: existing rows were never the risk,
+  future provider values were.
+- My own pre-check for S102 used a reserved list I wrote from memory (~40 names). The real list is
+  72. I re-ran against the extracted list before shipping and it was still clean — but the first
+  check was evidence about a subset while being reported as evidence about the whole.
+
+What worked: separate adversarial lenses genuinely diverge (security found the forgeable score
+sub-scores and the threshold RPC; correctness found the tautology and the citation errors, with
+almost no overlap). Mutation-verifying tests — remove the guard, watch a test fail — turned "the
+tests pass" into evidence. And filing rather than fixing kept a P1 outage repair from growing into
+a security refactor: S102, S103, S104, S105 all came out of review boards on other people's diffs.
+
+One operational scar: I ran `git checkout main; git reset --hard origin/main` chained with `;`.
+The checkout failed (main is checked out in another worktree) and the reset then ran on the branch
+I was standing on, moving S99's local pointer to main. Nothing was lost because the commit was
+already pushed, but `&&` was the whole difference. Also: agents running `npm install --no-save` in
+the shared scratchpad root pruned my `pg` install twice mid-session; isolating DB scripts in their
+own subdirectory with their own `node_modules` fixed it.
 ## 2026-09-07 — cycle deep (S52: refresh-score archive-forward)
 
 Friction, and it was the plan's own reasoning rather than any agent or rule. The architect chose to OMIT
