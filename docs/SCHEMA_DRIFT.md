@@ -140,7 +140,7 @@ Remove that one file from the input and the check is **clean, exit 0**, across 4
 32 functions, 54 added columns, 25 RLS tables and 15 triggers, with zero NOTES. So the eight
 findings are attributable to one migration, not to a noisy comparison.
 
-PRs #156, S98 and S102/S103 are open and will fix those effects in production once merged.
+PRs #156, S106 and S102/S103 are open and will fix those effects in production once merged.
 **A clean run after they land is the success condition for this check** — and the first time
 this repo will have a mechanical answer to "is production what we think it is".
 
