@@ -27,6 +27,7 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { config } from 'dotenv'
 import { Client } from 'pg'
 
@@ -46,7 +47,7 @@ let pgQuery: PgQuery | null = null
 // `.default` is an ASYNC module factory, and a single instance goes bad after a
 // few dozen parses (the wasm function table goes stale and calls throw
 // "… is not a function"), so re-instantiate and retry rather than lose a file.
-async function parseSql(sql: string): Promise<ParseResult> {
+export async function parseSql(sql: string): Promise<ParseResult> {
   if (!pgQuery) pgQuery = await pgQueryFactory()
   try {
     return pgQuery.parse(sql)
@@ -95,12 +96,41 @@ function asMembership(node: unknown): PgNode | null {
 }
 
 /**
+ * Fold `x IS NOT DISTINCT FROM y` and `NOT (x IS DISTINCT FROM y)` — and the
+ * mirror pair, `x IS DISTINCT FROM y` and `NOT (x IS NOT DISTINCT FROM y)` —
+ * onto one order-free node, the way `asMembership` folds `IN` / `= ANY`.
+ *
+ * Postgres NEVER deparses the un-negated spelling: a policy written with
+ * `role is not distinct from (select …)` comes back out of `pg_policies` as
+ * `NOT (role IS DISTINCT FROM ( SELECT …))`, so the migration's own spelling
+ * never appears in the catalog and an unfolded comparison reports every such
+ * conjunct as missing. `IS DISTINCT FROM` is symmetric like `=`, so its
+ * operands are sorted too.
+ */
+function asDistinct(node: PgNode): PgNode | null {
+  let inner = node.A_Expr as PgNode | undefined
+  let inverted = false
+  const be = node.BoolExpr as { boolop?: string; args?: unknown[] } | undefined
+  if (be?.boolop === 'NOT_EXPR' && be.args?.length === 1) {
+    inner = (be.args[0] as PgNode | undefined)?.A_Expr as PgNode | undefined
+    inverted = true
+  }
+  if (inner?.kind !== 'AEXPR_DISTINCT' && inner?.kind !== 'AEXPR_NOT_DISTINCT') return null
+  return {
+    Distinct: {
+      distinct: (inner.kind === 'AEXPR_DISTINCT') !== inverted,
+      operands: [JSON.stringify(canon(inner.lexpr)), JSON.stringify(canon(inner.rexpr))].sort(),
+    },
+  }
+}
+
+/**
  * Reduce an expression tree to a form where a difference means a real difference.
  * Postgres deparses `status = 'pending'` back as `(status = 'pending'::text)` and
  * table-qualifies columns inside sub-selects, so comparing the raw strings — or
  * even the raw trees — cries wolf on every single policy.
  */
-function canon(node: unknown): unknown {
+export function canon(node: unknown): unknown {
   if (Array.isArray(node)) return node.map(canon)
   if (node === null || typeof node !== 'object') return node
   const obj = node as PgNode
@@ -111,6 +141,10 @@ function canon(node: unknown): unknown {
     const fields = ((obj.ColumnRef as PgNode).fields as unknown[] | undefined) ?? []
     return { ColumnRef: { fields: [canon(fields[fields.length - 1])] } }
   }
+
+  // Checked before BoolExpr, because the `NOT (…)` spelling IS a BoolExpr.
+  const distinct = asDistinct(obj)
+  if (distinct) return distinct
 
   // AND/OR are commutative and associative; so are `=` and `<>`. Sorting the
   // operands means a reordered predicate is not reported as a changed one.
@@ -175,25 +209,47 @@ function minLoc(node: unknown, best = NO_LOCATION): number {
   return best
 }
 
-/** Cut at the first `)` that closes a paren we never opened — i.e. `USING (`'s. */
-function cutAtUnmatchedParen(text: string): string {
+/**
+ * Cut at the first `)` that closes a paren we never opened — i.e. `USING (`'s —
+ * and drop SQL comments along the way. A `--` block that sits INSIDE the
+ * parenthesised clause is still inside the slice, so without this the last
+ * conjunct of a commented policy comes out with a paragraph of prose glued to
+ * it. Comment markers only count outside a string literal, so `'--'` survives.
+ */
+export function cutAtUnmatchedParen(text: string): string {
   let depth = 0
   let inQuote = false
+  let out = ''
   for (let i = 0; i < text.length; i++) {
     const ch = text[i]
     if (inQuote) {
       if (ch === "'") inQuote = false
+      out += ch
+      continue
+    }
+    if (ch === '-' && text[i + 1] === '-') {
+      const nl = text.indexOf('\n', i)
+      if (nl === -1) return out
+      i = nl - 1
+      continue
+    }
+    if (ch === '/' && text[i + 1] === '*') {
+      const end = text.indexOf('*/', i + 2)
+      if (end === -1) return out
+      i = end + 1
+      out += ' '
       continue
     }
     if (ch === "'") inQuote = true
     else if (ch === '(') depth++
-    else if (ch === ';') return text.slice(0, i)
+    else if (ch === ';') return out
     else if (ch === ')') {
-      if (depth === 0) return text.slice(0, i)
+      if (depth === 0) return out
       depth--
     }
+    out += ch
   }
-  return text
+  return out
 }
 
 /**
@@ -319,7 +375,11 @@ async function buildIntent(dir: string): Promise<Intent> {
           table,
           name: policy.policy_name as string,
           cmd: String(policy.cmd_name ?? 'all').toLowerCase(),
-          permissive: policy.permissive !== false,
+          // `=== true`, not `!== false`: libpg_query OMITS the field for
+          // `AS RESTRICTIVE` (it only emits `permissive: true`), so a
+          // `!== false` test can never see a restrictive policy and the
+          // "policy kind" comparison below was unreachable.
+          permissive: policy.permissive === true,
           qual: (policy.qual as PgNode | undefined) ?? null,
           withCheck: (policy.with_check as PgNode | undefined) ?? null,
           file,
@@ -735,9 +795,14 @@ async function main(): Promise<number> {
   return drift.length === 0 ? 0 : 1
 }
 
-main()
-  .then((code) => process.exit(code))
-  .catch((err: unknown) => {
-    console.error('schema drift check could not run:', err instanceof Error ? err.message : err)
-    process.exit(2)
-  })
+// Only the direct `tsx scripts/check-schema-drift.ts` invocation runs the
+// check. The unit test imports the canonicaliser from this file, and importing
+// it must not open a database connection or call process.exit().
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main()
+    .then((code) => process.exit(code))
+    .catch((err: unknown) => {
+      console.error('schema drift check could not run:', err instanceof Error ? err.message : err)
+      process.exit(2)
+    })
+}
