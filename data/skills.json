@@ -2039,5 +2039,164 @@
     "install": {
       "manual": "Browse plugins at code.claude.com/docs/en/plugins, or run /plugin marketplace add anthropics/claude-plugins-official in Claude Code."
     }
+  },
+  {
+    "slug": "ecc",
+    "name": "ECC",
+    "tagline": "The agent harness performance optimization system. Skills, instincts, memory, security, and research-first development for Claude Code, Codex, Opencode, Cursor and beyond.",
+    "repo": "affaan-m/ECC",
+    "github_url": "https://github.com/affaan-m/ECC",
+    "homepage_url": "https://ecc.tools",
+    "author": "affaan-m",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 254816,
+    "last_updated": "2026-09-09",
+    "category": "research",
+    "tags": ["ai-agents", "anthropic", "claude", "claude-code", "developer-tools", "llm"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone affaan-m/ECC and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "oh-my-openagent",
+    "name": "Oh My Openagent",
+    "tagline": "OmO: Just type \"mass ulw\" keyword with your prompt. Now you are the master of graph engineering.",
+    "repo": "code-yeongyu/oh-my-openagent",
+    "github_url": "https://github.com/code-yeongyu/oh-my-openagent",
+    "homepage_url": "https://omo.dev",
+    "author": "code-yeongyu",
+    "author_type": "community",
+    "license": "NOASSERTION",
+    "stars": 68846,
+    "last_updated": "2026-09-09",
+    "category": "other",
+    "tags": ["ai", "ai-agents", "anthropic", "chatgpt", "claude", "claude-skills"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone code-yeongyu/oh-my-openagent and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "claude-code-best-practice",
+    "name": "Claude Code Best Practice",
+    "tagline": "from vibe coding to agentic engineering - practice makes claude perfect",
+    "repo": "shanraisshan/claude-code-best-practice",
+    "github_url": "https://github.com/shanraisshan/claude-code-best-practice",
+    "homepage_url": "https://linkedin.com/in/shanraisshan",
+    "author": "shanraisshan",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 65788,
+    "last_updated": "2026-09-09",
+    "category": "development-workflow",
+    "tags": ["agentic-ai", "agentic-coding", "agentic-engineering", "agentic-workflow", "ai", "ai-agents"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone shanraisshan/claude-code-best-practice and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "archify",
+    "name": "Archify",
+    "tagline": "Agent skill for beautiful, verifiable architecture, workflow, sequence, data-flow, and lifecycle diagrams—self-contained HTML with motion and crisp export.",
+    "repo": "tt-a1i/archify",
+    "github_url": "https://github.com/tt-a1i/archify",
+    "homepage_url": "https://tt-a1i.github.io/archify/",
+    "author": "tt-a1i",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 55656,
+    "last_updated": "2026-09-08",
+    "category": "development-workflow",
+    "tags": ["agent-skills", "architecture-as-code", "architecture-diagram", "claude-skill", "code-visualization", "codex"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone tt-a1i/archify and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "cherry-studio",
+    "name": "Cherry Studio",
+    "tagline": "AI productivity studio with smart chat, autonomous agents, and 300+ assistants. Unified access to frontier LLMs",
+    "repo": "CherryHQ/cherry-studio",
+    "github_url": "https://github.com/CherryHQ/cherry-studio",
+    "homepage_url": "https://cherryai.com",
+    "author": "CherryHQ",
+    "author_type": "community",
+    "license": "AGPL-3.0",
+    "stars": 51610,
+    "last_updated": "2026-09-09",
+    "category": "other",
+    "tags": ["agent-skills", "ai-agent", "claude-code", "codex", "deepseek", "deepseek-harness"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone CherryHQ/cherry-studio and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "obsidian-skills",
+    "name": "Obsidian Skills",
+    "tagline": "Agent skills for Obsidian. Teach your agent to use Obsidian CLI and open formats including Markdown, Bases, JSON Canvas.",
+    "repo": "kepano/obsidian-skills",
+    "github_url": "https://github.com/kepano/obsidian-skills",
+    "author": "kepano",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 48066,
+    "last_updated": "2026-06-08",
+    "category": "other",
+    "tags": ["agents", "agentskills", "bases", "claude", "clawdbot", "cli"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone kepano/obsidian-skills and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "librechat",
+    "name": "LibreChat",
+    "tagline": "Enhanced ChatGPT Clone: Features Agents, MCP, Skills, DeepSeek, Anthropic, AWS, OpenAI, Responses API, Azure, Groq, o1, GPT-5, Mistral, OpenRouter, Vertex AI, Gemini, Artifacts, AI model switching, me",
+    "repo": "danny-avila/LibreChat",
+    "github_url": "https://github.com/danny-avila/LibreChat",
+    "homepage_url": "https://librechat.ai/",
+    "author": "danny-avila",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 42959,
+    "last_updated": "2026-09-09",
+    "category": "data",
+    "tags": ["ai", "anthropic", "artifacts", "aws", "azure", "chatgpt"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone danny-avila/LibreChat and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "ai-website-cloner-template",
+    "name": "AI Website Cloner Template",
+    "tagline": "Clone any website with one command using AI coding agents",
+    "repo": "JCodesMore/ai-website-cloner-template",
+    "github_url": "https://github.com/JCodesMore/ai-website-cloner-template",
+    "homepage_url": "https://dsc.gg/jcodesmore",
+    "author": "JCodesMore",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 34099,
+    "last_updated": "2026-08-14",
+    "category": "development-workflow",
+    "tags": ["ai", "ai-agents", "ai-tools", "automation", "boilerplate", "claude"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone JCodesMore/ai-website-cloner-template and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
   }
 ]
