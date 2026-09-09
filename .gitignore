@@ -33,11 +33,15 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
-# claude — local state stays ignored; the org's agents/skills/commands are tracked
+# claude — local state stays ignored; the org's agents/skills/commands/hooks are tracked.
+# settings.json is org config (it wires the hooks); machine-local overrides belong in
+# .claude/settings.local.json, which stays ignored by the .claude/* rule below.
 .claude/*
 !.claude/agents/
 !.claude/commands/
 !.claude/skills/
+!.claude/hooks/
+!.claude/settings.json
 
 # bulk dumps and curated classifications (Stage 2 outputs)
 /data/dumps/

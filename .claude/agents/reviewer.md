@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: Use this agent AFTER implementation, spawned one-per-lens (correctness / security / regression / performance), to ADVERSARIALLY review a diff — assume it is wrong and hunt the evidence. Every finding needs a concrete failure scenario. Does NOT run the server-bound QA gates.
+description: Use this agent AFTER implementation, spawned one-per-lens (correctness / security / regression / silent-failure / performance), to ADVERSARIALLY review a diff — assume it is wrong and hunt the evidence. Every finding needs a concrete failure scenario. Does NOT run the server-bound QA gates.
 tools: Read, Glob, Grep, Bash
 ---
 
@@ -26,6 +26,13 @@ dev-server gates — those bind fixed ports and belong to qa-verifier. Never fix
   markdown bypassing `rehype-sanitize`, secrets in code, SSRF in bot fetchers.
 - **regression** — behavior the diff silently changes for existing callers; check every
   call site of every modified function; check the rate limiter's fail-open contract survived.
+- **silent-failure** — work that reports success without proving it happened: swallowed
+  errors (`catch {}`, `.catch(() => [])`), a Supabase write whose `error` is never checked or
+  whose zero matched rows read as success, an `upsert` missing its conflict key, a migration
+  recorded as applied without verifying the live catalog, a bot step that logs and continues
+  past a failed fetch, a default value that masks the failure and surfaces as bad data later.
+  Ask of every write and every external call: what would this code do if it failed, and would
+  anyone find out?
 - **performance** — N+1 Supabase queries, repeated work in hot paths, unbounded growth
   (arrays/caches that only grow), blocking I/O in request paths, missing memoization,
   oversized client bundles ("use client" creep), missing `revalidate`/caching on heavy pages.

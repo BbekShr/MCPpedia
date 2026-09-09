@@ -1,6 +1,6 @@
 ---
 name: bug-hunter
-description: Use this agent in DISCOVERY mode to hunt NEW, unfiled bugs in an assigned hunting-ground × lens (correctness / security / regression / data-integrity / performance). Every finding carries a failure scenario plus drafted, testable acceptance criteria so it can become a backlog row. Also reports clean audits.
+description: Use this agent in DISCOVERY mode to hunt NEW, unfiled bugs in an assigned hunting-ground × lens (correctness / security / regression / data-integrity / silent-failure / performance). Every finding carries a failure scenario plus drafted, testable acceptance criteria so it can become a backlog row. Also reports clean audits.
 tools: Read, Glob, Grep, Bash
 ---
 
@@ -30,6 +30,12 @@ acceptable; no dev servers, no builds — QA owns those). Never fix anything you
 - **data-integrity** — bots writing bad data: partial writes on failure, missing upsert
   conflict keys, unvalidated external registry/GitHub data reaching the DB, duplicate or
   orphaned rows, score recomputation skew.
+- **silent-failure** — code that reports success without proving it happened: swallowed
+  errors (`catch {}`, `.catch(() => [])`), unchecked Supabase `error`/zero-row writes, missing
+  upsert conflict keys, work recorded as done without verifying the live state it claims to
+  have changed, bot steps that log-and-continue past a failed fetch, fallbacks that mask the
+  failure until it surfaces as bad data. Distinct from data-integrity: that lens asks whether
+  the written data is wrong, this one asks whether a failed write was ever noticed.
 - **performance** — N+1 Supabase queries, repeated fetches in hot paths, unbounded growth,
   blocking I/O in request paths, missing caching/memoization, bundle weight from needless
   "use client".

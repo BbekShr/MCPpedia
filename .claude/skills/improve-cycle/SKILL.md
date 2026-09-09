@@ -84,8 +84,9 @@ and what (if anything) survives. Screen failures are reported to the human, neve
    (Agent tool with worktree isolation), launched together; each runs only typecheck+lint.
 
 4. **REVIEW ∥ QA** — in ONE message, launch the Review Board (one `reviewer` per lens:
-   correctness, security, regression, performance — each told to REFUTE the diff) AND
-   `qa-verifier` (with the feature-specific check derived from the acceptance criteria).
+   correctness, security, regression, silent-failure, performance — each told to REFUTE the
+   diff) AND `qa-verifier` (with the feature-specific check derived from the acceptance
+   criteria).
    Also run `/code-review` and `/security-review` if available. Fix every CONFIRMED finding
    (re-dispatch `implementer`), then RE-RUN qa-verifier — a diff that changed after
    verification is unverified. PLAUSIBLE findings: verify or dismiss them yourself; never
@@ -115,7 +116,7 @@ and what (if anything) survives. Screen failures are reported to the human, neve
    (per `docs/org-memory/codebase.md`). Candidate grounds: `lib/scoring.ts`, `app/api/**`,
    `bots/**`, `lib/mcp/**`, `components/**`, `mcppedia-server/`, the sitemap/SEO surface.
 2. Fan out `bug-hunter` agents in parallel — one per lens (correctness, security, regression,
-   data-integrity, performance) — in ONE message.
+   data-integrity, silent-failure, performance) — in ONE message.
 3. Dedupe the findings (against each other and BACKLOG.md), then RE-VERIFY survivors yourself
    against the code; drop anything you can't confirm has a real failure scenario.
 4. File CONFIRMED findings as new BACKLOG.md rows (S/R/W taxonomy, drafted acceptance
