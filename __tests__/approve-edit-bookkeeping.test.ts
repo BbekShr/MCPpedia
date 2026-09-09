@@ -31,10 +31,13 @@ vi.mock('@/lib/rate-limit', () => ({
   rateLimitUser: async () => ({ allowed: true, remaining: 199, resetAt: Date.now() + 1000 }),
 }))
 // The real module calls next/cache and reads data/comparison-pairs.json off disk.
-vi.mock('@/lib/revalidate', () => ({
-  revalidateServer: () => {},
-  revalidateProfile: () => {},
+// Spies, not no-ops: the double-failure branch must purge the ISR entry for the
+// server it already changed, and that is only observable here.
+const revalidate = vi.hoisted(() => ({
+  revalidateServer: vi.fn(),
+  revalidateProfile: vi.fn(),
 }))
+vi.mock('@/lib/revalidate', () => revalidate)
 
 /** `edit_id` is `z.string().uuid()` — anything else 400s before the role gate. */
 const EDIT_ID = '00000000-0000-4000-8000-00000000ed17'
@@ -71,7 +74,11 @@ describe('POST /api/admin/approve-edit — bookkeeping write is checked', () => 
       'authed:edits:update': [{ id: EDIT_ID }],
       'admin:edits:update': [{ id: EDIT_ID }],
       'authed:servers:single': { slug: 'example' },
+      // The `servers` write is checked now, so it must return the row it matched.
+      'admin:servers:update': [{ id: SERVER_ID, slug: 'example' }],
     }
+    revalidate.revalidateServer.mockClear()
+    revalidate.revalidateProfile.mockClear()
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })
   afterEach(() => {
@@ -87,6 +94,12 @@ describe('POST /api/admin/approve-edit — bookkeeping write is checked', () => 
     const edits = editsUpdated()
     expect(edits).toHaveLength(1)
     expect(edits[0].client).toBe('authed')
+    // Pin the terminators. Without `.select('id')` supabase-js returns no rows at
+    // all, so the route's zero-row check would send EVERY approve through the
+    // service role and 500 every reject — and the stub cannot tell the two chains
+    // apart, so only the recorded call proves the projection is still there.
+    expect(calls).toContainEqual({ client: 'authed', table: 'edits', op: 'select', args: ['id'] })
+    expect(calls).toContainEqual({ client: 'admin', table: 'servers', op: 'select', args: ['id, slug'] })
     // One admin client, for the `servers` write only — the retry must stay unused
     // on the happy path rather than becoming the default write route.
     expect(adminClientArgs).toHaveLength(1)
@@ -103,9 +116,11 @@ describe('POST /api/admin/approve-edit — bookkeeping write is checked', () => 
     const edits = editsUpdated()
     expect(edits).toHaveLength(2)
     expect(edits.map(e => e.client)).toEqual(['authed', 'admin'])
-    // Byte-identical payload: the retry must not stamp a second, later
-    // reviewed_at, which is why the route hoists the object.
-    expect(edits[1].args[0]).toEqual(edits[0].args[0])
+    // The SAME OBJECT, not merely an equal one: the harness records args by
+    // reference, and `toEqual` passes against a re-inlined payload whenever both
+    // `new Date().toISOString()` calls land in the same millisecond.
+    expect(edits[1].args[0]).toBe(edits[0].args[0])
+    expect(calls).toContainEqual({ client: 'admin', table: 'edits', op: 'select', args: ['id'] })
     // The existing admin client is reused — no second createAdminClient, which
     // would drop the x-original-actor-id header the audit trigger reads.
     expect(adminClientArgs).toHaveLength(1)
@@ -124,7 +139,8 @@ describe('POST /api/admin/approve-edit — bookkeeping write is checked', () => 
     const edits = editsUpdated()
     expect(edits).toHaveLength(2)
     expect(edits.map(e => e.client)).toEqual(['authed', 'admin'])
-    expect(edits[1].args[0]).toEqual(edits[0].args[0])
+    expect(edits[1].args[0]).toBe(edits[0].args[0])
+    expect(calls).toContainEqual({ client: 'admin', table: 'edits', op: 'select', args: ['id'] })
     expect(adminClientArgs).toHaveLength(1)
     expect(console.error).toHaveBeenCalledTimes(1)
     expect(notificationInserts()).toHaveLength(1)
@@ -146,6 +162,9 @@ describe('POST /api/admin/approve-edit — bookkeeping write is checked', () => 
     expect(serversUpdated()).toHaveLength(1)
     // No "approved" notification for a state that was never recorded.
     expect(notificationInserts()).toEqual([])
+    // ...but the ISR entry MUST be purged: the servers change is live, so leaving
+    // /s/example cached would serve the old value for the 7-day TTL.
+    expect(revalidate.revalidateServer).toHaveBeenCalledWith('example')
     expect(console.error).toHaveBeenCalledTimes(2)
   })
 
@@ -161,7 +180,27 @@ describe('POST /api/admin/approve-edit — bookkeeping write is checked', () => 
     })
     expect(serversUpdated()).toHaveLength(1)
     expect(notificationInserts()).toEqual([])
+    expect(revalidate.revalidateServer).toHaveBeenCalledWith('example')
     expect(console.error).toHaveBeenCalledTimes(2)
+  })
+
+  it('500s when the `servers` write matches ZERO ROWS', async () => {
+    // `edits.server_id` is ON DELETE CASCADE, but a concurrent delete can still
+    // land between the read and the write; the update then resolves error-free
+    // having changed nothing.
+    harness.queued['admin:servers:update'] = []
+
+    const res = await postApprove()
+
+    expect(res.status).toBe(500)
+    await expect(res.json()).resolves.toEqual({
+      error: 'Server row not found; nothing was applied and the edit is still pending',
+    })
+
+    // Nothing applied means nothing to record and nothing to purge.
+    expect(editsUpdated()).toEqual([])
+    expect(notificationInserts()).toEqual([])
+    expect(revalidate.revalidateServer).not.toHaveBeenCalled()
   })
 
   it('rejects on the authed client alone', async () => {
@@ -173,6 +212,9 @@ describe('POST /api/admin/approve-edit — bookkeeping write is checked', () => 
     const edits = editsUpdated()
     expect(edits).toHaveLength(1)
     expect(edits[0].client).toBe('authed')
+    // Same reason as the approve happy path: without `.select('id')` this write
+    // returns no rows and the route 500s while the rejection actually landed.
+    expect(calls).toContainEqual({ client: 'authed', table: 'edits', op: 'select', args: ['id'] })
     expect(adminClientArgs).toEqual([])
   })
 

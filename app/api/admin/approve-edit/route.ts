@@ -79,7 +79,8 @@ export async function POST(request: Request) {
     // here cannot mean "no such edit". No service-role retry by design — see the
     // approve path below for why the asymmetry is deliberate.
     if (rejectErr || !rejected || rejected.length === 0) {
-      console.error('approve-edit reject bookkeeping did not land:', rejectErr?.code, rejectErr?.message, 'rows:', rejected?.length ?? 0)
+      console.error('approve-edit reject bookkeeping did not land; edit_id:', edit_id,
+        rejectErr ? `errored: ${rejectErr.code} ${rejectErr.message}` : 'matched zero rows')
       return NextResponse.json(
         { error: 'Failed to record the rejection; the edit is still pending' },
         { status: 500 },
@@ -149,10 +150,16 @@ export async function POST(request: Request) {
   // in `x-original-actor-id`. The audit trigger picks that up so the resulting
   // server_changes row credits the contributor, not the moderator.
   const admin = createAdminClient(`approved-by:${user.id}`, edit.user_id)
-  const { error: updErr } = await admin
+  // `.select()` so the write is VERIFIED rather than assumed: a zero-row match
+  // resolves `error: null`, and `edits.server_id` is ON DELETE CASCADE, so a row
+  // deleted between the read above and this write would otherwise let the route
+  // report an approval that changed nothing. The returned slug is also what the
+  // double-failure branch below revalidates with.
+  const { data: applied, error: updErr } = await admin
     .from('servers')
     .update(update)
     .eq('id', edit.server_id)
+    .select('id, slug')
 
   if (updErr) {
     if (updErr.code === '23505') {
@@ -164,8 +171,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to apply edit' }, { status: 500 })
   }
 
-  // Bookkeeping only — the servers change above has already landed and is the
-  // user-visible truth. Payload is hoisted so the retry below writes the same
+  // 500, not 404, for the same reason the reject branch above gives: this route
+  // does not answer 404 for a state it proved existed a moment ago. Nothing was
+  // applied and no bookkeeping is attempted, so the edit stays pending.
+  if (!applied || applied.length === 0) {
+    console.error('approve-edit servers update matched zero rows; edit_id:', edit_id, 'server_id:', edit.server_id)
+    return NextResponse.json(
+      { error: 'Server row not found; nothing was applied and the edit is still pending' },
+      { status: 500 },
+    )
+  }
+  const appliedSlug: string | null = applied[0]?.slug ?? null
+
+  // Bookkeeping only — the servers change above is VERIFIED landed (the write
+  // returned the row it matched) and is the user-visible truth. Payload is hoisted so the retry below writes the same
   // reviewed_at rather than a second, later timestamp.
   const bookkeeping = {
     status: 'approved',
@@ -193,7 +212,8 @@ export async function POST(request: Request) {
   // Zero rows is treated exactly like an error — the authed client's UPDATE
   // policy can refuse silently, and supabase-js resolves rather than throws.
   if (markErr || !marked || marked.length === 0) {
-    console.error('approve-edit bookkeeping did not land; retrying through the service role:', markErr?.code, markErr?.message, 'rows:', marked?.length ?? 0)
+    console.error('approve-edit bookkeeping did not land; retrying through the service role; edit_id:', edit_id,
+      markErr ? `errored: ${markErr.code} ${markErr.message}` : 'matched zero rows')
     const { data: retried, error: retryErr } = await admin
       .from('edits')
       .update(bookkeeping)
@@ -204,7 +224,12 @@ export async function POST(request: Request) {
       // .single() read above) and the servers change is already applied, so this
       // is a partial success the moderator has to know about. Mirrors the
       // operator-attention 500 at app/api/edit/route.ts:186-192.
-      console.error('approve-edit bookkeeping retry failed; edit left pending against an APPLIED server change:', retryErr?.code, retryErr?.message, 'rows:', retried?.length ?? 0)
+      console.error('approve-edit bookkeeping retry failed; edit left pending against an APPLIED server change; edit_id:', edit_id,
+        retryErr ? `errored: ${retryErr.code} ${retryErr.message}` : 'matched zero rows')
+      // The servers change IS applied, so /s/<slug> must not keep serving the old
+      // value for the 7-day ISR TTL while the edit sits pending. The operator is
+      // told about the bookkeeping; the cache must not silently disagree with the DB.
+      if (appliedSlug) revalidateServer(appliedSlug)
       return NextResponse.json(
         { error: 'Edit applied to the server but could not be marked approved; it will keep showing as pending and needs operator attention' },
         { status: 500 },
