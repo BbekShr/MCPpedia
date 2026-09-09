@@ -16,6 +16,14 @@
  *   land on `:await` (`profiles` in `username-zero-row.test.ts` — POST
  *   /api/username head-counts then updates, so without the flag the update
  *   inherits the count probe's queued rows). Turning it on changes existing keys.
+ * - `keyByClient` — prefix the resolve key with the client that made the call
+ *   (`admin:edits:update`). Needed when ONE request writes the SAME table through
+ *   BOTH clients: `app/api/admin/approve-edit/route.ts` marks the edit approved on
+ *   the authed client and, if that write does not land, retries the identical
+ *   payload through the service role. Without this both updates share one key, so
+ *   a test cannot make the retry succeed after the first attempt failed. Off by
+ *   default — turning it on changes every key in the suite, not just the
+ *   contested one.
  *
  * A key that is NOT queued resolves differently per terminator, mirroring real
  * PostgREST: `.single()` misses resolve `data: null` (no rows), a plain `await`
@@ -32,6 +40,7 @@ export type Call = { client?: ClientKind; table: string; op: string; args: unkno
 export interface HarnessOptions {
   trackClient?: boolean
   keyByWriteOp?: boolean
+  keyByClient?: boolean
 }
 
 export interface RouteSupabaseHarness {
@@ -61,7 +70,7 @@ export interface RouteSupabaseHarness {
 export function createRouteSupabaseHarness(
   options: HarnessOptions = {},
 ): RouteSupabaseHarness {
-  const { trackClient = false, keyByWriteOp = false } = options
+  const { trackClient = false, keyByWriteOp = false, keyByClient = false } = options
 
   const calls: Call[] = []
   const adminClientArgs: unknown[][] = []
@@ -86,7 +95,7 @@ export function createRouteSupabaseHarness(
   function makeBuilder(client: ClientKind, table: string) {
     let writeOp: string | null = null
     const key = (fallback: string) =>
-      `${table}:${keyByWriteOp && writeOp ? writeOp : fallback}`
+      `${keyByClient ? `${client}:` : ''}${table}:${keyByWriteOp && writeOp ? writeOp : fallback}`
     const builder = {
       _record(op: string, args: unknown[]) {
         calls.push(trackClient ? { client, table, op, args } : { table, op, args })

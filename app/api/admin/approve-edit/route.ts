@@ -59,7 +59,7 @@ export async function POST(request: Request) {
   }
 
   if (reject) {
-    await supabase
+    const { data: rejected, error: rejectErr } = await supabase
       .from('edits')
       .update({
         status: 'rejected',
@@ -67,6 +67,25 @@ export async function POST(request: Request) {
         reviewed_at: new Date().toISOString(),
       })
       .eq('id', edit_id)
+      .select('id')
+
+    // Nothing has been applied to `servers` on this path, so there is nothing to
+    // recover — but the caller must not be told the rejection succeeded. Zero rows
+    // is as fatal as an error: the only UPDATE policy on `edits` is the
+    // editor|maintainer|admin one (20260417210403_tighten_admin_rls.sql:28-37), so
+    // an empty result means RLS refused the write or the row moved under us, and
+    // either way the edit is still 'pending' and still in the queue. 500, NOT 404:
+    // the row's existence was just proven by the .single() read above, so "no rows"
+    // here cannot mean "no such edit". No service-role retry by design — see the
+    // approve path below for why the asymmetry is deliberate.
+    if (rejectErr || !rejected || rejected.length === 0) {
+      console.error('approve-edit reject bookkeeping did not land:', rejectErr?.code, rejectErr?.message, 'rows:', rejected?.length ?? 0)
+      return NextResponse.json(
+        { error: 'Failed to record the rejection; the edit is still pending' },
+        { status: 500 },
+      )
+    }
+
     if (edit.user_id && edit.user_id !== user.id) {
       await supabase.from('notifications').insert({
         user_id: edit.user_id,
@@ -145,14 +164,53 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to apply edit' }, { status: 500 })
   }
 
-  await supabase
+  // Bookkeeping only — the servers change above has already landed and is the
+  // user-visible truth. Payload is hoisted so the retry below writes the same
+  // reviewed_at rather than a second, later timestamp.
+  const bookkeeping = {
+    status: 'approved',
+    reviewed_by: user.id,
+    reviewed_at: new Date().toISOString(),
+  }
+
+  const { data: marked, error: markErr } = await supabase
     .from('edits')
-    .update({
-      status: 'approved',
-      reviewed_by: user.id,
-      reviewed_at: new Date().toISOString(),
-    })
+    .update(bookkeeping)
     .eq('id', edit_id)
+    .select('id')
+
+  // If this write does nothing, the edit stays 'pending' against a server that
+  // ALREADY carries the change: the queue keeps showing it, and re-approving
+  // double-applies and duplicates the notification. Retry through the service
+  // role rather than rolling the servers write back. Rolling back would write a
+  // SECOND server_changes audit row (20260416010000_server_changes_audit.sql:96-99
+  // fires per UPDATE) and needs an old_value this route never selects; the
+  // bookkeeping is pure record-keeping, no role can write status='pending'
+  // through RLS anyway (20260417210403_tighten_admin_rls.sql:34-37), and the
+  // karma/counter triggers key on NEW.user_id, not auth.uid()
+  // (20260421030000_karma.sql:121-129), so a service-role write stays credited to
+  // the proposer. Same recovery shape as app/api/edit/route.ts:169-195.
+  // Zero rows is treated exactly like an error — the authed client's UPDATE
+  // policy can refuse silently, and supabase-js resolves rather than throws.
+  if (markErr || !marked || marked.length === 0) {
+    console.error('approve-edit bookkeeping did not land; retrying through the service role:', markErr?.code, markErr?.message, 'rows:', marked?.length ?? 0)
+    const { data: retried, error: retryErr } = await admin
+      .from('edits')
+      .update(bookkeeping)
+      .eq('id', edit_id)
+      .select('id')
+    if (retryErr || !retried || retried.length === 0) {
+      // Do NOT claim success and do NOT 404: the row exists (proved by the
+      // .single() read above) and the servers change is already applied, so this
+      // is a partial success the moderator has to know about. Mirrors the
+      // operator-attention 500 at app/api/edit/route.ts:186-192.
+      console.error('approve-edit bookkeeping retry failed; edit left pending against an APPLIED server change:', retryErr?.code, retryErr?.message, 'rows:', retried?.length ?? 0)
+      return NextResponse.json(
+        { error: 'Edit applied to the server but could not be marked approved; it will keep showing as pending and needs operator attention' },
+        { status: 500 },
+      )
+    }
+  }
 
   if (edit.user_id && edit.user_id !== user.id) {
     await supabase.from('notifications').insert({
