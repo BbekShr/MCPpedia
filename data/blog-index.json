@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-09-10-critical-rce-bug-hits-astro-s-image-pipeline-one-mcp-server-",
+    "title": "Critical RCE Bug Hits Astro's Image Pipeline — One MCP Server Exposed",
+    "description": "A critical libheif vulnerability in Astro's default image optimizer enables remote code execution via malicious AVIF files; com.sigaoli/profile is affected and needs Astro 7.2.8+.",
+    "hook": "One malformed AVIF image is enough to get remote code execution on an unpatched Astro server — and it's a CRITICAL-severity bug with no configuration workaround, only a version bump.",
+    "date": "2026-09-10",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 2
+  },
+  {
     "slug": "2026-09-08-this-week-in-mcp-2-257-new-servers-and-the-rise-of-verificat",
     "title": "This Week in MCP: 2,257 New Servers and the Rise of Verification Tools",
     "description": "37,836 MCP servers and counting — this week's standouts pair record growth with a new wave of tools built to catch AI agents lying.",
