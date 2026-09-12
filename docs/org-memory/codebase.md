@@ -1418,3 +1418,33 @@ it saw nothing, which is worse than no checker at all.
   human to run `npm run check:schema-drift`. Cycles should stop claiming such rows are done on the
   strength of a merged migration file — that is precisely the confusion S106 exists to name.
 
+## Prod schema state — verified 2026-09-12
+
+- 2026-09-12: **`npm run check:schema-drift` runs against prod and reported DRIFT (0) — CLEAN.**
+  59 migration files / 381 statements parsed; intent 43 policies + 32 functions + 15 triggers vs
+  live 43 policies + 67 function names + 15 triggers; target
+  `postgres.ajbazcumocvpdphbaohm@aws-1-us-east-1.pooler.supabase.com`, inside
+  `BEGIN TRANSACTION READ ONLY`. This CLOSES S106, S107 and S101: the corrective migrations
+  (`20260907120000`, `20260908000000`) are genuinely applied, not merely recorded. The
+  `supabase db push` skip that made S106 permanent did NOT recur, because both corrective files
+  sort after `20260830120000` and were never in the ledger.
+- 2026-09-12: **The drift checker's blind spots, in its own words** — it detects an intended
+  condition ABSENT from a live predicate (the direction that made `20260610000000` dangerous), but
+  NOT: an extra OR arm wrapped around an intended condition, a policy whose GRANTEE ROLES differ, a
+  function whose BODY drifted, a column whose TYPE or DEFAULT drifted, or anything about data.
+  Function properties are asserted per NAME, so an overload the migrations never mention is still
+  checked against them. "CLEAN" therefore means "nothing intended is missing", not "prod equals the
+  migrations".
+- 2026-09-12: **The NULL-lockout trap on the `profiles` self-update policy is handled** —
+  `supabase/migrations/20260907120000_restore_profiles_self_update_policy.sql:164-169` compares all
+  six frozen columns (`role`, `created_at`, `karma`, `edits_approved`, `servers_submitted`,
+  `discussions_count`) with `is not distinct from`, not `=`. With `=` a stored NULL evaluates NULL
+  rather than true and would permanently lock that user out of every self-update; only `karma` is
+  `not null default 0` (`20260421030000_karma.sql:57`). `:90-101` records this as the repo's first
+  use of that operator.
+- 2026-09-12: **`SUPABASE_DB_URL` lives in `.env.local` in the MAIN checkout, not in worktrees**, and
+  `scripts/check-schema-drift.ts` reads `.env.local` from the CURRENT directory. Running the check
+  from a worktree without copying it prints `injecting env (0)` and
+  `SUPABASE_DB_URL is not set` — the file is gitignored, so `cp /path/to/main/.env.local .` is the
+  fix and leaves the tree clean.
+
