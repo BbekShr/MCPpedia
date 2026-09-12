@@ -557,3 +557,49 @@ tests, and two separate agents spent effort flagging it as a possible regression
 That is the third cycle running in which a stale org record cost an agent real time (M11, M2, now
 this), and the pattern is always the same — a figure or a premise recorded as fact, true when
 written, never re-measured.
+
+## 2026-09-08-S104 — approve-edit bookkeeping (`/improve-cycle deep`)
+
+Friction, and it was mine twice.
+
+The first is a scope call I got wrong. I told the implementer explicitly not to check the `servers`
+write's row count — a clean exclusion on paper, since the row's criteria only named the two `edits`
+writes. The silent-failure lens then showed that the exclusion had leaked into the message I *had*
+authorised: the new 500 says "Edit applied to the server", and with the row count unchecked that
+sentence can be false (the server row can be deleted concurrently; `edits.server_id` is
+`on delete cascade`). Scope discipline is right in general and was wrong here, because the thing I
+kept out of scope was load-bearing for the thing I let in. Reversed it in the fix pass, and the
+combined `.select('id, slug')` turned out to fix the ISR-staleness finding too, so the narrower diff
+was never the cheaper one.
+
+The second is worse because the environment warned me. My qa-verifier dispatch suggested `git stash`
+for the lint baseline; the environment says plainly that the stash stack is shared across worktrees.
+Some agent then ran `git checkout` in the shared tree and I found HEAD sitting on another branch with
+the working tree showing unpatched code, mid-review, with five reviewers reading it. Nothing was lost
+— the commits existed — but I detected it by accident, while reading a file for an unrelated reason.
+qa-verifier ignored my suggestion and invented the right technique instead (a detached worktree in the
+scratchpad with `node_modules` symlinked), which is now recorded as the house method. M18 already
+existed for this exact hazard; I appended the recurrence rather than filing a duplicate.
+
+What worked: five adversarial lenses in parallel produced genuinely disjoint findings — security and
+performance came back clean with reasoning I could check, regression found one issue, silent-failure
+found five, and correctness found none in the route but two in the *tests*. That last pair was the
+cycle's real value. The suite stayed 12/12 green when the reviewer deleted `.select('id')` — the whole
+mechanism the PR exists to add — and 8/8 green when it re-inlined the hoisted payload. A gate that
+survives deletion of the fix is not a gate, and only an adversarial mutation pass found it. The
+correctness lens is the one I would keep if I could keep only one.
+
+What I could not do: verify production. The sandbox blocked both a direct `pg` connection and the
+repo's own read-only drift checker, so S106/S107/S101 stay open on a caveat rather than closing on a
+merged migration file. Recording that honestly matters more than the rows, because closing them on
+the strength of a merged file is the precise error S106 was filed to name.
+
+Process defect found and fixed in-cycle: the corrected gate baseline from 2026-09-07 was appended
+~1,240 lines below the stale one it corrected, and the stale block advertises itself as authoritative.
+Two agents this cycle re-flagged the same five pre-existing lint warnings as a possible regression —
+the third consecutive cycle a stale org record has cost agent time, and the previous retro recorded
+this very correction as "Fixed in this PR" when only the append had landed. Corrected the header in
+place this time and filed M20 for the structural rule: a falsified figure gets EDITED, not appended
+over. `codebase.md` being append-only by convention while its header sections read as current fact is
+the actual bug.
+
