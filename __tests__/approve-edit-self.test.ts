@@ -69,6 +69,13 @@ describe('POST /api/admin/approve-edit — self-approval block', () => {
     harness.queued = {
       'profiles:single': { role: 'editor' },
       'edits:single': pendingEdit('user-1'),
+      // The bookkeeping updates now request rows back and treat zero rows as a
+      // failed write (approve-edit/route.ts). Without a queued row the harness's
+      // plain-await miss default (`data: []`, helpers/route-supabase-stub.ts:70-76)
+      // reads as "the write did nothing" and the approve/reject cases 500.
+      'edits:await': [{ id: EDIT_ID }],
+      // Same reason for the `servers` write, which is checked now too.
+      'servers:await': [{ id: SERVER_ID, slug: 'example' }],
     }
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })

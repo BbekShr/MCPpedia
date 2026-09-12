@@ -6,13 +6,21 @@ falsified; promote hardened facts to CLAUDE.md via human-approved PR. Keep ~120 
 
 ## Gates & environment
 
-- 2026-08-01 (S58): **Supersedes the 2026-07-16 bootstrap baseline below, which is stale.** The
-  green bar is `npx tsc --noEmit` (0 errors), `npm run lint` (0 errors, **1** warning),
-  `npm test` (**221** in ~1.2s across **16** files as of S48, 2026-08-01 — was 186/13 at S58 and
-  208/15 on `main` before S48; this figure moves most cycles, so re-measure rather than trust it).
-  The single lint warning is the load-bearing `app/admin/page.tsx:**246**` directive (S2/S7) —
-  the line moved from `:245`, recorded here because an off-by-one reads as a new finding. Anyone using "97 tests / 11 warnings"
-  as a regression check is comparing against the wrong figures.
+- **CURRENT GATE BASELINE — 2026-09-09 (S104), measured against `origin/main` @ `573c2a3`.**
+  `npx tsc --noEmit` 0 errors · `npm run lint` **0 errors / 6 warnings** · `npm test`
+  **538 tests / 44 files**. The 6 warnings are `app/admin/page.tsx:246` (the load-bearing
+  react-hooks directive, S2/S7), `bots/lib/blog-planning.ts:22:30`, and four
+  `@next/next/no-location-assign-relative-destination` in
+  `components/{CategoryEditor,ClaimServer,CommunityVerify,FavoriteButton}.tsx`.
+  **State the bar as "no NEW warnings vs a measured baseline", never as an absolute count** —
+  the test figure moves most cycles, so re-measure rather than trust it.
+  The two entries below are SUPERSEDED and kept only so their figures are recognisable as stale:
+  - 2026-08-01 (S58), STALE: claimed `npm run lint` 0 errors / **1** warning and `npm test`
+    **221 / 16**. Both wrong as of 2026-09-07. This entry asserted authority over the bootstrap
+    entry below it while itself being stale for five weeks, and a correction appended ~1,240 lines
+    lower did not displace it — two agents in the 2026-09-08 cycle and two more in the 2026-09-07
+    cycle read this block and flagged the 5 extra warnings as a possible regression. That failure
+    mode is filed as M20; the fix is to EDIT a falsified figure here, not to append a newer one.
 - 2026-07-16 (bootstrap): The full local bar is green on main — `npx tsc --noEmit` (0 errors),
   `npm run lint` (0 errors, 11 warnings), `npm test` (97/97 in ~1.2s across 9 files).
 - 2026-07-17 (S1): CI (`.github/workflows/ci.yml`) runs typecheck → lint → test → build. The
@@ -1314,3 +1322,99 @@ it saw nothing, which is worse than no checker at all.
   `with_check`, rather than detaching into its own statement — with the six frozen columns visible
   as `AEXPR_NOT_DISTINCT` nodes. It still does no name resolution: `pg_policies`, `auth.uid()` and
   every column were never resolved against a catalog.
+
+## S104 — approve-edit bookkeeping (cycle 2026-09-08-S104, PR pending)
+
+- 2026-09-09 (S104): **The `edits` status triggers are change-guarded**, so re-writing
+  `status='approved'` on an already-approved row awards NO karma and NO counter bump:
+  `supabase/migrations/20260421030000_karma.sql:132` gates on `old.status <> new.status`, and
+  `20260421000000_sync_profile_counters.sql:78` does the same. This is the precondition that makes
+  "retry the `edits` bookkeeping write through the service role" safe, and any future retry or
+  backfill on that table depends on it.
+- 2026-09-09 (S104): **`x-original-actor-id` is consumed by exactly one trigger**,
+  `log_server_changes`, which is attached to `servers` ALONE
+  (`supabase/migrations/20260503010000_audit_proposer_attribution.sql:24,44`; no other migration
+  reads `request.headers`). Reusing a `createAdminClient(label, actorId)` instance for writes to
+  any OTHER table is attribution-inert today — re-check if a header-reading trigger is added
+  elsewhere.
+- 2026-09-09 (S104): **`edits` carries exactly ONE update policy and its SELECT is `using (true)`**
+  (`20260417210403_tighten_admin_rls.sql:28-37` DROPs and re-creates the same policy NAME created by
+  `20260404010000_restrict_profile_role_update.sql:31`, so the S21/S23 permissive-OR hazard does not
+  apply; SELECT at `20260402000000_initial_schema.sql:316-317`). Consequences: a
+  `.update(...).select(...)` on `edits` can NEVER be RLS-filtered into a false zero-row, and because
+  the policy's role set is EXACTLY the set `app/api/admin/approve-edit/route.ts` gates on, a zero-row
+  bookkeeping write there is a should-never-happen signal — not routine filtering as it is on
+  `profiles`. Status-code choices must start there rather than copying the 404 reasoning from #158.
+- 2026-09-09 (S104): **`edits.server_id` is NULLABLE** (`20260402000000_initial_schema.sql:115` —
+  `references servers(id) on delete cascade`, no `not null`), so "the edit row exists" never implied
+  "a server row will match". `app/api/admin/approve-edit/route.ts:177`'s zero-row 500 is the first
+  place that state is observable instead of being reported as success.
+- 2026-09-09 (S104): **`revalidatePath` in a Route Handler commits regardless of response status** —
+  `resolvePendingRevalidations()` runs on every returned `Response`
+  (`node_modules/next/dist/server/route-modules/app-route/module.js:512`), flushing
+  `workStore.pendingRevalidatedTags` (`node_modules/next/dist/server/revalidation-utils.js:142-144`).
+  So purging a cache entry BEFORE returning a 5xx is valid in this Next version, which is what lets
+  the approve path fix the ISR entry for a change it applied but could not record.
+- 2026-09-09 (S104): **A PostgREST `UPDATE … .select()` returns matched rows even when the new value
+  equals the old one** — `servers`' only `BEFORE UPDATE` trigger is the unconditional `updated_at`
+  stamp (`20260402000000_initial_schema.sql:275-285`). A zero-row result on `servers` therefore means
+  "no row matched", never "nothing changed".
+- 2026-09-09 (S104): **`.select(cols)` after a write costs ZERO extra round trips** — postgrest-js
+  only appends `Prefer: return=representation` and a `select=` param to the same request
+  (`node_modules/@supabase/postgrest-js/dist/index.cjs:375-376`). ~100 B per call. Never a reason to
+  skip a zero-row check.
+
+## Test harness — route-supabase-stub
+
+- 2026-09-09 (S104): **The harness cannot distinguish `.update().eq()` from
+  `.update().eq().select('id')`** — the resolve key is derived from the write verb, not the
+  projection, so a route can GAIN OR LOSE a `.select()` with zero effect on any harness-backed test.
+  Proven by mutation: deleting `.select('id')` from the approve write left 12/12 green. Any
+  "did the write actually return rows" fix MUST assert the recorded `select` call
+  (`expect(calls).toContainEqual({client, table, op: 'select', args: ['id']})`) or it ships an
+  untested gate.
+- 2026-09-09 (S104): **`_record` pushes the builder args array WITHOUT cloning**
+  (`__tests__/helpers/route-supabase-stub.ts`), so a test can assert argument IDENTITY with `toBe`.
+  That is the only way to pin a hoisted-payload invariant here: `toEqual` on two
+  same-millisecond `new Date().toISOString()` payloads is vacuous — proven by mutation, a re-inlined
+  retry payload passed 8/8.
+- 2026-09-09 (S104): **A plain-`await` miss resolves `data: []`**, i.e. the zero-row shape. So adding
+  ANY `rows === 0` guard to a route silently turns previously-green sibling suites red without a
+  single assertion in them being wrong. `__tests__/approve-edit-self.test.ts` needed a queued
+  `edits:await` row for the `edits` guard and a `servers:await` row for the `servers` guard.
+- 2026-09-09 (S104): **`vi.mock('@/lib/revalidate')` as bare no-ops is an assertion blind spot** —
+  ISR-purge behaviour in error branches is only observable if the mock uses `vi.hoisted` + `vi.fn()`.
+  `__tests__/approve-edit-bookkeeping.test.ts:31-43` does; other suites still use no-op mocks, so
+  their revalidation paths are unpinned.
+- 2026-09-09 (S104): The harness resolve key is now `[client:]table:[writeOp|terminator]`. The third
+  flag, `keyByClient` (default off), is required for any route that writes ONE table through BOTH the
+  authed and the admin client in a single request. The key is built in exactly ONE place, which is
+  what makes a new default-off flag provably a no-op for the other suites by inspection.
+
+## Operational
+
+- 2026-09-09 (S104): **There is NO API-level error reporting anywhere in this repo.** Sentry is
+  recorded as deferred pending a DSN (`BACKLOG.md`), and `.github/workflows/alert-on-failure.yml` is
+  `workflow_run`-scoped to scheduled bots only. Every `console.error` in `app/api/**` is write-only.
+  A route that "logs and recovers" is a route where the recovery is permanently invisible — relevant
+  to approve-edit's service-role retry, which succeeds silently if prod's `edits` UPDATE policy has
+  drifted.
+- 2026-09-09 (S104): **Local `main` in this repo drifts behind `origin/main`** (was `e3ee4c4`/#153
+  while `origin/main` was `573c2a3`/#163). `git diff main...HEAD` then silently includes several
+  merged PRs — one reviewer this cycle saw ~3,774 unrelated lines. **Baselines and diffs must use
+  `origin/main`**, or review the commit directly with `git show <sha>`.
+- 2026-09-09 (S104): **The safe way to measure a gate baseline while sibling agents read the tree** is
+  a detached `git worktree add` into the scratchpad with `node_modules` symlinked from the active
+  worktree — both gates run normally, ~505 files checked out. Do NOT use `git stash` (the stack is
+  shared across worktrees and other sessions pop it) and do NOT `git checkout` another ref in a shared
+  worktree (this cycle a subagent did exactly that mid-review and moved HEAD off the work branch).
+- 2026-09-09 (S104): Env-less build baseline is now **303 prerender-manifest routes** (was 262 static
+  pages at 2026-07-18), still with **0** `/s/` and **0** `/compare/` entries. The zero-egress property
+  holds while the static surface grows, so "route count changed" alone is NOT an egress regression.
+- 2026-09-09 (S104): **Prod DB verification was NOT possible from the Claude Code session** — the
+  sandbox classifier blocked both a direct `pg` connection via `SUPABASE_DB_URL` and the repo's own
+  read-only `npm run check:schema-drift`. Any acceptance criterion phrased as "prod `pg_policies`
+  match" (S106, S107, and S101 by dependency) therefore cannot be closed by an agent cycle; it needs a
+  human to run `npm run check:schema-drift`. Cycles should stop claiming such rows are done on the
+  strength of a merged migration file — that is precisely the confusion S106 exists to name.
+

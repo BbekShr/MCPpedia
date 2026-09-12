@@ -278,14 +278,29 @@ export default function AdminPage() {
   }
 
   async function approveEdit(editId: string) {
-    const res = await fetch('/api/admin/approve-edit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ edit_id: editId }),
-    })
-    if (!res.ok) return
-    setEdits(prev => prev.map(e => e.id === editId ? { ...e, status: 'approved' } : e))
-    refreshPendingEdits()
+    try {
+      const res = await fetch('/api/admin/approve-edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ edit_id: editId }),
+      })
+      if (!res.ok) {
+        // The route now 500s when the edits bookkeeping write did not land —
+        // including the partial state where the servers change WAS applied. A
+        // silent return left the moderator re-clicking a row whose server value
+        // had already changed. alert() matches triggerBot below.
+        // `message` first: the 409 carries the prose there and only 'duplicate'
+        // in `error`, and a 400's `error` is a zod flatten object, not a string.
+        const json = await res.json().catch(() => ({}))
+        const msg = json.message || (typeof json.error === 'string' ? json.error : null)
+        alert(msg || 'Failed to approve edit')
+        return
+      }
+      setEdits(prev => prev.map(e => e.id === editId ? { ...e, status: 'approved' } : e))
+      refreshPendingEdits()
+    } catch {
+      alert('Network error')
+    }
   }
 
   async function approveClaim(claimId: string) {
@@ -388,14 +403,26 @@ export default function AdminPage() {
   }
 
   async function rejectEdit(editId: string) {
-    const res = await fetch('/api/admin/approve-edit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ edit_id: editId, reject: true }),
-    })
-    if (!res.ok) return
-    setEdits(prev => prev.map(e => e.id === editId ? { ...e, status: 'rejected' } : e))
-    refreshPendingEdits()
+    try {
+      const res = await fetch('/api/admin/approve-edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ edit_id: editId, reject: true }),
+      })
+      if (!res.ok) {
+        // Same reason as approveEdit: the route now 500s when the edits
+        // bookkeeping write did not land, and a silent return left the moderator
+        // re-clicking a row that is still pending. alert() matches triggerBot (:381).
+        const json = await res.json().catch(() => ({}))
+        const msg = json.message || (typeof json.error === 'string' ? json.error : null)
+        alert(msg || 'Failed to reject edit')
+        return
+      }
+      setEdits(prev => prev.map(e => e.id === editId ? { ...e, status: 'rejected' } : e))
+      refreshPendingEdits()
+    } catch {
+      alert('Network error')
+    }
   }
 
   if (!user) {
