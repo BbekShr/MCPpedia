@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-09-15-critical-mysql-mcp-flaw-and-n8n-s-five-cve-week",
+    "title": "Critical MySQL MCP Flaw and n8n's Five-CVE Week",
+    "description": "A critical unauthenticated SQL execution bug in mysql_mcp_server's SSE mode headlines a six-advisory week that also hit n8n with five High-severity CVEs.",
+    "hook": "One MCP server just shipped with zero auth on every route when run over SSE — and n8n racked up five separate High-severity CVEs in the same week, including two sandbox escapes that lead straight to code execution.",
+    "date": "2026-09-15",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 3
+  },
+  {
     "slug": "2026-09-10-critical-rce-bug-hits-astro-s-image-pipeline-one-mcp-server-",
     "title": "Critical RCE Bug Hits Astro's Image Pipeline — One MCP Server Exposed",
     "description": "A critical libheif vulnerability in Astro's default image optimizer enables remote code execution via malicious AVIF files; com.sigaoli/profile is affected and needs Astro 7.2.8+.",
