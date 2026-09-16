@@ -1,0 +1,61 @@
+---
+title: "Critical Unauthenticated RCE Hits LiteLLM-Based MCP Server"
+description: "CVE-2026-37004 lets unauthenticated attackers execute arbitrary OS commands on Ogham Mcp via an unsandboxed Jinja2 template injection in /prompts/test."
+hook: "No login. No API key. Just one crafted request and an attacker gets a shell — CVE-2026-37004 is a critical, unauthenticated RCE in a LiteLLM-based MCP server, and it's live right now."
+date: "2026-09-16"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+A **critical, unauthenticated remote code execution bug** just landed in a server that talks to LiteLLM. If you're running it, stop reading and go patch.
+
+<Callout type="warning">
+CVE-2026-37004 — CVSS-critical, no authentication required, arbitrary OS command execution.
+</Callout>
+
+## The vulnerability
+
+[Ogham Mcp](/s/ogham-mcp) wraps BerriAI's LiteLLM, and versions **1.82.4 and earlier** ship a server-side template injection (SSTI) bug in the `/prompts/test` endpoint. The root cause is almost embarrassingly simple: the endpoint feeds a user-supplied `dotprompt_content` parameter straight into an **unsandboxed `jinja2.Environment`**.
+
+Jinja2 templates aren't just string formatting — they're a scripting language. Without sandboxing, a crafted template string can reach Python's object model and execute arbitrary OS commands. No login, no API key, no session. Just a crafted request.
+
+<PullQuote>An unauthenticated attacker sends one crafted request and gets shell-level command execution — no login required.</PullQuote>
+
+---
+
+## Why this one matters
+
+Most of the advisories we cover are "upgrade when convenient." This isn't one of those.
+
+<ScoreBreakdown>
+<ScoreRow label="Authentication required" points="0" description="Attacker needs nothing — no API key, no session" />
+<ScoreRow label="Attack complexity" points="Low" description="Single crafted parameter, no chaining needed" />
+<ScoreRow label="Impact" points="Full RCE" description="Arbitrary OS command execution on the host" />
+</ScoreBreakdown>
+
+Template injection bugs like this tend to be trivially automatable — expect scanners to start probing `/prompts/test` endpoints on exposed LiteLLM instances shortly after public disclosure, if they haven't already.
+
+---
+
+## What to do right now
+
+If your stack includes [Ogham Mcp](/s/ogham-mcp) or any deployment of LiteLLM at or below **1.82.4**:
+
+- **Upgrade immediately.** Don't wait for a maintenance window — this is unauthenticated RCE.
+- **Check your exposure.** If `/prompts/test` is reachable from the public internet, treat this as an active-incident-level priority, not a backlog ticket.
+- **Audit logs** for unusual requests to `/prompts/test` containing template-like syntax (`{{`, `{%`) in the `dotprompt_content` field.
+- If you can't patch immediately, **block or rate-limit the endpoint** at the network layer as a stopgap — but don't treat that as a substitute for upgrading.
+
+<Callout type="fire">
+Unsandboxed Jinja2 rendering of user input is a well-known anti-pattern — this is the same class of bug that has burned Flask, Ansible, and dozens of templating-adjacent tools before. If you maintain a server that renders any user-supplied string as a template, check your sandboxing now, not just this one.
+</Callout>
+
+---
+
+## The bigger pattern
+
+This advisory was published **2026-09-10**, and it's a reminder that MCP servers wrapping fast-moving AI infrastructure (LiteLLM sits in front of dozens of model providers) inherit every vulnerability in that dependency chain. A single missing sandbox flag turned a prompt-testing convenience feature into a full remote shell.
+
+Check MCPpedia's server pages for any dependency you run in production — that's exactly what advisory tracking exists for.
+
+**Patch first, read the CVE writeup later. This is not the week to be behind on LiteLLM.**

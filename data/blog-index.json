@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-09-16-critical-unauthenticated-rce-hits-litellm-based-mcp-server",
+    "title": "Critical Unauthenticated RCE Hits LiteLLM-Based MCP Server",
+    "description": "CVE-2026-37004 lets unauthenticated attackers execute arbitrary OS commands on Ogham Mcp via an unsandboxed Jinja2 template injection in /prompts/test.",
+    "hook": "No login. No API key. Just one crafted request and an attacker gets a shell — CVE-2026-37004 is a critical, unauthenticated RCE in a LiteLLM-based MCP server, and it's live right now.",
+    "date": "2026-09-16",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 2
+  },
+  {
     "slug": "2026-09-15-critical-mysql-mcp-flaw-and-n8n-s-five-cve-week",
     "title": "Critical MySQL MCP Flaw and n8n's Five-CVE Week",
     "description": "A critical unauthenticated SQL execution bug in mysql_mcp_server's SSE mode headlines a six-advisory week that also hit n8n with five High-severity CVEs.",
