@@ -2198,5 +2198,162 @@
     "install": {
       "manual": "Clone JCodesMore/ai-website-cloner-template and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
     }
+  },
+  {
+    "slug": "nanoclaw",
+    "name": "Nanoclaw",
+    "tagline": "A lightweight alternative to OpenClaw that runs in containers for security. Connects to WhatsApp, Telegram, Slack, Discord, Gmail and other messaging apps,, has memory, scheduled jobs, and runs direct",
+    "repo": "nanocoai/nanoclaw",
+    "github_url": "https://github.com/nanocoai/nanoclaw",
+    "homepage_url": "https://nanoclaw.dev",
+    "author": "nanocoai",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 30781,
+    "last_updated": "2026-09-16",
+    "category": "other",
+    "tags": ["ai-agents", "ai-assistant", "claude-code", "claude-skills", "openclaw"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone nanocoai/nanoclaw and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "distilly",
+    "name": "Distilly",
+    "tagline": "Distilly — Distill how they think into reusable Skills for any Agent or Bot. Formerly Colleague Skill（原同事 Skill）.",
+    "repo": "titanwings/distilly",
+    "github_url": "https://github.com/titanwings/distilly",
+    "author": "titanwings",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 24788,
+    "last_updated": "2026-09-16",
+    "category": "other",
+    "tags": ["agent-skills", "agentic-ai", "ai-agent", "ai-agents", "ai-assistants", "ai-persona"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone titanwings/distilly and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "khazix-skills",
+    "name": "Khazix Skills",
+    "tagline": "数字生命卡兹克开源的 AI Skills 合集 | Agent Skills: leader（帮你定义目标）, neat-freak 洁癖, hv-analysis, khazix-writer & more — Claude Code, Codex & 40+ agents",
+    "repo": "KKKKhazix/khazix-skills",
+    "github_url": "https://github.com/KKKKhazix/khazix-skills",
+    "author": "KKKKhazix",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 20718,
+    "last_updated": "2026-09-16",
+    "category": "other",
+    "tags": ["agent-skills", "ai-agents", "claude", "claude-code", "codex", "developer-tools"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone KKKKhazix/khazix-skills and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "skillspector",
+    "name": "SkillSpector",
+    "tagline": "Security scanner for AI agent skills. Detect vulnerabilities, malicious patterns, security risks, prompt injection, data exfiltration, and supply-chain risks in Claude Code, Codex, and MCP skills befo",
+    "repo": "NVIDIA/SkillSpector",
+    "github_url": "https://github.com/NVIDIA/SkillSpector",
+    "homepage_url": "https://docs.nvidia.com/skills/scanning-agent-skills",
+    "author": "NVIDIA",
+    "author_type": "community",
+    "license": "Apache-2.0",
+    "stars": 17402,
+    "last_updated": "2026-09-16",
+    "category": "development-workflow",
+    "tags": ["agent-security", "agent-skills", "agentic-ai", "ai-security", "claude-code", "mcp"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone NVIDIA/SkillSpector and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "ego-lite",
+    "name": "Ego Lite",
+    "tagline": "The fastest browser for AI agents to run browser automation, built for sharing your logged-in browser state with your AI agents, like Codex or Claude Code, without disturbing you. Zero cost, zero conf",
+    "repo": "citrolabs/ego-lite",
+    "github_url": "https://github.com/citrolabs/ego-lite",
+    "homepage_url": "https://lite.ego.app",
+    "author": "citrolabs",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 16020,
+    "last_updated": "2026-09-16",
+    "category": "testing",
+    "tags": ["agent-skills", "ai-agent", "automation", "browser", "browser-automation", "claude-code"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone citrolabs/ego-lite and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "eigent",
+    "name": "Eigent",
+    "tagline": "Eigent: The Open Source Cowork Desktop - Local and Free Alternative to Claude Cowork and Codex",
+    "repo": "eigent-ai/eigent",
+    "github_url": "https://github.com/eigent-ai/eigent",
+    "homepage_url": "https://www.eigent.ai",
+    "author": "eigent-ai",
+    "author_type": "community",
+    "license": "Apache-2.0",
+    "stars": 15297,
+    "last_updated": "2026-09-16",
+    "category": "development-workflow",
+    "tags": ["agent-framework", "agent-skills", "agentic-ai", "agentic-workflow", "claude-cowork", "claude-cowork-alternative"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone eigent-ai/eigent and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "memu",
+    "name": "MemU",
+    "tagline": "Personal memory across agents",
+    "repo": "NevaMind-AI/memU",
+    "github_url": "https://github.com/NevaMind-AI/memU",
+    "homepage_url": "https://memu.pro",
+    "author": "NevaMind-AI",
+    "author_type": "community",
+    "license": "NOASSERTION",
+    "stars": 14410,
+    "last_updated": "2026-09-14",
+    "category": "other",
+    "tags": ["agent-memory", "claude-skills", "harness", "loop-engineering", "mcp", "memory"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone NevaMind-AI/memU and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "hive",
+    "name": "Hive",
+    "tagline": "Multi-Agent Harness for Production AI",
+    "repo": "aden-hive/hive",
+    "github_url": "https://github.com/aden-hive/hive",
+    "author": "aden-hive",
+    "author_type": "community",
+    "license": "Apache-2.0",
+    "stars": 11047,
+    "last_updated": "2026-09-14",
+    "category": "other",
+    "tags": ["agent", "agent-framework", "agent-skills", "anthropic", "automation", "autonomous-agents"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone aden-hive/hive and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
   }
 ]
