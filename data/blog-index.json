@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-09-17-cve-2026-55607-claude-code-sandbox-escape-hits-pymol-claude-",
+    "title": "CVE-2026-55607: Claude Code Sandbox Escape Hits Pymol Claude MCP",
+    "description": "A high-severity git worktree bug let attackers escape Claude Code's seatbelt sandbox via a malicious repo clone — here's what to check.",
+    "hook": "A folder named '.git' and a symlink to .zshenv were enough to escape Claude Code's sandbox entirely — CVE-2026-55607 turns 'just clone this repo' into a code-execution vector.",
+    "date": "2026-09-17",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 2
+  },
+  {
     "slug": "2026-09-16-critical-unauthenticated-rce-hits-litellm-based-mcp-server",
     "title": "Critical Unauthenticated RCE Hits LiteLLM-Based MCP Server",
     "description": "CVE-2026-37004 lets unauthenticated attackers execute arbitrary OS commands on Ogham Mcp via an unsandboxed Jinja2 template injection in /prompts/test.",
