@@ -6,12 +6,20 @@ falsified; promote hardened facts to CLAUDE.md via human-approved PR. Keep ~120 
 
 ## Gates & environment
 
-- **CURRENT GATE BASELINE — 2026-09-09 (S104), measured against `origin/main` @ `573c2a3`.**
+- **CURRENT GATE BASELINE — 2026-09-17 (S99), measured against `origin/main` @ `6738b11`.**
   `npx tsc --noEmit` 0 errors · `npm run lint` **0 errors / 6 warnings** · `npm test`
-  **538 tests / 44 files**. The 6 warnings are `app/admin/page.tsx:246` (the load-bearing
+  **547 tests / 45 files**. (EDITED IN PLACE per M20 — the prior 2026-09-09/S104 figure of
+  538 tests / 44 files was falsified by this measurement and has been overwritten, not
+  appended over. The warning count and identities are unchanged across both measurements.)
+  The 6 warnings are `app/admin/page.tsx:246` (the load-bearing
   react-hooks directive, S2/S7), `bots/lib/blog-planning.ts:22:30`, and four
   `@next/next/no-location-assign-relative-destination` in
   `components/{CategoryEditor,ClaimServer,CommunityVerify,FavoriteButton}.tsx`.
+  **A stale `node_modules` reads exactly like a red `tsc` gate:** this cycle's first
+  `npx tsc --noEmit` reported 10 errors in `open-next.config.ts` and
+  `scripts/check-schema-drift.ts` purely because the worktree predated `5c6e29a`'s
+  Vercel→Cloudflare migration. Both packages ARE in `package.json`; `npm install` cleared
+  all 10. Run `npm install` in a reused worktree BEFORE concluding main is broken.
   **State the bar as "no NEW warnings vs a measured baseline", never as an absolute count** —
   the test figure moves most cycles, so re-measure rather than trust it.
   The two entries below are SUPERSEDED and kept only so their figures are recognisable as stale:
@@ -1448,3 +1456,13 @@ it saw nothing, which is worse than no checker at all.
   `SUPABASE_DB_URL is not set` — the file is gitignored, so `cp /path/to/main/.env.local .` is the
   fix and leaves the tree clean.
 
+
+- 2026-09-17 (S99): **`servers` is 66,778 rows / 309 MB** per `supabase/migrations/20260804120000_content_updated_at.sql:35,44` — a migration-sourced figure that SUPERSEDES the `~46k` and `~63k` numbers previously cited elsewhere in this file. Use it for any scan-cost reasoning.
+- 2026-09-17 (S99): **`servers.is_archived` is `boolean default false` and NULLABLE** (`supabase/migrations/20260402000000_initial_schema.sql:44`), and NULL means LIVE to every JS partition. `.eq('is_archived', false)` and JS `!row.is_archived` are therefore NOT equivalent — the SQL form silently DROPS NULL rows while the JS form keeps them. Any migration of an archived filter from PostgREST into JS widens the result set. Sitewide counters use the SQL form (`20260418000000_expand_home_stats.sql:23`), so NULL rows are invisible to them.
+- 2026-09-17 (S99): **Adding `ORDER BY` above a `LIMIT` on an unindexed PostgREST query is a cost regression, not a neutral determinism fix** — it forfeits the planner's early scan exit. `servers` has NO index on `github_url`, `npm_package`, `pip_package` or `is_archived` (the four `is_archived` hits in `20260417210424_hot_query_indexes.sql:24,29,34,39` are partial-index WHERE clauses, not indexes on the column). Distinct from the S50/S54 rake (an index-ordered plan degrading to a full sort); this one bites where no index-ordered plan ever existed.
+- 2026-09-17 (S99): **Ordering a candidate window to favour one partition guarantees starvation of the other.** Ordering live-rows-first evicts exactly the archived rows an archived-duplicate check exists to find. Where a window feeds a JS partition, prefer NO ordering plus an explicit saturation guard: without `ORDER BY`, a NON-saturated window is the complete match set, so "not saturated ∧ no match" is a proof of uniqueness, and saturation is the only case needing a decision (`app/api/submit/route.ts:124-128,188-200`).
+- 2026-09-17 (S99): **`supabase/config.toml:18` sets PostgREST `max_rows = 1000`** — the ceiling any route `.limit()` is silently clamped to. Relevant to every window-exhaustion guard: a guard written as `rows.length === LIMIT` stops firing if a server-side cap is ever set below its own limit, so write `>=`.
+- 2026-09-17 (S99): **Archived `servers` rows are a fully public surface, not a takedown.** SELECT RLS is `using (true)` with no archived carve-out (`20260402000000_initial_schema.sql:298`); `app/s/[slug]/page.tsx:166-171` fetches with no `is_archived` filter and `:252` renders an archived banner; the maintainer's free-text archive `reason` lands in the publicly-readable `edits` table (`app/api/admin/archive/route.ts:70-82`). Exposing an archived row's slug/name in an API response leaks nothing new.
+- 2026-09-17 (S99): **`app/submit/page.tsx:114` renders `data.error` in preference to `data.message`** for every non-409-with-`existing` response (corrected in S99 to prefer `message`). The submit route returns `error` as BOTH a string (rate limit, machine codes) and an object (`parsed.error.flatten()` on the zod 400), so any new error payload on this form must carry a human `message`.
+- 2026-09-17 (S99): **`__tests__/helpers/route-supabase-stub.ts` now has SEVEN consumers** and records `or`/`order`/`limit` as pass-throughs plus a `maybeSingle()` terminator on its own resolve key. This makes query-SHAPE assertions possible (e.g. "no `.order()` on this query"), which is the only way to pin a negative-filter requirement — the stub executes no filtering and no ordering. `resolveFor` keys only by `${table}:${terminator}`, so a route with TWO plain-`await` reads on one table cannot have them steered independently; that constraint rules out splitting a query in two without extending the harness. Safety argument for adding a builder method: an unimplemented method previously threw `TypeError`, so any green suite proves its route never called it.
+- 2026-09-17 (S99): A queued error in that harness resolves alongside `data` defaulting to `[]`, not `undefined` (`route-supabase-stub.ts:88-94`) — so a route that ignores `error` fails open in tests exactly as it does in production. Error-path pins need no harness change.
