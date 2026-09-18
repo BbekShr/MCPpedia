@@ -5,10 +5,13 @@
 ## 1. What this is
 
 MCPpedia (mcppedia.org) is an encyclopedia of 19,000+ MCP servers: Next.js 16 (App Router) +
-React 19 + TypeScript + Tailwind 4 on Vercel, with Supabase (Postgres + auth) as the database,
-Vitest for tests, and a fleet of 14 scheduled GitHub Actions bots (`bots/`) that sync the MCP
-registry, compute 0–100 scores, generate blog posts, and send digests. **Merging `main` deploys
-to production** — every PR is a prod change.
+React 19 + TypeScript + Tailwind 4 on **Cloudflare Workers** (via `@opennextjs/cloudflare`), with
+Supabase (Postgres + auth) as the database, Vitest for tests, and a fleet of 18 scheduled GitHub
+Actions bots (`bots/`) that sync the MCP registry, compute 0–100 scores, generate blog posts, and
+send digests. **Merging `main` deploys to production** — every PR is a prod change; the trigger is
+`.github/workflows/deploy-cloudflare.yml`. Hosting specifics (R2 ISR store, D1 tag cache, the
+Worker size cap that forces Workers Paid) live in `docs/CLOUDFLARE.md` — read it before touching
+anything deploy-shaped.
 
 ## 2. Run & verify
 
@@ -28,20 +31,25 @@ pass** — no skipped tests, no loosened assertions, no eslint-disable to silenc
 
 ## 3. Architecture
 
-- `app/` — Next.js App Router: all pages plus ~28 API routes (`app/api/**/route.ts`): public
+- `app/` — Next.js App Router: all pages plus ~30 API routes (`app/api/**/route.ts`): public
   API v1, vote/flag/submit/search/discuss, admin endpoints, SVG badge widgets, webhooks.
-- `lib/` — domain logic: `scoring.ts` (the 0–100 server scoring engine, ~1,080 lines),
+- `lib/` — domain logic: `scoring.ts` (the 0–100 server scoring engine, ~1,200 lines),
   `validators.ts` (zod schemas + `sanitizeSearchQuery`), `rate-limit.ts` (Supabase RPC-backed),
   `supabase/` (admin/server/client/middleware/public clients), `mcp/` (MCP tools/resources for
   the site's own MCP endpoint), `blog.ts`, `karma.ts`.
-- `bots/` — 14 scheduled bots run by `.github/workflows/*.yml` (sync-registry, compute-scores,
-  generate-blog, enrich-descriptions, …) sharing helpers in `bots/lib/`.
+- `bots/` — 16 bot entrypoints driven by 18 scheduled `.github/workflows/*.yml` (sync-registry,
+  compute-scores, generate-blog, enrich-descriptions, …) sharing helpers in `bots/lib/`.
 - `components/` — React components (client + server).
-- `proxy.ts` — Supabase session-refresh middleware, cookie-presence gated for Vercel cost;
-  its long comment explains why — read it before touching.
-- `mcppedia-server/` — standalone MCP server for querying MCPpedia programmatically.
+- `proxy.ts` — Supabase session-refresh middleware, cookie-presence gated to hold down
+  serverless invocation count (the gate predates the Cloudflare move and its in-file comment
+  still says "Vercel"; the rationale carries over to Workers). Read that comment before touching.
+- `mcppedia-server/` — standalone MCP server for querying MCPpedia programmatically. **NOT in
+  this repo**: `.gitignore` excludes it as a separate repo (BbekShr/mcp-server-mcppedia) and
+  `git ls-files` returns zero matches. Its sources duplicate `lib/mcp/*`, so a fix here does not
+  reach it — see BACKLOG M3.
 - `scripts/` — one-off maintenance scripts. `supabase/migrations/` — database schema.
-- `__tests__/` + `lib/__tests__/` — Vitest suites (97 tests).
+- `__tests__/` + `lib/__tests__/` — Vitest suites. The test count moves most cycles, so it is
+  deliberately not pinned here: read the measured baseline in `docs/org-memory/codebase.md`.
 
 ## 4. Critical rules
 
