@@ -1,7 +1,9 @@
 /**
  * Shared stub for route-level Supabase write tests.
  *
- * Consumed by `refresh-score-advisories.test.ts` and `edit-auto-approve.test.ts`;
+ * Consumed by seven suites (approve-edit-self, approve-edit-bookkeeping,
+ * edit-auto-approve, refresh-score-advisories, refresh-score-archive-forward,
+ * username-zero-row, submit-archived-duplicate);
  * a third hand-rolled copy is what this exists to prevent. It is the union of the
  * two originals, with the two behaviours they disagreed on behind flags so each
  * suite keeps the exact recording and resolve semantics it was written against:
@@ -25,11 +27,20 @@
  *   default — turning it on changes every key in the suite, not just the
  *   contested one.
  *
+ * Filter/shape methods (`eq`/`neq`/`in`/`not`/`or`/`order`/`limit`) are
+ * pass-through recorders: they record the call, return the builder, and change
+ * no resolve key — so a suite can assert the exact query shape a route builds
+ * (that an `.eq()` was dropped, that an `.order()` carries `nullsFirst`) even
+ * though the stub never executes filtering or ordering.
+ *
  * A key that is NOT queued resolves differently per terminator, mirroring real
- * PostgREST: `.single()` misses resolve `data: null` (no rows), a plain `await`
- * misses resolve `data: []` (empty set). That asymmetry is what makes a route's
- * not-found branch reachable — `[]` is truthy, so a shared `[]` default would
- * walk `if (!row) return 404` straight past into the next guard.
+ * PostgREST: `.single()` and `.maybeSingle()` misses resolve `data: null` (no
+ * rows), a plain `await` misses resolve `data: []` (empty set). That asymmetry
+ * is what makes a route's not-found branch reachable — `[]` is truthy, so a
+ * shared `[]` default would walk `if (!row) return 404` straight past into the
+ * next guard. `maybeSingle` is a third terminator with its OWN resolve key
+ * (`servers:maybeSingle`) rather than sharing `single`'s, so a route that does
+ * both against one table can queue them independently.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -50,7 +61,7 @@ export interface RouteSupabaseHarness {
   adminClientArgs: unknown[][]
   /** Signed-in user the `createClient` stub reports; null exercises the 401 path. */
   authUser: { current: { id: string } | null }
-  /** Rows the reads resolve to, keyed by `${table}:${single|await|verb}`. */
+  /** Rows the reads resolve to, keyed by `${table}:${single|maybeSingle|await|verb}`. */
   queued: Record<string, unknown>
   /** `count` values for head-only reads, same keys. */
   queuedCounts: Record<string, number>
@@ -109,7 +120,11 @@ export function createRouteSupabaseHarness(
       neq(...args: unknown[]) { return builder._record('neq', args) },
       in(...args: unknown[]) { return builder._record('in', args) },
       not(...args: unknown[]) { return builder._record('not', args) },
+      or(...args: unknown[]) { return builder._record('or', args) },
+      order(...args: unknown[]) { return builder._record('order', args) },
+      limit(...args: unknown[]) { return builder._record('limit', args) },
       single() { return resolveFor(key('single'), true) },
+      maybeSingle() { return resolveFor(key('maybeSingle'), true) },
       then(resolve: (value: unknown) => unknown) {
         return resolveFor(key('await'), false).then(resolve)
       },

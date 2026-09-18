@@ -16,7 +16,13 @@ import { mergeScoresOnOsvFailure } from '@/lib/score-merge'
 import { reconcileAdvisories } from '@/lib/advisories'
 import { revalidateServer, revalidateProfile } from '@/lib/revalidate'
 import { normalizeGithubUrl, normalizePackageName } from '@/lib/normalize'
+import { isMonorepoUrl } from '@/lib/duplicate-groups'
 import type { Tool } from '@/lib/types'
+
+// Widest candidate window we scan for duplicates. A read that comes back full
+// can't prove the submission is unique, so the route fails closed rather than
+// silently inserting a duplicate — see the scan comment below.
+const CANDIDATE_LIMIT = 200
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -75,9 +81,20 @@ export async function POST(request: Request) {
     }, { status: 409 })
   }
 
-  // Check for duplicate GitHub URL or package across active rows (normalized).
-  // Older rows may not yet be normalized in-place, so we filter the candidate
-  // set in JS rather than an exact `.eq()`.
+  // Check for duplicate GitHub URL or package (normalized). Older rows may not
+  // yet be normalized in-place, so we filter the candidate set in JS rather
+  // than an exact `.eq()`.
+  // Archived rows are in scope too: a resubmission of a previously-listed
+  // server has to be told the row exists-but-is-archived, not silently allowed
+  // to create a second listing for the same repository.
+  // The URL clause is a SUBSTRING match, so the window also holds rows that
+  // merely contain the fragment and never normalize-equal — the JS filter below
+  // is what decides. There is deliberately NO `ORDER BY`: none of these columns
+  // is indexed, so sorting would forfeit `LIMIT`'s early scan exit on
+  // user-controlled input, and any sort key would systematically starve one
+  // partition of the window (ordering live-first evicts exactly the archived
+  // rows this check exists to find). Because the window is therefore arbitrary,
+  // a failed or saturated read fails CLOSED instead of inserting.
   // Sanitize values going into the .or() string to prevent PostgREST filter injection.
   const orFilters: string[] = []
   if (normalizedGithubUrl) {
@@ -101,21 +118,35 @@ export async function POST(request: Request) {
       github_url: string | null
       npm_package: string | null
       pip_package: string | null
-      is_archived: boolean
+      is_archived: boolean | null
     }
 
-    const { data: candidates } = await supabase
+    const { data: candidates, error: candidatesError } = await supabase
       .from('servers')
       .select('slug, name, github_url, npm_package, pip_package, is_archived')
       .or(orFilters.join(','))
-      .eq('is_archived', false)
-      .limit(20)
+      .limit(CANDIDATE_LIMIT)
 
-    const conflict = ((candidates as unknown as CandidateRow[]) || []).find((c: CandidateRow) =>
-      (normalizedGithubUrl !== null && normalizeGithubUrl(c.github_url) === normalizedGithubUrl) ||
-      (normalizedNpm !== null && normalizePackageName(c.npm_package) === normalizedNpm) ||
-      (normalizedPip !== null && normalizePackageName(c.pip_package) === normalizedPip)
-    )
+    if (candidatesError) {
+      console.error('submit duplicate scan failed; refusing submission:', candidatesError.code, candidatesError.message, orFilters.join(','), user.id)
+      return NextResponse.json({
+        error: 'duplicate_check_unavailable',
+        message: 'Could not verify this submission is not a duplicate. Please try again shortly.',
+      }, { status: 503 })
+    }
+
+    const rows = (candidates as unknown as CandidateRow[]) || []
+    const matchOf = (c: CandidateRow) => ({
+      url: normalizedGithubUrl !== null && normalizeGithubUrl(c.github_url) === normalizedGithubUrl,
+      pkg:
+        (normalizedNpm !== null && normalizePackageName(c.npm_package) === normalizedNpm) ||
+        (normalizedPip !== null && normalizePackageName(c.pip_package) === normalizedPip),
+    })
+
+    const conflict = rows.filter(c => !c.is_archived).find(c => {
+      const m = matchOf(c)
+      return m.url || m.pkg
+    })
 
     if (conflict) {
       return NextResponse.json({
@@ -127,6 +158,55 @@ export async function POST(request: Request) {
           url: `/s/${conflict.slug}`,
         },
       }, { status: 409 })
+    }
+
+    const archivedConflict = rows
+      .filter(c => c.is_archived)
+      .find(c => {
+        const m = matchOf(c)
+        if (!m.url && !m.pkg) return false
+        // A monorepo holds many distinct servers, so an archived row sharing only
+        // its URL is not this submission's prior listing. A package match is
+        // identity, so it still blocks.
+        if (m.url && !m.pkg && normalizedGithubUrl !== null && isMonorepoUrl(normalizedGithubUrl)) return false
+        return true
+      })
+
+    if (archivedConflict) {
+      return NextResponse.json({
+        error: 'duplicate_archived',
+        message: 'This server was previously listed on MCPpedia and is now archived, so it no longer appears in the catalog. Ask a maintainer to reactivate it (or open a GitHub issue) rather than resubmitting — a resubmission would create a second listing for the same repository.',
+        existing: {
+          slug: archivedConflict.slug,
+          name: archivedConflict.name,
+          url: `/s/${archivedConflict.slug}`,
+          archived: true,
+        },
+      }, { status: 409 })
+    }
+
+    // No conflict found — but if the window came back full, the absence of a
+    // match proves nothing. Only refuse when a match could have identified a
+    // duplicate. For the known monorepo roots in MONOREPO_URLS, a URL-only
+    // submission is exempt: those URLs are shared by many distinct servers and
+    // would saturate on every attempt, so we accept a possible missed LIVE
+    // duplicate (the live branch, unlike the archived one, has no monorepo
+    // carve-out) rather than permanently blocking every monorepo submission.
+    // That miss needs >= CANDIDATE_LIMIT substring-only matches AND the exact
+    // duplicate row to be the one truncated away.
+    // `>=` rather than `===`: `===` assumes the server never returns more rows
+    // than we asked for, and would silently stop detecting saturation if a
+    // server-side row cap were ever set below CANDIDATE_LIMIT.
+    const saturated = rows.length >= CANDIDATE_LIMIT
+    const urlCanIdentify = normalizedGithubUrl !== null && !isMonorepoUrl(normalizedGithubUrl)
+    if (saturated && (urlCanIdentify || normalizedNpm !== null || normalizedPip !== null)) {
+      console.error('submit duplicate scan saturated at', CANDIDATE_LIMIT, 'candidates; refusing submission:', orFilters.join(','), user.id)
+      return NextResponse.json({
+        // Saturation is a property of the catalog, not of transient load: the
+        // same submission saturates on every retry, so we must not promise one.
+        error: 'duplicate_check_unavailable',
+        message: 'Too many similar entries to check this submission against automatically. Please open a GitHub issue so a maintainer can add it manually — retrying will not help.',
+      }, { status: 503 })
     }
   }
 
