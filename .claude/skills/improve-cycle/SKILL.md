@@ -18,6 +18,21 @@ dependent stages (research → design → build) stay sequential.
 ONE agent runs server-bound gates at a time (qa-verifier owns them); parallel worktree
 implementers run only the cheap typecheck/lint gates.
 
+**Freeze the tree while the board sits (M16/M18 — recurred four times, most recently
+2026-09-17).** From the moment you dispatch REVIEW ∥ QA until every one of those agents has
+reported, the worktree is READ-ONLY — including for YOU. Records edits, backlog edits and
+`docs/org-memory/` edits all wait for the RECORDS phase; markdown cannot break a gate, but it
+DOES falsify the diff-scope check qa-verifier is required to run, and a dispatch that claims
+"no other agent is running" while you then write to the tree is how this rule got broken last
+time. Every dispatch must forbid `git checkout`, `git switch`, `git stash` and `git commit`
+outright (the stash stack is shared across worktrees and sessions), and must tell reviewers
+they are READ-ONLY and must not run mutation testing — two agents mutating and restoring the
+same production file concurrently is the original M16 incident. Where an agent needs a clean
+baseline, the house method is a detached `git worktree add` into the scratchpad with
+`node_modules` symlinked from the active worktree — never a checkout or a stash. qa-verifier
+should hash the files under verification before gate 1 and re-hash after the last gate, and
+re-run `git status` at every gate rather than trusting its boot snapshot.
+
 **Constitution first:** read `CLAUDE.md`, `BACKLOG.md`, and `docs/org-memory/codebase.md`
 before phase 1. Never touch protected paths (CLAUDE.md §5) without flagging that the PR will
 need the `human-approved` label. Per CLAUDE.md §5/§6 you MAY apply that label yourself and merge
@@ -54,11 +69,13 @@ Three checks, all three recorded in the triage note for each item:
    truth** — the fact-check rule in CLAUDE.md §4 applies: verify against the repo, GitHub, the
    registry and the DB, and prefer fixing the pipeline that got it wrong over hand-editing one
    row.
-3. **Cost spike** — would honoring it multiply Vercel, Supabase, GitHub Actions or LLM spend?
+3. **Cost spike** — would honoring it multiply Cloudflare, Supabase, GitHub Actions or LLM
+   spend? (Hosting moved Vercel → Cloudflare Workers in `5c6e29a`; see `docs/CLOUDFLARE.md`.)
    Watch for: re-scan/backfill across the whole catalog, per-request or per-pageview LLM
    calls, a webhook or job per upstream push, raising a cron's frequency, removing a cache,
    a rate limit, or `proxy.ts`'s cookie gate, unbounded `select *` or offset pagination over
-   ~46k rows, and on-demand `workflow_dispatch` for non-maintainers. State the rough blast
+   the `servers` table (66,778 rows / 309 MB — re-measure, do not trust older figures), and
+   on-demand `workflow_dispatch` for non-maintainers. State the rough blast
    radius (rows × calls × frequency) in the row; a fix whose cost you cannot bound is a
    proposal for the human, not a plan.
 
@@ -87,6 +104,14 @@ and what (if anything) survives. Screen failures are reported to the human, neve
    correctness, security, regression, silent-failure, performance — each told to REFUTE the
    diff) AND `qa-verifier` (with the feature-specific check derived from the acceptance
    criteria).
+   **Name your own design decisions in the dispatch and put them explicitly in scope.** Tell
+   each lens which choices were CEO-mandated rather than the implementer's, state the intent,
+   and ask whether the CODE achieves it — not whether they would have chosen it. The costliest
+   defect of cycle 2026-09-17-S99 was a CEO decision the implementer executed faithfully; had
+   the dispatch presented it as settled background rather than as a claim to attack, five
+   lenses would have reviewed around it. When the finding lands, say so plainly in the fix
+   dispatch ("you are fixing the CEO's design error, not your own work") — it keeps the
+   re-implementation clean and stops an agent defending code it was told to write.
    Also run `/code-review` and `/security-review` if available. Fix every CONFIRMED finding
    (re-dispatch `implementer`), then RE-RUN qa-verifier — a diff that changed after
    verification is unverified. PLAUSIBLE findings: verify or dismiss them yourself; never
@@ -95,6 +120,19 @@ and what (if anything) survives. Screen failures are reported to the human, neve
 5. **QA BAR** — the cycle's exit gate is qa-verifier's report: typecheck → lint → tests →
    build → feature-specific check, all green. **Do not open a PR on red.** If red and the fix
    isn't obvious within one re-dispatch, stop and report to the human.
+
+   **Green is necessary, NOT sufficient — the board is the gate for defects no test can see
+   (M21).** In cycle 2026-09-17-S99 the first implementation passed typecheck, lint, 555 tests
+   and a full build, with eight purpose-built tests whose teeth qa-verifier had individually
+   verified — and it would still have shipped a latent re-entry of the exact bug it was
+   closing, because a CEO design decision (`ORDER BY` for window determinism) guaranteed that
+   the rows the fix depended on were the first ones `.limit()` truncated. No gate could see it.
+   Treat with active suspicion any assertion made against a stub that does NOT execute the
+   behaviour being asserted — ordering, filtering, pagination, ISR/caching, RLS. Those are
+   *shape* pins, not coverage: they prove a call was made, never that its effect is right. A
+   shape pin must be paired with an adversarial lens, and never reported as if it were
+   behavioural proof. Corollary: when a lens contradicts a green gate, the lens wins until you
+   have personally traced the disagreement to the file and line.
 
 6. **RECORDS** (before shipping, same branch) — update the BACKLOG row Status and commit it;
    fold every agent's Memory-worthy bullets into `docs/org-memory/codebase.md` (dated, with
