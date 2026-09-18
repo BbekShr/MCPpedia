@@ -1,0 +1,64 @@
+---
+title: "Three High-Severity CVEs Hit vLLM and the MCP Python SDK"
+description: "A vLLM RCE that bypasses trust_remote_code, plus two MCP Python SDK flaws around WebSocket origin checks and session hijacking — all rated high severity."
+hook: "trust_remote_code=False was supposed to stop this. A new vLLM CVE shows it doesn't — and two MCP SDK transport bugs mean your session IDs might be doing your auth token's job."
+date: "2026-09-18"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+Three high-severity advisories landed this cycle, and two of them share a root cause that should worry anyone running an MCP server over HTTP: **the transport layer trusts things it shouldn't.**
+
+<Callout type="warning">
+All three advisories are rated **high severity**. None require unusual conditions to exploit — just a network path to the server.
+</Callout>
+
+---
+
+## CVE-2026-90553 — vLLM remote code execution via a poisoned model
+
+**Affected:** [Trudi](/s/trudi)
+
+This one's ugly. vLLM before version 0.28.0 has a remote code execution flaw in the `LlavaOnevision2` processor loader — and the scary part is what it ignores.
+
+The `trust_remote_code` flag exists specifically so operators can refuse to execute arbitrary code bundled with a model. This vulnerability skips that check entirely for remote processor classes. An attacker who crafts a malicious model with arbitrary code embedded in `processing_llava_onevision2.py` gets that code executed **with the vLLM process's own authority** — even when the operator explicitly set `trust_remote_code=False`.
+
+<PullQuote>Setting trust_remote_code to False was supposed to be the safety switch. This bug means it wasn't wired to anything.</PullQuote>
+
+**What to do:** If you're running [Trudi](/s/trudi) or any deployment on vLLM before 0.28.0, upgrade immediately. Treat any model source you don't fully control as hostile until you've patched — the flag you thought was protecting you wasn't doing its job.
+
+---
+
+## CVE-2026-59950 — WebSocket transport skips Origin validation
+
+**Affected:** [io.github.CyberPunk11147/cyberwarex-defi-oracle](/s/io-github-cyberpunk11147-cyberwarex-defi-oracle)
+
+The MCP Python SDK's deprecated WebSocket server transport (`mcp.server.websocket.websocket_server`) never got the `TransportSecuritySettings` treatment that the SSE and Streamable HTTP transports already have. Result: it accepts a handshake with **no `Host` or `Origin` header validation at all.**
+
+That matters most for browser-based attacks — without origin checks, there's no SDK-level way to stop an untrusted web page from opening a WebSocket connection to your MCP server and talking to it directly.
+
+**What to do:** This only bites you if your application server actually exposes the WebSocket transport publicly. If [cyberwarex-defi-oracle](/s/io-github-cyberpunk11147-cyberwarex-defi-oracle) or any server you run uses it, the transport is deprecated for a reason — migrate to Streamable HTTP or SSE, both of which support proper origin restriction.
+
+---
+
+## CVE-2026-52869 — session hijacking via guessable session IDs
+
+**Affected:** [io.github.CyberPunk11147/cyberwarex-defi-oracle](/s/io-github-cyberpunk11147-cyberwarex-defi-oracle)
+
+Same SDK, a different gap. The SSE and Streamable HTTP transports route incoming requests to an existing session using **only the session identifier** — they never check whether the request's authenticated principal matches the one that created the session.
+
+<Callout type="fire">
+Anyone who learns or guesses a session ID can send JSON-RPC messages on that session — regardless of what bearer token the request carries. The session ID is doing the job the auth token was supposed to do.
+</Callout>
+
+**What to do:** If your server uses an HTTP transport (SSE or Streamable HTTP) for authenticated sessions, don't assume the session ID itself is a secret boundary. Check for an SDK patch that binds sessions to the authenticated principal, and treat session IDs as sensitive, hard-to-guess values in the meantime.
+
+---
+
+## The pattern
+
+Two SDK-level bugs, one shared lesson: **security settings that exist for one transport don't automatically apply to another.** The WebSocket transport missed origin validation that SSE already had. Session routing missed principal binding that should have been there from day one.
+
+If you're running any MCP server that talks HTTP or WebSocket, don't assume "we use the official SDK" means you're covered — check which transport you're actually exposing and whether it got the security update.
+
+Patch first, ask questions later.

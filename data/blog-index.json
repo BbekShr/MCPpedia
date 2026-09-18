@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-09-18-three-high-severity-cves-hit-vllm-and-the-mcp-python-sdk",
+    "title": "Three High-Severity CVEs Hit vLLM and the MCP Python SDK",
+    "description": "A vLLM RCE that bypasses trust_remote_code, plus two MCP Python SDK flaws around WebSocket origin checks and session hijacking — all rated high severity.",
+    "hook": "trust_remote_code=False was supposed to stop this. A new vLLM CVE shows it doesn't — and two MCP SDK transport bugs mean your session IDs might be doing your auth token's job.",
+    "date": "2026-09-18",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 2
+  },
+  {
     "slug": "2026-09-17-cve-2026-55607-claude-code-sandbox-escape-hits-pymol-claude-",
     "title": "CVE-2026-55607: Claude Code Sandbox Escape Hits Pymol Claude MCP",
     "description": "A high-severity git worktree bug let attackers escape Claude Code's seatbelt sandbox via a malicious repo clone — here's what to check.",
