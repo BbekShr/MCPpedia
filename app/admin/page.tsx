@@ -94,6 +94,69 @@ interface ClaimRow {
   server: { name: string; slug: string } | null
 }
 
+interface UserMetrics {
+  totalUsers: number
+  signups: {
+    last7d: number
+    last30d: number
+    last90d: number
+    byDay: { date: string; count: number }[]
+  }
+  activity:
+    | { error: string }
+    | {
+        scanned: number
+        truncated: boolean
+        signedInLast24h: number
+        signedInLast7d: number
+        signedInLast30d: number
+        neverSignedIn: number
+      }
+}
+
+function MetricBox({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="border border-border rounded-lg p-4 bg-bg">
+      <p className="text-xs text-text-muted mb-1">{label}</p>
+      <p className="text-2xl font-semibold text-text-primary tabular-nums">{value.toLocaleString()}</p>
+    </div>
+  )
+}
+
+/**
+ * 90-day signup bars. Days with no signups are present as zeros (the route
+ * pre-seeds them), so gaps read as "nobody joined" rather than silently
+ * squeezing the axis.
+ */
+function SignupChart({ days }: { days: { date: string; count: number }[] }) {
+  if (days.length === 0) return null
+  const max = Math.max(...days.map(d => d.count))
+  const total = days.reduce((s, d) => s + d.count, 0)
+  return (
+    <div className="border border-border rounded-lg p-4 bg-bg">
+      <div className="flex items-baseline justify-between mb-3">
+        <h3 className="text-sm font-semibold text-text-primary">New signups per day</h3>
+        <p className="text-xs text-text-muted tabular-nums">
+          {days[0].date} → {days[days.length - 1].date} · {total.toLocaleString()} total
+        </p>
+      </div>
+      <div className="flex items-end gap-px h-24">
+        {days.map(d => (
+          <div
+            key={d.date}
+            title={`${d.date}: ${d.count} signup${d.count === 1 ? '' : 's'}`}
+            className="flex-1 bg-accent/70 hover:bg-accent rounded-sm transition-colors"
+            // A zero day still gets a 1px sliver so the axis stays readable;
+            // the tooltip carries the real number.
+            style={{ height: max === 0 ? '1px' : `${Math.max(1, (d.count / max) * 100)}%` }}
+          />
+        ))}
+      </div>
+      <p className="text-xs text-text-muted mt-2 tabular-nums">Peak: {max.toLocaleString()}/day</p>
+    </div>
+  )
+}
+
 type Tab = 'servers' | 'users' | 'edits' | 'claims' | 'bots' | 'history'
 
 export default function AdminPage() {
@@ -109,6 +172,8 @@ export default function AdminPage() {
   const [hasMoreServers, setHasMoreServers] = useState(true)
   const [serverCount, setServerCount] = useState<number | null>(null)
   const [users, setUsers] = useState<ProfileRow[]>([])
+  const [userMetrics, setUserMetrics] = useState<UserMetrics | null>(null)
+  const [userMetricsError, setUserMetricsError] = useState<string | null>(null)
   const [edits, setEdits] = useState<EditRow[]>([])
   const [claims, setClaims] = useState<ClaimRow[]>([])
   const [pendingClaims, setPendingClaims] = useState(0)
@@ -151,6 +216,23 @@ export default function AdminPage() {
     if (tab === 'users') {
       const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(50)
       setUsers((data || []) as ProfileRow[])
+      // Aggregates come from the admin route, not from the 50 rows above:
+      // `profiles` is RLS-readable but the totals need a service-role count
+      // and sign-in recency lives in auth.users, which the browser client
+      // cannot reach at all.
+      setUserMetricsError(null)
+      try {
+        const res = await fetch('/api/admin/users')
+        if (res.ok) {
+          setUserMetrics((await res.json()) as UserMetrics)
+        } else {
+          setUserMetrics(null)
+          setUserMetricsError(`Failed to load account metrics (HTTP ${res.status})`)
+        }
+      } catch {
+        setUserMetrics(null)
+        setUserMetricsError('Failed to load account metrics')
+      }
     } else if (tab === 'edits') {
       const { data } = await supabase.from('edits').select('*, profile:profiles(username), server:servers(name, slug)').order('created_at', { ascending: false }).limit(50)
       setEdits((data || []) as EditRow[])
@@ -571,6 +653,43 @@ export default function AdminPage() {
 
       {/* Users tab */}
       {tab === 'users' && !loading && (
+        <>
+        {userMetricsError && (
+          <p className="mb-4 text-sm text-red">{userMetricsError}</p>
+        )}
+        {userMetrics && (
+          <div className="mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+              <MetricBox label="Total accounts" value={userMetrics.totalUsers} />
+              <MetricBox label="New (7 days)" value={userMetrics.signups.last7d} />
+              <MetricBox label="New (30 days)" value={userMetrics.signups.last30d} />
+              <MetricBox label="New (90 days)" value={userMetrics.signups.last90d} />
+            </div>
+
+            {'error' in userMetrics.activity ? (
+              <p className="mb-4 text-sm text-text-muted">
+                Sign-in activity unavailable: {userMetrics.activity.error}
+              </p>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-2">
+                  <MetricBox label="Signed in (24h)" value={userMetrics.activity.signedInLast24h} />
+                  <MetricBox label="Signed in (7 days)" value={userMetrics.activity.signedInLast7d} />
+                  <MetricBox label="Signed in (30 days)" value={userMetrics.activity.signedInLast30d} />
+                  <MetricBox label="Never signed in" value={userMetrics.activity.neverSignedIn} />
+                </div>
+                <p className="text-xs text-text-muted mb-4">
+                  Sign-in figures count distinct accounts by their LAST sign-in, the only
+                  sign-in data Supabase Auth retains — they are not a count of sessions, and
+                  a per-day sign-in trend is not reconstructable without new event logging.
+                  {userMetrics.activity.truncated && ' Truncated: more accounts exist than were scanned.'}
+                </p>
+              </>
+            )}
+
+            <SignupChart days={userMetrics.signups.byDay} />
+          </div>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -619,6 +738,7 @@ export default function AdminPage() {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {/* Edits tab */}

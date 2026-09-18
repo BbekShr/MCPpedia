@@ -604,15 +604,29 @@ export default async function AnalyticsPage() {
       return ((data || []) as unknown as Snapshot[]).slice().reverse()
     }).catch((): Snapshot[] => []),
 
-    // MCP API usage (last 90 days)
+    // MCP API usage (last 90 days).
+    //
+    // The window is pinned with an explicit `usage_date >= today-89` floor and
+    // the rows are taken NEWEST-first. Both matter: this query used to be
+    // `.order('usage_date', { ascending: true }).limit(600)`, which takes the
+    // OLDEST 600 rows in the table, not the most recent ones. Once the table
+    // grew past 600 rows the section froze permanently on its first ~134 days
+    // — the chart ended 2026-08-23 while the page header said "Refreshed
+    // daily", the "Today" box read 0 because no row carried today's date, and
+    // "All Time" silently meant "the first 600 rows we ever wrote".
+    // The limit stays only as a runaway guard; `reverse()` restores the
+    // ascending order the chart renders left-to-right in.
     withRetry(async () => {
+      const floor = new Date(now)
+      floor.setUTCDate(floor.getUTCDate() - 89)
       const { data, error } = await supabase
         .from('mcp_api_usage')
         .select('usage_date, action, count')
-        .order('usage_date', { ascending: true })
-        .limit(600) // ~90 days * 6 actions
+        .gte('usage_date', floor.toISOString().slice(0, 10))
+        .order('usage_date', { ascending: false })
+        .limit(2000) // 90 days x actions, with headroom for new action types
       if (error) throw new Error(`analytics: mcp_api_usage fetch failed: ${error.message}`)
-      return (data || []) as Array<{ usage_date: string; action: string; count: number }>
+      return ((data || []) as Array<{ usage_date: string; action: string; count: number }>).reverse()
     }).catch((): Array<{ usage_date: string; action: string; count: number }> => []),
 
     // The 12-month "servers added" histogram is the ONE aggregate
@@ -993,7 +1007,9 @@ export default async function AnalyticsPage() {
             const todayStr = new Date().toISOString().slice(0, 10)
             const todayRows = mcpUsage.filter(r => r.usage_date === todayStr)
             const todayTotal = todayRows.reduce((s, r) => s + r.count, 0)
-            const allTimeTotal = mcpUsage.reduce((s, r) => s + r.count, 0)
+            // Scoped to the fetched 90-day window, not all history — the label
+            // below says so rather than claiming an all-time total.
+            const windowTotal = mcpUsage.reduce((s, r) => s + r.count, 0)
             const actionTotals: Record<string, number> = {}
             for (const r of mcpUsage) actionTotals[r.action] = (actionTotals[r.action] || 0) + r.count
             const topActions = Object.entries(actionTotals).sort((a, b) => b[1] - a[1])
@@ -1004,7 +1020,7 @@ export default async function AnalyticsPage() {
               <>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
                   <StatBox label="Today" value={todayTotal.toLocaleString()} />
-                  <StatBox label="All Time" value={allTimeTotal.toLocaleString()} />
+                  <StatBox label="Last 90 days" value={windowTotal.toLocaleString()} />
                   {topActions.slice(0, 4).map(([action, count]) => (
                     <StatBox key={action} label={action} value={count.toLocaleString()} />
                   ))}
@@ -1054,8 +1070,9 @@ export default async function AnalyticsPage() {
         <p>
           Data sourced from the <Link href="/methodology" className="text-accent hover:text-accent-hover">MCPpedia scoring engine</Link>,
           GitHub API, npm registry, and the official MCP registry.
-          Ecosystem aggregates come from the nightly snapshot taken at 5:30 UTC
-          ({formatSnapshotDate(latestSnapshot.snapshot_date)}).
+          Ecosystem aggregates come from the nightly snapshot scheduled for 8:30 UTC
+          (see <code>.github/workflows/snapshot-metrics.yml</code>); the latest one is
+          from {formatSnapshotDate(latestSnapshot.snapshot_date)}.
         </p>
       </div>
     </div>
