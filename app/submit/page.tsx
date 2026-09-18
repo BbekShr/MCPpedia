@@ -111,7 +111,7 @@ function SubmitForm() {
         setDuplicate(data.existing)
         setError(data.message || 'This server is already on MCPpedia.')
       } else {
-        setError(typeof data.error === 'string' ? data.error : data.message || 'Submission failed')
+        setError(data.message || (typeof data.error === 'string' ? data.error : 'Submission failed'))
       }
     }
     setSubmitting(false)

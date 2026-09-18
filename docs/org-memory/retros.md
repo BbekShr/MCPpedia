@@ -603,3 +603,38 @@ place this time and filed M20 for the structural rule: a falsified figure gets E
 over. `codebase.md` being append-only by convention while its header sections read as current fact is
 the actual bug.
 
+
+## 2026-09-17 — cycle 2026-09-17-S99 (submit-path archived-duplicate resurrection)
+
+Friction, and it is the whole story of this cycle: **the verification bar went fully green on a
+fix that would have shipped a latent re-entry of the bug it was closing.** The first
+implementation passed typecheck, lint, 555 tests and a full build, and its 8 purpose-built tests
+had verified teeth (qa-verifier named a killing mutant for each). It was still wrong, because a
+CEO design decision — `ORDER BY is_archived ASC` to make the candidate window deterministic —
+guaranteed that archived rows, the entire point of the change, were the first rows `.limit()`
+truncated away. Under a saturated window the fix silently reverted to S99 itself, and the
+ordering made that failure DETERMINISTIC where the unordered query had at least given a retry a
+different draw. No gate could see it: the test harness executes no filtering and no ordering, so
+the defect was structurally invisible to every assertion in the suite.
+
+Three review lenses (silent-failure, performance, correctness) converged on it independently, and
+a fourth (security) independently found that the same `ORDER BY` forfeited `LIMIT`'s early scan
+exit — turning a 20-row read into a full 309 MB scan on `https://github.com/`, which
+`submitServerSchema` accepts because it validates only the hostname, never the path. Filed as M21:
+the skill should say outright that QA-green is necessary but not sufficient, and name the class —
+assertions against a stub that does not execute the behaviour being asserted.
+
+Two process notes. (1) The CEO's own design decision was the defect; the implementer executed it
+faithfully. Dispatching the fix round framed explicitly as "you are fixing the CEO's design error,
+not your own work" kept the second round clean. (2) M20's rule got its first real exercise: the
+gate baseline was EDITED in place (538/44 → 547/45), not appended over. The stale figure had
+already cost three consecutive cycles.
+
+Also reclaimed S85/S86, which read `open` despite shipping in merged PR #142 — and whose
+shipped-notes had been misfiled into the Protected column, so the rows had lost their real
+protected flag too. M11's drift, fourth recurrence.
+
+One correction worth recording against a review finding: a lens reported that no PostgREST
+`max_rows` config exists in the repo. `supabase/config.toml:18` sets `max_rows = 1000`. The
+hardening it suggested (`>=` over `===`) was still taken, but as future-proofing rather than a
+live bug — the distinction matters and was preserved in the record.
