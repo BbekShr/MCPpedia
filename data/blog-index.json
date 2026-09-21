@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-09-21-fastmcp-oauth-proxy-hit-with-two-high-severity-cves",
+    "title": "FastMCP OAuth Proxy Hit With Two High-Severity CVEs",
+    "description": "Two high-severity CVEs in FastMCP's OAuth Proxy — a Confused Deputy flaw and cross-server token reuse — affect Krita MCP and any server using OAuthProxy.",
+    "hook": "FastMCP's OAuth Proxy just got hit with two high-severity CVEs in one day — one lets a Confused Deputy attack slip past GitHub's consent screen, the other means a token for one MCP server could work on another.",
+    "date": "2026-09-21",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 2
+  },
+  {
     "slug": "2026-09-18-three-high-severity-cves-hit-vllm-and-the-mcp-python-sdk",
     "title": "Three High-Severity CVEs Hit vLLM and the MCP Python SDK",
     "description": "A vLLM RCE that bypasses trust_remote_code, plus two MCP Python SDK flaws around WebSocket origin checks and session hijacking — all rated high severity.",

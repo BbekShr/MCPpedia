@@ -1,0 +1,61 @@
+---
+title: "FastMCP OAuth Proxy Hit With Two High-Severity CVEs"
+description: "Two high-severity CVEs in FastMCP's OAuth Proxy — a Confused Deputy flaw and cross-server token reuse — affect Krita MCP and any server using OAuthProxy."
+hook: "FastMCP's OAuth Proxy just got hit with two high-severity CVEs in one day — one lets a Confused Deputy attack slip past GitHub's consent screen, the other means a token for one MCP server could work on another."
+date: "2026-09-21"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+Two high-severity CVEs just landed against **FastMCP's OAuth Proxy**, and both point back to the same server in our catalog: [Krita MCP](/s/krita-mcp). If you're running an MCP server that uses FastMCP's `OAuthProxy` for third-party auth — GitHub, or anything similar — this is not a "patch it eventually" advisory. This is a "check your deployment today" advisory.
+
+<Callout type="warning">Two high-severity CVEs, one shared root cause: FastMCP's OAuth Proxy doesn't isolate consent or tokens the way you'd assume it does.</Callout>
+
+---
+
+## CVE-2026-27124: Missing Consent Verification (Confused Deputy)
+
+**Severity: High.**
+
+The bug lives in FastMCP's `GitHubProvider` OAuth integration — the code path that lets a FastMCP-based MCP server authenticate users via GitHub OAuth through FastMCP's `OAuthProxy`. The proxy never properly verifies the user's consent when it receives the authorization code back from GitHub.
+
+That would be a minor gap on its own. It becomes a real vulnerability because of how GitHub behaves: **GitHub skips the consent screen for clients a user has already authorized.** Combine the two, and you get a textbook Confused Deputy setup — an attacker can potentially trick the proxy into acting on behalf of a user who never knowingly consented to *this* request.
+
+<PullQuote>The proxy trusts the authorization code. The user never got to say no.</PullQuote>
+
+**What to do:** If your MCP server uses FastMCP's `OAuthProxy` with `GitHubProvider`, treat this as urgent. Update to a patched FastMCP release before continuing to expose OAuth-gated tools publicly.
+
+---
+
+## CVE-2025-69196: Token Reuse Across MCP Servers
+
+**Severity: High.**
+
+This one is arguably worse, because it breaks a core assumption of OAuth: that a token issued for Server A can't be replayed against Server B.
+
+The `OAuthProxy` implementation ignores the `resource` parameter that a client submits in the authorization and token requests. Instead of issuing a token scoped to the specific MCP server making the request, FastMCP issues it against the `base_url` the proxy was initialized with. The relevant code sits in [`oauth_proxy.py` at line 828](https://github.com/jlowin/fastmcp/blob/main/src/fastmcp/server/auth/oauth_proxy.py#L828), where `self._jwt_issuer` gets set from `base_url` rather than the requested resource.
+
+Practically: **if multiple FastMCP servers share a `base_url` or OAuth deployment pattern, a token minted for one could be valid on another.** That's a lateral-movement path most operators wouldn't think to test for.
+
+<ScoreBreakdown>
+<ScoreRow label="CVE-2026-27124" points="High" description="Confused Deputy via missing consent check in GitHubProvider" />
+<ScoreRow label="CVE-2025-69196" points="High" description="Token issued for base_url, not the requesting resource — cross-server reuse" />
+</ScoreBreakdown>
+
+---
+
+## What This Means If You Run FastMCP
+
+Both advisories trace to the same subsystem — FastMCP's `OAuthProxy` — and both were published within minutes of each other on July 13, 2026, which suggests a coordinated disclosure after a single audit pass on FastMCP's auth layer.
+
+If you operate [Krita MCP](/s/krita-mcp) or any other FastMCP-based server using `OAuthProxy`:
+
+- **Update FastMCP immediately** to a version that fixes both the consent-verification gap and the `resource`-parameter handling.
+- **Audit your token issuance**: confirm tokens are scoped per-resource, not per-`base_url`, especially if you run more than one FastMCP server behind shared infrastructure.
+- **Don't assume GitHub's consent-skipping is harmless** — it's designed for UX convenience, not as a security boundary, and FastMCP's proxy was leaning on it as one.
+
+<Callout type="fire">Two CVEs, one shared root cause, zero excuses to wait on this patch.</Callout>
+
+OAuth proxies exist to make delegated auth *safer*, not to quietly widen the blast radius when something goes wrong. When the proxy itself is the confused deputy, every server sitting behind it inherits the risk.
+
+---
