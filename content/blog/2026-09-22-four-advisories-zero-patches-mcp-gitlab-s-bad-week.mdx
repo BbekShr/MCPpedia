@@ -1,0 +1,54 @@
+---
+title: "Four Advisories, Zero Patches: Mcp Gitlab's Bad Week"
+description: "Mcp Gitlab has four new security advisories, three critical, including a path to full GitLab account takeover — and no patches yet."
+hook: "A GitLab MCP server's default Docker setup lets any network-reachable attacker read /proc/self/environ, steal its access token, and take over the connected GitLab account. Three critical CVEs, zero patches."
+date: "2026-09-22"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+One MCP server. Four disclosures. Three of them critical. If you're running [Mcp Gitlab](/s/mcp-gitlab) in its default Docker configuration right now, your GitLab personal access token is one HTTP request away from a stranger's inbox.
+
+This is not a "patch when convenient" situation. This is a "check your deployment today" situation.
+
+<Callout type="warning">
+`@zereight/mcp-gitlab` has four open advisories as of September 2026 — three critical, one high — and none of them have a patched release at time of publication.
+</Callout>
+
+<StatGrid>
+<Stat value="4" label="Advisories" detail="Disclosed Sept 15-16, 2026" />
+<Stat value="3" label="Critical" detail="CVSS up to 8.5+" />
+<Stat value="0" label="Patches" detail="None shipped yet" />
+</StatGrid>
+
+---
+
+## The chain: unauthenticated access to full account takeover
+
+**[CVE-2026-61560](/s/mcp-gitlab)** is the one that should worry you most. In the default Docker deployment, `SSE=true` exposes every MCP tool with zero authentication. Anyone who can reach the port can call `upload_markdown`, which reads arbitrary files from the local filesystem via an unsanitized `file_path` parameter and pushes them to a GitLab project.
+
+Point that at `/proc/self/environ` and you've exfiltrated the server's `GITLAB_PERSONAL_ACCESS_TOKEN`. From there it's full account takeover — no login, no session, no interaction from a victim required.
+
+<PullQuote>An unauthenticated network-reachable attacker can read the server's own environment variables and walk out with its GitLab token.</PullQuote>
+
+## SSRF via a header nobody should trust
+
+**[CVE-2026-61559](/s/mcp-gitlab)** (CVSS 8.5) lives in a different flag: `ENABLE_DYNAMIC_API_URL=true`. When set, the server takes the `X-GitLab-API-URL` request header at face value and uses it as the base URL for API calls. An attacker who controls that header can redirect the server's authenticated requests — and the credentials riding along with them — wherever they want.
+
+## DNS rebinding reaches the "local" listener
+
+**[CVE-2026-61568](/s/mcp-gitlab)** shows why "it only listens on localhost" isn't a security boundary. The Streamable HTTP transport doesn't enforce an effective Host/Origin allowlist, so a malicious web page can use DNS rebinding to make a victim's browser talk to their own local MCP listener while spoofing an attacker-controlled Host and Origin. The server accepts it and proceeds straight into MCP initialization — this is CWE-350, trusting reverse DNS for a security decision.
+
+## The safety controls were never real controls
+
+**[GHSA-5648-rgj9-v224](/s/mcp-gitlab)** is the audit that ties it together. A source review of commit `60adcc0` (package v2.1.28) found five distinct ways to defeat the server's advertised safety net — read-only mode, the project allow-list, and transport auth all get bypassed, including via `execute_graphql`, plus a session-exhaustion DoS path. Under the MCP threat model, where tool-call arguments can be shaped by prompt injection or a malicious client, controls that can be talked around aren't controls.
+
+<SectionLabel>What to do now</SectionLabel>
+
+- **Don't run SSE mode exposed to any network you don't fully trust.** That's the default Docker posture and it's the whole attack surface for CVE-2026-61560.
+- **Turn off `ENABLE_DYNAMIC_API_URL`** unless you have a specific reason it's on — and even then, treat it as untrusted.
+- **Don't rely on "localhost" as a security boundary** for the Streamable HTTP transport; DNS rebinding doesn't care what your bind address is.
+- **Rotate your `GITLAB_PERSONAL_ACCESS_TOKEN`** if this server has ever been reachable from an untrusted network.
+- Watch [Mcp Gitlab](/s/mcp-gitlab)'s repository for a patched release — none of the four advisories list one yet.
+
+No fix exists for any of these today. Until one ships, the only safe move is to shrink this server's exposure to nothing.

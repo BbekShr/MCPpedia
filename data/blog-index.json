@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-09-22-four-advisories-zero-patches-mcp-gitlab-s-bad-week",
+    "title": "Four Advisories, Zero Patches: Mcp Gitlab's Bad Week",
+    "description": "Mcp Gitlab has four new security advisories, three critical, including a path to full GitLab account takeover — and no patches yet.",
+    "hook": "A GitLab MCP server's default Docker setup lets any network-reachable attacker read /proc/self/environ, steal its access token, and take over the connected GitLab account. Three critical CVEs, zero patches.",
+    "date": "2026-09-22",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 2
+  },
+  {
     "slug": "2026-09-21-fastmcp-oauth-proxy-hit-with-two-high-severity-cves",
     "title": "FastMCP OAuth Proxy Hit With Two High-Severity CVEs",
     "description": "Two high-severity CVEs in FastMCP's OAuth Proxy — a Confused Deputy flaw and cross-server token reuse — affect Krita MCP and any server using OAuthProxy.",
