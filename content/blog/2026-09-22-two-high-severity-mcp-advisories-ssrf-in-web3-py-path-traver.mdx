@@ -1,0 +1,69 @@
+---
+title: "Two High-Severity MCP Advisories: SSRF in web3.py, Path Traversal in mcp-server-git"
+description: "CVE-2026-40072 lets contracts trigger SSRF via CCIP Read; CVE-2026-27735 lets git_add stage files outside the repo. Both rated high severity — patch now."
+hook: "A smart contract can point your MCP server at your own internal network, and a 'compliance' server had a path traversal bug that could stage your .env file into a commit. Two high-severity CVEs, same day."
+date: "2026-09-22"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+Two high-severity advisories just landed in the MCP ecosystem, and both share the same lesson: **input you don't control is a weapon you didn't ask for.**
+
+One lets a smart contract make your server fetch arbitrary URLs. The other lets a tool call stage files it was never supposed to touch. Here's what happened, and what to do about it right now.
+
+---
+
+<Callout type="warning">Two CVEs, both rated **high** severity, both published on the same day — 2026-07-13. If you're running either affected server, patch before you do anything else.</Callout>
+
+## CVE-2026-40072 — SSRF via CCIP Read in web3.py
+
+**Affected:** [energy-oracle](/s/io-github-dornansgar390-hue-energy-oracle) (`io.github.dornansgar390-hue/energy-oracle`)
+
+web3.py implements CCIP Read (EIP-3668) — a mechanism where a smart contract can tell a client "fetch this URL for offchain data." The problem is in how that URL gets used.
+
+The `OffchainLookup` handler takes the URLs a contract supplies in `offchain_lookup_payload["urls"]`, substitutes in `{sender}` and `{data}` template values, and requests them **directly**. There's no scheme restriction, no hostname allowlist, and — this is the part that should worry you — no block on private or reserved IP ranges. Loopback, link-local, RFC1918 space: all fair game.
+
+<PullQuote>A contract you've never audited can point your server's HTTP client at your own internal network — and your server will happily go there.</PullQuote>
+
+For a server like energy-oracle, which by its name is pulling data tied to onchain contracts, that's a direct line from "untrusted contract logic" to "server-side request forgery." An attacker who controls or influences a contract's offchain lookup URLs can use your server as a proxy into internal services, cloud metadata endpoints, or anything else reachable from where the process runs.
+
+<ScoreBreakdown>
+<ScoreRow label="Severity" points="High" description="No destination validation on contract-supplied URLs" />
+<ScoreRow label="Attack surface" points="SSRF" description="Private IP ranges and internal services reachable" />
+<ScoreRow label="Trigger" points="Any contract" description="Malicious or compromised contract sets the lookup URL" />
+</ScoreBreakdown>
+
+**What to do:** Update web3.py to a patched release. If you're maintaining energy-oracle or anything built on the same CCIP Read path, don't wait on the upstream fix alone — add your own egress allowlist or block private IP ranges at the network layer until you've confirmed the patch is in place.
+
+---
+
+<SectionLabel>Second Advisory</SectionLabel>
+
+## CVE-2026-27735 — Path traversal in mcp-server-git's `git_add`
+
+**Affected:** [mcp-compliance](/s/io-github-yawlabs-mcp-compliance-yawlabs) (`io.github.YawLabs/mcp-compliance`)
+
+This one's simpler to explain and just as dangerous. In `mcp-server-git` versions prior to 2026.1.14, the `git_add` tool never checked that the file paths it was handed actually lived inside the repository.
+
+It passed those paths straight to GitPython's `repo.index.add()`, which doesn't enforce working-tree boundaries on relative paths. Feed it a path full of `../` sequences, and it happily resolves outside the repo — and stages whatever it finds there into the Git index.
+
+<Callout type="fire">Staged means committable. A file with `../../.ssh/id_rsa` or `../../.env` in the path argument doesn't just get read — it gets added to the index, ready to be committed and pushed out through a routine sync.</Callout>
+
+For a server named **mcp-compliance**, the irony is hard to miss: a tool meant to help enforce compliance is the one with the boundary-check gap. Any workflow that lets an LLM or automated agent call `git_add` with attacker-influenced or unvalidated path arguments is exposed — sensitive files outside the repo tree can end up exfiltrated via a subsequent commit and push.
+
+<StatGrid>
+<Stat value="2026.1.14" label="Fixed Version" detail="Upgrade to this or later" />
+<Stat value="High" label="Severity" detail="Path traversal → data exfiltration" />
+</StatGrid>
+
+**What to do:** Upgrade `mcp-server-git` to 2026.1.14 or later immediately. In the meantime, don't grant `git_add` tool access to any agent flow where the file path argument can be influenced by untrusted input — that's the whole attack.
+
+---
+
+## The pattern underneath both
+
+Neither of these is exotic. One is missing SSRF hardening on attacker-controlled URLs; the other is missing boundary checks on attacker-controlled paths. Both are the kind of thing a security review catches in an afternoon — if anyone runs one before shipping.
+
+MCP servers sit at a uniquely dangerous junction: they take instructions from models, which take instructions from users, which sometimes take instructions from an untrusted document, contract, or webpage three hops removed. **Every unvalidated input at that junction is a potential advisory with your server's name on it.**
+
+If you run [energy-oracle](/s/io-github-dornansgar390-hue-energy-oracle) or [mcp-compliance](/s/io-github-yawlabs-mcp-compliance-yawlabs) — or anything built on web3.py's CCIP Read path or a pre-2026.1.14 `mcp-server-git` — patch today, not this sprint.

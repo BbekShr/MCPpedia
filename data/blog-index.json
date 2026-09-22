@@ -15,6 +15,21 @@
     "readingTime": 2
   },
   {
+    "slug": "2026-09-22-two-high-severity-mcp-advisories-ssrf-in-web3-py-path-traver",
+    "title": "Two High-Severity MCP Advisories: SSRF in web3.py, Path Traversal in mcp-server-git",
+    "description": "CVE-2026-40072 lets contracts trigger SSRF via CCIP Read; CVE-2026-27735 lets git_add stage files outside the repo. Both rated high severity — patch now.",
+    "hook": "A smart contract can point your MCP server at your own internal network, and a 'compliance' server had a path traversal bug that could stage your .env file into a commit. Two high-severity CVEs, same day.",
+    "date": "2026-09-22",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 3
+  },
+  {
     "slug": "2026-09-21-fastmcp-oauth-proxy-hit-with-two-high-severity-cves",
     "title": "FastMCP OAuth Proxy Hit With Two High-Severity CVEs",
     "description": "Two high-severity CVEs in FastMCP's OAuth Proxy — a Confused Deputy flaw and cross-server token reuse — affect Krita MCP and any server using OAuthProxy.",
