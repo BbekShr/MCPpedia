@@ -2355,5 +2355,165 @@
     "install": {
       "manual": "Clone aden-hive/hive and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
     }
+  },
+  {
+    "slug": "video-shotcraft",
+    "name": "Video Shotcraft",
+    "tagline": "AI video skill for Claude Code & Codex — cinematic product videos with Remotion: 152 shot recipe cards, 209 motion previews, a production-ready template",
+    "repo": "Vincentwei1021/video-shotcraft",
+    "github_url": "https://github.com/Vincentwei1021/video-shotcraft",
+    "homepage_url": "https://vincentwei1021.github.io/video-shotcraft/",
+    "author": "Vincentwei1021",
+    "author_type": "community",
+    "license": "Apache-2.0",
+    "stars": 9290,
+    "last_updated": "2026-09-09",
+    "category": "design",
+    "tags": ["agent-skills", "ai-agents", "ai-video", "claude-code", "claude-code-skills", "claude-skills"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone Vincentwei1021/video-shotcraft and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "superpowers-zh",
+    "name": "Superpowers Zh",
+    "tagline": "🦸 AI 编程超能力 · 中文增强版 — superpowers（250k+ ⭐）完整汉化 + 4 个中国原创 skills，让 Claude Code / Copilot CLI / Hermes Agent / Cursor / Windsurf / Kiro / Gemini CLI / Qoder 等 26 款 AI 编程工具真正会干活",
+    "repo": "jnMetaCode/superpowers-zh",
+    "github_url": "https://github.com/jnMetaCode/superpowers-zh",
+    "homepage_url": "https://sp.aiolaola.com",
+    "author": "jnMetaCode",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 8197,
+    "last_updated": "2026-09-17",
+    "category": "other",
+    "tags": ["agent-skills", "agentic-coding", "ai-coding", "chinese", "claude-code", "code-review"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone jnMetaCode/superpowers-zh and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "yao",
+    "name": "Yao",
+    "tagline": "✨ All your agents and workspaces in one place, on every device you own. Track tasks on a board, accessible from desktop, mobile, browser, or API. Self-hosted.",
+    "repo": "YaoApp/yao",
+    "github_url": "https://github.com/YaoApp/yao",
+    "homepage_url": "https://yaoagents.com",
+    "author": "YaoApp",
+    "author_type": "community",
+    "license": "NOASSERTION",
+    "stars": 7999,
+    "last_updated": "2026-09-22",
+    "category": "data",
+    "tags": ["agent-harness", "agent-orchestration", "agent-skills", "agent-workspaces", "ai-agents", "ai-native"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone YaoApp/yao and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "refly",
+    "name": "Refly",
+    "tagline": "The first open-source agent skills builder. Define skills by vibe workflow, run on Claude Code, Cursor, Codex & more. Build Clawdbot 🦞· APIs for Lovable · Bots for Slack & Lark/Feishu · Skills are in",
+    "repo": "refly-ai/refly",
+    "github_url": "https://github.com/refly-ai/refly",
+    "homepage_url": "https://refly.ai",
+    "author": "refly-ai",
+    "author_type": "community",
+    "license": "NOASSERTION",
+    "stars": 7529,
+    "last_updated": "2026-07-29",
+    "category": "development-workflow",
+    "tags": ["agent", "agent-skills", "automation", "claude", "clawdbot", "codex"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone refly-ai/refly and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "gentle-ai",
+    "name": "Gentle AI",
+    "tagline": "Gentle-AI configures the AI coding agents you already use: Claude Code, Cursor, OpenCode, Codex, Pi, and more. Choose persistent memory, Organic-Driven Development, curated skills, MCP servers, person",
+    "repo": "Gentleman-Programming/gentle-ai",
+    "github_url": "https://github.com/Gentleman-Programming/gentle-ai",
+    "homepage_url": "https://gentle-ai.gentlemanprogramming.com/",
+    "author": "Gentleman-Programming",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 7175,
+    "last_updated": "2026-09-23",
+    "category": "development-workflow",
+    "tags": ["agent-skills", "ai-agents", "ai-coding", "claude-code", "code-review", "codex"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone Gentleman-Programming/gentle-ai and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "awesome-agentic-ai-zh",
+    "name": "Awesome Agentic AI Zh",
+    "tagline": "A trilingual (繁中 / English / 简中) learning roadmap for agentic AI: from LLM basics to multi-agent systems, with 240+ curated resources and hands-on examples. 中文 AI agent 學習地圖。",
+    "repo": "WenyuChiou/awesome-agentic-ai-zh",
+    "github_url": "https://github.com/WenyuChiou/awesome-agentic-ai-zh",
+    "homepage_url": "https://wenyuchiou.github.io/awesome-agentic-ai-zh/",
+    "author": "WenyuChiou",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 7156,
+    "last_updated": "2026-09-23",
+    "category": "meta",
+    "tags": ["agentic-ai", "agentic-workflows", "ai-agent", "ai-agents", "awesome-list", "chinese-llm"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone WenyuChiou/awesome-agentic-ai-zh and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "skill",
+    "name": "Skill",
+    "tagline": "收录最全、更新最快的技能Skills商店：精选原创技能包（涵盖文档处理、内容创作、编程开发、机器学习、自动化工作流），全部打包好可直接安装使用！同时自动抓取GitHub上万个Skills项目，按分类、更新时间、Star数量整理。The most comprehensive and frequently updated AI Agent skill library, featuring curate",
+    "repo": "anbeime/skill",
+    "github_url": "https://github.com/anbeime/skill",
+    "homepage_url": "https://skill.miyucaicai.cn",
+    "author": "anbeime",
+    "author_type": "community",
+    "license": null,
+    "stars": 7141,
+    "last_updated": "2026-09-23",
+    "category": "development-workflow",
+    "tags": ["agent-skills", "claude-skills", "codex", "deepseek", "deepseek-harness", "developer-tools"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone anbeime/skill and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "oh-story-claudecode",
+    "name": "Oh Story Claudecode",
+    "tagline": "Claude Code / Codex / OpenCode agent skills for writing Chinese web novels (网文): 扫榜、拆文、写作、去AI味、封面全流程，长篇短篇都支持 | 13 skills for novel writing and long-form fiction with file-based continuity tracking. MI",
+    "repo": "zenstory-ai/oh-story-claudecode",
+    "github_url": "https://github.com/zenstory-ai/oh-story-claudecode",
+    "homepage_url": "https://zenstory.ai/oh-story",
+    "author": "zenstory-ai",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 7076,
+    "last_updated": "2026-09-23",
+    "category": "writing",
+    "tags": ["agent-skills", "ai-agent", "ai-novel-writing", "ai-writing", "antigravity", "chinese-novel"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone zenstory-ai/oh-story-claudecode and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
   }
 ]
