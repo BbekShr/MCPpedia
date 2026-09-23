@@ -638,3 +638,14 @@ One correction worth recording against a review finding: a lens reported that no
 `max_rows` config exists in the repo. `supabase/config.toml:18` sets `max_rows = 1000`. The
 hardening it suggested (`>=` over `===`) was still taken, but as future-proofing rather than a
 live bug — the distinction matters and was preserved in the record.
+
+## 2026-09-22 — cycle 2026-09-22-deep (S109: approve-edit success-path purge)
+
+S109 shipped clean: 5 lenses + `/code-review` found no CONFIRMED defect; qa-verifier PASS at `ea372a1`
+(558/558, build green, two mutants each killed 3/9). The load-bearing catch was the RESEARCHER's, not a
+gate's: the row's own suggested test ("this is one line") would have passed against the bug, because
+the suite queued the stale re-read with the same slug the write returned. Friction, fixed in this PR:
+the skill's "house method" said to SYMLINK `node_modules` into a scratch worktree, which Turbopack
+rejects for `npm run build` — qa-verifier lost one attempt to it; the skill now says clone for builds.
+Minor: the CEO dispatch told qa to skip the build and qa (correctly) ran it anyway in a scratch tree;
+the test baseline in codebase.md was stale again (547→558), overwritten in place per M20.

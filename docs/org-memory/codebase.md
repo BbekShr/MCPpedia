@@ -6,11 +6,11 @@ falsified; promote hardened facts to CLAUDE.md via human-approved PR. Keep ~120 
 
 ## Gates & environment
 
-- **CURRENT GATE BASELINE — 2026-09-17 (S99), measured against `origin/main` @ `6738b11`.**
+- **CURRENT GATE BASELINE — 2026-09-22 (S109), measured against `origin/main` @ `b354be5`.**
   `npx tsc --noEmit` 0 errors · `npm run lint` **0 errors / 6 warnings** · `npm test`
-  **547 tests / 45 files**. (EDITED IN PLACE per M20 — the prior 2026-09-09/S104 figure of
-  538 tests / 44 files was falsified by this measurement and has been overwritten, not
-  appended over. The warning count and identities are unchanged across both measurements.)
+  **558 tests / 46 files**. (EDITED IN PLACE per M20 — the prior 2026-09-17/S99 figure of
+  547 tests / 45 files was falsified by qa-verifier's re-measurement of `b354be5` in a scratch
+  worktree and has been overwritten, not appended over. Warning count and identities unchanged.)
   The 6 warnings are `app/admin/page.tsx:246` (the load-bearing
   react-hooks directive, S2/S7), `bots/lib/blog-planning.ts:22:30`, and four
   `@next/next/no-location-assign-relative-destination` in
@@ -1372,6 +1372,20 @@ it saw nothing, which is worse than no checker at all.
   (`node_modules/@supabase/postgrest-js/dist/index.cjs:375-376`). ~100 B per call. Never a reason to
   skip a zero-row check.
 
+- 2026-09-22 (S109): **approve-edit now purges by the write's own slug.** The route's only `servers`
+  access is the admin `.update().eq('id', …).select('id, slug')` (`app/api/admin/approve-edit/route.ts:158-162`);
+  both purges (`:232` double-failure, `:254` success) use `appliedSlug` (`:184`). It is non-null past the
+  zero-row 500 at `:177`; `slug` is not in `ALLOWED_FIELDS` (`:10-13`) and no trigger on `servers`
+  writes it (triggers: `servers_updated_at`, `servers_content_updated_at`, `servers_audit`,
+  `trg_award_server_submission`, `trg_sync_servers_submitted`). The route-local role gate admits
+  `editor` as well as maintainer/admin (`:31`, since `3fdda36`) — deliberate, matches the `edits`
+  UPDATE policy; do not "fix" it to CLAUDE.md §4's wording without a human decision.
+- 2026-09-22 (S109): **A 200 from a purging route never proves the purge landed.** `revalidatePath` is
+  synchronous and only appends to `pendingRevalidatedTags` (`node_modules/next/dist/server/web/spec-extension/revalidate.js:106-200`),
+  so its position relative to `await`s has no latency effect; OpenNext writes the D1 tag cache in
+  `waitUntil` after the response and only LOGS a failure (`@opennextjs/aws/dist/adapters/cache.js:423-424`),
+  and a missing `NEXT_TAG_CACHE_D1` binding is a silent no-op. Filed as S120.
+
 ## Test harness — route-supabase-stub
 
 - 2026-09-09 (S104): **The harness cannot distinguish `.update().eq()` from
@@ -1398,6 +1412,21 @@ it saw nothing, which is worse than no checker at all.
   flag, `keyByClient` (default off), is required for any route that writes ONE table through BOTH the
   authed and the admin client in a single request. The key is built in exactly ONE place, which is
   what makes a new default-off flag provably a no-op for the other suites by inspection.
+
+- 2026-09-22 (S109): **A queued key the fixed code no longer reads can make a purge assertion pass
+  against the BUGGY code.** `approve-edit-bookkeeping.test.ts` queued `authed:servers:single` with the
+  same slug the write returned, so `toHaveBeenCalledWith('example')` could not tell the re-read from
+  the write. Before trusting an assertion, check its expected value can ONLY come from the path under
+  test. Also: a `.single()` key with nothing queued resolves `data: null` (`route-supabase-stub.ts:92`),
+  so removing the queued row is by itself enough to kill a "re-reads X" mutant; errors are queued via
+  `harness.queuedErrors[key]` (`:94`).
+- 2026-09-22 (S109): In that suite the role gate and the author read share `authed:profiles:single`;
+  `revalidateProfile` is only observable by adding `username` to that row, and the proposer/caller
+  distinction only via the recorded `eq` call (`['id','user-2']`).
+- 2026-09-22 (S109): **Turbopack rejects a symlinked `node_modules` in a scratch worktree**
+  (`TurbopackInternalError: Symlink [project]/node_modules is invalid, it points out of the filesystem root`);
+  vitest and lint tolerate the symlink. For a scratch `npm run build`, `cp -cR <active>/node_modules .`
+  (APFS clone, ~10s). An env-less build takes ~10s and costs zero Supabase egress.
 
 ## Operational
 
