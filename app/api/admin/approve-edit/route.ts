@@ -153,8 +153,8 @@ export async function POST(request: Request) {
   // `.select()` so the write is VERIFIED rather than assumed: a zero-row match
   // resolves `error: null`, and `edits.server_id` is ON DELETE CASCADE, so a row
   // deleted between the read above and this write would otherwise let the route
-  // report an approval that changed nothing. The returned slug is also what the
-  // double-failure branch below revalidates with.
+  // report an approval that changed nothing. The returned slug is also what both
+  // the double-failure branch and the success path below revalidate with.
   const { data: applied, error: updErr } = await admin
     .from('servers')
     .update(update)
@@ -247,14 +247,16 @@ export async function POST(request: Request) {
     })
   }
 
-  // Refresh the affected server page (plus /compare pages containing it)
-  // and the proposer's profile, so the approval is visible immediately
-  // instead of waiting for the 7-day TTL.
-  const [{ data: server }, { data: author }] = await Promise.all([
-    supabase.from('servers').select('slug').eq('id', edit.server_id).single(),
-    supabase.from('profiles').select('username').eq('id', edit.user_id).single(),
-  ])
-  if (server?.slug) revalidateServer(server.slug)
+  // Refresh the affected server page (plus /compare pages containing it) and the
+  // proposer's profile, so the approval is visible before the 7-day TTL. Purge by
+  // the slug the verified write returned: a separate re-read can fail silently
+  // (supabase-js resolves `data: null`) and skip the purge for a change that landed.
+  if (appliedSlug) revalidateServer(appliedSlug)
+  const { data: author } = await supabase
+    .from('profiles')
+    .select('username')
+    .eq('id', edit.user_id)
+    .single()
   if (author?.username) revalidateProfile(author.username)
 
   return NextResponse.json({ ok: true, action: 'approved' })
