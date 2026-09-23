@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-09-23-high-severity-path-traversal-hits-notebooklm-mcp-s-vault-too",
+    "title": "High-Severity Path Traversal Hits notebooklm-mcp's Vault Tool",
+    "description": "CVE-2026-61647 lets prompt-injected input write arbitrary files via notebooklm-mcp's vault_batch tool — here's what's exposed and how to contain it.",
+    "hook": "An MCP tool with no path containment just turned 'write to my vault' into 'write anywhere the server can reach' — and a prompt-injected LLM can trigger it without a human touching a keyboard.",
+    "date": "2026-09-23",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 2
+  },
+  {
     "slug": "2026-09-22-four-advisories-zero-patches-mcp-gitlab-s-bad-week",
     "title": "Four Advisories, Zero Patches: Mcp Gitlab's Bad Week",
     "description": "Mcp Gitlab has four new security advisories, three critical, including a path to full GitLab account takeover — and no patches yet.",

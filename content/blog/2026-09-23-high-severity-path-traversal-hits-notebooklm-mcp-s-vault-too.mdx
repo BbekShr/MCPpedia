@@ -1,0 +1,49 @@
+---
+title: "High-Severity Path Traversal Hits notebooklm-mcp's Vault Tool"
+description: "CVE-2026-61647 lets prompt-injected input write arbitrary files via notebooklm-mcp's vault_batch tool — here's what's exposed and how to contain it."
+hook: "An MCP tool with no path containment just turned 'write to my vault' into 'write anywhere the server can reach' — and a prompt-injected LLM can trigger it without a human touching a keyboard."
+date: "2026-09-23"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+A single MCP tool call that writes a file. That's all it takes to turn an LLM's helper into a write-anywhere primitive — and this week that's exactly what security researchers found in [notebooklm-mcp](/s/io-github-roomi-fields-notebooklm-mcp).
+
+## The advisory
+
+<Callout type="warning">
+**CVE-2026-61647** — High severity — path traversal via arbitrary file write, disclosed 2026-09-22.
+</Callout>
+
+The `vault_batch` MCP tool — and its HTTP twin, `POST /batch-to-vault` — took a caller-supplied `vault_dir` path and ran it straight through `path.resolve()` and `fs.mkdir()`. No containment check. No allowlist. Nothing standing between the input and the filesystem.
+
+<PullQuote>A caller — or a prompt-injected LLM driving the MCP — could create directories and write files anywhere the server process has permission to write.</PullQuote>
+
+That's the part that should stop you mid-scroll. This isn't a bug that needs a malicious human at the keyboard. An MCP server's whole job is to let an LLM call tools on its behalf — so a poisoned document, a hostile web page fed into a NotebookLM session, or any other prompt-injection vector could drive `vault_batch` without the user ever typing the payload themselves.
+
+There's a second, smaller hole riding along with it: the `slug_prefix` parameter gets concatenated directly into the output filename, giving a narrower traversal path into the same write primitive.
+
+---
+
+### What's affected
+
+- **Package:** `@roomi-fields/notebooklm-mcp`, listed on MCPpedia as [io.github.roomi-fields/notebooklm-mcp](/s/io-github-roomi-fields-notebooklm-mcp)
+- **Vector:** the `vault_batch` tool and the `POST /batch-to-vault` HTTP endpoint
+- **Impact:** arbitrary directory creation and `.md`/`.json` file writes outside the intended vault directory, bounded only by the OS permissions of the process running the server
+
+### What to do about it
+
+<ScoreBreakdown>
+<ScoreRow label="Stop" points="1" description="If you're running notebooklm-mcp with any untrusted or LLM-driven input reaching vault_batch, disable that tool path now." />
+<ScoreRow label="Sandbox" points="2" description="Run the server under a dedicated, low-privilege account with write access scoped to the vault directory only — nothing else." />
+<ScoreRow label="Audit" points="3" description="Check for unexpected files or directories outside your configured vault path, especially anywhere the process user can reach." />
+<ScoreRow label="Patch" points="4" description="Watch the upstream repo for a fix that adds real path containment, then update as soon as it lands." />
+</ScoreBreakdown>
+
+Path containment for filesystem-writing tools isn't optional — it's table stakes. `path.resolve()` alone tells you nothing about whether the result stayed inside the directory you meant; it just normalizes `../../../etc` into something that looks tidy while still pointing wherever the attacker wants.
+
+<Callout type="fire">
+If your MCP client lets an LLM choose tool arguments — including `vault_dir` — without your review, treat this as an active exposure until a patch ships, not a theoretical one.
+</Callout>
+
+The broader lesson travels well beyond this one server: any MCP tool that touches the filesystem based on a string an LLM can influence needs a hard boundary check, not a hope that callers behave. Until notebooklm-mcp ships one, keep it caged.
