@@ -1466,3 +1466,40 @@ it saw nothing, which is worse than no checker at all.
 - 2026-09-17 (S99): **`app/submit/page.tsx:114` renders `data.error` in preference to `data.message`** for every non-409-with-`existing` response (corrected in S99 to prefer `message`). The submit route returns `error` as BOTH a string (rate limit, machine codes) and an object (`parsed.error.flatten()` on the zod 400), so any new error payload on this form must carry a human `message`.
 - 2026-09-17 (S99): **`__tests__/helpers/route-supabase-stub.ts` now has SEVEN consumers** and records `or`/`order`/`limit` as pass-throughs plus a `maybeSingle()` terminator on its own resolve key. This makes query-SHAPE assertions possible (e.g. "no `.order()` on this query"), which is the only way to pin a negative-filter requirement — the stub executes no filtering and no ordering. `resolveFor` keys only by `${table}:${terminator}`, so a route with TWO plain-`await` reads on one table cannot have them steered independently; that constraint rules out splitting a query in two without extending the harness. Safety argument for adding a builder method: an unimplemented method previously threw `TypeError`, so any green suite proves its route never called it.
 - 2026-09-17 (S99): A queued error in that harness resolves alongside `data` defaulting to `[]`, not `undefined` (`route-supabase-stub.ts:88-94`) — so a route that ignores `error` fails open in tests exactly as it does in production. Error-path pins need no harness change.
+
+## 2026-09-21 — Cloudflare hosting cost: who pays, and why (S116/S117/M22, no cycle)
+
+Measured against the live account and `mcppedia.org` on 2026-09-21. Attribution facts first,
+because the billing dashboard cannot answer them.
+
+- **The Cloudflare account is SHARED and its dashboard totals are account-wide, not MCPpedia's.**
+  `PASA LLC Account` (`f6283e8654ec49d97dd5d4b1641ea147`) runs five Workers: `mcppedia`,
+  `pasa-web`, `photobari`, `photobari-onboarding-cron`, `headstart`. Never read a cost line as
+  MCPpedia's without splitting it. Per-script split comes from the GraphQL API
+  (`workersInvocationsAdaptive` by `scriptName`; `r2OperationsAdaptiveGroups` by
+  `bucketName`/`actionType`), not the billing page.
+- **MCPpedia is ~96% of that bill** ($8.77 for the 30d to 2026-09-21): 217.1M of 222.9M Workers
+  CPU ms, 1.10M of 1.12M R2 Class A ops, 102.57 of ~118 GB stored.
+- **Every deploy abandons the whole ISR cache** — OpenNext namespaces `mcppedia-inc-cache` by
+  build ID. With 57 commits to `main` in 30d, the bucket held 32 build-id prefixes / 407,964
+  objects / 102.57 GB, of which exactly ONE generation was reachable. The cache therefore never
+  warms: crawlers re-render and re-write ~12.7k entries per generation. This single interaction
+  explains the storage AND the Class A lines.
+- **An R2 lifecycle rule now caps the storage half, and it lives OUTSIDE this repo.**
+  `expire-stale-incremental-cache` on `mcppedia-inc-cache`: 7d delete, `conditions.prefix` =
+  `incremental-cache/`, applied 2026-09-21 via the R2 REST API alongside the pre-existing
+  `Default Multipart Abort Rule`. It is not in `wrangler.jsonc` and no repo file references it —
+  check the bucket's lifecycle config before concluding storage growth is unbounded. It does NOT
+  reduce write volume.
+- **Nothing MCPpedia serves is edge-cached.** Zero `cf-cache-status` on 18 probed HTML routes;
+  zone analytics put 913k of 1.56M weekly requests in `cacheStatus: none`. `x-nextjs-cache: HIT`
+  means the R2 payload was reused — it does NOT mean the Worker was skipped. Worker CPU averaged
+  155.9 ms/request, versus 87.1 ms for `photobari` on the same adapter.
+- **`withRegionalCache` keys are visible as zone request paths.** Top-25 paths include
+  `/<buildId>/skills.cache` and `/<buildId>/<hash>.fetch` at 8-11k/7d each. These are Cache API
+  keys from `open-next.config.ts:13`, not real routes — do not chase them as traffic or as a
+  routing bug.
+- **The wrangler OAuth token expires hourly and a stale one fails as plausible data.** A
+  `{"success":false,...,"Authentication error"}` body renders as "0 objects" through any script
+  that reads `result` without checking `success`. Refresh with any `wrangler` command, and always
+  assert `success` before believing an empty R2 listing.
