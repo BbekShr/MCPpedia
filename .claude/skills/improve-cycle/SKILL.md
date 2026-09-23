@@ -29,7 +29,8 @@ outright (the stash stack is shared across worktrees and sessions), and must tel
 they are READ-ONLY and must not run mutation testing — two agents mutating and restoring the
 same production file concurrently is the original M16 incident. Where an agent needs a clean
 baseline, the house method is a detached `git worktree add` into the scratchpad with
-`node_modules` symlinked from the active worktree — never a checkout or a stash. qa-verifier
+`node_modules` symlinked from the active worktree (tests/lint; for `npm run build` clone it with
+`cp -cR` instead — Turbopack rejects a symlink) — never a checkout or a stash. qa-verifier
 should hash the files under verification before gate 1 and re-hash after the last gate, and
 re-run `git status` at every gate rather than trusting its boot snapshot.
 
