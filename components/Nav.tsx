@@ -9,6 +9,7 @@ import BlinkLogo from './BlinkLogo'
 import NotificationBell from './NotificationBell'
 import type { User } from '@supabase/supabase-js'
 import { Icon } from '@/components/ui/icons'
+import { SUPPORT_URL } from '@/lib/constants'
 
 export default function Nav() {
   const pathname = usePathname()
@@ -97,6 +98,15 @@ export default function Nav() {
 
         {/* Right side */}
         <div className="hidden md:flex items-center gap-2">
+          <a
+            href={SUPPORT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm px-2 py-1 rounded-md text-text-muted hover:text-accent hover:bg-bg-tertiary inline-flex items-center gap-1"
+          >
+            <Icon name="heart" size={14} />
+            Support
+          </a>
           <ThemeToggle />
           {user ? (
             <div className="flex items-center gap-2">
@@ -184,6 +194,16 @@ export default function Nav() {
               {link.label}
             </Link>
           ))}
+          <a
+            href={SUPPORT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setMobileOpen(false)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm text-text-muted hover:text-accent hover:bg-bg-tertiary"
+          >
+            <Icon name="heart" size={14} />
+            Support MCPpedia
+          </a>
           <div className="pt-2 border-t border-border mt-2">
             {user ? (
               <>

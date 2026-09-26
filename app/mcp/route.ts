@@ -5,7 +5,7 @@ import { runWithCallerIp } from '@/lib/mcp/api'
 import { registerTools } from '@/lib/mcp/tools'
 import { registerResources } from '@/lib/mcp/resources'
 import { registerPrompts } from '@/lib/mcp/prompts'
-import { SITE_NAME, SITE_URL } from '@/lib/constants'
+import { SITE_NAME, SITE_URL, SUPPORT_URL } from '@/lib/constants'
 import { getCatalogCounts, formatApproxTotal } from '@/lib/live-counts'
 
 // Hosted MCPpedia MCP endpoint — Streamable HTTP, stateless mode so it works
@@ -200,6 +200,9 @@ maintenance, documentation, compatibility and token efficiency. See the
   <li><a href="https://github.com/BbekShr/mcp-server-mcppedia/releases/latest">.mcpb bundle (Claude Desktop)</a></li>
   <li><a href="https://www.npmjs.com/package/mcp-server-mcppedia">npm package</a></li>
 </ul>
+
+<p class="muted">The API is free and will stay that way. If it saves you time,
+<a href="${SUPPORT_URL}">support MCPpedia</a> to help cover hosting.</p>
 
 <hr>
 <p class="muted">This URL is also the live JSON-RPC endpoint: an MCP client requesting
