@@ -98,7 +98,7 @@ export const SITE_DESCRIPTION = 'Discover and compare every MCP server - each sc
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://mcppedia.org'
 
 // Stripe Payment Link (Pasa LLC). Also referenced in .github/FUNDING.yml — keep in sync.
-export const SUPPORT_URL = 'STRIPE_PAYMENT_LINK'
+export const SUPPORT_URL = 'https://buy.stripe.com/5kQfZj65Y0Jw9emge8aIM00'
 
 // Smaller field set for list/card views (homepage, category, /servers, /best, etc.).
 // ServerCard reads ~15 columns; the full PUBLIC_SERVER_FIELDS projection includes
