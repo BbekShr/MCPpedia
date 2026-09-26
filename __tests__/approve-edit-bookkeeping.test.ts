@@ -13,6 +13,9 @@
  * test could make the retry succeed after the first attempt failed. `keyByWriteOp`
  * so `edits:update` stays readable against the `edits:single` read of the same
  * table rather than collapsing into an opaque `:await`.
+ *
+ * The suite also pins (S109) that the success-path ISR purge uses the slug returned
+ * by the verified `servers` write, never a separate re-read that can fail silently.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -52,6 +55,8 @@ async function postApprove(body: Record<string, unknown> = {}) {
 }
 
 const serversUpdated = () => calls.filter(c => c.table === 'servers' && c.op === 'update')
+const staleSlugReads = () =>
+  calls.filter(c => c.client === 'authed' && c.table === 'servers' && c.op === 'select')
 const editsUpdated = () => calls.filter(c => c.table === 'edits' && c.op === 'update')
 const notificationInserts = () =>
   calls.filter(c => c.table === 'notifications' && c.op === 'insert')
@@ -73,7 +78,6 @@ describe('POST /api/admin/approve-edit — bookkeeping write is checked', () => 
       },
       'authed:edits:update': [{ id: EDIT_ID }],
       'admin:edits:update': [{ id: EDIT_ID }],
-      'authed:servers:single': { slug: 'example' },
       // The `servers` write is checked now, so it must return the row it matched.
       'admin:servers:update': [{ id: SERVER_ID, slug: 'example' }],
     }
@@ -86,6 +90,10 @@ describe('POST /api/admin/approve-edit — bookkeeping write is checked', () => 
   })
 
   it('approves without touching the service role for bookkeeping', async () => {
+    // A stale re-read of `servers` would fail here; the purge must not depend on it.
+    harness.queuedErrors['authed:servers:single'] = { code: 'PGRST301', message: 'timeout' }
+    // The role gate and the author read share this key.
+    harness.queued['authed:profiles:single'] = { role: 'maintainer', username: 'proposer' }
     const res = await postApprove()
 
     expect(res.status).toBe(200)
@@ -103,6 +111,12 @@ describe('POST /api/admin/approve-edit — bookkeeping write is checked', () => 
     // One admin client, for the `servers` write only — the retry must stay unused
     // on the happy path rather than becoming the default write route.
     expect(adminClientArgs).toHaveLength(1)
+    // S109: purge by the slug the verified write returned, with no re-read.
+    expect(revalidate.revalidateServer).toHaveBeenCalledTimes(1)
+    expect(revalidate.revalidateServer).toHaveBeenCalledWith('example')
+    expect(staleSlugReads()).toEqual([])
+    expect(revalidate.revalidateProfile).toHaveBeenCalledWith('proposer')
+    expect(calls).toContainEqual({ client: 'authed', table: 'profiles', op: 'eq', args: ['id', 'user-2'] })
   })
 
   it('retries through the service role when the authed write ERRORS', async () => {
@@ -126,6 +140,8 @@ describe('POST /api/admin/approve-edit — bookkeeping write is checked', () => 
     expect(adminClientArgs).toHaveLength(1)
     expect(console.error).toHaveBeenCalledTimes(1)
     expect(notificationInserts()).toHaveLength(1)
+    expect(revalidate.revalidateServer).toHaveBeenCalledWith('example')
+    expect(staleSlugReads()).toEqual([])
   })
 
   it('retries through the service role when the authed write matches ZERO ROWS', async () => {
@@ -144,6 +160,8 @@ describe('POST /api/admin/approve-edit — bookkeeping write is checked', () => 
     expect(adminClientArgs).toHaveLength(1)
     expect(console.error).toHaveBeenCalledTimes(1)
     expect(notificationInserts()).toHaveLength(1)
+    expect(revalidate.revalidateServer).toHaveBeenCalledWith('example')
+    expect(staleSlugReads()).toEqual([])
   })
 
   it('500s when both the write and the retry match ZERO ROWS', async () => {
