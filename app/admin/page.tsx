@@ -701,7 +701,7 @@ export default function AdminPage() {
             <SignupChart days={userMetrics.signups.byDay} />
             {userMetrics.signupsTruncated && (
               <p className="text-xs text-text-muted mt-2">
-                Truncated: the per-day chart is capped at 1,000 rows, so its oldest days are
+                Truncated: the per-day chart hit the database row cap, so its oldest days are
                 incomplete. The 7/30/90-day totals above are exact.
               </p>
             )}

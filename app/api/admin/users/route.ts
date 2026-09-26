@@ -103,7 +103,9 @@ export async function GET() {
   }
 
   const recentProfiles = series.data || []
-  const signupsTruncated = recentProfiles.length >= SIGNUP_ROW_CAP
+  // Compare against the exact count, not the constant: the hosted project's
+  // max_rows lives in the Supabase dashboard and may be lower than 1000.
+  const signupsTruncated = (c90.count ?? 0) > recentProfiles.length
 
   // Pre-seed every day in the window at 0 so days with no signups render as a
   // real zero rather than dropping out and compressing the x-axis.
@@ -149,7 +151,7 @@ export async function GET() {
 
   return NextResponse.json({
     totalUsers: totalUsers ?? 0,
-    // True when the per-day series hit the row cap: the oldest days in
+    // True when the per-day series returned fewer rows than the exact 90d count: the oldest days in
     // `signups.byDay` are then incomplete (the last7d/30d/90d counts stay exact).
     signupsTruncated,
     signups: {
