@@ -102,6 +102,7 @@ interface UserMetrics {
     last90d: number
     byDay: { date: string; count: number }[]
   }
+  signupsTruncated: boolean
   activity:
     | { error: string }
     | {
@@ -174,6 +175,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState<ProfileRow[]>([])
   const [userMetrics, setUserMetrics] = useState<UserMetrics | null>(null)
   const [userMetricsError, setUserMetricsError] = useState<string | null>(null)
+  const [userMetricsLoading, setUserMetricsLoading] = useState(false)
   const [edits, setEdits] = useState<EditRow[]>([])
   const [claims, setClaims] = useState<ClaimRow[]>([])
   const [pendingClaims, setPendingClaims] = useState(0)
@@ -216,11 +218,15 @@ export default function AdminPage() {
     if (tab === 'users') {
       const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(50)
       setUsers((data || []) as ProfileRow[])
+      // Release the role-management table before the metrics call: that
+      // route pages through GoTrue serially and must not hold the table up.
+      setLoading(false)
       // Aggregates come from the admin route, not from the 50 rows above:
       // `profiles` is RLS-readable but the totals need a service-role count
       // and sign-in recency lives in auth.users, which the browser client
       // cannot reach at all.
       setUserMetricsError(null)
+      setUserMetricsLoading(true)
       try {
         const res = await fetch('/api/admin/users')
         if (res.ok) {
@@ -232,6 +238,8 @@ export default function AdminPage() {
       } catch {
         setUserMetrics(null)
         setUserMetricsError('Failed to load account metrics')
+      } finally {
+        setUserMetricsLoading(false)
       }
     } else if (tab === 'edits') {
       const { data } = await supabase.from('edits').select('*, profile:profiles(username), server:servers(name, slug)').order('created_at', { ascending: false }).limit(50)
@@ -654,10 +662,13 @@ export default function AdminPage() {
       {/* Users tab */}
       {tab === 'users' && !loading && (
         <>
+        {userMetricsLoading && (
+          <p className="mb-4 text-sm text-text-muted">Loading metrics…</p>
+        )}
         {userMetricsError && (
           <p className="mb-4 text-sm text-red">{userMetricsError}</p>
         )}
-        {userMetrics && (
+        {userMetrics && !userMetricsLoading && (
           <div className="mb-8">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
               <MetricBox label="Total accounts" value={userMetrics.totalUsers} />
@@ -688,6 +699,12 @@ export default function AdminPage() {
             )}
 
             <SignupChart days={userMetrics.signups.byDay} />
+            {userMetrics.signupsTruncated && (
+              <p className="text-xs text-text-muted mt-2">
+                Truncated: the per-day chart is capped at 1,000 rows, so its oldest days are
+                incomplete. The 7/30/90-day totals above are exact.
+              </p>
+            )}
           </div>
         )}
         <div className="overflow-x-auto">

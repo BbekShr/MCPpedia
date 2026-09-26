@@ -614,7 +614,10 @@ export default async function AnalyticsPage() {
     // — the chart ended 2026-08-23 while the page header said "Refreshed
     // daily", the "Today" box read 0 because no row carried today's date, and
     // "All Time" silently meant "the first 600 rows we ever wrote".
-    // The limit stays only as a runaway guard; `reverse()` restores the
+    // The limit stays only as a runaway guard: 8 KNOWN_ACTIONS
+    // (app/api/mcp/route.ts) x 90 days = 720 rows max, and anything above
+    // 1000 would be illusory anyway because PostgREST `max_rows = 1000`
+    // (supabase/config.toml) clamps every response. `reverse()` restores the
     // ascending order the chart renders left-to-right in.
     withRetry(async () => {
       const floor = new Date(now)
@@ -624,7 +627,7 @@ export default async function AnalyticsPage() {
         .select('usage_date, action, count')
         .gte('usage_date', floor.toISOString().slice(0, 10))
         .order('usage_date', { ascending: false })
-        .limit(2000) // 90 days x actions, with headroom for new action types
+        .limit(1000)
       if (error) throw new Error(`analytics: mcp_api_usage fetch failed: ${error.message}`)
       return ((data || []) as Array<{ usage_date: string; action: string; count: number }>).reverse()
     }).catch((): Array<{ usage_date: string; action: string; count: number }> => []),

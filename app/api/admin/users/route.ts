@@ -12,9 +12,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
  * `profiles.role IN ('maintainer','admin')` gate as every other admin route.
  *
  * Two different sources, for two different reasons:
- *   - Signups come from `profiles.created_at`. The table is the app's own
- *     mirror of auth.users and one indexed column selection over a 90-day
- *     window is cheap.
+ *   - Signups come from `profiles.created_at`, the app's own mirror of
+ *     auth.users. There is NO index on `profiles.created_at` (none in any
+ *     migration), so each count here is a scan of `profiles` — acceptable at
+ *     the table's current size, but not free. The 7/30/90-day totals are
+ *     head-only exact counts; only the per-day chart pulls rows, and that
+ *     pull is capped by PostgREST `max_rows` (see SIGNUP_ROW_CAP).
  *   - Sign-in recency comes from the GoTrue admin API, because
  *     `auth.users.last_sign_in_at` is not reachable through PostgREST at all
  *     (the `auth` schema is not exposed). There is no per-event sign-in
@@ -31,6 +34,12 @@ const DAY_MS = 86_400_000
 // reporting a silently truncated count as if it were complete.
 const AUTH_PAGE_SIZE = 1000
 const AUTH_MAX_PAGES = 10
+
+// PostgREST `max_rows` (supabase/config.toml) silently clamps every response
+// to 1000 rows, the service-role client included. The per-day series is
+// fetched newest-first so a clamp drops the OLDEST days, and the response
+// flags it rather than drawing those days as if they were complete.
+const SIGNUP_ROW_CAP = 1000
 
 export async function GET() {
   const supabase = await createClient()
@@ -59,19 +68,42 @@ export async function GET() {
     return NextResponse.json({ error: `profiles count failed: ${countError.message}` }, { status: 500 })
   }
 
-  // Signups over the last 90 days, bucketed by UTC day.
+  // Signups over the last 90 days, bucketed by UTC day. The 90d total uses
+  // the same UTC-midnight floor as the chart so the two agree; 7d/30d are
+  // rolling windows from now.
   const floor = new Date(now - 89 * DAY_MS)
   floor.setUTCHours(0, 0, 0, 0)
 
-  const { data: recentProfiles, error: signupError } = await admin
-    .from('profiles')
-    .select('created_at')
-    .gte('created_at', floor.toISOString())
-    .order('created_at', { ascending: true })
+  // Totals are head-only exact counts, so they stay correct no matter how
+  // many rows the window holds (a row fetch would be clamped by max_rows).
+  const countSince = (since: Date) =>
+    admin
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .gte('created_at', since.toISOString())
 
-  if (signupError) {
-    return NextResponse.json({ error: `signups fetch failed: ${signupError.message}` }, { status: 500 })
+  const [c7, c30, c90, series] = await Promise.all([
+    countSince(new Date(now - 7 * DAY_MS)),
+    countSince(new Date(now - 30 * DAY_MS)),
+    countSince(floor),
+    admin
+      .from('profiles')
+      .select('created_at')
+      .gte('created_at', floor.toISOString())
+      .order('created_at', { ascending: false })
+      .limit(SIGNUP_ROW_CAP),
+  ])
+
+  const signupCountError = c7.error || c30.error || c90.error
+  if (signupCountError) {
+    return NextResponse.json({ error: `signups count failed: ${signupCountError.message}` }, { status: 500 })
   }
+  if (series.error) {
+    return NextResponse.json({ error: `signups fetch failed: ${series.error.message}` }, { status: 500 })
+  }
+
+  const recentProfiles = series.data || []
+  const signupsTruncated = recentProfiles.length >= SIGNUP_ROW_CAP
 
   // Pre-seed every day in the window at 0 so days with no signups render as a
   // real zero rather than dropping out and compressing the x-axis.
@@ -79,13 +111,10 @@ export async function GET() {
   for (let i = 0; i < 90; i++) {
     signupsByDay[new Date(floor.getTime() + i * DAY_MS).toISOString().slice(0, 10)] = 0
   }
-  for (const row of recentProfiles || []) {
+  for (const row of recentProfiles) {
     const day = new Date(row.created_at as string).toISOString().slice(0, 10)
     if (day in signupsByDay) signupsByDay[day] += 1
   }
-
-  const countSince = (days: number) =>
-    (recentProfiles || []).filter(r => new Date(r.created_at as string).getTime() >= now - days * DAY_MS).length
 
   // Sign-in recency from GoTrue.
   let signedInLast24h = 0
@@ -120,10 +149,13 @@ export async function GET() {
 
   return NextResponse.json({
     totalUsers: totalUsers ?? 0,
+    // True when the per-day series hit the row cap: the oldest days in
+    // `signups.byDay` are then incomplete (the last7d/30d/90d counts stay exact).
+    signupsTruncated,
     signups: {
-      last7d: countSince(7),
-      last30d: countSince(30),
-      last90d: (recentProfiles || []).length,
+      last7d: c7.count ?? 0,
+      last30d: c30.count ?? 0,
+      last90d: c90.count ?? 0,
       byDay: Object.entries(signupsByDay)
         .sort((a, b) => a[0].localeCompare(b[0]))
         .map(([date, count]) => ({ date, count })),
