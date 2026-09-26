@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import BlinkLogo from '@/components/BlinkLogo'
+import { SUPPORT_URL } from '@/lib/constants'
 
 const GITHUB_URL = 'https://github.com/BbekShr/MCPpedia'
 
@@ -45,6 +46,7 @@ const COLUMNS: { title: string; links: { label: string; href: string; external?:
       { label: 'Blog', href: '/blog' },
       { label: 'Changelog', href: `${GITHUB_URL}/releases`, external: true },
       { label: 'Contribute on GitHub', href: GITHUB_URL, external: true },
+      { label: 'Support MCPpedia', href: SUPPORT_URL, external: true },
     ],
   },
 ]

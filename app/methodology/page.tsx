@@ -161,12 +161,13 @@ export default function MethodologyPage() {
           </ul>
         </section>
 
-        <section className="border-t border-border pt-8">
+        <section id="no-manual-overrides" className="border-t border-border pt-8">
           <h2 className="text-lg font-semibold mb-3">No Manual Overrides</h2>
           <p className="text-text-muted">
             Scores are computed entirely by algorithm. No server author, sponsor, or MCPpedia team member
             can manually change a score. The only way to improve a score is to improve the server:
-            fix CVEs, add documentation, maintain the code, and support more transports.
+            fix CVEs, add documentation, maintain the code, and support more transports. Financial
+            support for MCPpedia has no effect on any score or listing position.
           </p>
           <p className="text-text-muted mt-2">
             The scoring algorithm itself is open source. You can audit it at{' '}

@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import BlinkLogo from '@/components/BlinkLogo'
 import { createPublicClient } from '@/lib/supabase/public'
-import { SITE_URL } from '@/lib/constants'
+import { SITE_URL, SUPPORT_URL } from '@/lib/constants'
 
 export const revalidate = 86400
 
@@ -130,6 +130,23 @@ export default async function AboutPage() {
               Security advisories &rarr;
             </Link>
           </div>
+        </section>
+
+        <section id="support">
+          <h2 className="text-lg font-semibold mb-2">Support MCPpedia</h2>
+          <p className="text-text-muted">
+            MCPpedia has no ads, no paid placements, and no affiliate fees. Hosting, the database, and the
+            daily scanning bots cost real money every month. If MCPpedia saves you time, you can chip in to
+            keep it running. Payments go to Pasa LLC, which operates MCPpedia; they are not tax-deductible
+            donations.
+          </p>
+          <p className="text-text-muted mt-2">
+            Support never affects scores or placement.{' '}
+            <Link href="/methodology#no-manual-overrides" className="text-accent hover:text-accent-hover">How scores stay independent</Link>.
+          </p>
+          <a href={SUPPORT_URL} target="_blank" rel="noopener noreferrer" className="inline-block mt-3 text-accent hover:text-accent-hover font-medium">
+            Support MCPpedia &rarr;
+          </a>
         </section>
 
         <section className="pt-4 border-t border-border">
