@@ -1,6 +1,6 @@
 import { createPublicClient } from '@/lib/supabase/public'
 import { unstable_cache } from 'next/cache'
-import { withRetry } from '@/lib/retry'
+import { withDeadline, withRetry } from '@/lib/retry'
 import { liveDataOrNull } from '@/lib/degrade'
 import LiveDataUnavailable from '@/components/LiveDataUnavailable'
 import Link from 'next/link'
@@ -88,12 +88,22 @@ interface HomeStats {
 // hollow snapshot for 24h. Throwing keeps the cache unpinned so the next
 // request retries.
 // withRetry absorbs a one-off transient Supabase failure (cold connection,
-// 57014 statement timeout) before it reaches the error boundary — otherwise a
-// single blip on a cache-miss request showed "Something went wrong" until the
-// user reloaded. Retries stay inside the cached function so only the final
-// successful result is cached.
+// 57014 statement timeout) before the caller degrades. Retries stay inside the
+// cached function so only the final successful result is cached; the deadline
+// sits OUTSIDE the retry (lib/retry.ts) so it bounds the whole envelope.
+//
+// One retry (two attempts), and a 5s budget that MUST stay below the 6000ms
+// liveDataOrNull default (lib/degrade.ts) the page calls with. The outer timer
+// starts before unstable_cache's R2/D1 cache lookup and this one only after it,
+// so the 1000ms margin absorbs that lookup: this deadline normally fires first;
+// the outer liveDataOrNull race is the backstop (it also covers the cache
+// lookup, which this deadline does not). Against anon's ~3s statement timeout a
+// second attempt only fits if the first fails fast; a slow first failure simply
+// runs out the clock. Worst case to the degraded render is ~5s + the lookup.
+const SECURITY_BUDGET_MS = 5000
+
 const getSecurityPageData = unstable_cache(
-  () => withRetry(async () => {
+  () => withDeadline(withRetry(async () => {
     const supabase = createPublicClient()
     const [advisoriesResult, statsResult] = await Promise.all([
       // Open only. The list below is sorted worst-severity-first and sits
@@ -118,7 +128,7 @@ const getSecurityPageData = unstable_cache(
       advisories: advisoriesResult.data as AdvisoryWithServer[] | null,
       stats: statsResult.data as Partial<HomeStats>,
     }
-  }),
+  }, { retries: 1 }), SECURITY_BUDGET_MS, 'security page data'),
   // v6: query narrowed to status='open' — the key must change or the 24h
   // cache would keep serving the old unfiltered rows.
   ['security-page-data-v6'],

@@ -508,11 +508,15 @@ _(record "audited <ground> under <lens>: clean" entries here so discovery skips 
   promise is constructed eagerly and then raced, so the deadline bounds the ENTIRE retry loop. Bare
   `withRetry` defaults to 4 attempts + 1.75s of backoff and does not distinguish transient from
   permanent failures; against the 3s anon statement timeout that is a ~13.75s worst case AND a 4x
-  retry storm into an already-failing database. Remaining bare sites filed as S78.
-- **A sibling `loading.tsx` changes what a slow server fetch MEANS.** Next commits 200 + shell and
-  streams, so an overrun is a permanently stuck skeleton, not a 504, and `app/error.tsx` can no longer
-  fire — the in-page degraded panel only renders if the render COMPLETES. `app/servers/loading.tsx`
-  exists, which is why the latency budget there is a correctness constraint, not a perf one.
+  retry storm into an already-failing database. Remaining bare sites filed as S78 — closed
+  2026-09-26 (see the S78 section below).
+- **A `loading.tsx` above a page changes what a slow server fetch MEANS** (corrected 2026-09-26,
+  cycle S78). Next commits 200 + shell and streams, so the status can no longer change. But
+  `error.js` wraps `loading.js` in the same segment
+  (`node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/error.md:96`), so a
+  THROW still renders `app/error.tsx` under the streamed 200. Only a HANG leaves the skeleton stuck.
+  The ROOT `app/loading.tsx` wraps EVERY page (loading.md:86), so this applies to `/`, `/security`
+  and `/category/[category]` as well as `/servers`. A `withDeadline` is what turns a hang into a throw.
 - **Next hands `searchParams` a `string[]` for repeated query keys**, but the pages type it
   `Record<string, string | undefined>` — a runtime lie. An array reaching `.contains(col, [param])`
   becomes `cs.{a,b}` (an accidental AND-of-two-values); an array reaching a `text` RPC param errors
@@ -1532,3 +1536,35 @@ because the billing dashboard cannot answer them.
   `{"success":false,...,"Authentication error"}` body renders as "0 objects" through any script
   that reads `result` without checking `success`. Refresh with any `wrangler` command, and always
   assert `success` before believing an empty R2 listing.
+
+## Request-path retry envelopes (cycle 2026-09-26-S78)
+
+- **Every request-path `withRetry` is now `withDeadline(withRetry(fn, { retries: 1 }), BUDGET_MS,
+  label)` inside the `unstable_cache` callback.** Budgets: `/servers` listing 6000 and stats 4000,
+  `/` 8000 (outer `liveDataOrNull` 9000), `/security` 5000 (outer default 6000),
+  `/category/[category]` listing 6000. The only bare callers left are `app/analytics/page.tsx:597,:622`,
+  which run at build/ISR only (`revalidate = 86400`, no request APIs).
+- **The inner deadline starts AFTER the cache lookup; the outer `liveDataOrNull` timer starts BEFORE
+  it.** `unstable_cache` awaits `incrementalCache.get` (R2 + D1 tag check on OpenNext;
+  `next/dist/server/web/spec-extension/unstable-cache.js` ~:162) before it calls the callback.
+  Keep at least ~1000ms between the inner and outer budgets. When the outer race wins it logs
+  NOTHING (`lib/degrade.ts` budget promise; noted on S82).
+- **`withDeadline` cancels nothing** (`lib/retry.ts:28-55`, no AbortSignal): the orphaned retry loop
+  keeps running. Only `retries: 1` reduces load on a failing DB; the deadline bounds only the user's
+  wait. A late rejection is handled, because `Promise.race` attaches to both inputs (QA confirmed:
+  0 unhandledRejections).
+- **`unstable_cache` never poisons an entry with a rejection.** On a miss it rethrows without writing
+  (`unstable-cache.js` ~:219). On the stale path it logs, serves the stale value and does not
+  refresh (~:193-197). But a caught error that RETURNS `null` IS cached (S121, S122).
+- **OpenNext's R2 incremental-cache keys include the build ID**
+  (`@opennextjs/cloudflare/dist/api/overrides/internal.js:14`), so every deploy is a cold miss for
+  every `unstable_cache` entry. Editing a callback (which changes `cb.toString()` in the key) adds no
+  cold misses, and a `-vN` key bump is needed only to evict within a single build. The
+  "unstable_cache persists across deployments" comment in `app/page.tsx` is Vercel-era.
+- **No wall-clock function limit exists on these routes.** `maxDuration` is inert on Workers and
+  `wrangler.jsonc` sets no `limits` (`docs/CLOUDFLARE.md:111-114`). Page budgets bound the user's
+  tolerable wait, not a platform ceiling.
+- **Gate facts:** the env-less build (CI-faithful: rsync the tree without `.env*` into the scratchpad,
+  `cp -cR node_modules`) makes 397 static pages in ~80s, with `/`, `/security` and
+  `/category/[category]` all ƒ. A standalone script that tests `withDeadline` needs a ref'd
+  keep-alive handle, because its timer is `unref()`'d and Node exits with code 13 first.
