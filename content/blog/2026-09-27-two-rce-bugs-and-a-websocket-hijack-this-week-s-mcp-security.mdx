@@ -1,0 +1,64 @@
+---
+title: "Two RCE Bugs and a WebSocket Hijack: This Week's MCP Security Advisories"
+description: "Three high-severity advisories hit MCP servers this cycle — a WebSocket auth bypass in Cline's dashboard and two remote-code-execution bugs in NLTK."
+hook: "A malicious webpage can hijack Cline's dashboard by default, and NLTK's pickle 'allowlist' can be bypassed with dotted-name traversal for full RCE — three high-severity CVEs, zero confirmed patches."
+date: "2026-09-27"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+Three high-severity advisories landed this cycle, and two of them are remote code execution bugs sitting behind a single dependency. If you're running an MCP server that touches Graphviz or NLTK's pickle loader, stop and read this before your next sync.
+
+<StatGrid>
+<Stat value="3" label="Advisories" detail="All rated high severity" />
+<Stat value="2" label="RCE Bugs" detail="Both in NLTK's model/graph pipeline" />
+<Stat value="0" label="Patched (per data)" detail="No fix version confirmed here" />
+</StatGrid>
+
+---
+
+## CVE-2026-59723 — Cross-Origin WebSocket Hijacking
+
+**Severity: High**
+
+This one hits the Cline Hub dashboard (`@cline/cline-hub`), the server behind the `cline dashboard` CLI command. The bug is in how it handles WebSocket connections on the `/browser` endpoint: it never validates the HTTP `Origin` header.
+
+Worse, when `ROOM_SECRET` isn't set — which is the **default for local binds on 127.0.0.1** — the internal `isAuthorizedBrowserRequest()` check returns `true` unconditionally. That means any tab a developer has open, including a malicious website, can open a cross-origin WebSocket straight to `ws://127.0.0.1:8787/browser` and start talking to the dashboard as if it were authorized.
+
+<Callout type="warning">
+No Origin check plus an unconditional auth bypass on the default config is about as bad as a local-only vulnerability gets — it turns "just don't expose this port" into "any webpage you visit is a potential attacker."
+</Callout>
+
+This advisory is attached to the [PandaDoc MCP](/s/com-pandadoc-mcp-mcp) listing on MCPpedia. If you run Cline's hub dashboard locally, set `ROOM_SECRET` explicitly rather than relying on the default, and avoid keeping the dashboard open in a browser session alongside untrusted sites until a proper Origin-check fix ships.
+
+---
+
+## CVE-2026-78680 — Uncontrolled Search Path in Graphviz Invocation
+
+**Severity: High**
+
+NLTK versions **3.10.2 and earlier** call the Graphviz `dot` binary by bare name in `nltk.parse.dependencygraph.dot2img` and related call sites. Bare-name invocation means process creation resolves `dot` via the search path — and on Windows, via the **current working directory first**.
+
+<PullQuote>An attacker who can drop a file literally named `dot` in the right spot doesn't need a payload — they need a filename.</PullQuote>
+
+If an attacker can place a file named `dot` somewhere resolution checks — the CWD on Windows, or a writable/relative `PATH` entry like `.` — their binary runs instead of Graphviz. That's arbitrary code execution, no further exploitation required.
+
+---
+
+## CVE-2026-71513 — AllowlistUnpickler Bypass → Remote Code Execution
+
+**Severity: High**
+
+The more serious of the two NLTK bugs. Versions before **3.10.3** ship an `AllowlistUnpickler` meant to restrict what a pickle file can deserialize — but it only validates the **module string**, not the resolved global name. Attackers can use dotted-name attribute traversal to reach callables outside the allowlisted namespace entirely.
+
+Concretely: a crafted, untrusted transition-parser model loaded through `TransitionParser.parse` via `allowlisted_pickle_load` can execute arbitrary commands the moment it's parsed. If your workflow ever loads NLTK parser models from anywhere other than a source you fully trust, that model is now a code-execution vector.
+
+Both NLTK issues are attached to the [Digital Marketing Pro](/s/digital-marketing-pro) listing on MCPpedia.
+
+<Callout type="fire">
+Two RCE-class bugs in the same dependency, one from a broken allowlist and one from an unvalidated binary path. Pin NLTK, avoid loading parser models from untrusted sources, and don't let bare binary names anywhere near your PATH resolution.
+</Callout>
+
+---
+
+Patch status isn't confirmed in this data for any of the three — so the safe assumption is that you're still exposed until you verify otherwise. Check your lockfiles today.

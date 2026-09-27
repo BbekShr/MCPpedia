@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-09-27-two-rce-bugs-and-a-websocket-hijack-this-week-s-mcp-security",
+    "title": "Two RCE Bugs and a WebSocket Hijack: This Week's MCP Security Advisories",
+    "description": "Three high-severity advisories hit MCP servers this cycle — a WebSocket auth bypass in Cline's dashboard and two remote-code-execution bugs in NLTK.",
+    "hook": "A malicious webpage can hijack Cline's dashboard by default, and NLTK's pickle 'allowlist' can be bypassed with dotted-name traversal for full RCE — three high-severity CVEs, zero confirmed patches.",
+    "date": "2026-09-27",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 2
+  },
+  {
     "slug": "2026-09-25-critical-rce-in-omniroute-s-acp-agent-registration-cve-2026-",
     "title": "Critical RCE in OmniRoute's ACP Agent Registration (CVE-2026-88062)",
     "description": "A critical remote code execution flaw in OmniRoute's custom-agent registration endpoint lets attacker-controlled input reach execFileSync — here's what to check and do now.",
