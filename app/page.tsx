@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { unstable_cache } from 'next/cache'
 import NewsletterSignup from '@/components/NewsletterSignup'
 import { createPublicClient } from '@/lib/supabase/public'
-import { withRetry } from '@/lib/retry'
+import { withDeadline, withRetry } from '@/lib/retry'
 import { liveDataOrNull } from '@/lib/degrade'
 import LiveDataUnavailable from '@/components/LiveDataUnavailable'
 import { SITE_NAME, SITE_URL } from '@/lib/constants'
@@ -91,13 +91,28 @@ const CARD_FIELDS = [
 // Supabase blip from pinning an empty-state snapshot for 24h — unstable_cache
 // only caches successful returns.
 //
-// withRetry wraps the fetch so a one-off transient failure (cold connection,
-// statement timeout) is retried a few times before it bubbles to the error
-// boundary. Without this, a single blip on a cache-miss request showed the user
-// "Something went wrong" until they reloaded. Retries live inside the cached
-// function so only the final successful result is cached.
+// withRetry absorbs a one-off transient failure (cold connection, statement
+// timeout) before the caller degrades. Retries live inside the cached function
+// so only the final successful result is cached, and the deadline sits OUTSIDE
+// the retry (lib/retry.ts) so it bounds the whole envelope, not each attempt.
+//
+// Two attempts, not withRetry's default four: each can burn anon's ~3s
+// statement timeout, so 2 x ~3s + 250ms backoff ~= 6.5s fits the 8s budget,
+// while four would blow it and amplify load into a database that is already
+// failing. The budget is a bound on how long a visitor waits, not a platform
+// limit — Workers have no wall-clock function cap (docs/CLOUDFLARE.md,
+// "maxDuration is inert"). It MUST stay below the 9000ms liveDataOrNull budget
+// in HomePage: this deadline normally fires first; the outer liveDataOrNull
+// race is the backstop (it also covers the unstable_cache R2/D1 lookup, which
+// this deadline does not — the 1000ms margin absorbs that lookup).
+// Worst-case time to the degraded render is therefore ~8s + the lookup. The
+// route streams under the root app/loading.tsx, so an overrun is a streamed 200 either way:
+// a throw renders the degrade notice, but a hang would leave the skeleton stuck
+// — the deadline is what turns a hang into a throw.
+const HOME_BUDGET_MS = 8000
+
 const getHomeData = unstable_cache(
-  () => withRetry(fetchHomeData),
+  () => withDeadline(withRetry(fetchHomeData, { retries: 1 }), HOME_BUDGET_MS, 'home page data'),
   // v3: unstable_cache persists across deployments and the callback text is
   // unchanged, so a pre-S81 entry holding zeroed use-case/category tiles could
   // otherwise survive up to 24h and hide the fix.
@@ -281,7 +296,10 @@ export default async function HomePage() {
   // runs on a cache miss. If the budget is shorter than the cold fetch, the
   // cache never fills and EVERY visitor gets the degraded shell forever — which
   // is exactly what happened. It must be long enough for the fetch to complete
-  // at least once. 9s stays under the 10s platform function floor.
+  // at least once. 9s is a user-tolerable-wait bound, not a platform limit
+  // (Workers have no wall-clock cap), and it sits above HOME_BUDGET_MS so the
+  // inner deadline normally fires first; this race is the backstop (it also
+  // covers the cache lookup, which the inner deadline does not).
   const data = await liveDataOrNull(getHomeData, 9000)
   if (!data) return <LiveDataUnavailable title="The catalog is temporarily unavailable" />
 

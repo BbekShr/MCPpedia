@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { unstable_cache } from 'next/cache'
 import { createPublicClient } from '@/lib/supabase/public'
-import { withRetry } from '@/lib/retry'
+import { withDeadline, withRetry } from '@/lib/retry'
 import ServerCard from '@/components/ServerCard'
 import CategoryFilters from '@/components/CategoryFilters'
 import { CATEGORIES, CATEGORY_LABELS, ITEMS_PER_PAGE, SITE_URL, PUBLIC_CARD_FIELDS } from '@/lib/constants'
@@ -78,8 +78,22 @@ type CategoryListingParams = {
 // cached function (below) is what stops a transient Supabase blip from pinning
 // an empty listing for the full hour — unstable_cache only caches successful
 // returns, and withRetry absorbs a one-off failure before the caller degrades.
+//
+// Same envelope and budget as the /servers listing (same query shape): one
+// retry against anon's ~3s statement timeout, deadline OUTSIDE the retry so it
+// bounds the whole thing. The rejection lands in the page's try/catch, which
+// renders the degraded "try again" state. Worst case: the listing gives up at
+// ~6s, then the canonical view still awaits getHubAggregates (lib/hub-intro.ts),
+// which is not bounded here.
+const CATEGORY_LISTING_BUDGET_MS = 6000
+
 const getCategoryListing = unstable_cache(
-  (params: CategoryListingParams) => withRetry(() => fetchCategoryListing(params)),
+  (params: CategoryListingParams) =>
+    withDeadline(
+      withRetry(() => fetchCategoryListing(params), { retries: 1 }),
+      CATEGORY_LISTING_BUDGET_MS,
+      'category listing',
+    ),
   ['category-page-listing-v1'],
   { revalidate: 3600, tags: ['category-listing'] },
 )

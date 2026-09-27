@@ -649,3 +649,4 @@ the skill's "house method" said to SYMLINK `node_modules` into a scratch worktre
 rejects for `npm run build` — qa-verifier lost one attempt to it; the skill now says clone for builds.
 Minor: the CEO dispatch told qa to skip the build and qa (correctly) ran it anyway in a scratch tree;
 the test baseline in codebase.md was stale again (547→558), overwritten in place per M20.
+- 2026-09-26 S78 (withRetry → withDeadline envelopes on /, /security, /category): the CEO's 5500ms /security budget left 500ms under the outer `liveDataOrNull` 6000, and both review lenses independently caught that the outer timer also covers the R2/D1 cache lookup. Fixed to 5000 and QA re-run. The architect was skipped (a three-line mechanical plan came straight from the research brief); no defect traced to that. Friction: none new. The skill's clone-for-builds guidance worked first time on the re-run.
