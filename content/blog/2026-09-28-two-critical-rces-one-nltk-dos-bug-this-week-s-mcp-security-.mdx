@@ -1,0 +1,58 @@
+---
+title: "Two Critical RCEs, One NLTK DoS Bug: This Week's MCP Security Roundup"
+description: "Two unauthenticated Next.js RCEs hit one MCP server while an NLTK regex flaw threatens denial-of-service on another — here's what to patch now."
+hook: "One MCP server is carrying two separate unauthenticated remote-code-execution bugs at the same time — and the fix for one of them is 'there is no workaround.'"
+date: "2026-09-28"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+Three advisories landed this week. Two are critical, one is a denial-of-service, and one server on MCPpedia is carrying **both** critical bugs at once.
+
+If you're running any of the affected servers, stop reading and go patch — then come back for the details.
+
+<Callout type="warning">Two critical Next.js RCEs and one high-severity ReDoS bug are affecting MCP servers tracked on MCPpedia right now.</Callout>
+
+---
+
+## Critical: Next.js image optimization opens the door to RCE
+
+**GHSA-2xp9-vwfh-vxw4** hits [io.github.Garl-Protocol/mcp-server](/s/io-github-garl-protocol-mcp-server), and it's about as bad as it gets: **unauthenticated remote code execution**.
+
+The bug lives in `libheif`, the library `sharp` uses under the hood for Next.js's built-in image optimization. Feed the optimizer a malicious AVIF file, and it can execute arbitrary code on the server — no login, no user interaction, nothing.
+
+<PullQuote>An attacker doesn't need credentials. They just need to upload an AVIF.</PullQuote>
+
+The advisory's stated mitigation is blunt: **disable AVIF optimization entirely** until a fix propagates upstream. If your deployment serves AVIF images through Next.js's Image Optimization API, that's your workaround today, not a patch you can defer.
+
+## Critical: Windows-hosted Next.js servers face a second RCE path
+
+The same server, [io.github.Garl-Protocol/mcp-server](/s/io-github-garl-protocol-mcp-server), is also named in **CVE-2026-75604** — a separate unauthenticated RCE affecting Next.js apps using the Pages Router or App Router **without Cache Components**, specifically when hosted on Windows filesystems.
+
+<Callout type="fire">There is no known workaround for this one. The advisory says upgrade immediately if you're on Windows — full stop.</Callout>
+
+Two critical, unauthenticated RCEs on one server in the same week is a bad sign, not a coincidence. If you maintain or depend on this integration, treat it as a full incident: patch Next.js, confirm your hosting isn't Windows-based if you can't upgrade instantly, and re-audit anywhere the image pipeline touches untrusted uploads.
+
+---
+
+## High: NLTK's tokenizer can be talked into a denial-of-service
+
+The third advisory is quieter but still worth fixing. **CVE-2026-72818** affects [Digital Marketing Pro](/s/digital-marketing-pro) through a regex flaw in NLTK's `TweetTokenizer`.
+
+<ScoreBreakdown>
+<ScoreRow label="Root cause" points="—" description="Unbounded domain-label pattern in the URLS regex inside nltk/tokenize/casual.py" />
+<ScoreRow label="Trigger" points="—" description="Text with many alternating label separators and no valid trailing TLD" />
+<ScoreRow label="Impact" points="—" description="Catastrophic backtracking — exponential-time parsing, effectively a DoS" />
+</ScoreBreakdown>
+
+There's no RCE here — it's a resource-exhaustion bug. But if this server tokenizes user-supplied or scraped text (which is exactly what a marketing tool does), a crafted string can pin a CPU core indefinitely and take the service down.
+
+---
+
+## What to actually do
+
+- **Running the Garl-Protocol server?** Disable AVIF optimization now, patch Next.js as soon as a release lands, and check your host OS immediately for the Windows-specific bug.
+- **Running Digital Marketing Pro or anything built on NLTK's tokenizer?** Rate-limit or size-cap any text passed to `TweetTokenizer` until a patched NLTK release ships.
+- **Everyone else:** this is a reminder to actually read advisory feeds for your dependency tree, not just your direct MCP server code. Two of these three bugs came from libraries underneath the server, not the server's own logic.
+
+Severity labels are useful. Ignoring them isn't an option.

@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-09-28-two-critical-rces-one-nltk-dos-bug-this-week-s-mcp-security-",
+    "title": "Two Critical RCEs, One NLTK DoS Bug: This Week's MCP Security Roundup",
+    "description": "Two unauthenticated Next.js RCEs hit one MCP server while an NLTK regex flaw threatens denial-of-service on another — here's what to patch now.",
+    "hook": "One MCP server is carrying two separate unauthenticated remote-code-execution bugs at the same time — and the fix for one of them is 'there is no workaround.'",
+    "date": "2026-09-28",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 2
+  },
+  {
     "slug": "2026-09-27-two-rce-bugs-and-a-websocket-hijack-this-week-s-mcp-security",
     "title": "Two RCE Bugs and a WebSocket Hijack: This Week's MCP Security Advisories",
     "description": "Three high-severity advisories hit MCP servers this cycle — a WebSocket auth bypass in Cline's dashboard and two remote-code-execution bugs in NLTK.",
