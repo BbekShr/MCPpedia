@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-09-29-9-cves-hit-mcp-atlassian-in-one-day-including-a-full-auth-by",
+    "title": "9 CVEs Hit MCP Atlassian in One Day — Including a Full Auth Bypass",
+    "description": "A single disclosure batch exposes nine vulnerabilities in mcp-atlassian, from a token check that accepts any string to an RCE-capable path traversal bypass.",
+    "hook": "mcp-atlassian's auth verifier accepts literally any non-empty token as valid — and that's just one of nine CVEs filed against it on the same day.",
+    "date": "2026-09-29",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 2
+  },
+  {
     "slug": "2026-09-28-two-critical-rces-one-nltk-dos-bug-this-week-s-mcp-security-",
     "title": "Two Critical RCEs, One NLTK DoS Bug: This Week's MCP Security Roundup",
     "description": "Two unauthenticated Next.js RCEs hit one MCP server while an NLTK regex flaw threatens denial-of-service on another — here's what to patch now.",

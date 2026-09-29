@@ -1,0 +1,60 @@
+---
+title: "9 CVEs Hit MCP Atlassian in One Day — Including a Full Auth Bypass"
+description: "A single disclosure batch exposes nine vulnerabilities in mcp-atlassian, from a token check that accepts any string to an RCE-capable path traversal bypass."
+hook: "mcp-atlassian's auth verifier accepts literally any non-empty token as valid — and that's just one of nine CVEs filed against it on the same day."
+date: "2026-09-29"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+Nine CVEs. One server. Filed within twenty minutes of each other on September 22. That's not a security advisory — that's a pattern, and the pattern is that this codebase can't stop re-breaking its own fixes.
+
+The server in question is listed on MCPpedia as [Zed Mcp Server Jira](/s/zed-mcp-server-jira), built on the `mcp-atlassian` package that bridges AI agents to Jira and Confluence. If you've wired an agent into your Atlassian instance through it, read this before your next standup.
+
+<StatGrid>
+<Stat value="9" label="CVEs" detail="Filed 2026-09-22" />
+<Stat value="1" label="Critical" detail="Full auth bypass" />
+<Stat value="8" label="High" detail="File read + SSRF" />
+</StatGrid>
+
+## The critical: auth is optional
+
+**CVE-2026-77244** is the one to panic about. `AtlassianOpaqueTokenVerifier` accepts *any non-empty token* as valid. In multi-user deployments — the ones running HTTP/SSE or `streamable-http` with OAuth or per-request PATs — that means the string `"a"` gets you authenticated.
+
+<Callout type="warning">If you're running mcp-atlassian in multi-user mode with header-based or OAuth tokens, treat every request as unauthenticated until you patch. The check that's supposed to stop that isn't checking anything.</Callout>
+
+---
+
+<SectionLabel>The File-Read Cluster</SectionLabel>
+
+Four separate CVEs (**CVE-2026-77258**, **CVE-2026-77247**, **CVE-2026-77262**, **CVE-2026-77259**) all trace back to the same root cause: attachment upload tools read caller-supplied file paths off the server's local filesystem with no boundary check.
+
+`confluence_upload_attachment` opens `file_path` with `open(file_path, "rb")` and ships the contents to an Atlassian host — including one the attacker controls. On Linux, that means `/proc/self/environ` in a single call, handing over every secret in the process's environment.
+
+<PullQuote>The download methods in this codebase call validate_safe_path(). The upload methods, written right next to them, don't.</PullQuote>
+
+That asymmetry is the whole bug. Someone hardened the read path and forgot the write path exists.
+
+---
+
+<SectionLabel>The SSRF Cluster</SectionLabel>
+
+Three more (**CVE-2026-77274**, **CVE-2026-77267**, **CVE-2026-77261**) show the same shape of failure applied to SSRF protection instead of path validation:
+
+- A backslash before userinfo-like syntax slips past `validate_url_for_ssrf()` entirely.
+- `X-Atlassian-Jira-Url` and `X-Atlassian-Confluence-Url` headers get passed straight to API clients with zero validation.
+- The redirect-following hook that blocks `169.254.169.254`-style cloud metadata targets is only wired into one of three auth branches — basic auth and OAuth just follow the redirect.
+
+Each of these is a patch for a prior finding that didn't cover the whole surface.
+
+## The RCE bypass
+
+**CVE-2026-77271** is the sharpest edge: the path-traversal fix from GHSA-xjgw-4wvw-rgm4 calls `validate_safe_path()` without an explicit `base_dir`, so it defaults to `os.getcwd()` — the app directory in standard containers. That means an attacker can overwrite the server's own Python source and get code execution on the next request.
+
+## What to do now
+
+- **Multi-user / HTTP deployments**: assume the auth bypass is live. Take the endpoint offline or lock it behind network-level auth until patched.
+- **Any deployment**: audit whether upload tools are reachable by untrusted agents or prompt-injected content — that's the exfiltration path.
+- Update `mcp-atlassian` to the latest patched release and re-verify against these nine CVE IDs specifically, since prior "fixes" have repeatedly missed the actual boundary.
+
+Nine incomplete fixes on one package in one disclosure batch isn't bad luck — it's a signal to stop trusting the changelog and start reading the diff.
