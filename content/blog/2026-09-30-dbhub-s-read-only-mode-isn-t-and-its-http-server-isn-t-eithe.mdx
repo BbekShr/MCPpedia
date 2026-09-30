@@ -1,0 +1,47 @@
+---
+title: "Dbhub's 'Read-Only' Mode Isn't, and Its HTTP Server Isn't Either"
+description: "Two new advisories hit Dbhub: a critical DNS-rebinding flaw exposing unauthenticated SQL execution, and a high-severity bug where the readonly flag never actually enforces read-only access."
+hook: "Dbhub's readonly=true flag has never actually blocked a write — the code that enforces it is gated on a config value nobody sets. Pair that with a critical DNS-rebinding bug and any browser on your network can run SQL against it."
+date: "2026-09-30"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+Two advisories dropped for the same server this week, and the combination is bad: one lets an "open" connection quietly write to your database, the other lets a stranger's browser talk to it without logging in. If you're running [Dbhub](/s/dbhub), stop reading and go patch — then come back for the details.
+
+## CVE-2026-61742 — Critical
+
+<Callout type="warning">DNS rebinding turns Dbhub's HTTP transport into an open door for any website you happen to visit.</Callout>
+
+This is the one to fix first. Dbhub `0.21.2`, started with `--transport http --port 8080`, exposes an **unauthenticated** MCP endpoint. The server tries to gate browser access by checking that the `Origin` header's hostname matches the `Host` hostname, then reflects that `Origin` back into `Access-Control-Allow-Origin`.
+
+That check doesn't stop DNS rebinding. An attacker registers a hostname, gets a victim's browser to load it, then rebinds that hostname's DNS record to point at the victim's internal Dbhub instance. From the browser's perspective, `Origin` and `Host` now match — because they're the same attacker-controlled name — and the same-origin check waves the request through.
+
+<PullQuote>A DNS rebind turns "my database tool is only reachable on my LAN" into "anyone's browser can query it."</PullQuote>
+
+The result: arbitrary SQL execution against your database, triggered by a victim simply having a malicious page open in a tab, no credentials required. This is a **critical**-severity issue precisely because it needs zero authentication and zero direct network access to the target — just a browser on the same network as the Dbhub HTTP endpoint.
+
+**What to do:** Don't expose Dbhub's HTTP transport to any network reachable by browsers you don't fully control. If you're running `--transport http`, put it behind a real auth layer or drop it in favor of stdio transport until a fix lands. Treat "it's only on my internal network" as insufficient — that's exactly the assumption DNS rebinding defeats.
+
+---
+
+## CVE-2026-61788 — High
+
+<Callout type="fire">Setting `readonly = true` doesn't do what the name promises.</Callout>
+
+Here's the second one, and it's almost worse for how quietly it fails. Dbhub's `execute_sql` tool has a `readonly` flag meant to make the connection read-only — the code path exists to set PostgreSQL's `default_transaction_read_only=on` and open SQLite in `readOnly` mode. But that path is gated on a config value that's **never populated**, so it never runs.
+
+What's left enforcing "read-only" is a classifier that looks at the first keyword of a statement. Any `SELECT` that triggers a write through a function call — a stored procedure, a side-effecting extension function, anything that doesn't start with `INSERT`/`UPDATE`/`DELETE` — sails right past it.
+
+<ScoreBreakdown>
+<ScoreRow label="Auth bypass required" points="No" description="No credentials needed to trigger writes through a 'read-only' connection" />
+<ScoreRow label="Detection" points="Silent" description="Classifier reports success; the config gate that should block writes never fires" />
+</ScoreBreakdown>
+
+If you or a downstream agent trusted `readonly = true` as an actual safety boundary — say, letting an LLM run "read-only" analytics queries against production — that boundary doesn't exist. **High** severity because it undermines a specific safety guarantee the tool advertises, not because it's remotely exploitable on its own.
+
+**What to do:** Don't rely on Dbhub's `readonly` flag as a security control until this is patched. Use a database-level read-only role or credential instead — enforce it below the application, not inside it.
+
+---
+
+Both advisories land on the same server, both published September 24, and both point at the same lesson: **"read-only" and "same-origin" are claims, not guarantees, until you verify the code path that's supposed to enforce them actually runs.** Check your Dbhub version, lock down the transport, and don't trust a flag you haven't tested.

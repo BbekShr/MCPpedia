@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-09-30-dbhub-s-read-only-mode-isn-t-and-its-http-server-isn-t-eithe",
+    "title": "Dbhub's 'Read-Only' Mode Isn't, and Its HTTP Server Isn't Either",
+    "description": "Two new advisories hit Dbhub: a critical DNS-rebinding flaw exposing unauthenticated SQL execution, and a high-severity bug where the readonly flag never actually enforces read-only access.",
+    "hook": "Dbhub's readonly=true flag has never actually blocked a write — the code that enforces it is gated on a config value nobody sets. Pair that with a critical DNS-rebinding bug and any browser on your network can run SQL against it.",
+    "date": "2026-09-30",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 3
+  },
+  {
     "slug": "2026-09-29-9-cves-hit-mcp-atlassian-in-one-day-including-a-full-auth-by",
     "title": "9 CVEs Hit MCP Atlassian in One Day — Including a Full Auth Bypass",
     "description": "A single disclosure batch exposes nine vulnerabilities in mcp-atlassian, from a token check that accepts any string to an RCE-capable path traversal bypass.",
