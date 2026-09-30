@@ -2515,5 +2515,160 @@
     "install": {
       "manual": "Clone zenstory-ai/oh-story-claudecode and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
     }
+  },
+  {
+    "slug": "librechat-2",
+    "name": "LibreChat",
+    "tagline": "Enhanced ChatGPT Clone: Features Agents, MCP, Skills, DeepSeek, Anthropic, AWS, OpenAI, Responses API, Azure, Groq, o1, GPT-5, Mistral, OpenRouter, Vertex AI, Gemini, Artifacts, AI model switching, me",
+    "repo": "LibreChat-AI/LibreChat",
+    "github_url": "https://github.com/LibreChat-AI/LibreChat",
+    "homepage_url": "https://librechat.ai/",
+    "author": "LibreChat-AI",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 45157,
+    "last_updated": "2026-09-30",
+    "category": "data",
+    "tags": ["ai", "anthropic", "artifacts", "aws", "azure", "chatgpt"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone LibreChat-AI/LibreChat and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "claude-red",
+    "name": "Claude Red",
+    "tagline": "claude-red is a curated library of offensive security skills designed for the Claude skills system. Each skill is a structured SKILL.md file that primes Claude with expert-level methodology for a spec",
+    "repo": "SnailSploit/Claude-Red",
+    "github_url": "https://github.com/SnailSploit/Claude-Red",
+    "author": "SnailSploit",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 7127,
+    "last_updated": "2026-09-19",
+    "category": "design",
+    "tags": ["claude-ai", "claude-pt", "claude-skills", "redteam", "redteam-tools", "skills"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone SnailSploit/Claude-Red and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "ipollowork",
+    "name": "IPolloWork",
+    "tagline": "Enterprise-grade, local-first Agent Workbench for people and agent teams. A unified multi-engine workspace for Codex Harness, DeepSeek Harness, and OpenCode, with unified plugins and Skills, multi-age",
+    "repo": "Devin-AXIS/iPolloWork",
+    "github_url": "https://github.com/Devin-AXIS/iPolloWork",
+    "homepage_url": "https://www.ipollo.ai/",
+    "author": "Devin-AXIS",
+    "author_type": "community",
+    "license": "NOASSERTION",
+    "stars": 6922,
+    "last_updated": "2026-09-30",
+    "category": "design",
+    "tags": ["agent-collaboration", "agent-skills", "ai-agents", "ai-work", "claude-code", "codex"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone Devin-AXIS/iPolloWork and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "dev-browser",
+    "name": "Dev Browser",
+    "tagline": "A Claude Skill to give your agent the ability to use a web browser",
+    "repo": "SawyerHood/dev-browser",
+    "github_url": "https://github.com/SawyerHood/dev-browser",
+    "author": "SawyerHood",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 6639,
+    "last_updated": "2026-09-05",
+    "category": "testing",
+    "tags": ["claude-code", "playwright", "skills"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone SawyerHood/dev-browser and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "internet-court-skill",
+    "name": "Internet Court Skill",
+    "tagline": "The trust layer for agent-to-agent commerce — natural-language mandates, ERC-7710 delegated permissions, x402 payments, escrow, and dispute resolution as one open, catch-all Agent Skill / Claude Code ",
+    "repo": "internet-court/internet-court-skill",
+    "github_url": "https://github.com/internet-court/internet-court-skill",
+    "author": "internet-court",
+    "author_type": "community",
+    "license": "NOASSERTION",
+    "stars": 6330,
+    "last_updated": "2026-08-19",
+    "category": "other",
+    "tags": ["a2a", "adjudication", "agent-payments", "agent-skills", "agentic-commerce", "ai-agents"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone internet-court/internet-court-skill and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "google-maps-scraper",
+    "name": "Google Maps Scraper",
+    "tagline": "scrape data  from Google Maps. Extracts data such as the name, address, phone number, website URL, rating,  reviews number, latitude and longitude, reviews,email and more for each place",
+    "repo": "gosom/google-maps-scraper",
+    "github_url": "https://github.com/gosom/google-maps-scraper",
+    "author": "gosom",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 6212,
+    "last_updated": "2026-09-24",
+    "category": "data",
+    "tags": ["agent-skills", "claude-skills", "codex-skills", "distributed-scraper", "distributed-scraping", "golang"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone gosom/google-maps-scraper and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "im-not-ai",
+    "name": "Im Not AI",
+    "tagline": "AI가 쓴 한글을 사람 글처럼 윤문하는 Claude 스킬 — Korean AI-text humanizer: detects and rewrites translationese, mechanical parallelism, and 71 other AI tells",
+    "repo": "epoko77-ai/im-not-ai",
+    "github_url": "https://github.com/epoko77-ai/im-not-ai",
+    "homepage_url": "https://imnotai.kr",
+    "author": "epoko77-ai",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 5801,
+    "last_updated": "2026-09-26",
+    "category": "writing",
+    "tags": ["agent-skills", "ai-detection", "claude", "claude-code", "claude-skill", "humanizer"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone epoko77-ai/im-not-ai and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "codebase-to-course",
+    "name": "Codebase To Course",
+    "tagline": "A Claude Code skill that turns any codebase into a beautiful, interactive single-page HTML course for non-technical vibe coders.",
+    "repo": "zarazhangrui/codebase-to-course",
+    "github_url": "https://github.com/zarazhangrui/codebase-to-course",
+    "author": "zarazhangrui",
+    "author_type": "community",
+    "license": null,
+    "stars": 5603,
+    "last_updated": "2026-03-30",
+    "category": "other",
+    "tags": [],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone zarazhangrui/codebase-to-course and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
   }
 ]
