@@ -6,13 +6,15 @@ falsified; promote hardened facts to CLAUDE.md via human-approved PR. Keep ~120 
 
 ## Gates & environment
 
-- **CURRENT GATE BASELINE — 2026-09-22 (S109), measured against `origin/main` @ `b354be5`.**
+- **CURRENT GATE BASELINE — 2026-10-02 (S73), measured on branch `improve/S73-admin-edits-status-filter`
+  @ `db0567c` = `origin/main` @ `fa40b4c` + the S73 diff.**
   `npx tsc --noEmit` 0 errors · `npm run lint` **0 errors / 6 warnings** · `npm test`
-  **558 tests / 46 files**. (EDITED IN PLACE per M20 — the prior 2026-09-17/S99 figure of
-  547 tests / 45 files was falsified by qa-verifier's re-measurement of `b354be5` in a scratch
-  worktree and has been overwritten, not appended over. Warning count and identities unchanged.)
-  The 6 warnings are `app/admin/page.tsx:246` (the load-bearing
-  react-hooks directive, S2/S7), `bots/lib/blog-planning.ts:22:30`, and four
+  **575 tests / 47 files** (main alone is 558 / 46; S73 adds `lib/__tests__/admin-edits.test.ts`,
+  17 tests). Env-less `npm run build`: 413 static pages, zero warn/error lines. (EDITED IN PLACE per
+  M20 — the prior 2026-09-22/S109 figure of 558 / 46 @ `b354be5` is superseded by this measurement.)
+  The 6 warnings are the load-bearing unused `react-hooks/exhaustive-deps` directive in
+  `app/admin/page.tsx` (S2/S7 — record it by identity, not line: it sat at `:246` at S109, `:336` on
+  main at S73, `:359` after S73), `bots/lib/blog-planning.ts:22:30`, and four
   `@next/next/no-location-assign-relative-destination` in
   `components/{CategoryEditor,ClaimServer,CommunityVerify,FavoriteButton}.tsx`.
   **A stale `node_modules` reads exactly like a red `tsc` gate:** this cycle's first
@@ -1568,3 +1570,53 @@ because the billing dashboard cannot answer them.
   `cp -cR node_modules`) makes 397 static pages in ~80s, with `/`, `/security` and
   `/category/[category]` all ƒ. A standalone script that tests `withDeadline` needs a ref'd
   keep-alive handle, because its timer is `unref()`'d and Node exits with code 13 first.
+
+## 2026-10-02 — S73 (admin moderation queue: status filter, paired badge, stale-response guard)
+
+- **`edits` is world-readable and has no `created_at` index.** RLS select is `using (true)`
+  (`supabase/migrations/20260402000000_initial_schema.sql:316-317`, never dropped); indexes are only
+  `edits_server_idx` and `edits_status_idx` (`:131-132`). Any `order('created_at').limit(N)` on
+  `edits` is already a full scan + top-N sort, so adding `.eq('status', …)` can only help the plan.
+  Prod had 65 rows, all approved, on 2026-09-07 (`codebase.md` S99 section).
+- **`lib/types.ts:198` owns the `edits.status` union** (`'pending' | 'approved' | 'rejected'`) and
+  `lib/types.ts` has zero imports, so `import type` from it is a safe client-bundle path. New
+  edit-status code derives from `Edit['status']` (`lib/admin-edits.ts:7`) rather than redeclaring it.
+- **postgrest-js `.eq()` is not a filter-syntax injection surface**: the operand goes through
+  `URLSearchParams.append(column, \`eq.${value}\`)` (`node_modules/@supabase/postgrest-js/src/
+  PostgrestFilterBuilder.ts:155`) and is sent as an encoded literal. `sanitizeSearchQuery` is
+  correctly scoped to `.or()`/`.ilike` only (CLAUDE.md §4).
+- **A `Promise.all` over Supabase builders never rejects on network failure**: with the default
+  `shouldThrowOnError=false`, fetch/abort failures resolve as `{ error, data: null, count: null }`
+  (`node_modules/@supabase/postgrest-js/src/PostgrestBuilder.ts:239-300`). `try/catch` around them is
+  dead code; the `error` field is the only failure signal. A stuck `loading` state can come only from
+  a raw `fetch()` (e.g. `app/admin/page.tsx` bots branch).
+- **`createClient()` from `lib/supabase/client.ts` is identity-stable in the browser**:
+  `@supabase/ssr` `createBrowserClient` returns a module-level singleton when `isSingleton` is unset
+  and `isBrowser()` (`node_modules/@supabase/ssr/dist/main/createBrowserClient.js:8-14,53`). That is
+  why `app/admin/page.tsx:165` calling it on every render does not churn `useCallback` deps.
+- **`app/admin/page.tsx` structure that S73's invariants rest on**: `fetchNonServerData` (~`:238`)
+  is the per-tab fetch seam with ONE call site (the tab effect, ~`:346`); a tab-local filter is one
+  extra dep, not a new effect (new effects here trip `react-hooks/set-state-in-effect`, S2/S7).
+  `setEditFilter` has ONE call site (the filter button), which also writes `editFilterRef` — approve/
+  reject are per-render plain async functions whose post-`await` reads must come from that ref.
+  `refreshPendingEdits` must be declared ABOVE `fetchNonServerData` (its deps array is evaluated at
+  render; declaring it below throws a `const` TDZ ReferenceError). The `fetchSeq` guard covers only
+  the edits branch (S123) and `refreshPendingClaims` still folds errors to 0 (S124).
+- **A helper that commits state internally cannot be covered by a caller-side stale-response guard.**
+  `refreshPendingEdits` originally called `setPendingEdits` itself; to put the badge under the same
+  `fetchSeq` guard as the list, it had to be split into `fetchPendingCount` (returns `{count, error}`)
+  and a thin committing wrapper (`app/admin/page.tsx:223-236`).
+- **Test harness**: `__tests__/helpers/route-supabase-stub.ts:115-125` records only
+  `select/insert/update/upsert/eq/neq/in/not/or/order/limit` — no `range/ilike/gte/is`; a helper
+  under test must use those or carry its own fake. The stub never executes filters, so a query-
+  semantics claim (ordering, limit, filter) needs an in-test array-backed fake: see
+  `lib/__tests__/admin-edits.test.ts:50-68` for the house pattern, with the "60 approved + 1 oldest
+  pending" fixture and the negative control (`all` at limit 50 drops the pending row) that proves the
+  pre-fix eviction is observable. First `lib/__tests__` suite to import the shared harness
+  (`../../__tests__/helpers/route-supabase-stub`).
+- **`npx vitest list` is a cheap read-only way to reconcile a test-count delta per file** and to detect
+  M6 stray-worktree pickup.
+- **Board outcome**: five lenses on the first cut found 2 CONFIRMED (stale badge count driving the
+  new truncation notice — a CEO design decision; list error rendered as an empty queue) + 1 PLAUSIBLE
+  race accepted; round 2 found 1 CONFIRMED (badge-fails-alone silent); round 3 found 1 in-diff
+  residual (approve/reject count refresh did not set the flag). Four fix commits, four QA runs.
