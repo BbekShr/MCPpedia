@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import type { User } from '@supabase/supabase-js'
 import DiffView from '@/components/DiffView'
+import { buildEditsQuery, matchesEditFilter, PENDING_EDIT_STATUS, EDIT_STATUS_FILTERS, type EditStatusFilter } from '@/lib/admin-edits'
 
 interface BotInfo {
   id: string
@@ -177,6 +178,7 @@ export default function AdminPage() {
   const [userMetricsError, setUserMetricsError] = useState<string | null>(null)
   const [userMetricsLoading, setUserMetricsLoading] = useState(false)
   const [edits, setEdits] = useState<EditRow[]>([])
+  const [editFilter, setEditFilter] = useState<EditStatusFilter>(PENDING_EDIT_STATUS)
   const [claims, setClaims] = useState<ClaimRow[]>([])
   const [pendingClaims, setPendingClaims] = useState(0)
   const [changes, setChanges] = useState<ChangeRow[]>([])
@@ -242,7 +244,7 @@ export default function AdminPage() {
         setUserMetricsLoading(false)
       }
     } else if (tab === 'edits') {
-      const { data } = await supabase.from('edits').select('*, profile:profiles(username), server:servers(name, slug)').order('created_at', { ascending: false }).limit(50)
+      const { data } = await buildEditsQuery(supabase, editFilter)
       setEdits((data || []) as EditRow[])
     } else if (tab === 'claims') {
       // publisher_claims.user_id references auth.users, not profiles, so we
@@ -279,7 +281,7 @@ export default function AdminPage() {
       }
     }
     setLoading(false)
-  }, [tab, supabase])
+  }, [tab, editFilter, supabase])
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -297,7 +299,7 @@ export default function AdminPage() {
     const { count } = await supabase
       .from('edits')
       .select('id', { count: 'exact', head: true })
-      .eq('status', 'pending')
+      .eq('status', PENDING_EDIT_STATUS)
     setPendingEdits(count || 0)
   }, [supabase])
 
@@ -386,7 +388,7 @@ export default function AdminPage() {
         alert(msg || 'Failed to approve edit')
         return
       }
-      setEdits(prev => prev.map(e => e.id === editId ? { ...e, status: 'approved' } : e))
+      setEdits(prev => prev.flatMap(e => e.id !== editId ? [e] : matchesEditFilter('approved', editFilter) ? [{ ...e, status: 'approved' as const }] : []))
       refreshPendingEdits()
     } catch {
       alert('Network error')
@@ -508,7 +510,7 @@ export default function AdminPage() {
         alert(msg || 'Failed to reject edit')
         return
       }
-      setEdits(prev => prev.map(e => e.id === editId ? { ...e, status: 'rejected' } : e))
+      setEdits(prev => prev.flatMap(e => e.id !== editId ? [e] : matchesEditFilter('rejected', editFilter) ? [{ ...e, status: 'rejected' as const }] : []))
       refreshPendingEdits()
     } catch {
       alert('Network error')
@@ -761,7 +763,24 @@ export default function AdminPage() {
       {/* Edits tab */}
       {tab === 'edits' && !loading && (
         <div className="space-y-3">
-          {edits.length === 0 && <p className="text-text-muted text-sm">No edit proposals yet.</p>}
+          <div className="flex gap-1 border-b border-border">
+            {EDIT_STATUS_FILTERS.map(f => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setEditFilter(f)}
+                className={`px-4 py-2 text-sm capitalize border-b-2 -mb-px transition-colors ${
+                  editFilter === f ? 'border-accent text-accent font-medium' : 'border-transparent text-text-muted hover:text-text-primary'
+                }`}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+          {editFilter === PENDING_EDIT_STATUS && pendingEdits > edits.length && (
+            <p className="text-xs text-text-muted">Showing {edits.length} of {pendingEdits} pending proposals</p>
+          )}
+          {edits.length === 0 && <p className="text-text-muted text-sm">{editFilter === 'all' ? 'No edit proposals yet.' : `No ${editFilter} edit proposals.`}</p>}
           {edits.map(e => (
             <div key={e.id} className="border border-border rounded-md p-4">
               <div className="flex items-center justify-between mb-2">
