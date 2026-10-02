@@ -231,6 +231,7 @@ export default function AdminPage() {
   // Keep the previous badge value on error: folding a failure to 0 would hide a backlog.
   const refreshPendingEdits = useCallback(async () => {
     const { count, error } = await fetchPendingCount()
+    setPendingCountError(!!error)
     if (error) return
     setPendingEdits(count || 0)
   }, [fetchPendingCount])
