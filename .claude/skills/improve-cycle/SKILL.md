@@ -34,6 +34,9 @@ baseline, the house method is a detached `git worktree add` into the scratchpad 
 should hash the files under verification before gate 1 and re-hash after the last gate, and
 re-run `git status` at every gate rather than trusting its boot snapshot.
 
+**Install first:** cloud-session containers start WITHOUT `node_modules` (2026-10-02, S73: the
+implementer could not run tsc or lint). Run `npm ci` once before phase 3 if `node_modules` is absent.
+
 **Constitution first:** read `CLAUDE.md`, `BACKLOG.md`, and `docs/org-memory/codebase.md`
 before phase 1. Never touch protected paths (CLAUDE.md §5) without flagging that the PR will
 need the `human-approved` label. Per CLAUDE.md §5/§6 you MAY apply that label yourself and merge
