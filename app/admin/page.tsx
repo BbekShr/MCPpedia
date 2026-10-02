@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import type { User } from '@supabase/supabase-js'
@@ -179,6 +179,10 @@ export default function AdminPage() {
   const [userMetricsLoading, setUserMetricsLoading] = useState(false)
   const [edits, setEdits] = useState<EditRow[]>([])
   const [editFilter, setEditFilter] = useState<EditStatusFilter>(PENDING_EDIT_STATUS)
+  const [editsError, setEditsError] = useState<string | null>(null)
+  // Approve/reject resolve after an await; they read the live filter, not their render's closure.
+  const editFilterRef = useRef<EditStatusFilter>(PENDING_EDIT_STATUS)
+  const fetchSeq = useRef(0)
   const [claims, setClaims] = useState<ClaimRow[]>([])
   const [pendingClaims, setPendingClaims] = useState(0)
   const [changes, setChanges] = useState<ChangeRow[]>([])
@@ -215,7 +219,18 @@ export default function AdminPage() {
     if (count !== null) setServerCount(count)
   }, [supabase])
 
+  // Keep the previous badge value on error: folding a failure to 0 would hide a backlog.
+  const refreshPendingEdits = useCallback(async () => {
+    const { count, error } = await supabase
+      .from('edits')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', PENDING_EDIT_STATUS)
+    if (error) return
+    setPendingEdits(count || 0)
+  }, [supabase])
+
   const fetchNonServerData = useCallback(async () => {
+    const seq = ++fetchSeq.current
     setLoading(true)
     if (tab === 'users') {
       const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(50)
@@ -244,8 +259,11 @@ export default function AdminPage() {
         setUserMetricsLoading(false)
       }
     } else if (tab === 'edits') {
-      const { data } = await buildEditsQuery(supabase, editFilter)
-      setEdits((data || []) as EditRow[])
+      // Refetch the badge with the list so the truncation notice never compares stale counts.
+      const [{ data, error }] = await Promise.all([buildEditsQuery(supabase, editFilter), refreshPendingEdits()])
+      if (seq !== fetchSeq.current) return
+      setEditsError(error ? error.message : null)
+      setEdits(error ? [] : ((data || []) as EditRow[]))
     } else if (tab === 'claims') {
       // publisher_claims.user_id references auth.users, not profiles, so we
       // cannot embed `profile:profiles(...)` here — PostgREST fails the embed
@@ -280,8 +298,9 @@ export default function AdminPage() {
         setBots(json.bots || [])
       }
     }
+    if (seq !== fetchSeq.current) return
     setLoading(false)
-  }, [tab, editFilter, supabase])
+  }, [tab, editFilter, supabase, refreshPendingEdits])
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -293,14 +312,6 @@ export default function AdminPage() {
         })
       }
     })
-  }, [supabase])
-
-  const refreshPendingEdits = useCallback(async () => {
-    const { count } = await supabase
-      .from('edits')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', PENDING_EDIT_STATUS)
-    setPendingEdits(count || 0)
   }, [supabase])
 
   const refreshPendingClaims = useCallback(async () => {
@@ -388,7 +399,7 @@ export default function AdminPage() {
         alert(msg || 'Failed to approve edit')
         return
       }
-      setEdits(prev => prev.flatMap(e => e.id !== editId ? [e] : matchesEditFilter('approved', editFilter) ? [{ ...e, status: 'approved' as const }] : []))
+      setEdits(prev => prev.flatMap(e => e.id !== editId ? [e] : matchesEditFilter('approved', editFilterRef.current) ? [{ ...e, status: 'approved' as const }] : []))
       refreshPendingEdits()
     } catch {
       alert('Network error')
@@ -510,7 +521,7 @@ export default function AdminPage() {
         alert(msg || 'Failed to reject edit')
         return
       }
-      setEdits(prev => prev.flatMap(e => e.id !== editId ? [e] : matchesEditFilter('rejected', editFilter) ? [{ ...e, status: 'rejected' as const }] : []))
+      setEdits(prev => prev.flatMap(e => e.id !== editId ? [e] : matchesEditFilter('rejected', editFilterRef.current) ? [{ ...e, status: 'rejected' as const }] : []))
       refreshPendingEdits()
     } catch {
       alert('Network error')
@@ -768,7 +779,7 @@ export default function AdminPage() {
               <button
                 key={f}
                 type="button"
-                onClick={() => setEditFilter(f)}
+                onClick={() => { editFilterRef.current = f; setEditFilter(f) }}
                 className={`px-4 py-2 text-sm capitalize border-b-2 -mb-px transition-colors ${
                   editFilter === f ? 'border-accent text-accent font-medium' : 'border-transparent text-text-muted hover:text-text-primary'
                 }`}
@@ -777,10 +788,11 @@ export default function AdminPage() {
               </button>
             ))}
           </div>
-          {editFilter === PENDING_EDIT_STATUS && pendingEdits > edits.length && (
+          {!editsError && editFilter === PENDING_EDIT_STATUS && pendingEdits > edits.length && (
             <p className="text-xs text-text-muted">Showing {edits.length} of {pendingEdits} pending proposals</p>
           )}
-          {edits.length === 0 && <p className="text-text-muted text-sm">{editFilter === 'all' ? 'No edit proposals yet.' : `No ${editFilter} edit proposals.`}</p>}
+          {editsError && <p className="text-sm text-red">Failed to load edit proposals: {editsError}</p>}
+          {!editsError && edits.length === 0 && <p className="text-text-muted text-sm">{editFilter === 'all' ? 'No edit proposals yet.' : `No ${editFilter} edit proposals.`}</p>}
           {edits.map(e => (
             <div key={e.id} className="border border-border rounded-md p-4">
               <div className="flex items-center justify-between mb-2">
