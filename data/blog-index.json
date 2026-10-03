@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-10-03-8-pypdf-cves-hit-one-mcp-server-in-a-single-day",
+    "title": "8 pypdf CVEs Hit One MCP Server in a Single Day",
+    "description": "Eight high-severity pypdf denial-of-service CVEs landed against one MCP server, plus two Electron sandbox-escape bugs in another — here's what to patch.",
+    "hook": "One MCP server just got hit with 8 separate high-severity CVEs in 24 hours — all from the same unpatched PDF library. Here's the patch list.",
+    "date": "2026-10-03",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 2
+  },
+  {
     "slug": "2026-09-30-dbhub-s-read-only-mode-isn-t-and-its-http-server-isn-t-eithe",
     "title": "Dbhub's 'Read-Only' Mode Isn't, and Its HTTP Server Isn't Either",
     "description": "Two new advisories hit Dbhub: a critical DNS-rebinding flaw exposing unauthenticated SQL execution, and a high-severity bug where the readonly flag never actually enforces read-only access.",

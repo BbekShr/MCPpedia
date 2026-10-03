@@ -1,0 +1,68 @@
+---
+title: "8 pypdf CVEs Hit One MCP Server in a Single Day"
+description: "Eight high-severity pypdf denial-of-service CVEs landed against one MCP server, plus two Electron sandbox-escape bugs in another — here's what to patch."
+hook: "One MCP server just got hit with 8 separate high-severity CVEs in 24 hours — all from the same unpatched PDF library. Here's the patch list."
+date: "2026-10-03"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+## Eight CVEs, one dependency, one MCP server
+
+If you're running [com.considus/proton-bridge-mcp](/s/com-considus-proton-bridge-mcp), stop reading and go check your `pypdf` version. Eight separate high-severity CVEs landed against this server on the same day — all traced to the same PDF-parsing library, all filed within a 24-hour window on October 1, 2026.
+
+<Callout type="warning">8 CVEs, 1 server, 1 root cause: an outdated `pypdf` dependency. This is what happens when a transitive dependency doesn't get patched.</Callout>
+
+That's not eight independent bugs. It's one library with a pattern of denial-of-service weaknesses, and a server that hasn't kept pace with the fixes.
+
+---
+
+<SectionLabel>The pypdf pile-up</SectionLabel>
+
+Every one of these is a **high-severity** denial-of-service class issue — craft a malicious PDF, hand it to the server, and watch runtime or memory balloon:
+
+### 1. CVE-2026-102999 — long runtimes with embedded files
+Accessing embedded files through the dictionary-based API can be made to run indefinitely. Fixed in `pypdf==6.19.0`.
+
+### 2. CVE-2026-102998 — appearance stream generation
+Updating form fields with flattening enabled triggers appearance-stream generation that can be abused for long runtimes. Fixed in `pypdf==6.19.0`.
+
+### 3. CVE-2026-103000 — alphabetical page labels
+Large alphabetical page labels can force large memory consumption. Fixed in `pypdf==6.19.0`.
+
+### 4. CVE-2026-102997 — malformed FlateDecode streams (follow-up)
+A partially malformed `/FlateDecode` stream forces byte-by-byte decompression — a second round of the same bug class. Fixed in `pypdf==6.18.1`.
+
+### 5. CVE-2026-102996 — oversized font `/Widths` entries
+Parsing TrueType/Type1 fonts with unusually large `/Widths` values during text extraction drives memory usage up. Fixed in `pypdf==6.18.1`.
+
+### 6. CVE-2026-102995 — large `/ToUnicode` streams (follow-up 2)
+Same shape, different entry point: oversized `/ToUnicode` font data during text extraction. Fixed in `pypdf==6.18.1`.
+
+### 7. CVE-2026-102994 — indirect object headers
+Long, unterminated indirect object headers cause long runtimes and large memory usage while parsing. Fixed in `pypdf==6.18.0`.
+
+### 8. CVE-2026-102993 — Roman numeral page labels
+Mirrors #3: large Roman-numeral page labels blow up memory on retrieval. Fixed in `pypdf==6.17.0`.
+
+<PullQuote>Three consecutive pypdf releases, each patching a new way to feed it a PDF that never stops chewing.</PullQuote>
+
+**What to do:** upgrade to `pypdf==6.19.0`, which rolls up all eight fixes. If an immediate upgrade isn't possible, each advisory links a specific workaround PR — but patching the dependency once is simpler than back-porting eight PRs.
+
+---
+
+<SectionLabel>Electron sandbox escape — Oculo MCP Server</SectionLabel>
+
+[Oculo MCP Server](/s/io-github-xidik12-oculo) carries two related **high-severity** Electron vulnerabilities, both about sandboxed content escaping its box via popups:
+
+**CVE-2026-102673** — popups opened from a sandboxed iframe (via a link with `target="_blank"` or a middle-click) through `OpenURLFromTab` didn't inherit the iframe's `sandbox` restrictions. Untrusted content could open a popup carrying the embedding app's full origin — cookies, storage, same-origin scripting, all exposed.
+
+**CVE-2026-102674** — the same failure one level up: windows opened from a sandboxed top-level document didn't inherit its restrictions either.
+
+Both only bite if the app embeds untrusted content in iframes sandboxed with `allow-scripts allow-popups`, or renders untrusted content in a sandboxed top-level document that allows popups. Apps that deny popups from untrusted content via `setWindowOpenHandler` are already in the clear.
+
+**What to do:** update your Electron build and verify `setWindowOpenHandler` is wired up wherever untrusted content can open a popup or window.
+
+---
+
+Ten advisories, two servers, zero excuses — the fixes are already published. Patch now.
