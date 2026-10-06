@@ -1,5 +1,31 @@
 [
   {
+    "slug": "2026-10-06-3-129-new-mcp-servers-this-week-here-s-what-actually-matters",
+    "title": "3,129 New MCP Servers This Week — Here's What Actually Matters",
+    "description": "A weekly look at the MCP ecosystem's fastest-growing new servers and trending projects, and why star count and quality score keep diverging.",
+    "hook": "4 of the 10 fastest-growing MCP servers this week score below 65 out of 100 — stars measure hype, not whether the thing actually works.",
+    "date": "2026-10-06",
+    "tags": [
+      "weekly",
+      "ecosystem",
+      "new-servers"
+    ],
+    "category": "weekly-roundup",
+    "featuredServers": [
+      "io-github-amos689-paper-preflight",
+      "io-github-avinash-jetwani-jevmem",
+      "toolkit",
+      "mcp-extensions",
+      "io-github-kta41-mcp-bruno",
+      "io-github-allxsmith-bestax-mcp",
+      "io-github-unvus-neosql-mcp",
+      "io-github-leonhest-hivemind",
+      "io-github-atushi1841-kensho-kaku",
+      "io-github-atushi1841-tcg-price-japan"
+    ],
+    "readingTime": 4
+  },
+  {
     "slug": "2026-10-03-8-pypdf-cves-hit-one-mcp-server-in-a-single-day",
     "title": "8 pypdf CVEs Hit One MCP Server in a Single Day",
     "description": "Eight high-severity pypdf denial-of-service CVEs landed against one MCP server, plus two Electron sandbox-escape bugs in another — here's what to patch.",

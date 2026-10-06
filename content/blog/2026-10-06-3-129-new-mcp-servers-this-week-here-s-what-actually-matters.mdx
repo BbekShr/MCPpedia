@@ -1,0 +1,83 @@
+---
+title: "3,129 New MCP Servers This Week — Here's What Actually Matters"
+description: "A weekly look at the MCP ecosystem's fastest-growing new servers and trending projects, and why star count and quality score keep diverging."
+hook: "4 of the 10 fastest-growing MCP servers this week score below 65 out of 100 — stars measure hype, not whether the thing actually works."
+date: "2026-10-06"
+tags: ["weekly","ecosystem","new-servers"]
+category: "weekly-roundup"
+featuredServers: ["io-github-amos689-paper-preflight","io-github-avinash-jetwani-jevmem","toolkit","mcp-extensions","io-github-kta41-mcp-bruno","io-github-allxsmith-bestax-mcp","io-github-unvus-neosql-mcp","io-github-leonhest-hivemind","io-github-atushi1841-kensho-kaku","io-github-atushi1841-tcg-price-japan"]
+---
+The registry added **3,129 new servers** this week. Sit with that number for a second — that's not a typo, that's roughly 450 new MCP servers a day, every day, landing on top of an ecosystem that just crossed **45,885 servers** total.
+
+Most of them will never get a second commit. A handful will matter. This week's batch has an unusually good "matter" pile, plus a trending board that's a useful reminder: star count and actual quality are two very different axes.
+
+<StatGrid>
+<Stat value="45,885" label="Total Servers" detail="Cataloged on MCPpedia" />
+<Stat value="3,129" label="New This Week" detail="~450/day" />
+<Stat value="93" label="Top New-Server Score" detail="Three-way tie" />
+</StatGrid>
+
+---
+
+## The new servers worth your attention
+
+Of the 20 highlighted launches, three scored a 93 — and they couldn't be more different from each other.
+
+### 1. A fact-checker with zero LLM involvement
+
+[io.github.amos689/paper-preflight](/s/io-github-amos689-paper-preflight) checks every LaTeX reference in a document against Crossref, dblp, arXiv, DataCite, PubMed, and OpenAlex. Five tools, 15 stars, score of 93 — and the headline feature is what it *doesn't* use.
+
+<Callout type="info">
+No LLM. In a week full of "AI-powered" taglines, a tool that just does deterministic citation verification against six real databases is the one that stands out.
+</Callout>
+
+If you've ever had a paper bounce back from review because a DOI pointed nowhere, this is the boring, correct fix.
+
+### 2. Memory for your coding agent, across tools
+
+[io.github.Avinash-jetwani/jevmem](/s/io-github-avinash-jetwani-jevmem) gives Claude Code (and Cursor, and Codex) automatic project memory — 117 stars already, four tools, score 93. The pitch is simple: your agent shouldn't forget what it learned about your codebase between sessions.
+
+This is the third or fourth entrant in the "agent memory" category to cross our desk in recent weeks, and it's a sign of where the ecosystem's attention is actually going — not more tools, but better continuity between sessions.
+
+### 3. Sentry, wired straight into your LLM
+
+[Toolkit](/s/toolkit) is an MCP server for Sentry — 912 stars, five tools, score 93. Error triage is exactly the kind of workflow that benefits from an agent that can query, filter, and summarize without you tabbing over to a dashboard.
+
+<PullQuote>Three servers, three completely different problems, one identical score — that's what a healthy week in a maturing ecosystem looks like.</PullQuote>
+
+Honorable mentions: [MCP Extensions](/s/mcp-extensions) (OpenAI's own extensions for MCP servers and apps, score 92) and [io.github.kta41/mcp-bruno](/s/io-github-kta41-mcp-bruno), a Python server for running and inspecting Bruno API collections, also at 92.
+
+---
+
+<SectionLabel>What's trending</SectionLabel>
+
+## Stars are a popularity contest, not a quality signal
+
+The star-gain leaderboard this week is a good case study in why MCPpedia scores things instead of just ranking by GitHub stars.
+
+[Rea](/s/rea) led with **+717 stars** this week (5,123 total) — "reverse engineer anything from your terminal or agent." Explosive growth. Its MCPpedia score: **64**.
+
+Compare that to [Apify Mcp Server](/s/apify-mcp-server), which gained a quieter +146 stars (9,727 total) but carries a score of **95** — the highest score on either list this week, backed by thousands of scrapers and automations on the Apify Store, in a single tool.
+
+<ScoreBreakdown>
+<ScoreRow label="Apify Mcp Server" points="95" description="9,727 stars, +146 this week, 1 tool — depth over breadth" />
+<ScoreRow label="Scrapling" points="92" description="85,824 stars, +186 this week, 7 tools — stealth scraping with Cloudflare bypass" />
+<ScoreRow label="N8n" points="88" description="206,725 stars, +81 this week — the automation giant keeps growing" />
+<ScoreRow label="Rea" points="64" description="5,123 stars, +717 this week — fastest-growing, lowest-scoring of the pack" />
+</ScoreBreakdown>
+
+The pattern holds further down the board. [Aoci Code](/s/aoci-code) gained +116 stars this week on a pitch of persistent, Git-versioned codebase memory for coding agents — but scores just **39**. [cloud.basebalance/basebalance](/s/cloud-basebalance-basebalance), a USDC-gated JSON-RPC proxy, gained +71 stars and scores **37**.
+
+<Callout type="warning">
+Four of the ten fastest-growing servers this week score below 65. Star velocity measures attention, not whether the server actually does what it claims reliably. Check the score before you install, not just the stars.
+</Callout>
+
+One trending entry deserves a flag rather than a shrug: [Hexstrike Ai](/s/hexstrike-ai) gained +94 stars this week (12,455 total) and ships **127 tools** for autonomous pentesting and offensive security work — a huge surface area, and a reminder that "trending" cuts both ways when the tagline is "bridge LLMs with real-world offensive security capabilities." Score it, read it, sandbox it before you point an agent at it.
+
+Not everything trending is a gamble, though. [Scrapling](/s/scrapling) backs its +186 star-gain with a legitimately strong 92 score and 85,824 total stars — stealth HTTP, real browser automation, and Cloudflare bypass, with the engineering to match the hype. And [N8n](/s/n8n), already the established giant at 206,725 stars, added another 81 this week just by continuing to be the default answer for "automation platform with AI built in."
+
+---
+
+## The takeaway
+
+3,129 new servers in a week means the discovery problem is only getting worse, not better. The fix isn't fewer servers — it's better filters. This week, the filter says: skip the star-chasers, read the scores, and go try [paper-preflight](/s/io-github-amos689-paper-preflight) if you've ever shipped a paper with a dead citation.
