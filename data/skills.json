@@ -2670,5 +2670,163 @@
     "install": {
       "manual": "Clone zarazhangrui/codebase-to-course and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
     }
+  },
+  {
+    "slug": "career-ops-2",
+    "name": "Career Ops",
+    "tagline": "Open-source AI job search agent and job finder: scan job boards, score each job 1-5 against your CV before you apply, tailor an ATS-friendly resume and cover letter, get interview prep and a job appli",
+    "repo": "career-ops-hq/career-ops",
+    "github_url": "https://github.com/career-ops-hq/career-ops",
+    "homepage_url": "https://career-ops.org",
+    "author": "career-ops-hq",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 73697,
+    "last_updated": "2026-10-07",
+    "category": "other",
+    "tags": ["agent-skills", "ai-agent", "ai-job-search", "ats", "career", "career-ops"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone career-ops-hq/career-ops and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "invisible-dots",
+    "name": "Invisible Dots",
+    "tagline": "Open-source, self-hosted alternative to OpenAI Dots, Meta Muse, Grok Bot, Manus Cue and Claude Cowork. AI agents, each with a virtual machine on your PC with a desktop, a shell, files, memory and skil",
+    "repo": "feder-cr/invisible_dots",
+    "github_url": "https://github.com/feder-cr/invisible_dots",
+    "homepage_url": "https://github.com/feder-cr/invisible_dots/blob/main/docs/guide.md",
+    "author": "feder-cr",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 31794,
+    "last_updated": "2026-10-07",
+    "category": "testing",
+    "tags": ["agent-skills", "agentic-ai", "ai-agent", "ai-agents", "ai-assistant", "antidetect-browser"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone feder-cr/invisible_dots and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "brag",
+    "name": "Brag",
+    "tagline": "You built it. Now brag. Turn the project you just created into a short, shareable launch video with one command.",
+    "repo": "latent-spaces/brag",
+    "github_url": "https://github.com/latent-spaces/brag",
+    "homepage_url": "https://latent-spaces.github.io/brag/",
+    "author": "latent-spaces",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 14057,
+    "last_updated": "2026-10-06",
+    "category": "other",
+    "tags": ["agent-skills", "claude-code", "claude-skills", "hyperframes", "launch-video", "video-generation"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone latent-spaces/brag and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "autoharness",
+    "name": "Autoharness",
+    "tagline": "Autoharness — a self-learning skill layer for Claude Code — distills skills from your real sessions, updates them as you work, and prunes the ones that stop getting used. No daemon, no benchmark.",
+    "repo": "tigerless-labs/autoharness",
+    "github_url": "https://github.com/tigerless-labs/autoharness",
+    "homepage_url": "https://github.com/tigerless-labs/autoharness",
+    "author": "tigerless-labs",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 9176,
+    "last_updated": "2026-10-07",
+    "category": "other",
+    "tags": ["agent-skills", "claude-code", "claude-code-plugin", "llm-agents", "python"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone tigerless-labs/autoharness and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "claude-bughunter",
+    "name": "Claude BugHunter",
+    "tagline": "A Claude Code skill bundle for bug hunting and external red-team work - 82 skills, 15 slash commands, 681 disclosed-report patterns curated across 24 core vulnerability classes, plus enterprise identi",
+    "repo": "elementalsouls/Claude-BugHunter",
+    "github_url": "https://github.com/elementalsouls/Claude-BugHunter",
+    "homepage_url": "https://elementalsouls.github.io/Claude-BugHunter",
+    "author": "elementalsouls",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 4788,
+    "last_updated": "2026-10-07",
+    "category": "testing",
+    "tags": ["ai-security", "anthropic", "application-security", "bug-bounty", "bugbounty", "bugcrowd"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone elementalsouls/Claude-BugHunter and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "obsidian-second-brain",
+    "name": "Obsidian Second Brain",
+    "tagline": "Persistent memory for Claude Code and 6 other CLI agents, stored as plain markdown in your Obsidian vault. Stop re-explaining your projects, decisions and people every session. 45 commands: hybrid sem",
+    "repo": "eugeniughelbur/obsidian-second-brain",
+    "github_url": "https://github.com/eugeniughelbur/obsidian-second-brain",
+    "homepage_url": "https://theaioperator.io",
+    "author": "eugeniughelbur",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 4690,
+    "last_updated": "2026-10-01",
+    "category": "writing",
+    "tags": ["agent-skills", "ai-agents", "ai-note-taking", "ai-second-brain", "anthropic", "claude"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone eugeniughelbur/obsidian-second-brain and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "claude-code-guide",
+    "name": "Claude Code Guide",
+    "tagline": "Claude Code Guide - Setup, Commands, workflows, agents, skills & tips-n-tricks from beginner to power user!",
+    "repo": "zebbern/claude-code-guide",
+    "github_url": "https://github.com/zebbern/claude-code-guide",
+    "author": "zebbern",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 4650,
+    "last_updated": "2026-10-07",
+    "category": "development-workflow",
+    "tags": ["ai", "ai-agent", "ai-agent-tools", "anthropic-claude", "claude", "claude-ai"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone zebbern/claude-code-guide and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "codex-claude-academic-skills",
+    "name": "Codex Claude Academic Skills",
+    "tagline": "本仓库包含三个面向学术科研人员的Skills，覆盖从文献阅读、论文写作到科学计算的完整研究工作流。office-academic-skill 负责论文阅读报告与学术 PPT/Word 文档生成；research-writing-skill 提供论文写作、润色与审稿回复辅助；scientific-toolkit-skill 整合 MATLAB/Python 科学计算与期刊级图表生成。三个 Skill",
+    "repo": "zLanqing/codex-claude-academic-skills",
+    "github_url": "https://github.com/zLanqing/codex-claude-academic-skills",
+    "author": "zLanqing",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 4609,
+    "last_updated": "2026-05-14",
+    "category": "writing",
+    "tags": [],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone zLanqing/codex-claude-academic-skills and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
   }
 ]
