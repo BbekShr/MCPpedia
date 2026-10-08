@@ -31,7 +31,7 @@ vi.mock('@/lib/revalidate', () => ({
 
 const SERVER_ID = '00000000-0000-4000-8000-000000000001'
 
-async function postEdit(field_name = 'tagline') {
+async function postEdit(field_name = 'tagline', new_value = 'new tagline') {
   const { POST } = await import('@/app/api/edit/route')
   return POST(new Request('http://localhost/api/edit', {
     method: 'POST',
@@ -39,7 +39,7 @@ async function postEdit(field_name = 'tagline') {
       server_id: SERVER_ID,
       field_name,
       old_value: 'old',
-      new_value: 'new tagline',
+      new_value,
       edit_reason: 'better wording',
     }),
   }))
@@ -63,6 +63,20 @@ describe('POST /api/edit — auto-approve client routing', () => {
   })
   afterEach(() => {
     vi.restoreAllMocks()
+  })
+
+  it.each(['npm_package', 'pip_package'].flatMap(field =>
+    ['contributor', 'editor', 'maintainer', 'admin'].map(role => [field, role])
+  ))('queues clearing %s by a %s for moderation', async (field_name, role) => {
+    harness.queued['profiles:single'] = { role, username: 'bob' }
+    const res = await postEdit(field_name, '')
+    expect(res.status).toBe(201)
+    expect(await res.json()).toMatchObject({ autoApproved: false })
+    expect(editInserts()).toHaveLength(1)
+    expect(editInserts()[0].client).toBe('authed')
+    expect(editInserts()[0].args[0]).toMatchObject({ field_name, new_value: '', status: 'pending' })
+    expect(serversUpdated()).toEqual([])
+    expect(adminClientArgs).toEqual([])
   })
 
   it('inserts a trusted contributor\'s approved edit through the ADMIN client', async () => {
