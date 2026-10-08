@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-10-08-security-alert-nx-dev-s-double-bug-and-a-jupyter-clipboard-x",
+    "title": "Security Alert: Nx Dev's Double Bug and a Jupyter Clipboard XSS",
+    "description": "Two high-severity Nx Dev advisories plus a Jupyter MCP clipboard XSS bug — what's affected and what to patch right now.",
+    "hook": "Nx Dev just racked up two high-severity CVEs in one week — a git ref that runs shell commands, and a daemon socket any local user can hijack into code execution.",
+    "date": "2026-10-08",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 2
+  },
+  {
     "slug": "2026-10-06-3-129-new-mcp-servers-this-week-here-s-what-actually-matters",
     "title": "3,129 New MCP Servers This Week — Here's What Actually Matters",
     "description": "A weekly look at the MCP ecosystem's fastest-growing new servers and trending projects, and why star count and quality score keep diverging.",

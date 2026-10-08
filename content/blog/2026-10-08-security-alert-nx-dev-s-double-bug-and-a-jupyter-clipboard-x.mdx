@@ -1,0 +1,55 @@
+---
+title: "Security Alert: Nx Dev's Double Bug and a Jupyter Clipboard XSS"
+description: "Two high-severity Nx Dev advisories plus a Jupyter MCP clipboard XSS bug — what's affected and what to patch right now."
+hook: "Nx Dev just racked up two high-severity CVEs in one week — a git ref that runs shell commands, and a daemon socket any local user can hijack into code execution."
+date: "2026-10-08"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+Three high-severity advisories landed this week, and two of them hit the same server twice. If you're running [Nx Dev](/s/nx-dev) or [Jupyter Mcp Server](/s/jupyter-mcp-server), stop reading the changelog and go check your version.
+
+<Callout type="warning">All three advisories below are rated **high severity**. None are theoretical — each has a concrete exploitation path.</Callout>
+
+---
+
+## Nx Dev: two high-severity bugs, same root cause
+
+[Nx Dev](/s/nx-dev) shipped with a pair of advisories, and they rhyme: both come from trusting input that an attacker controls.
+
+### 1. OS command injection via git revisions (GHSA-w2vw-w76x-qr89)
+
+Nx builds `git` invocations as raw shell strings and interpolates untrusted values straight into them. Two paths reach it: `affected` commands, where `defaultBase` / `affected.defaultBase` in `nx.json` — or the `NX_BASE` / `NX_HEAD` environment variables — flow into `git merge-base` and `git diff`; and `nx import`, where a **branch name advertised by a remote repository** gets parsed by `/bin/sh` instead of treated as a literal ref.
+
+That second path is the one to worry about. If you've ever run `nx import` against a repo you don't fully control, a malicious branch name was enough to execute arbitrary commands on your machine.
+
+<PullQuote>A branch name shouldn't be able to run a shell command — but in Nx, until this fix, it could.</PullQuote>
+
+### 2. Daemon and plugin worker sockets open to other local users (CVE-2026-104854)
+
+Nx's daemon and plugin workers create Unix domain sockets in a shared temp directory with default permissions — meaning **any other user on the same machine** can connect. Worse, the daemon accepts a `PROCESS_IN_BACKGROUND` request that names a module to load and runs its default export. Socket access becomes code execution inside the daemon process.
+
+This one matters most on shared infrastructure: a shared build server, a shared dev box, or a container host running multiple accounts. If your CI runners or dev environments aren't single-tenant, assume this was reachable.
+
+<ScoreBreakdown>
+<ScoreRow label="Command injection (git refs)" points="High" description="Remote branch names reach /bin/sh via nx import" />
+<ScoreRow label="Socket permissions (daemon RCE)" points="High" description="Shared-tmp sockets let any local user reach PROCESS_IN_BACKGROUND" />
+</ScoreBreakdown>
+
+**What to do:** update [Nx Dev](/s/nx-dev) to the patched release immediately, audit `nx.json` and any `NX_BASE`/`NX_HEAD` env vars for untrusted input, and if you run Nx on shared machines, treat every build as having had daemon exposure until you confirm the fix is in place.
+
+---
+
+## Jupyter MCP Server: clipboard paste turns into stored XSS
+
+[Jupyter Mcp Server](/s/jupyter-mcp-server) has its own high-severity entry: CVE-2026-102831, an XSS bug introduced by JupyterLab 4.5.0's new system-clipboard cell paste.
+
+The paste path parses clipboard text as cell JSON and inserts it **without clearing `metadata.trusted`**. A crafted payload can simply declare its own output pre-trusted. JupyterLab doesn't re-sanitize trusted output, so any `<script>` tags in it execute in the JupyterLab origin the moment you paste.
+
+<Callout type="fire">The exploit condition is almost comically simple: copy a malicious cell from anywhere, paste it into JupyterLab, and the script runs. Setting `"trusted": false` in the same payload is correctly sanitized — the hole is specifically in the trusted-output path.</Callout>
+
+**What to do:** treat clipboard content from outside your own notebooks as untrusted — don't paste cells copied from random notebooks, gists, or chat messages into [Jupyter Mcp Server](/s/jupyter-mcp-server) sessions until you've updated past the vulnerable JupyterLab version.
+
+---
+
+None of these three bugs require a sophisticated attacker — a crafted branch name, a shared socket directory, a pasted cell. That's the pattern worth remembering: the exploit is rarely exotic, it's just a trust boundary nobody drew. Patch now, audit later.
