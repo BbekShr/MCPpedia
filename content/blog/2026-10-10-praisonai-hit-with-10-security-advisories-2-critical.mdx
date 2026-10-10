@@ -1,0 +1,54 @@
+---
+title: "PraisonAI Hit With 10 Security Advisories, 2 Critical"
+description: "PraisonAI MCP Server disclosed ten vulnerabilities in two days, including arbitrary code execution via AICoder and f-string injection in its deploy generator."
+hook: "10 CVEs, 2 critical, one MCP server: PraisonAI's AICoder tool lets prompt injection write to /root/.ssh/authorized_keys because nobody validated the path — and that's just one of ten."
+date: "2026-10-10"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+## One server, ten CVEs, one very bad week
+
+[Praisonai MCP Server](/s/io-github-mervinpraison-praisonai) just posted ten security advisories in a single disclosure window — two critical, eight high. If you're running it anywhere near untrusted input, stop and read this before you do anything else.
+
+<Callout type="warning">
+10 advisories published between October 7–8, 2026. Two are critical: arbitrary file write/command execution, and code injection via f-string interpolation. Both let an attacker run their own code on your machine.
+</Callout>
+
+---
+
+## The critical pair
+
+**CVE-2026-61445** is the headline. PraisonAI's `AICoder` UI component hands the LLM `write_to_file` and `execute_command` tools with zero path validation and zero command sanitization. Prompt injection in the chat interface is enough to write to `/root/.ssh/authorized_keys` or `/etc/crontab` — and since Docker containers run as root, the blast radius is total.
+
+**CVE-2026-61444** is just as bad, different door. The `deploy/api.py` module builds Python server code by f-string-interpolating an `agents_file` value straight into source that gets executed via `subprocess.Popen()`. Anyone who controls that value — CLI arg, config, upstream API — gets arbitrary code execution at deploy time.
+
+<PullQuote>Two critical bugs, one root cause: user-controlled strings going straight into something that executes.</PullQuote>
+
+---
+
+## The "unauthenticated by default" pattern
+
+Four of the eight high-severity advisories share a theme — surfaces that are wide open unless you remember to lock them:
+
+- **CVE-2026-61427**: the MCP HTTP-stream transport only authenticates if an API key is configured. Default CLI flag is `None`, so `praisonai mcp serve --transport http-stream` exposes all ~50 tools to anyone who can reach it.
+- **CVE-2026-60091**: the Jobs API's auth middleware only activates if `PRAISONAI_JOBS_API_KEY` is set. Unauthenticated callers can POST a `webhook_url` and trigger SSRF via DNS rebinding against the SSRF validator's TOCTOU gap.
+- **CVE-2026-61435**: the "localhost-only" Call API safeguard checks the `Host` header — which a remote caller can simply spoof.
+- **CVE-2026-61436**: the AgentMail webhook mode accepts forged `message.received` events because it never verifies Svix signatures, letting anyone inject messages into live agent sessions.
+
+## Hardening that doesn't actually harden
+
+Two more advisories hit defenses that look solid on paper and aren't:
+
+- **CVE-2026-60085**: `SecurityPolicy`'s `strict()` sandbox mode — the one meant for untrusted code — doesn't actually enforce its command/path/import restrictions in the default `SubprocessSandbox` backend.
+- **CVE-2026-61439**: the prompt-injection defense layer only blocks at threat level `CRITICAL`, which needs three simultaneous detection hits. A single flagged "dangerous" signal sails through.
+
+Rounding out the list: **CVE-2026-61434** (the `find -exec` shell-allowlist bypass that undoes an earlier chaining fix) and **CVE-2026-61433** (unescaped YAML fields spliced into generated Python at deploy time).
+
+---
+
+## What to do right now
+
+If you run PraisonAI, treat every advisory above as live until you've confirmed a patched version. Set API keys on the MCP HTTP-stream and Jobs API transports explicitly — don't rely on defaults. Don't run `AICoder` or the deploy flow against untrusted input or as root. And if you're relying on `SecurityPolicy.strict()` or the injection defense to hold a line, assume it currently doesn't.
+
+Ten advisories against one project in two days isn't a fluke — it's what happens when "LLM calls the tool" meets "tool trusts the LLM." Patch first, ask questions later.
