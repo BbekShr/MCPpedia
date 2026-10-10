@@ -51,8 +51,12 @@ export const editProposalSchema = z.object({
   server_id: z.string().uuid(),
   field_name: z.enum(EDITABLE_FIELDS),
   old_value: z.string().max(10000).nullable(),
-  new_value: z.string().min(1).max(10000),
+  new_value: z.string().max(10000),
   edit_reason: z.string().min(1, 'A reason is required').max(1000),
+}).refine((edit) =>
+  edit.new_value.length > 0 || edit.field_name === 'npm_package' || edit.field_name === 'pip_package', {
+  message: 'A value is required',
+  path: ['new_value'],
 })
 
 export const discussionSchema = z.object({
