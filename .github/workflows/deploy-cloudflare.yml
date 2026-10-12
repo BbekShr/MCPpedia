@@ -87,3 +87,9 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # Catches ISR regressions the build cannot see: a page that never settles
+      # on HIT (regenerating per colo, the Oct 2026 bill) or an s-maxage shorter
+      # than the page's revalidate (a fetch inside the render capping it).
+      - name: Verify ISR cache headers
+        run: bash scripts/check-cache-headers.sh
