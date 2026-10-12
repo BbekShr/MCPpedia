@@ -1528,10 +1528,18 @@ because the billing dashboard cannot answer them.
   zone analytics put 913k of 1.56M weekly requests in `cacheStatus: none`. `x-nextjs-cache: HIT`
   means the R2 payload was reused — it does NOT mean the Worker was skipped. Worker CPU averaged
   155.9 ms/request, versus 87.1 ms for `photobari` on the same adapter.
-- **`withRegionalCache` keys are visible as zone request paths.** Top-25 paths include
-  `/<buildId>/skills.cache` and `/<buildId>/<hash>.fetch` at 8-11k/7d each. These are Cache API
-  keys from `open-next.config.ts:13`, not real routes — do not chase them as traffic or as a
-  routing bug.
+- **`withRegionalCache` was removed (2026-10-12) because it multiplied regenerations per colo.**
+  In `long-lived` mode each colo kept its own Cache API copy for the entry's full `revalidate`
+  window, so a page regenerated in one colo still served `x-nextjs-cache: STALE` everywhere
+  else, and each colo queued its own regeneration. Measured: ~250k DO-queue revalidations and
+  R2 `PutObject`s/day against ~36k `/s/[slug]` pages (2-3x total Worker requests), which drove
+  the Oct 2026 DO duration ($12.50) and R2 Class A ($9.00) charges. Do not re-add it without
+  cache purge enabled. Older zone analytics may still show `/<buildId>/<key>.cache` and `.fetch`
+  paths; those were its Cache API keys, not real routes.
+- **A fetch inside a page caps that page's ISR window.** Next uses the minimum `revalidate` across
+  the render, so `/s/[slug]`'s 30d export served `s-maxage=604800` until the README fetch in
+  `components/ServerReadme.tsx` was raised from 7d to 30d. Check `curl -sI` for `s-maxage` after
+  changing any page TTL.
 - **The wrangler OAuth token expires hourly and a stale one fails as plausible data.** A
   `{"success":false,...,"Authentication error"}` body renders as "0 objects" through any script
   that reads `result` without checking `success`. Refresh with any `wrangler` command, and always
