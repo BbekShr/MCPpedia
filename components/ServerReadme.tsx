@@ -16,7 +16,7 @@ export default async function ServerReadme({ githubUrl }: { githubUrl: string | 
     const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
       headers: { 'Accept': 'application/vnd.github.v3.raw' },
       signal: controller.signal,
-      next: { revalidate: 604800 }, // 7d; matches /s/[slug] page revalidate
+      next: { revalidate: 2592000 }, // 30d; must not be shorter than /s/[slug]'s revalidate, or Next caps the page to it
     })
     clearTimeout(timeout)
     if (res.ok) {
