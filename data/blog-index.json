@@ -1,5 +1,31 @@
 [
   {
+    "slug": "2026-10-13-48-751-mcp-servers-and-counting-this-week-s-signal-through-t",
+    "title": "48,751 MCP Servers and Counting: This Week's Signal Through the Noise",
+    "description": "3,046 new MCP servers landed this week — here's which ones actually scored well versus which just went viral.",
+    "hook": "Rea gained 5,340 GitHub stars in one week and scored a 67. Headroom gained 86 stars and scored a 95. Star count and MCP quality are telling two very different stories right now.",
+    "date": "2026-10-13",
+    "tags": [
+      "weekly",
+      "ecosystem",
+      "new-servers"
+    ],
+    "category": "weekly-roundup",
+    "featuredServers": [
+      "mcp-wordpress-remote",
+      "chardesk",
+      "boot-ui",
+      "io-github-dembrandt-dembrandt",
+      "io-github-faucetdb-faucet",
+      "afd-server",
+      "io-github-esyurl-mcp",
+      "dev-ytapi-youtube",
+      "godot-agent",
+      "io-github-shteynu-ngx-json-render-ui"
+    ],
+    "readingTime": 4
+  },
+  {
     "slug": "2026-10-10-praisonai-hit-with-10-security-advisories-2-critical",
     "title": "PraisonAI Hit With 10 Security Advisories, 2 Critical",
     "description": "PraisonAI MCP Server disclosed ten vulnerabilities in two days, including arbitrary code execution via AICoder and f-string injection in its deploy generator.",

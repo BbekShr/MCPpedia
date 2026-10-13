@@ -1,0 +1,70 @@
+---
+title: "48,751 MCP Servers and Counting: This Week's Signal Through the Noise"
+description: "3,046 new MCP servers landed this week — here's which ones actually scored well versus which just went viral."
+hook: "Rea gained 5,340 GitHub stars in one week and scored a 67. Headroom gained 86 stars and scored a 95. Star count and MCP quality are telling two very different stories right now."
+date: "2026-10-13"
+tags: ["weekly","ecosystem","new-servers"]
+category: "weekly-roundup"
+featuredServers: ["mcp-wordpress-remote","chardesk","boot-ui","io-github-dembrandt-dembrandt","io-github-faucetdb-faucet","afd-server","io-github-esyurl-mcp","dev-ytapi-youtube","godot-agent","io-github-shteynu-ngx-json-render-ui"]
+---
+The MCP ecosystem added **3,046 new servers** this week. That's not a typo — the catalog now sits at **48,751 servers**, and the growth curve still hasn't found a ceiling.
+
+Most of those thousands are forgettable forks and template scaffolds. A handful aren't. This week's standouts range from a reverse-engineering CLI that gained over 5,000 stars in seven days to a Unicode canvas that lets AI draw diagrams as editable text. Here's what actually mattered.
+
+<StatGrid>
+<Stat value="48,751" label="Total Servers" detail="Cataloged on MCPpedia" />
+<Stat value="3,046" label="New This Week" detail="Across all categories" />
+<Stat value="5,340" label="Top Star Gain" detail="Rea, in a single week" />
+</StatGrid>
+
+---
+
+## The new arrivals worth your attention
+
+Most weekly cohorts are noise with a README. This one had actual signal — four servers cleared 92+ scores with real functionality behind the tagline.
+
+### 1. CharDesk — drawing as a first-class AI output
+
+[CharDesk](/s/chardesk) bills itself as "a Unicode canvas for humans and AI," letting models draw diagrams, interfaces, and slides as **editable text** instead of flat images. It's picked up 541 GitHub stars and scored a **95** on MCPpedia's engine with just 2 tools — proof that tool count isn't a scoring shortcut.
+
+<Callout type="tip">A 95 score with only 2 tools is the exception, not the rule — it usually means the tools are doing a lot of work cleanly, with solid docs and security hygiene behind them.</Callout>
+
+### 2. io.github.dembrandt/dembrandt — design tokens, extracted and tracked
+
+This one already has **3,625 stars**, by far the highest of any server that debuted this week. [io.github.dembrandt/dembrandt](/s/io-github-dembrandt-dembrandt) pulls design tokens — colors, type, spacing, components — from any live site, then **tracks drift against a baseline**. For design systems teams tired of manually auditing production CSS, that's a real workflow, not a toy demo. Score: 94, across 7 tools.
+
+### 3. io.github.faucetdb/faucet — one server, six databases
+
+[io.github.faucetdb/faucet](/s/io-github-faucetdb-faucet) turns PostgreSQL, MySQL, SQL Server, Oracle, SQLite, and Snowflake into MCP tools and a REST API from a single codebase. Database connector servers are common; one that spans six engines with a 92 score and 10 tools is not.
+
+### 4. Godot Agent — game dev gets its own MCP server
+
+[Godot Agent](/s/godot-agent) brings headless build-and-verify automation to Godot projects — CLI, Agent Skill, or MCP server, with structured results and live runtime control. Only 48 stars so far, but a 92 score signals the implementation is solid even if the audience hasn't caught up yet.
+
+<PullQuote>The highest-starred debut of the week wasn't the highest-scored one — stars measure attention, the score measures whether the thing actually works.</PullQuote>
+
+---
+
+## What's trending: one outlier, then the usual suspects
+
+<SectionLabel>Star Gains This Week</SectionLabel>
+
+[Rea](/s/rea) gained **5,340 stars** in a single week — more than 14x the next closest server. It's a reverse-engineering CLI and MCP server that already sits at **148,324 total stars**, making it one of the largest projects in the entire catalog. Its MCPpedia score is a comparatively modest 67 with 0 cataloged tools, which is worth flagging: a project can be massively popular on GitHub while still having thin MCP-specific documentation that the scoring engine can actually verify.
+
+That gap — huge stars, modest score — repeats across several entries this week. [Open Seo MCP Skills](/s/open-seo-mcp-skills) (+386 stars, score 42), [Marketing Skills](/s/marketing-skills) (+231, score 41), and [io.github.KKKKhazix/aihot](/s/io-github-kkkkhazix-aihot) (+207, score 42) are all riding real GitHub momentum without much to show on MCPpedia's rubric yet — these read more as content/community traction than MCP server maturity.
+
+<Callout type="info">Not every trending server is a well-built one. Star growth measures marketing reach; MCPpedia's score measures security, documentation, and tooling. When those two diverge this hard, read the score first.</Callout>
+
+Where the two signals **do** agree is more interesting. [Windows MCP](/s/windows-mcp) added 128 stars this week on top of 8,795 total, and carries a 92 score across 5 tools for Windows OS computer-use automation — a server that's both popular and demonstrably solid. [Chrome Devtools Mcp](/s/chrome-devtools-mcp), Google's debugging-focused server, gained 86 stars on its way to 53,363 total, backed by a 90 score and 10 tools.
+
+And then there's [Headroom](/s/headroom) — 75,134 stars, +86 this week, score 95. It compresses tool outputs, logs, files, and RAG chunks before they hit the LLM, claiming 60-95% fewer tokens for the same answers. If that holds up at scale, it's solving one of the most expensive problems in production agent deployments right now: context bloat.
+
+[Awesome Mcp Servers](/s/awesome-mcp-servers) rounds out the list with +114 stars on a curated directory already at 96,276 — a reminder that in a 48,751-server ecosystem, a well-maintained list is still one of the most-starred things you can ship.
+
+---
+
+## The takeaway
+
+Volume keeps climbing — 3,046 new servers in one week is an almost absurd rate of production for a two-year-old protocol. But this week's data makes the same point it usually does: **raw star count and MCPpedia score are measuring different things**, and the servers worth building on are the ones where both numbers show up.
+
+CharDesk, dembrandt, and Headroom all cleared that bar. A lot of this week's 3,046 didn't even try.
