@@ -2828,5 +2828,164 @@
     "install": {
       "manual": "Clone zLanqing/codex-claude-academic-skills and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
     }
+  },
+  {
+    "slug": "rea",
+    "name": "Rea",
+    "tagline": "Reverse engineer anything with agents, from app behavior down to native binaries.",
+    "repo": "morluto/rea",
+    "github_url": "https://github.com/morluto/rea",
+    "homepage_url": "https://rea.tools",
+    "author": "morluto",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 231076,
+    "last_updated": "2026-10-14",
+    "category": "other",
+    "tags": ["agent-skills", "ai-agents", "binary-analysis", "claude-code", "cli", "codex"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone morluto/rea and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "paperclip",
+    "name": "Paperclip",
+    "tagline": "The open-source app everyone uses to manage agents at work",
+    "repo": "paperclipai/paperclip",
+    "github_url": "https://github.com/paperclipai/paperclip",
+    "homepage_url": "https://paperclip.ing",
+    "author": "paperclipai",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 101950,
+    "last_updated": "2026-10-14",
+    "category": "development-workflow",
+    "tags": ["acpx", "agent-orchestration", "agent-skills", "agentic-ai", "ai-agents", "ai-engineering"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone paperclipai/paperclip and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "marketingskills",
+    "name": "Marketingskills",
+    "tagline": "Marketing skills for Claude Code and AI agents. CRO, copywriting, SEO, analytics, and growth engineering.",
+    "repo": "coreyhaines31/marketingskills",
+    "github_url": "https://github.com/coreyhaines31/marketingskills",
+    "homepage_url": "https://marketing-skills.com",
+    "author": "coreyhaines31",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 54688,
+    "last_updated": "2026-10-14",
+    "category": "data",
+    "tags": ["agent-skills", "ai-agents", "ai-seo", "claude", "claude-code", "claude-code-plugin"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone coreyhaines31/marketingskills and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "open-seo-mcp-skills",
+    "name": "Open Seo MCP Skills",
+    "tagline": "Free SEO MCP server + open-source SEO and GEO skills for Claude: keyword research, rank tracking, audits, backlinks, AI visibility on your real GSC/GA4/ads data. claude mcp add ryze --transport http h",
+    "repo": "Ryze-AI-Adgent/open-seo-mcp-skills",
+    "github_url": "https://github.com/Ryze-AI-Adgent/open-seo-mcp-skills",
+    "homepage_url": "https://www.get-ryze.ai/how-to-connect-claude-to-google-meta-ads-mcp",
+    "author": "Ryze-AI-Adgent",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 5323,
+    "last_updated": "2026-10-13",
+    "category": "data",
+    "tags": ["ai-seo", "ai-visibility", "backlinks", "claude", "claude-code", "claude-skills"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone Ryze-AI-Adgent/open-seo-mcp-skills and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "asd-ste100-skill",
+    "name": "Asd Ste100 Skill",
+    "tagline": "ASD-STE100 Simplified Technical English rules, repurposed as a Claude Code skill for rewriting ambiguous agent-facing English.",
+    "repo": "danyuchn/asd-ste100-skill",
+    "github_url": "https://github.com/danyuchn/asd-ste100-skill",
+    "author": "danyuchn",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 4843,
+    "last_updated": "2026-10-14",
+    "category": "writing",
+    "tags": [],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone danyuchn/asd-ste100-skill and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "linkedin-skills",
+    "name": "Linkedin Skills",
+    "tagline": "Claude skills for LinkedIn. 12 Claude Code and Codex skills that write human-sounding LinkedIn posts, craft comments that get noticed, analyze your feed, and build a publishing cadence, all from your ",
+    "repo": "sergebulaev/linkedin-skills",
+    "github_url": "https://github.com/sergebulaev/linkedin-skills",
+    "homepage_url": "https://cccrafts.ai",
+    "author": "sergebulaev",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 4683,
+    "last_updated": "2026-10-14",
+    "category": "meta",
+    "tags": ["agent-skill", "agent-skills", "ai-agents", "ai-content", "ai-marketing", "anthropic"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone sergebulaev/linkedin-skills and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "marketing-skills",
+    "name": "Marketing Skills",
+    "tagline": "Claude skills for marketing: 49 free marketing skills for Claude Code and claude.ai (Google Ads, Meta Ads, SEO, AI visibility) + the Ryze Google Ads MCP / Meta Ads MCP: claude mcp add ryze --transport",
+    "repo": "irinabuht12-oss/marketing-skills",
+    "github_url": "https://github.com/irinabuht12-oss/marketing-skills",
+    "homepage_url": "https://www.get-ryze.ai/how-to-connect-claude-to-google-meta-ads-mcp",
+    "author": "irinabuht12-oss",
+    "author_type": "community",
+    "license": null,
+    "stars": 4485,
+    "last_updated": "2026-10-13",
+    "category": "marketing",
+    "tags": ["ai-visibility", "claude-code", "claude-desktop", "claude-marketing-skills", "claude-plugin", "claude-skills"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone irinabuht12-oss/marketing-skills and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "modlens",
+    "name": "Modlens",
+    "tagline": "The first vision plugin for DeepSeek Harness, and the vision bridge for every text-only coding agent. Paste an image, get structured JSON evidence (OCR, layout, semantics). | 全网最强 DeepSeek Harness 外挂视",
+    "repo": "liustack/modlens",
+    "github_url": "https://github.com/liustack/modlens",
+    "homepage_url": "https://liustack.dev/tools/modlens",
+    "author": "liustack",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 4250,
+    "last_updated": "2026-10-04",
+    "category": "development-workflow",
+    "tags": ["agent-skills", "claude-code", "claude-skills", "codex", "cordis", "deepseek"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone liustack/modlens and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
   }
 ]
