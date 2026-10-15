@@ -83,6 +83,29 @@ describe('POST /api/admin/approve-edit — self-approval block', () => {
     vi.restoreAllMocks()
   })
 
+  it.each(['npm_package', 'pip_package'])('writes null when another user clears %s', async (field_name) => {
+    harness.queued['edits:single'] = {
+      ...pendingEdit('user-2'), field_name, new_value: '',
+    }
+    const res = await postApprove()
+    expect(res.status).toBe(200)
+    expect(serversUpdated()).toHaveLength(1)
+    expect(serversUpdated()[0].client).toBe('admin')
+    expect(serversUpdated()[0].args[0]).toEqual({ [field_name]: null })
+    expect(editsUpdated()[0].args[0]).toMatchObject({ status: 'approved', reviewed_by: 'user-1' })
+  })
+
+  it.each(['npm_package', 'pip_package'])('blocks self-approval when clearing %s', async (field_name) => {
+    harness.queued['edits:single'] = {
+      ...pendingEdit('user-1'), field_name, new_value: '',
+    }
+    const res = await postApprove()
+    expect(res.status).toBe(403)
+    expect(serversUpdated()).toEqual([])
+    expect(editsUpdated()).toEqual([])
+    expect(adminClientArgs).toEqual([])
+  })
+
   it('blocks an editor approving their own edit and writes nothing', async () => {
     const res = await postApprove()
 

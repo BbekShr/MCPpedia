@@ -54,6 +54,43 @@ describe('submitServerSchema', () => {
 })
 
 describe('editProposalSchema', () => {
+  it.each(['npm_package', 'pip_package'])('accepts clearing %s', (field_name) => {
+    const result = editProposalSchema.safeParse({
+      server_id: '123e4567-e89b-12d3-a456-426614174000',
+      field_name,
+      old_value: 'wrong-package',
+      new_value: '',
+      edit_reason: 'This server has no package',
+    })
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.new_value).toBe('')
+  })
+
+  it.each([
+    'name', 'tagline', 'description', 'api_name', 'api_pricing',
+    'api_rate_limits', 'homepage_url',
+  ])('still rejects clearing %s', (field_name) => {
+    const result = editProposalSchema.safeParse({
+      server_id: '123e4567-e89b-12d3-a456-426614174000',
+      field_name,
+      old_value: 'old',
+      new_value: '',
+      edit_reason: 'Remove value',
+    })
+    expect(result.success).toBe(false)
+    if (!result.success) expect(result.error.flatten().fieldErrors.new_value).toBeDefined()
+  })
+
+  it.each([null, 0, 'x'.repeat(10001)])('rejects invalid package value %j', (new_value) => {
+    expect(editProposalSchema.safeParse({
+      server_id: '123e4567-e89b-12d3-a456-426614174000',
+      field_name: 'npm_package',
+      old_value: 'old',
+      new_value,
+      edit_reason: 'Correct package',
+    }).success).toBe(false)
+  })
+
   it('accepts valid edit proposal', () => {
     const result = editProposalSchema.safeParse({
       server_id: '123e4567-e89b-12d3-a456-426614174000',
