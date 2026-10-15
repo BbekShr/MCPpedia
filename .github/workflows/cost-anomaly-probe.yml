@@ -1,0 +1,27 @@
+name: Cost Anomaly Probe
+
+# Fails if Cloudflare usage spikes or is on pace to exceed a free allowance
+# (bots/cost-anomaly-probe.ts). Usage-based, because the Oct 2026 ISR
+# regeneration loop grew ~15x over two weeks while the bill still read $0.
+# A red run emails the repo owner; alert-on-failure.yml also opens an issue.
+
+on:
+  schedule:
+    - cron: '30 6 * * *'  # daily, after Cloudflare analytics settle for the previous UTC day
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npx tsx bots/cost-anomaly-probe.ts
+        env:
+          # Needs "Account Analytics: Read". The deploy token may not carry it,
+          # so a dedicated read-only token takes precedence when set.
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_ANALYTICS_TOKEN || secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
