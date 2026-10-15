@@ -14,6 +14,7 @@ concurrency:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   check-and-publish:
@@ -79,6 +80,8 @@ jobs:
 
       - name: Commit and push if new alerts
         if: steps.prep.outputs.job_count == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "mcppedia-bot"
           git config user.email "bot@mcppedia.org"
@@ -98,6 +101,10 @@ jobs:
           for attempt in 1 2 3 4 5; do
             if git push; then
               echo "Pushed on attempt $attempt"
+              # Pushes made with GITHUB_TOKEN never fire `push` workflows, so the
+              # deploy has to be dispatched explicitly or the post stays unpublished
+              # until some human PR merges (workflow_dispatch is the one exception).
+              gh workflow run deploy-cloudflare.yml --ref main
               exit 0
             fi
             echo "Push rejected (attempt $attempt) — rebasing onto origin/main"
