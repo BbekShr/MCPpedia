@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import type { User } from '@supabase/supabase-js'
 import DiffView from '@/components/DiffView'
+import { buildEditsQuery, matchesEditFilter, PENDING_EDIT_STATUS, EDIT_STATUS_FILTERS, type EditStatusFilter } from '@/lib/admin-edits'
 
 interface BotInfo {
   id: string
@@ -177,6 +178,12 @@ export default function AdminPage() {
   const [userMetricsError, setUserMetricsError] = useState<string | null>(null)
   const [userMetricsLoading, setUserMetricsLoading] = useState(false)
   const [edits, setEdits] = useState<EditRow[]>([])
+  const [editFilter, setEditFilter] = useState<EditStatusFilter>(PENDING_EDIT_STATUS)
+  const [editsError, setEditsError] = useState<string | null>(null)
+  const [pendingCountError, setPendingCountError] = useState(false)
+  // Approve/reject resolve after an await; they read the live filter, not their render's closure.
+  const editFilterRef = useRef<EditStatusFilter>(PENDING_EDIT_STATUS)
+  const fetchSeq = useRef(0)
   const [claims, setClaims] = useState<ClaimRow[]>([])
   const [pendingClaims, setPendingClaims] = useState(0)
   const [changes, setChanges] = useState<ChangeRow[]>([])
@@ -213,7 +220,24 @@ export default function AdminPage() {
     if (count !== null) setServerCount(count)
   }, [supabase])
 
+  const fetchPendingCount = useCallback(async () => {
+    const { count, error } = await supabase
+      .from('edits')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', PENDING_EDIT_STATUS)
+    return { count, error }
+  }, [supabase])
+
+  // Keep the previous badge value on error: folding a failure to 0 would hide a backlog.
+  const refreshPendingEdits = useCallback(async () => {
+    const { count, error } = await fetchPendingCount()
+    setPendingCountError(!!error)
+    if (error) return
+    setPendingEdits(count || 0)
+  }, [fetchPendingCount])
+
   const fetchNonServerData = useCallback(async () => {
+    const seq = ++fetchSeq.current
     setLoading(true)
     if (tab === 'users') {
       const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(50)
@@ -242,8 +266,14 @@ export default function AdminPage() {
         setUserMetricsLoading(false)
       }
     } else if (tab === 'edits') {
-      const { data } = await supabase.from('edits').select('*, profile:profiles(username), server:servers(name, slug)').order('created_at', { ascending: false }).limit(50)
-      setEdits((data || []) as EditRow[])
+      // Badge and list are committed together under the same stale-response guard so the
+      // truncation notice never compares stale counts.
+      const [list, pending] = await Promise.all([buildEditsQuery(supabase, editFilter), fetchPendingCount()])
+      if (seq !== fetchSeq.current) return
+      setEditsError(list.error ? list.error.message : null)
+      setEdits(list.error ? [] : ((list.data || []) as EditRow[]))
+      setPendingCountError(!!pending.error)
+      if (!pending.error) setPendingEdits(pending.count || 0)
     } else if (tab === 'claims') {
       // publisher_claims.user_id references auth.users, not profiles, so we
       // cannot embed `profile:profiles(...)` here — PostgREST fails the embed
@@ -278,8 +308,9 @@ export default function AdminPage() {
         setBots(json.bots || [])
       }
     }
+    if (seq !== fetchSeq.current) return
     setLoading(false)
-  }, [tab, supabase])
+  }, [tab, editFilter, supabase, fetchPendingCount])
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -291,14 +322,6 @@ export default function AdminPage() {
         })
       }
     })
-  }, [supabase])
-
-  const refreshPendingEdits = useCallback(async () => {
-    const { count } = await supabase
-      .from('edits')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'pending')
-    setPendingEdits(count || 0)
   }, [supabase])
 
   const refreshPendingClaims = useCallback(async () => {
@@ -386,7 +409,7 @@ export default function AdminPage() {
         alert(msg || 'Failed to approve edit')
         return
       }
-      setEdits(prev => prev.map(e => e.id === editId ? { ...e, status: 'approved' } : e))
+      setEdits(prev => prev.flatMap(e => e.id !== editId ? [e] : matchesEditFilter('approved', editFilterRef.current) ? [{ ...e, status: 'approved' as const }] : []))
       refreshPendingEdits()
     } catch {
       alert('Network error')
@@ -508,7 +531,7 @@ export default function AdminPage() {
         alert(msg || 'Failed to reject edit')
         return
       }
-      setEdits(prev => prev.map(e => e.id === editId ? { ...e, status: 'rejected' } : e))
+      setEdits(prev => prev.flatMap(e => e.id !== editId ? [e] : matchesEditFilter('rejected', editFilterRef.current) ? [{ ...e, status: 'rejected' as const }] : []))
       refreshPendingEdits()
     } catch {
       alert('Network error')
@@ -761,7 +784,26 @@ export default function AdminPage() {
       {/* Edits tab */}
       {tab === 'edits' && !loading && (
         <div className="space-y-3">
-          {edits.length === 0 && <p className="text-text-muted text-sm">No edit proposals yet.</p>}
+          <div className="flex gap-1 border-b border-border">
+            {EDIT_STATUS_FILTERS.map(f => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => { editFilterRef.current = f; setEditFilter(f) }}
+                className={`px-4 py-2 text-sm capitalize border-b-2 -mb-px transition-colors ${
+                  editFilter === f ? 'border-accent text-accent font-medium' : 'border-transparent text-text-muted hover:text-text-primary'
+                }`}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+          {!editsError && !pendingCountError && editFilter === PENDING_EDIT_STATUS && pendingEdits > edits.length && (
+            <p className="text-xs text-text-muted">Showing {edits.length} of {pendingEdits} pending proposals</p>
+          )}
+          {!editsError && pendingCountError && <p className="text-sm text-red">Pending count unavailable: the list may be truncated.</p>}
+          {editsError && <p className="text-sm text-red">Failed to load edit proposals: {editsError}</p>}
+          {!editsError && edits.length === 0 && <p className="text-text-muted text-sm">{editFilter === 'all' ? 'No edit proposals yet.' : `No ${editFilter} edit proposals.`}</p>}
           {edits.map(e => (
             <div key={e.id} className="border border-border rounded-md p-4">
               <div className="flex items-center justify-between mb-2">
