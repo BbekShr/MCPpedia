@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-10-16-two-high-severity-mcp-advisories-a-fake-hash-pin-and-a-memor",
+    "title": "Two High-Severity MCP Advisories: A Fake Hash Pin and a Memory Leak That Never Stops",
+    "description": "CVE-2026-86063 lets attackers bypass Claude Code's plugin hash pinning via a cleverly named git branch, while CVE-2026-59951 leaves MCP Python SDK servers open to unbounded memory growth.",
+    "hook": "A 'pinned' commit hash in Claude Code can be silently swapped for attacker code just by naming a git branch after the hash — and a separate bug lets anyone grow an MCP server's memory without limit using plain HTTP requests.",
+    "date": "2026-10-16",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 2
+  },
+  {
     "slug": "2026-10-13-48-751-mcp-servers-and-counting-this-week-s-signal-through-t",
     "title": "48,751 MCP Servers and Counting: This Week's Signal Through the Noise",
     "description": "3,046 new MCP servers landed this week — here's which ones actually scored well versus which just went viral.",

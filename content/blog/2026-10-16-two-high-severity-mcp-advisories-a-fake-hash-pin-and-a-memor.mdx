@@ -1,0 +1,58 @@
+---
+title: "Two High-Severity MCP Advisories: A Fake Hash Pin and a Memory Leak That Never Stops"
+description: "CVE-2026-86063 lets attackers bypass Claude Code's plugin hash pinning via a cleverly named git branch, while CVE-2026-59951 leaves MCP Python SDK servers open to unbounded memory growth."
+hook: "A 'pinned' commit hash in Claude Code can be silently swapped for attacker code just by naming a git branch after the hash — and a separate bug lets anyone grow an MCP server's memory without limit using plain HTTP requests."
+date: "2026-10-16"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+Two high-severity advisories landed within nine minutes of each other on October 15. One is about a pinned commit hash that wasn't actually pinned. The other is about a server that just... never forgets anyone.
+
+Neither requires a sophisticated attacker. That's the part worth sitting with.
+
+<Callout type="warning">Three advisories, two CVEs, three affected listings — all rated **high severity**, all published 2026-10-15.</Callout>
+
+---
+
+## CVE-2026-86063 — Claude Code's pin wasn't a pin
+
+**Severity: High.** This one hits the plugin install flow in Claude Code and Claude Desktop itself, surfaced through [io.github.no-human-ai/no_human](/s/io-github-no-human-ai-no-human).
+
+The bug is almost elegant. When installing a plugin from a marketplace, the client pins a 40-character commit SHA and checks it out with `git checkout`. Sounds safe — until you remember that `git checkout` doesn't care whether a string is a commit hash or a branch name. It just resolves whatever matches first.
+
+So an attacker who controls the plugin's upstream repo can create a **branch literally named after the pinned SHA**. The checkout silently resolves to that branch's tip instead of the reviewed commit. The hash pin — the entire point of which is "don't let upstream swap the code out from under you" — does nothing.
+
+<PullQuote>A hash pin that can be shadowed by a branch name isn't a pin. It's a suggestion.</PullQuote>
+
+**What to do:** if you've installed plugins through Claude Code or Claude Desktop's marketplace flow, treat any plugin sourced from a repo you don't control as unverified until this is patched. Re-review installed plugin code rather than trusting that the pinned SHA protected you — it may not have.
+
+---
+
+## CVE-2026-59951 — the MCP Python SDK never hangs up
+
+**Severity: High.** This CVE shows up twice in this batch, hitting two unrelated server listings: [Healthlens](/s/healthlens) and [io.github.CWNApps/trust-gate-mcp](/s/io-github-cwnapps-trust-gate-mcp). Same root cause, same SDK, two independent deployments now exposed.
+
+The flaw lives in the Streamable HTTP transport, which runs in stateful mode by default. Sessions were supposed to be cleaned up. They weren't:
+
+- Sessions never expired on their own.
+- A client sending `DELETE` to end a session still left the entry registered server-side.
+- A session whose very first request got refused stayed registered anyway, with a task still running.
+
+Each of those zombie sessions keeps its parsed `initialize` parameters in memory, and there's no cap on how many can pile up. Put plainly: **any client that can reach the endpoint can grow the server's memory without bound**, using nothing more exotic than ordinary short-lived requests.
+
+<ScoreBreakdown>
+<ScoreRow label="Attack complexity" points="Low" description="No auth bypass needed — just repeated ordinary requests" />
+<ScoreRow label="Impact" points="High" description="Unbounded memory growth → resource exhaustion / denial of service" />
+<ScoreRow label="Scope" points="2 listings" description="Healthlens and trust-gate-mcp both inherit this from the shared SDK" />
+</ScoreBreakdown>
+
+**What to do:** if you operate or depend on either of these servers, update the underlying MCP Python SDK as soon as a patched release is available, and in the meantime put a request-rate or connection cap in front of the endpoint — don't rely on the SDK's session bookkeeping to protect itself.
+
+---
+
+<SectionLabel>The pattern</SectionLabel>
+
+Neither bug is a flashy remote-code-execution chain. One is a string-matching ambiguity in a `git` command. The other is a missing `TTL` on a dictionary. That's the real lesson here — **the MCP ecosystem's biggest risks right now are boring infrastructure mistakes, not exotic exploits**, and they're shipping in the SDKs and clients everyone builds on top of.
+
+Check your dependency versions. Boring bugs get exploited just as fast as clever ones.
