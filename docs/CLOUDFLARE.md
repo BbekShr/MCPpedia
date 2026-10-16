@@ -70,6 +70,13 @@ npx opennextjs-cloudflare deploy
   must be present for the *build* step, not just at runtime
 - `SUPABASE_SERVICE_ROLE_KEY` — the build prerenders `/s/[slug]`, `/compare/[slugs]`,
   `/skills/[slug]` and the OG images against the real database
+- `ISR_CHECK_HEADER` (optional) — `Name: value` sent by the post-deploy ISR check
+  (`scripts/check-cache-headers.sh`). The zone answers GitHub runners (datacenter
+  IPs) with a 403 `cf-mitigated: challenge` page, so without a WAF custom rule that
+  skips the challenge for this header, the check cannot see production. It then
+  exits 2 and the deploy logs a warning, not an ISR verdict. Until the rule exists,
+  run `bash scripts/check-cache-headers.sh` from a residential network after a
+  deploy (`ISR_MAX_AGE_SLACK=<seconds>` if the deploy was over an hour ago).
 
 ### DNS cutover
 
