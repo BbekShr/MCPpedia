@@ -1,0 +1,74 @@
+---
+title: "MCP Ecosystem Weekly: 3,973 New Servers, One Gained 17,790 Stars"
+description: "This week's MCP roundup covers 52,584 total servers, standout newcomers like Smart Drawio Next, and a trending list led by Rea's explosive 17,790-star gain."
+hook: "52,584 MCP servers now exist and 3,973 showed up this week alone — meanwhile one trending repo gained 17,790 GitHub stars in seven days. The land-grab is real, but so is the consolidation around scraping, compression, and browser automation."
+date: "2026-10-20"
+tags: ["weekly","ecosystem","new-servers"]
+category: "weekly-roundup"
+featuredServers: ["smart-drawio-next","io-github-mbratkowski-deweloperuch-mcp","new-term-radar","io-github-bluedotsoft-netsi","com-chatterapi-mcp","io-github-djangode-icare-mcp","io-github-markksantos-caption-checker","com-ecommercedataapi-ecommerce-data-api","io-github-eukosh-youtube-kit","io-github-hardhackerlabs-podwise"]
+---
+The MCP ecosystem added **3,973 servers** this week. That's not a typo — it's roughly one new server every two minutes, around the clock, seven days straight. The total catalog now sits at **52,584 servers**, and the growth curve shows no sign of flattening.
+
+<Callout type="fire">52,584 total servers tracked. 3,973 of them showed up in the last seven days alone — that's over 7% of the entire catalog, added in a single week.</Callout>
+
+Most of what landed this week is noise — thin wrappers, single-tool utilities, half-finished forks. But buried in the flood are a handful of genuinely sharp builds, and a trending list that tells you exactly where developer attention is pointed right now. Let's get into it.
+
+---
+
+## The new arrivals worth your time
+
+### 1. Smart Drawio Next
+
+[Smart Drawio Next](/s/smart-drawio-next) is the standout debut of the week — a **95/100 score**, 366 GitHub stars, and 13 tools that generate, validate, repair, and style editable draw.io XML diagrams. Most diagram-generation tools stop at "produce something that looks right." This one closes the loop: it validates its own output and repairs broken XML before handing it back. For agents that need to produce architecture diagrams, flowcharts, or org charts as actual editable artifacts rather than static images, this is the kind of tool that quietly saves hours.
+
+### 2. New Term Radar
+
+[New Term Radar](/s/new-term-radar) tracks new AI model, product, and repo names as they surface — along with the search terms behind them — and sizes them. It's already pulled in **1,130 stars**, which is a serious signal for a server this new, and it scored a **92**. Think of it as an early-warning system for the next "DeepSeek moment": if a name is about to blow up in search volume, this server is built to catch it before it's obvious.
+
+<PullQuote>One server launched this week with zero GitHub stars and still scored a 92 — proof that MCPpedia's scoring looks at engineering quality, not just popularity.</PullQuote>
+
+### 3. deweloperuch-mcp
+
+[io.github.MBratkowski/deweloperuch-mcp](/s/io-github-mbratkowski-deweloperuch-mcp) is a niche play done well: unofficial read-only access to Polish real-estate data — new-build asking prices, RCN transaction records, plus GUS and NBP economic data. Only 28 stars, but a **93 score** and 7 tools. This is the pattern worth watching: vertical, country-specific data servers are becoming a real category, not a curiosity.
+
+### 4. podwise
+
+[io.github.hardhackerlabs/podwise](/s/io-github-hardhackerlabs-podwise) turns podcasts into queryable knowledge — search episodes, pull transcripts, ask questions against them. Four tools, a 92 score, and it's tackling a format (audio) that's still underserved in the MCP catalog compared to text and web data.
+
+### 5. youtube-kit
+
+[io.github.eukosh/youtube-kit](/s/io-github-eukosh-youtube-kit) packages YouTube channel management for agents — analytics, uploads, metadata, playlists, and comment moderation in one server with 4 tools and a 92 score. Channel operators running multiple properties now have a single integration point instead of stitching together the YouTube API by hand.
+
+<Callout type="info">Six of this week's ten featured newcomers scored a 92 or higher despite having zero or near-zero GitHub stars. Star count lags quality — don't use it as your only filter.</Callout>
+
+---
+
+## What's trending
+
+<SectionLabel>Star Gains This Week</SectionLabel>
+
+The trending list this week is dominated by one name: [Rea](/s/rea), a reverse-engineering CLI and MCP server that gained **17,790 stars** in a single week. That's not a gradual climb — that's a server that hit a nerve, likely via a viral post or a security community endorsement. At 333,877 total stars, it's now one of the most-starred projects in the entire catalog, though its 67 score and zero listed tools suggest the MCP integration itself is still thin relative to the underlying tool's reputation.
+
+<StatGrid>
+<Stat value="17,790" label="Rea Star Gain" detail="This week alone" />
+<Stat value="95" label="Headroom Score" detail="Top-scoring trending server" />
+<Stat value="3,973" label="New Servers" detail="Added this week" />
+</StatGrid>
+
+Behind Rea, the gains get more modest but more substantive. [Headroom](/s/headroom) — which compresses tool outputs, logs, and RAG chunks before they hit the LLM, promising 60-95% fewer tokens for the same answers — added 399 stars and carries a **95 score**, tying it for the best-scored server in this week's trending set. If token costs are eating your budget, this is worth a serious look.
+
+[Scrapling](/s/scrapling) continues its steady climb (+242 stars, 88,645 total, score 92), reinforcing that stealth web scraping with Cloudflare bypass remains one of the most in-demand capabilities in the ecosystem. Right behind it, [Apify Mcp Server](/s/apify-mcp-server) added 220 stars and matches Headroom's 95 score — giving agents access to thousands of pre-built scrapers and crawlers through a single integration.
+
+<PullQuote>Three of the top five trending servers this week are scraping or browser-automation tools. Agents still need eyes on the live web more than almost anything else.</PullQuote>
+
+[com.browser-use/browser-use](/s/com-browser-use-browser-use) rounds out the browser-automation cluster with +144 stars and 118,521 total — real Chrome control for form-filling, data extraction, and booking flows. And [N8n](/s/n8n), the workflow automation platform, keeps grinding upward (+129 stars, 208,121 total, score 88), a reminder that "boring" automation infrastructure still commands enormous mindshare.
+
+---
+
+## The takeaway
+
+This week's numbers tell two stories at once. The **top line** — nearly 4,000 new servers in seven days — says the ecosystem is still in a land-grab phase, where anyone with an API key and a weekend builds a wrapper. The **trending line** says something different: real usage is consolidating around a narrow set of capabilities — reverse engineering, context compression, web scraping, browser control, and workflow automation.
+
+If you're building right now, the lesson is clear: there's no shortage of ideas, but there's a shrinking list of categories where quality actually gets rewarded with stars. Build in one of those, and build it well — Headroom and Apify Mcp Server both prove a 95 score and real star velocity aren't mutually exclusive.
+
+With 52,584 servers and counting, the hard part was never getting listed. It's getting found.

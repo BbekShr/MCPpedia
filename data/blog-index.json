@@ -1,5 +1,31 @@
 [
   {
+    "slug": "2026-10-20-mcp-ecosystem-weekly-3-973-new-servers-one-gained-17-790-sta",
+    "title": "MCP Ecosystem Weekly: 3,973 New Servers, One Gained 17,790 Stars",
+    "description": "This week's MCP roundup covers 52,584 total servers, standout newcomers like Smart Drawio Next, and a trending list led by Rea's explosive 17,790-star gain.",
+    "hook": "52,584 MCP servers now exist and 3,973 showed up this week alone — meanwhile one trending repo gained 17,790 GitHub stars in seven days. The land-grab is real, but so is the consolidation around scraping, compression, and browser automation.",
+    "date": "2026-10-20",
+    "tags": [
+      "weekly",
+      "ecosystem",
+      "new-servers"
+    ],
+    "category": "weekly-roundup",
+    "featuredServers": [
+      "smart-drawio-next",
+      "io-github-mbratkowski-deweloperuch-mcp",
+      "new-term-radar",
+      "io-github-bluedotsoft-netsi",
+      "com-chatterapi-mcp",
+      "io-github-djangode-icare-mcp",
+      "io-github-markksantos-caption-checker",
+      "com-ecommercedataapi-ecommerce-data-api",
+      "io-github-eukosh-youtube-kit",
+      "io-github-hardhackerlabs-podwise"
+    ],
+    "readingTime": 4
+  },
+  {
     "slug": "2026-10-16-two-high-severity-mcp-advisories-a-fake-hash-pin-and-a-memor",
     "title": "Two High-Severity MCP Advisories: A Fake Hash Pin and a Memory Leak That Never Stops",
     "description": "CVE-2026-86063 lets attackers bypass Claude Code's plugin hash pinning via a cleverly named git branch, while CVE-2026-59951 leaves MCP Python SDK servers open to unbounded memory growth.",
