@@ -2987,5 +2987,164 @@
     "install": {
       "manual": "Clone liustack/modlens and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
     }
+  },
+  {
+    "slug": "kami",
+    "name": "Kami",
+    "tagline": "👩‍🚒 Good content deserves good paper. Layout rules and templates that let AI agents export PDF, PNG and editable PowerPoint.",
+    "repo": "tw93/Kami",
+    "github_url": "https://github.com/tw93/Kami",
+    "homepage_url": "https://kami.tw93.fun",
+    "author": "tw93",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 12050,
+    "last_updated": "2026-10-20",
+    "category": "design",
+    "tags": ["agent-skills", "ai-agents", "claude-code", "codex", "document-design", "pdf"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone tw93/Kami and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "lemo-opuscar",
+    "name": "Lemo Opuscar",
+    "tagline": "Claude Code skill for short films with no video model: 51 film styles, each a style prompt plus a demo film made entirely in code by Claude Opus 5.5 (incl. OPUSCAR 98 and the new Evidence Films). By L",
+    "repo": "lemomo-ai/lemo-opuscar",
+    "github_url": "https://github.com/lemomo-ai/lemo-opuscar",
+    "homepage_url": "https://lemomo-ai.github.io/lemo-opuscar/",
+    "author": "lemomo-ai",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 4753,
+    "last_updated": "2026-10-19",
+    "category": "other",
+    "tags": ["agent-skills", "ai-agents", "ai-short-film", "ai-video", "animation", "canvas"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone lemomo-ai/lemo-opuscar and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "social-media-research-skills",
+    "name": "Social Media Research Skills",
+    "tagline": "AI agent skills for social media research. Outlier posts, comment mining, competitor teardowns, ad libraries & trends across TikTok, Instagram, YouTube, Reddit, X, LinkedIn & more. Powered by ScrapeCr",
+    "repo": "ScrapeCreators/social-media-research-skills",
+    "github_url": "https://github.com/ScrapeCreators/social-media-research-skills",
+    "homepage_url": "https://scrapecreators.com",
+    "author": "ScrapeCreators",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 4415,
+    "last_updated": "2026-08-26",
+    "category": "development-workflow",
+    "tags": ["agent-skills", "ai-agents", "claude-code", "claude-skills", "competitor-analysis", "content-marketing"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone ScrapeCreators/social-media-research-skills and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "answer-me-with-html",
+    "name": "Answer Me With Html",
+    "tagline": "Answer me with HTML — an agent skill that answers hard questions with a one-page HTML you can actually read. 让 AI Agent 用一页 HTML 回答复杂问题。",
+    "repo": "QingYunA/answer-me-with-html",
+    "github_url": "https://github.com/QingYunA/answer-me-with-html",
+    "homepage_url": "https://answer-me-with-html.com/",
+    "author": "QingYunA",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 4162,
+    "last_updated": "2026-10-21",
+    "category": "other",
+    "tags": ["agent-skill", "ai-agent", "claude-code", "claude-code-skill", "claude-skill", "claude-skills"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone QingYunA/answer-me-with-html and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "terminal-browser",
+    "name": "Terminal Browser",
+    "tagline": "A real browser inside your terminal",
+    "repo": "zenbu-labs/terminal-browser",
+    "github_url": "https://github.com/zenbu-labs/terminal-browser",
+    "homepage_url": "https://terminal-browser.com",
+    "author": "zenbu-labs",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 4127,
+    "last_updated": "2026-10-20",
+    "category": "other",
+    "tags": ["browser", "claude-code", "claude-code-plugin", "claude-skills", "cli", "codex"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone zenbu-labs/terminal-browser and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "notfair-plugin",
+    "name": "Notfair Plugin",
+    "tagline": "Open-source SEO, GEO, and marketing skills for AI agents.",
+    "repo": "nowork-studio/notfair-plugin",
+    "github_url": "https://github.com/nowork-studio/notfair-plugin",
+    "homepage_url": "https://notfair.co/",
+    "author": "nowork-studio",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 3997,
+    "last_updated": "2026-10-19",
+    "category": "marketing",
+    "tags": ["agents", "claude-code-plugin", "claude-skills", "gemini-cli-extension", "geo", "googleads"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone nowork-studio/notfair-plugin and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "replica-skill",
+    "name": "Replica Skill",
+    "tagline": "Eleven free Claude skills that clone any app: reverse-engineer it, rebuild it, test it for bugs, then fix what its users hate. Free, MIT.",
+    "repo": "Jakeschincariol/replica-skill",
+    "github_url": "https://github.com/Jakeschincariol/replica-skill",
+    "homepage_url": "https://opusjake.ai",
+    "author": "Jakeschincariol",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 3922,
+    "last_updated": "2026-10-03",
+    "category": "testing",
+    "tags": ["agent", "agent-skills", "app-clone", "claude", "claude-code", "claude-skills"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone Jakeschincariol/replica-skill and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "logo-design-skill",
+    "name": "Logo Design Skill",
+    "tagline": "A comprehensive logo-design skill for Claude, Gemini CLI, Codex and other AI agents: principles, process, SVG craft, testing tools and a 1,400+ logo reference library.",
+    "repo": "kaankiziltug/logo-design-skill",
+    "github_url": "https://github.com/kaankiziltug/logo-design-skill",
+    "author": "kaankiziltug",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 3909,
+    "last_updated": "2026-10-20",
+    "category": "testing",
+    "tags": ["agent-skills", "branding", "claude", "claude-skills", "codex", "gemini-cli"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone kaankiziltug/logo-design-skill and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
   }
 ]
