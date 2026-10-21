@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-10-21-uv-s-trusted-root-ca-had-8-compromised-keys-patch-to-0-13-4-",
+    "title": "uv's Trusted Root CA Had 8 Compromised Keys — Patch to 0.13.4 Now",
+    "description": "A revoked emSign root trusted by uv versions before 0.13.4 lets attackers forge TLS certs for any hostname, exposing peil-mcp installs to MITM.",
+    "hook": "Eight compromised intermediate CA keys were still trusted by every uv install before version 0.13.4 — meaning any MCP server leaning on uv, including peil-mcp, could be MITM'd with a forged cert for any hostname.",
+    "date": "2026-10-21",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 2
+  },
+  {
     "slug": "2026-10-20-mcp-ecosystem-weekly-3-973-new-servers-one-gained-17-790-sta",
     "title": "MCP Ecosystem Weekly: 3,973 New Servers, One Gained 17,790 Stars",
     "description": "This week's MCP roundup covers 52,584 total servers, standout newcomers like Smart Drawio Next, and a trending list led by Rea's explosive 17,790-star gain.",

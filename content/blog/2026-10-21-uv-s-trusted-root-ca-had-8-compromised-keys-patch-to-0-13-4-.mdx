@@ -1,0 +1,54 @@
+---
+title: "uv's Trusted Root CA Had 8 Compromised Keys — Patch to 0.13.4 Now"
+description: "A revoked emSign root trusted by uv versions before 0.13.4 lets attackers forge TLS certs for any hostname, exposing peil-mcp installs to MITM."
+hook: "Eight compromised intermediate CA keys were still trusted by every uv install before version 0.13.4 — meaning any MCP server leaning on uv, including peil-mcp, could be MITM'd with a forged cert for any hostname."
+date: "2026-10-21"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+A root certificate authority with eight compromised intermediate keys just made "trust the cert, don't ask questions" look like a very bad default. And it's sitting inside **uv**, the Python package manager a chunk of the MCP ecosystem uses to install and run servers.
+
+If you're running [app.peil/peil-mcp](/s/app-peil-peil-mcp), this is your problem today, not next sprint.
+
+## What actually happened
+
+uv verifies TLS connections against a vendored copy of `webpki-root-certs`. Every uv version before **0.13.4** ships that bundle with the `emSign ECC Root CA - G3` root still trusted.
+
+The catch: eight eMudhra intermediate CA certificates chain up to that root, and all eight have compromised private keys. eMudhra revoked them. But revocation only matters if the software checking certificates knows to stop trusting them — and older uv doesn't.
+
+<Callout type="warning">
+An attacker holding one of those eight compromised keys can mint a TLS certificate for **any hostname**, and uv will accept it as valid. That's not a hypothetical edge case — that's the textbook setup for a man-in-the-middle attack against every HTTPS connection uv makes.
+</Callout>
+
+## Two advisories, one bug
+
+This vulnerability is tracked under two separate IDs pointing at the same flaw in the same server:
+
+<ScoreBreakdown>
+<ScoreRow label="GHSA-hq85-5cpj-mr62" points="Critical" description="GitHub Security Advisory rating — reflects the blast radius of a silent, any-hostname MITM capability" />
+<ScoreRow label="PYSEC-2026-4321" points="High" description="Python Packaging Advisory rating — same underlying defect, different scoring methodology" />
+</ScoreBreakdown>
+
+Don't let the severity split confuse you: it's one bug, one fix, and the GHSA's "critical" call is the one to act on. A MITM primitive against package-manager traffic touches dependency resolution, index downloads, and anything else uv fetches over HTTPS — which, for an MCP server that leans on uv for installs, is the whole supply chain.
+
+---
+
+## Who's exposed
+
+If [peil-mcp](/s/app-peil-peil-mcp) — or anything it depends on — invokes uv under the hood for installs or environment setup, and that uv is older than 0.13.4, you're carrying a root CA that trusts revoked keys. No exploit needs to target MCPpedia or peil-mcp directly; it needs to intercept traffic between your machine and whatever uv is talking to.
+
+<PullQuote>A revoked key is only as dead as the software that remembers to stop trusting it.</PullQuote>
+
+## What to do right now
+
+- **Upgrade uv to 0.13.4 or later.** That release removes the `emSign ECC Root CA - G3` root from the vendored bundle entirely — it's the actual fix, not a mitigation.
+- **Don't assume your server auto-updates its toolchain.** Check whatever pins or lockfiles [peil-mcp](/s/app-peil-peil-mcp) ships with for a uv version constraint, and bump it explicitly.
+- **If you can't upgrade immediately**, avoid running uv-based installs over untrusted networks until you do — the MITM window is real, not theoretical.
+- **Re-audit anything installed through an affected uv** between when the keys were compromised and when you patch. A MITM capable of forging certs is also capable of substituting payloads.
+
+<Callout type="fire">
+This is a fast, clean fix — one version bump closes the hole completely. The risk isn't the patch being hard; it's assuming "my server probably doesn't call uv directly" without checking.
+</Callout>
+
+Supply-chain trust is only as strong as the oldest pinned dependency nobody's looked at. Check your uv version today.
