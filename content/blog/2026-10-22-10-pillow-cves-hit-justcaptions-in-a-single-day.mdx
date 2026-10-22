@@ -1,0 +1,71 @@
+---
+title: "10 Pillow CVEs Hit justcaptions in a Single Day"
+description: "A critical heap overflow and nine high-severity bugs in Pillow — from infinite loops to memory disclosure — all land on the justcaptions MCP server at once."
+hook: "One MCP server, one dependency, ten CVEs disclosed in a single day — including a critical heap overflow triggerable by a TIFF file a few hundred bytes long."
+date: "2026-10-22"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+One server, ten CVEs, zero crafted-file-size requirement over a few hundred bytes. That's the state of [justcaptions](/s/io-github-spacesheepboy-justcaptions) this week, and the common thread running through every single one of them is Pillow — the Python imaging library the server leans on to process images.
+
+<Callout type="warning">
+10 CVEs disclosed against the Pillow dependency bundled by justcaptions on 2026-10-21 alone, ranging from high to critical severity.
+</Callout>
+
+If your agent stack touches this server, treat image inputs as hostile until it ships a patched Pillow build.
+
+---
+
+## The critical one: heap overflow via TIFF-to-BytesIO
+
+**CVE-2026-112393** is the headline. A heap buffer overflow in `_tiffWriteProc` (`TiffDecode.c:94`) triggers when Pillow saves a TIFF to an in-memory buffer like `io.BytesIO` instead of a file. Attacker-chosen data gets written past the end of the heap allocation — the kind of primitive that turns into remote code execution with enough tuning. This is the one to patch first.
+
+<PullQuote>A TIFF file a few hundred bytes long is enough to make Pillow corrupt its own heap.</PullQuote>
+
+---
+
+## The high-severity pile-up
+
+Nine more advisories, all high severity, all landing the same day:
+
+### 1. Memory disclosure (CVE-2026-112902)
+A crafted TIFF makes the libtiff encoder (`encode.c:1014`) copy attacker-chosen process memory into the output file — or segfault trying. That's a potential leak of whatever happens to be sitting in adjacent memory.
+
+### 2. PDF parser infinite loop (CVE-2026-112406)
+A Parent-pointer cycle in a PDF's page tree sends `PdfParser.rewrite_pages` into a forever loop, pinning a CPU core at 100%.
+
+### 3. APNG allocate-before-check (CVE-2026-112399)
+A 126-byte animated PNG gets Pillow to allocate memory sized by the file's *claimed* dimensions before it ever runs a decompression-bomb check — classic memory-exhaustion DoS from a tiny file.
+
+### 4. MSP RLE amplification (CVE-2026-112892)
+The MSP decoder can expand a small file roughly 85x per run into an uncapped buffer, again blowing past any reasonable memory budget.
+
+### 5. Quadratic PDF writes (CVE-2026-112894)
+`next_object_id` makes multi-frame-to-PDF saves scale with the square of the frame count — a slow-motion DoS that gets worse the more frames an attacker feeds it.
+
+### 6. MIC infinite loop (CVE-2026-112390)
+A 5.6 KB file with 3+ embedded TIFF IFDs loops forever when the app just asks how many frames the image has.
+
+### 7. NULL deref on zero-size images (CVE-2026-112392)
+Median, minimum, maximum, or rank filters on a zero-width or zero-height image crash the whole process instead of raising a catchable error.
+
+### 8. NULL pointer via unvalidated band 0 (CVE-2026-112405)
+`Image.merge()` validates every band's mode except band 0. An `I` or `F` mode there reads a NULL pixel pointer — reachable through plain `Image.open()` via the IPTC plugin, which has no magic-byte prefilter.
+
+### 9. Invalid free in FreeType stroking (CVE-2026-112893)
+Drawing stroked text with a malformed font can leave an uninitialized/stale glyph pointer that gets double-freed — a latent memory-safety bug in the font-rendering path.
+
+<ScoreBreakdown>
+<ScoreRow label="Crash/DoS vectors" points="7" description="Infinite loops, NULL derefs, and unbounded allocation across TIFF, PDF, PNG, MIC, and filter code paths" />
+<ScoreRow label="Memory corruption" points="2" description="Heap overflow and memory disclosure in the libtiff encode/write path" />
+<ScoreRow label="Latent/conditional" points="1" description="Invalid free in FreeType stroker, exploitability depends on malformed font input" />
+</ScoreBreakdown>
+
+---
+
+## What to actually do
+
+Every one of these traces to the same root cause and the same fix: **update Pillow** on any host running justcaptions, and don't feed it untrusted TIFF, PDF, PNG, MSP, MIC, or IPTC files until you've confirmed the patched version is installed. If your deployment calls `Image.merge()`, `Image.open()` on attacker-supplied bytes, or saves TIFFs to `BytesIO`, those are your highest-priority code paths to check first.
+
+None of these require privileged access — just a file. That's the whole point of a DoS or memory-corruption bug in an image library sitting behind an MCP tool call: the attacker doesn't need a foothold, they need an upload button.

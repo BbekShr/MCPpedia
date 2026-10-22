@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-10-22-10-pillow-cves-hit-justcaptions-in-a-single-day",
+    "title": "10 Pillow CVEs Hit justcaptions in a Single Day",
+    "description": "A critical heap overflow and nine high-severity bugs in Pillow — from infinite loops to memory disclosure — all land on the justcaptions MCP server at once.",
+    "hook": "One MCP server, one dependency, ten CVEs disclosed in a single day — including a critical heap overflow triggerable by a TIFF file a few hundred bytes long.",
+    "date": "2026-10-22",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 3
+  },
+  {
     "slug": "2026-10-21-uv-s-trusted-root-ca-had-8-compromised-keys-patch-to-0-13-4-",
     "title": "uv's Trusted Root CA Had 8 Compromised Keys — Patch to 0.13.4 Now",
     "description": "A revoked emSign root trusted by uv versions before 0.13.4 lets attackers forge TLS certs for any hostname, exposing peil-mcp installs to MITM.",
