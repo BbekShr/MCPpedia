@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-10-24-nine-pillow-cves-hit-one-mcp-server-in-a-single-week",
+    "title": "Nine Pillow CVEs Hit One MCP Server in a Single Week",
+    "description": "A cluster of Pillow security advisories, two critical, converges on one MCP server's image pipeline, plus a separate Black CI vulnerability affecting another.",
+    "hook": "One MCP server just collected nine Pillow CVEs in a week — two of them code-execution bugs reachable from a single Image.open() call on an untrusted file.",
+    "date": "2026-10-24",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 2
+  },
+  {
     "slug": "2026-10-22-10-pillow-cves-hit-justcaptions-in-a-single-day",
     "title": "10 Pillow CVEs Hit justcaptions in a Single Day",
     "description": "A critical heap overflow and nine high-severity bugs in Pillow — from infinite loops to memory disclosure — all land on the justcaptions MCP server at once.",

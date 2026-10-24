@@ -1,0 +1,52 @@
+---
+title: "Nine Pillow CVEs Hit One MCP Server in a Single Week"
+description: "A cluster of Pillow security advisories, two critical, converges on one MCP server's image pipeline, plus a separate Black CI vulnerability affecting another."
+hook: "One MCP server just collected nine Pillow CVEs in a week — two of them code-execution bugs reachable from a single Image.open() call on an untrusted file."
+date: "2026-10-24"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+One MCP server just racked up **nine separate Pillow advisories** in a single week — two of them critical, rated for remote code execution. If that server touches a pipeline that opens untrusted images, this is not a "patch when convenient" situation.
+
+<StatGrid>
+<Stat value="10" label="Advisories" detail="Published Oct 22–23, 2026" />
+<Stat value="2" label="Critical" detail="Code execution risk" />
+<Stat value="9" label="Hit one server" detail="Pillow dependency chain" />
+</StatGrid>
+
+---
+
+<SectionLabel>The Pillow Pileup</SectionLabel>
+
+[mo5-mcp-server](/s/io-github-thlg057-mo5-mcp-server) is the common thread in nine of today's ten advisories, all tracing back to its Pillow dependency. Pillow is the most widely used Python imaging library, which is exactly why a cluster like this matters beyond one server.
+
+**The two critical ones:**
+
+**CVE-2026-112398** — a heap buffer overflow in Pillow's FlashPix (FPX) JPEG-tile decoder. An attacker gets code execution by getting the server to call `Image.open()` on a single crafted file. Pillow detects FPX by content, not extension, so anything that thumbnails untrusted uploads with `olefile` installed is reachable with zero user interaction.
+
+**CVE-2026-96639** — multi-frame image loaders (MPO/JPEG and similar) can keep stale native buffer storage allocated for one frame's color mode while decoding a later frame in a wider mode. The mismatch causes native out-of-bounds writes and crashes — a textbook memory-corruption primitive.
+
+<Callout type="warning">
+Both critical bugs are reachable through ordinary `Image.open()` calls on attacker-supplied files — no special configuration required to be exposed.
+</Callout>
+
+**The rest of the Pillow batch (all high severity):** a bundled `libopenjp2` carrying a known OSV-2025-219 heap overflow write that's never been patched upstream ([GHSA-78g4-xqwv-q3g8](/s/io-github-thlg057-mo5-mcp-server)); a JPEG encoder overflow that writes attacker-chosen bytes past an ICC-profile-filled buffer (CVE-2026-96778); a Windows-only WMF/EMF heap over-read from 16-bit dimension truncation (CVE-2026-96644); a quadratic-time PNG EXIF parser that turns a small file into a CPU-burning request (CVE-2026-96643); a `TarIO` negative-size field that spins a thread at 100% CPU forever (CVE-2026-96642); a malformed PDF page-tree DAG that blows up append operations (CVE-2026-96640); and a decompression-bomb check that Spider-format files can simply skip, triggering multi-gigabyte allocations (CVE-2026-96637).
+
+<PullQuote>Nine advisories against one dependency isn't a coincidence — it's a sign the dependency is under active scrutiny, and patching once stops all nine.</PullQuote>
+
+---
+
+<SectionLabel>The Outlier</SectionLabel>
+
+[Pubmed Mcp](/s/pubmed-mcp) carries the one non-Pillow item: **CVE-2026-114134**, high severity. Black's bundled GitHub Action reads a version string from `tool.black.required-version` in `pyproject.toml` and installs it unvalidated — a malicious `pyproject.toml` in a PR can make CI install and execute attacker-controlled code. This is a repeat of the pattern behind CVE-2026-31900, so if it looks familiar, that's why.
+
+---
+
+### What to do
+
+- **If you run mo5-mcp-server**, upgrade Pillow immediately and audit anywhere it opens user-supplied images, PDFs, or archive-adjacent formats (SPIDER, tar-based paths). Two of these bugs lead straight to code execution.
+- **If you run Pubmed Mcp or any repo using Black's Action**, don't set `use_pyproject: true` against untrusted `pyproject.toml` content until this is patched.
+- **If you maintain any MCP server with image-handling tools**, check your Pillow version now — this cluster is a reminder that image libraries are a bigger attack surface than most threat models give them credit for.
+
+Nine advisories, one fix. Patch Pillow before a crafted thumbnail does it for you.
