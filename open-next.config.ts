@@ -16,4 +16,15 @@ export default defineCloudflareConfig({
   incrementalCache: r2IncrementalCache,
   queue: doQueue,
   tagCache: d1NextTagCache,
+  // Serve ISR hits from R2 before the Next server runs. Without this, Next
+  // decides staleness from an in-memory, per-isolate map of route TTLs
+  // (next/dist/server/lib/incremental-cache: SharedCacheControls) that only
+  // knows build-time prerenders and paths this isolate itself wrote; any other
+  // concrete path — most of /s/[slug], via dynamicParams — falls back to a 1s
+  // TTL. So nearly every hit was STALE, queued a DO regeneration and wrote R2
+  // again: ~1 PutObject per Worker request (issue #184). The interceptor reads
+  // the `revalidate` stored in each R2 entry instead. Not compatible with PPR,
+  // which this app does not use. Needs @opennextjs/cloudflare >= 1.20.2
+  // (CVE-2026-100409, encoded-path middleware bypass).
+  enableCacheInterception: true,
 })

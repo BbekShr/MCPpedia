@@ -1538,6 +1538,19 @@ because the billing dashboard cannot answer them.
   the Oct 2026 DO duration ($12.50) and R2 Class A ($9.00) charges. Do not re-add it without
   cache purge enabled. Older zone analytics may still show `/<buildId>/<key>.cache` and `.fetch`
   paths; those were its Cache API keys, not real routes.
+- **2026-10-25 (#184): without cache interception, every non-prerendered ISR path had a 1s TTL.**
+  Next's `IncrementalCache.calculateRevalidate` reads the TTL from `SharedCacheControls`, an
+  in-memory per-isolate map that falls back to the prerender manifest's `routes` (concrete
+  build-time paths only; `dynamicRoutes` is keyed `/s/[slug]` and never matches a concrete path)
+  and then defaults to **1 second**. OpenNext's R2 adapter returns only `lastModified`, so any
+  `/s/<slug>` this isolate had not written itself read `x-nextjs-cache: STALE` seconds after it
+  was written (measured: a MISS went STALE within 2 min, a regenerated page went STALE again
+  ~10s later). Each hit was therefore a DO regeneration plus an R2 `PutObject`: 572k PutObjects
+  over 10 days, about 1.1 per Worker request, with crawler bursts (10-21 05-09 UTC: 28k req/h,
+  33k puts/h) driving the probe's spikes. Fixed with `enableCacheInterception: true` in
+  `open-next.config.ts`, which decides staleness from the `revalidate` stored in each R2 entry.
+  Intercepted hits carry `x-opennext-cache`, not `x-nextjs-cache`, so update any check that greps
+  the latter. The tag cache was ruled out: D1 held 376 rows, all per-slug tags.
 - **A fetch inside a page caps that page's ISR window.** Next uses the minimum `revalidate` across
   the render, so `/s/[slug]`'s 30d export served `s-maxage=604800` until the README fetch in
   `components/ServerReadme.tsx` was raised from 7d to 30d. Check `curl -sI` for `s-maxage` after

@@ -3,8 +3,8 @@
 # scripts/check-cache-headers.sh` from any machine Cloudflare does not challenge).
 #
 # For each "path min_s_maxage" pair: request until the response is
-# `x-nextjs-cache: HIT` (a fresh deploy starts cold, so the first hit is a MISS
-# or STALE), assert the HIT's s-maxage is at least the TTL the code sets, then
+# a HIT in x-opennext-cache or x-nextjs-cache (a fresh deploy starts cold, so
+# the first hit is a MISS or STALE), assert the HIT's s-maxage is at least the TTL the code sets, then
 # keep sampling to prove the entry holds.
 #
 # Catches the two Oct 2026 failures:
@@ -46,7 +46,9 @@ fetch() {
   local path="$1"
   headers=$(curl "${curl_args[@]}" "${SITE}${path}" 2>&1 | tr -d '\r') || true
   status=$(awk 'NR==1 && /^HTTP/ {print $2}' <<<"$headers")
-  cache=$(grep -i '^x-nextjs-cache:' <<<"$headers" | awk '{print $2}' || true)
+  # Hits served by OpenNext's cache interception (open-next.config.ts) carry
+  # x-opennext-cache; renders that reach the Next server carry x-nextjs-cache.
+  cache=$(grep -i -E '^x-(opennext|nextjs)-cache:' <<<"$headers" | head -1 | awk '{print $2}' || true)
   maxage=$(grep -i '^cache-control:' <<<"$headers" | grep -oE 's-maxage=[0-9]+' | cut -d= -f2 || true)
   if [ "$status" = "200" ]; then
     return 0
@@ -114,10 +116,11 @@ check() {
 # Keep the TTLs in sync with the `revalidate` exports in app/.
 # A slug from generateStaticParams' top 50 (by stars), so the deploy writes its
 # entry and every isolate knows its 30d TTL from the prerender manifest. Pages
-# outside the top 50 are rendered at runtime, and an isolate that has not
-# rendered one yet treats its TTL as 1s (Next's calculateRevalidate default),
-# so they flip STALE/HIT for a while after a deploy. That is a separate,
-# known issue; checking one here would turn every deploy red.
+# outside the top 50 are rendered at runtime; before cache interception was
+# enabled (#184) an isolate that had not rendered one itself treated its TTL as
+# 1s. Checking one here does not catch that reliably: samples seconds apart
+# tend to land on the same warm isolate, which knows the TTL it wrote. Detect
+# it by sampling many distinct runtime slugs once each and counting STALE.
 check /s/playwright-mcp 2592000        # app/s/[slug]/page.tsx (30d)
 # /llms.txt is left out until its cap is understood: it declares 7d but serves
 # a 1d window in production (not reproducible in an env-less local build).
