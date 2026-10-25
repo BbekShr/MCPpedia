@@ -131,13 +131,20 @@ describe('fetchNpmRepositoryUrl', () => {
     expect(await fetchNpmRepositoryUrl('widget')).toBe('acme/widget')
   })
 
-  it('returns null for a missing package, no repository, or a failed request', async () => {
+  it('returns null for a missing package or one with no repository', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 404, json: async () => ({}) })))
     expect(await fetchNpmRepositoryUrl('nope')).toBeNull()
-    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({}) })))
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, json: async () => ({}) })))
     expect(await fetchNpmRepositoryUrl('bare')).toBeNull()
+  })
+
+  // A failed lookup must stay distinguishable from "no repository", or the bot
+  // drops a correct package and never selects the row again.
+  it('returns undefined when the lookup itself fails', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 429, json: async () => ({}) })))
+    expect(await fetchNpmRepositoryUrl('x')).toBeUndefined()
     vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('network') }))
-    expect(await fetchNpmRepositoryUrl('x')).toBeNull()
+    expect(await fetchNpmRepositoryUrl('x')).toBeUndefined()
   })
 })
 
@@ -154,8 +161,15 @@ describe('npmRepoMatchesGithub', () => {
     expect(npmRepoMatchesGithub('git+https://github.com/pnpm/pnpm.git', 'https://github.com/arcmira/arcmira')).toBe(false)
   })
 
+  it('compares the repo only, ignoring subpaths, fragments and www', () => {
+    expect(npmRepoMatchesGithub('git+https://github.com/acme/mono.git', 'https://github.com/acme/mono/tree/main/packages/mcp')).toBe(true)
+    expect(npmRepoMatchesGithub('https://github.com/acme/widget#readme', 'https://www.github.com/acme/widget')).toBe(true)
+    expect(npmRepoMatchesGithub('https://github.com/acme/widget-two', 'https://github.com/acme/widget')).toBe(false)
+  })
+
   it('never treats an unknown repository as a match', () => {
     expect(npmRepoMatchesGithub(null, 'https://github.com/acme/widget')).toBe(false)
+    expect(npmRepoMatchesGithub(undefined, 'https://github.com/acme/widget')).toBe(false)
     expect(npmRepoMatchesGithub('https://github.com/acme/widget', null)).toBe(false)
   })
 })

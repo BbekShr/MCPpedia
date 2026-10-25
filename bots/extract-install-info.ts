@@ -170,7 +170,16 @@ async function main() {
         // (#172, #176, #186). Keep the name only when npm says the package is
         // published from this server's own repository.
         const scrapedNpm = extractNpmPackage(readme)
-        const npmPkg = scrapedNpm && npmRepoMatchesGithub(await fetchNpmRepositoryUrl(scrapedNpm), server.github_url)
+        const npmRepo = scrapedNpm ? await fetchNpmRepositoryUrl(scrapedNpm) : null
+        // A failed lookup is not a rejection. Writing install_configs now would
+        // take the row out of the candidate query for good, so leave the whole
+        // row for the next run instead.
+        if (npmRepo === undefined) {
+          console.warn(`  ${server.slug}: npm lookup for ${scrapedNpm} failed — retrying next run`)
+          skipped++
+          continue
+        }
+        const npmPkg = scrapedNpm && npmRepoMatchesGithub(npmRepo, server.github_url)
           ? scrapedNpm
           : null
         if (scrapedNpm && !npmPkg) console.log(`  ${server.slug}: ignoring ${scrapedNpm} (npm repository does not match ${server.github_url})`)
