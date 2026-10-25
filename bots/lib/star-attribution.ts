@@ -118,3 +118,63 @@ export async function fetchNpmRepositoryDirectory(packageName: string): Promise<
     return null
   }
 }
+
+/**
+ * Read the repository URL off the npm packument for `packageName`, preferring
+ * the latest version's `repository` over the top-level one.
+ *
+ * Returns null when the package does not exist (404) or declares no
+ * repository, and `undefined` when the lookup itself failed (rate limit, 5xx,
+ * network). The two must stay distinct: a caller that writes on a failed
+ * lookup can drop a correct package for good, since the row may never be
+ * selected again.
+ */
+export async function fetchNpmRepositoryUrl(packageName: string): Promise<string | null | undefined> {
+  try {
+    // Full packument for the same reason as fetchNpmRepositoryDirectory: the
+    // abbreviated document has no `repository` field at all.
+    const res = await fetch(`https://registry.npmjs.org/${encodeURIComponent(packageName)}`, {
+      headers: { Accept: 'application/json' },
+    })
+    if (res.status === 404) return null
+    if (!res.ok) return undefined
+    const body = await res.json() as {
+      'dist-tags'?: Record<string, string>
+      versions?: Record<string, { repository?: unknown }>
+      repository?: unknown
+    }
+    const latest = body['dist-tags']?.latest
+    const repo = (latest && body.versions?.[latest]?.repository) || body.repository
+    if (typeof repo === 'string') return repo || null
+    if (repo && typeof repo === 'object' && 'url' in repo) {
+      const url = (repo as { url?: unknown }).url
+      return typeof url === 'string' && url.trim() ? url : null
+    }
+    return null
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Does an npm package's declared repository point at the server's own repo?
+ *
+ * npm also accepts the `owner/repo` and `github:owner/repo` shorthands for
+ * `repository`, so both are expanded to a github.com URL before comparing.
+ * Only `host/owner/repo` is compared: a stored `github_url` can carry a
+ * `/tree/main/pkg` subpath or a `#readme` fragment, and those name the same repo.
+ */
+export function npmRepoMatchesGithub(npmRepoUrl: string | null | undefined, githubUrl: string | null): boolean {
+  if (!npmRepoUrl || !githubUrl) return false
+  const expanded = npmRepoUrl.trim()
+    .replace(/^github:/i, 'https://github.com/')
+    .replace(/^([\w.-]+\/[\w.-]+)$/, 'https://github.com/$1')
+  const repoKey = (url: string) => {
+    const normalized = normalizeRepoUrl(url.replace(/[#?].*$/, ''))
+    if (!normalized) return null
+    const [host, owner, repo] = normalized.replace(/^www\./, '').split('/')
+    return owner && repo ? `${host}/${owner}/${repo.replace(/\.git$/, '')}` : null
+  }
+  const a = repoKey(expanded)
+  return a !== null && a === repoKey(githubUrl)
+}

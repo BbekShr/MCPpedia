@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   buildLinkedRowRefresh,
+  ownsRowLinkedByOtherEntry,
   type LinkedRowCurrent,
   type LinkedRowParsed,
 } from '../lib/sync-registry-refresh'
@@ -17,6 +18,7 @@ function currentRow(overrides: Partial<LinkedRowCurrent> = {}): LinkedRowCurrent
     tagline: 'Existing description',
     description_source: 'bot',
     github_url: 'https://github.com/acme/widget',
+    homepage_url: 'https://widget.example',
     ...overrides,
   }
 }
@@ -29,6 +31,7 @@ function parsedEntry(overrides: Partial<LinkedRowParsed> = {}): LinkedRowParsed 
     pipPackage: null,
     description: 'Existing description',
     githubUrl: 'https://github.com/acme/widget',
+    websiteUrl: 'https://widget.example',
     ...overrides,
   }
 }
@@ -116,6 +119,30 @@ describe('buildLinkedRowRefresh — description/tagline', () => {
       new Set()
     )
     expect(update.description).toBeUndefined()
+  })
+})
+
+describe('buildLinkedRowRefresh — homepage_url gap-fill', () => {
+  // #186: the registry's websiteUrl was parsed off every record and discarded,
+  // so a listing showed only GitHub and npm links even when the maintainer had
+  // published a website.
+  it('fills homepage_url from websiteUrl when the row has none', () => {
+    const { update, changedFields } = buildLinkedRowRefresh(
+      currentRow({ homepage_url: null }),
+      parsedEntry({ websiteUrl: 'https://www.markstudios.com/tools/caption-checker' }),
+      new Set()
+    )
+    expect(update.homepage_url).toBe('https://www.markstudios.com/tools/caption-checker')
+    expect(changedFields).toContain('homepage_url')
+  })
+
+  it('never overwrites a homepage_url that is already set', () => {
+    const { update } = buildLinkedRowRefresh(
+      currentRow({ homepage_url: 'https://curated.example' }),
+      parsedEntry({ websiteUrl: 'https://registry.example' }),
+      new Set()
+    )
+    expect(update.homepage_url).toBeUndefined()
   })
 })
 
@@ -252,5 +279,24 @@ describe('buildLinkedRowRefresh — combined', () => {
     expect(changedFields.sort()).toEqual(
       ['description', 'github_url', 'npm_package', 'pip_package', 'tagline', 'transport'].sort()
     )
+  })
+})
+
+describe('ownsRowLinkedByOtherEntry', () => {
+  const live = new Set(['store.scvd/general-store', 'store.scvd/tab'])
+
+  // #172: both entries point at one repo. Each night the unlinked one took the
+  // row through the github_url fallback and rewrote its description.
+  it('refuses to move a row between two live entries that share a repo', () => {
+    expect(ownsRowLinkedByOtherEntry('store.scvd/general-store', 'store.scvd/tab', live)).toBe(true)
+  })
+
+  it('allows linking an unlinked row or one already linked to this entry', () => {
+    expect(ownsRowLinkedByOtherEntry(null, 'store.scvd/tab', live)).toBe(false)
+    expect(ownsRowLinkedByOtherEntry('store.scvd/tab', 'store.scvd/tab', live)).toBe(false)
+  })
+
+  it('allows taking over a row whose entry is no longer in the registry', () => {
+    expect(ownsRowLinkedByOtherEntry('store.scvd/old-name', 'store.scvd/tab', live)).toBe(false)
   })
 })

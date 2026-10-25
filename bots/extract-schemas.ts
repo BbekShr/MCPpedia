@@ -10,6 +10,7 @@ import { z } from 'zod'
 import { createAdminClient } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
 import { getReadme } from './lib/github'
+import { extractToolsWithRegex } from './lib/readme-extract'
 
 const supabase = createAdminClient('bot-extract-schemas')
 
@@ -116,38 +117,6 @@ ${readme.slice(0, 8000)}`,
     return null
   }
   return parsed.data
-}
-
-function extractToolsWithRegex(readme: string): Extraction {
-  const tools: Array<{ name: string; description: string }> = []
-
-  // Match common patterns: `tool_name` - description, or ### tool_name
-  const patterns = [
-    /[`*]+(\w+)[`*]+\s*[-:–]\s*(.+)/g,
-    /###?\s+(\w+)\s*\n+(.+)/g,
-    /server\.tool\(\s*['"](\w+)['"]\s*,\s*['"]([^'"]+)['"]/g,
-  ]
-
-  for (const pattern of patterns) {
-    let match
-    while ((match = pattern.exec(readme)) !== null) {
-      const name = match[1]
-      const description = match[2].trim()
-      if (name.length > 2 && name.length < 60 && description.length > 5) {
-        tools.push({ name, description })
-      }
-    }
-  }
-
-  // Deduplicate
-  const seen = new Set<string>()
-  const unique = tools.filter(t => {
-    if (seen.has(t.name)) return false
-    seen.add(t.name)
-    return true
-  })
-
-  return { tools: unique, resources: [], prompts: [] }
 }
 
 /**

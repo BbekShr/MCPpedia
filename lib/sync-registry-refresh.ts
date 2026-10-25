@@ -34,6 +34,7 @@ export type LinkedRowCurrent = {
   tagline: string | null
   description_source: string | null
   github_url: string | null
+  homepage_url: string | null
 }
 
 export type LinkedRowParsed = {
@@ -42,6 +43,7 @@ export type LinkedRowParsed = {
   pipPackage: string | null
   description: string | null
   githubUrl: string | null
+  websiteUrl: string | null
 }
 
 export type LinkedRowRefresh = {
@@ -104,6 +106,11 @@ export function buildLinkedRowRefresh(
     changedFields.push('pip_package')
   }
 
+  if (isMissingValue(current.homepage_url) && parsed.websiteUrl) {
+    update.homepage_url = parsed.websiteUrl
+    changedFields.push('homepage_url')
+  }
+
   if (current.description_source !== 'human' && parsed.description) {
     if (parsed.description !== current.description) {
       update.description = parsed.description
@@ -125,4 +132,23 @@ export function buildLinkedRowRefresh(
   }
 
   return { update, changedFields, transferSkippedCollision }
+}
+
+/**
+ * Is the row found by github_url already the listing of a DIFFERENT registry
+ * entry that is still live in this run?
+ *
+ * When it is, linking would steal the row from that entry, and the next run's
+ * fallback would steal it back, so the row's identity alternates nightly. An
+ * unlinked row, a row already linked to this entry, or a row whose registry
+ * entry has left the registry are all fair to link.
+ */
+export function ownsRowLinkedByOtherEntry(
+  targetRegistryId: string | null,
+  parsedRegistryId: string,
+  liveRegistryIds: Set<string>
+): boolean {
+  return !!targetRegistryId
+    && targetRegistryId !== parsedRegistryId
+    && liveRegistryIds.has(targetRegistryId)
 }

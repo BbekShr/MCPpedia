@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { decideStarAttribution, normalizeRepoUrl, fetchNpmRepositoryDirectory } from '@/bots/lib/star-attribution'
+import { decideStarAttribution, normalizeRepoUrl, fetchNpmRepositoryDirectory, fetchNpmRepositoryUrl, npmRepoMatchesGithub } from '@/bots/lib/star-attribution'
 
 describe('normalizeRepoUrl', () => {
   // npm writes `git+https://…​.git`, GitHub writes `https://…`, and both must
@@ -118,5 +118,58 @@ describe('fetchNpmRepositoryDirectory', () => {
     expect(await fetchNpmRepositoryDirectory('x')).toBeNull()
     vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('network') }))
     expect(await fetchNpmRepositoryDirectory('x')).toBeNull()
+  })
+})
+
+describe('fetchNpmRepositoryUrl', () => {
+  afterEach(() => { vi.unstubAllGlobals() })
+
+  it('reads the latest version repository url, object or string form', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ 'dist-tags': { latest: '2.0.0' }, versions: { '2.0.0': { repository: { url: 'git+https://github.com/cloudflare/workers-sdk.git' } } } }) })))
+    expect(await fetchNpmRepositoryUrl('wrangler')).toBe('git+https://github.com/cloudflare/workers-sdk.git')
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ repository: 'acme/widget' }) })))
+    expect(await fetchNpmRepositoryUrl('widget')).toBe('acme/widget')
+  })
+
+  it('returns null for a missing package or one with no repository', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 404, json: async () => ({}) })))
+    expect(await fetchNpmRepositoryUrl('nope')).toBeNull()
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, json: async () => ({}) })))
+    expect(await fetchNpmRepositoryUrl('bare')).toBeNull()
+  })
+
+  // A failed lookup must stay distinguishable from "no repository", or the bot
+  // drops a correct package and never selects the row again.
+  it('returns undefined when the lookup itself fails', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 429, json: async () => ({}) })))
+    expect(await fetchNpmRepositoryUrl('x')).toBeUndefined()
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('network') }))
+    expect(await fetchNpmRepositoryUrl('x')).toBeUndefined()
+  })
+})
+
+describe('npmRepoMatchesGithub', () => {
+  it('matches the same repo across git+, .git, case and shorthand forms', () => {
+    expect(npmRepoMatchesGithub('git+https://github.com/Acme/Widget.git', 'https://github.com/acme/widget')).toBe(true)
+    expect(npmRepoMatchesGithub('github:acme/widget', 'https://github.com/acme/widget')).toBe(true)
+    expect(npmRepoMatchesGithub('acme/widget', 'https://github.com/acme/widget')).toBe(true)
+  })
+
+  // The three reported listings: each scraped name belongs to a different repo.
+  it('rejects a package published from another repository (#172, #176, #186)', () => {
+    expect(npmRepoMatchesGithub('git+https://github.com/cloudflare/workers-sdk.git', 'https://github.com/seancrecord/scvd-general-store-repo')).toBe(false)
+    expect(npmRepoMatchesGithub('git+https://github.com/pnpm/pnpm.git', 'https://github.com/arcmira/arcmira')).toBe(false)
+  })
+
+  it('compares the repo only, ignoring subpaths, fragments and www', () => {
+    expect(npmRepoMatchesGithub('git+https://github.com/acme/mono.git', 'https://github.com/acme/mono/tree/main/packages/mcp')).toBe(true)
+    expect(npmRepoMatchesGithub('https://github.com/acme/widget#readme', 'https://www.github.com/acme/widget')).toBe(true)
+    expect(npmRepoMatchesGithub('https://github.com/acme/widget-two', 'https://github.com/acme/widget')).toBe(false)
+  })
+
+  it('never treats an unknown repository as a match', () => {
+    expect(npmRepoMatchesGithub(null, 'https://github.com/acme/widget')).toBe(false)
+    expect(npmRepoMatchesGithub(undefined, 'https://github.com/acme/widget')).toBe(false)
+    expect(npmRepoMatchesGithub('https://github.com/acme/widget', null)).toBe(false)
   })
 })

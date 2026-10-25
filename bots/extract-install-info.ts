@@ -11,7 +11,8 @@ import { createAdminClient, fetchAllRows } from './lib/supabase'
 import { BotRun } from './lib/bot-run'
 import { getReadme } from './lib/github'
 import { categorize } from './lib/categorize'
-import { NPM_PACKAGE_DENYLIST } from '../lib/npm-package-denylist'
+import { extractNpmPackage, NPX_SKIP_PACKAGES } from './lib/readme-extract'
+import { fetchNpmRepositoryUrl, npmRepoMatchesGithub } from './lib/star-attribution'
 
 const supabase = createAdminClient('bot-extract-install-info')
 
@@ -19,38 +20,6 @@ function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
   const match = url.match(/github\.com\/([\w.-]+)\/([\w.-]+)/)
   if (!match) return null
   return { owner: match[1], repo: match[2].replace(/\.git$/, '') }
-}
-
-// Installer tooling, package managers and runtimes that are never the actual
-// MCP server package. Shared with the homepage trending query so the two can
-// not drift — see lib/npm-package-denylist.ts for why pnpm is on the list.
-const NPX_SKIP_PACKAGES = new Set(NPM_PACKAGE_DENYLIST)
-
-function extractNpmPackage(readme: string): string | null {
-  // Handle: npx @smithery/cli install @actual/package
-  // or: npx -y @smithery/cli install @actual/package
-  const smitheryInstall = readme.match(/npx\s+(?:-y\s+)?@smithery\/cli\s+install\s+(@[\w.-]+\/[\w.-]+|[\w][\w.-]*)/m)
-  if (smitheryInstall) return smitheryInstall[1]
-
-  // Match: npx -y @scope/package or npx @scope/package
-  const npxMatch = readme.match(/npx\s+(?:-y\s+)?(@[\w.-]+\/[\w.-]+|[\w][\w.-]*)/m)
-  if (npxMatch) {
-    const pkg = npxMatch[1]
-    if (!NPX_SKIP_PACKAGES.has(pkg)) return pkg
-  }
-
-  // Match: npm install @scope/package
-  // The skip check matters most here: a "Prerequisites" section reading
-  // `npm install -g pnpm` is about the toolchain, not about this server, and
-  // without the guard it was scraped as the server's own package.
-  const npmInstall = readme.match(/npm\s+install\s+(?:-[gD]\s+)?(@[\w.-]+\/[\w.-]+|[\w][\w.-]*)/m)
-  if (npmInstall && !NPX_SKIP_PACKAGES.has(npmInstall[1])) return npmInstall[1]
-
-  // Match from package.json "name" field if present
-  const pkgName = readme.match(/"name"\s*:\s*"(@[\w.-]+\/[\w.-]+|[\w][\w.-]*)"/m)
-  if (pkgName && pkgName[1].includes('mcp') && !NPX_SKIP_PACKAGES.has(pkgName[1])) return pkgName[1]
-
-  return null
 }
 
 function extractPipPackage(readme: string): string | null {
@@ -195,7 +164,25 @@ async function main() {
     // --- Install info extraction ---
     if (needsInstallInfo) {
       if (readme) {
-        const npmPkg = extractNpmPackage(readme)
+        // A README-scraped name is only a guess: `npx wrangler`, `npm i -g pnpm`
+        // and `npx github:owner/repo` all scrape as packages that belong to
+        // someone else, and the row then inherits their downloads and CVEs
+        // (#172, #176, #186). Keep the name only when npm says the package is
+        // published from this server's own repository.
+        const scrapedNpm = extractNpmPackage(readme)
+        const npmRepo = scrapedNpm ? await fetchNpmRepositoryUrl(scrapedNpm) : null
+        // A failed lookup is not a rejection. Writing install_configs now would
+        // take the row out of the candidate query for good, so leave the whole
+        // row for the next run instead.
+        if (npmRepo === undefined) {
+          console.warn(`  ${server.slug}: npm lookup for ${scrapedNpm} failed — retrying next run`)
+          skipped++
+          continue
+        }
+        const npmPkg = scrapedNpm && npmRepoMatchesGithub(npmRepo, server.github_url)
+          ? scrapedNpm
+          : null
+        if (scrapedNpm && !npmPkg) console.log(`  ${server.slug}: ignoring ${scrapedNpm} (npm repository does not match ${server.github_url})`)
         const pipPkg = extractPipPackage(readme)
         const remoteUrl = extractRemoteUrl(readme)
         const installConfig = extractInstallConfig(readme)
