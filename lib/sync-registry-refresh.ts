@@ -34,6 +34,7 @@ export type LinkedRowCurrent = {
   tagline: string | null
   description_source: string | null
   github_url: string | null
+  homepage_url: string | null
 }
 
 export type LinkedRowParsed = {
@@ -42,6 +43,7 @@ export type LinkedRowParsed = {
   pipPackage: string | null
   description: string | null
   githubUrl: string | null
+  websiteUrl: string | null
 }
 
 export type LinkedRowRefresh = {
@@ -102,6 +104,11 @@ export function buildLinkedRowRefresh(
   if (isMissingValue(current.pip_package) && parsed.pipPackage) {
     update.pip_package = parsed.pipPackage
     changedFields.push('pip_package')
+  }
+
+  if (isMissingValue(current.homepage_url) && parsed.websiteUrl) {
+    update.homepage_url = parsed.websiteUrl
+    changedFields.push('homepage_url')
   }
 
   if (current.description_source !== 'human' && parsed.description) {

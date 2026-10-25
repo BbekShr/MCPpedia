@@ -17,6 +17,7 @@ function currentRow(overrides: Partial<LinkedRowCurrent> = {}): LinkedRowCurrent
     tagline: 'Existing description',
     description_source: 'bot',
     github_url: 'https://github.com/acme/widget',
+    homepage_url: 'https://widget.example',
     ...overrides,
   }
 }
@@ -29,6 +30,7 @@ function parsedEntry(overrides: Partial<LinkedRowParsed> = {}): LinkedRowParsed 
     pipPackage: null,
     description: 'Existing description',
     githubUrl: 'https://github.com/acme/widget',
+    websiteUrl: 'https://widget.example',
     ...overrides,
   }
 }
@@ -116,6 +118,30 @@ describe('buildLinkedRowRefresh — description/tagline', () => {
       new Set()
     )
     expect(update.description).toBeUndefined()
+  })
+})
+
+describe('buildLinkedRowRefresh — homepage_url gap-fill', () => {
+  // #186: the registry's websiteUrl was parsed off every record and discarded,
+  // so a listing showed only GitHub and npm links even when the maintainer had
+  // published a website.
+  it('fills homepage_url from websiteUrl when the row has none', () => {
+    const { update, changedFields } = buildLinkedRowRefresh(
+      currentRow({ homepage_url: null }),
+      parsedEntry({ websiteUrl: 'https://www.markstudios.com/tools/caption-checker' }),
+      new Set()
+    )
+    expect(update.homepage_url).toBe('https://www.markstudios.com/tools/caption-checker')
+    expect(changedFields).toContain('homepage_url')
+  })
+
+  it('never overwrites a homepage_url that is already set', () => {
+    const { update } = buildLinkedRowRefresh(
+      currentRow({ homepage_url: 'https://curated.example' }),
+      parsedEntry({ websiteUrl: 'https://registry.example' }),
+      new Set()
+    )
+    expect(update.homepage_url).toBeUndefined()
   })
 })
 

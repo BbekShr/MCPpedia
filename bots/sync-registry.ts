@@ -185,7 +185,7 @@ async function fetchRegistryServers(): Promise<FetchResult> {
 type LinkedRow = LinkedRowCurrent & { id: string }
 
 /** Columns `getExistingRegistryRows`/`findRowByGithubUrl` load beyond `id`, for `buildLinkedRowRefresh`. */
-const LINKED_ROW_REFRESH_COLUMNS = 'transport, npm_package, pip_package, description, tagline, description_source, github_url'
+const LINKED_ROW_REFRESH_COLUMNS = 'transport, npm_package, pip_package, description, tagline, description_source, github_url, homepage_url'
 
 /**
  * Map registry_id -> the linked row (id plus its refreshable fields) for every
@@ -506,6 +506,7 @@ async function main() {
       name: parsed.name || slug,
       tagline: parsed.description || null,
       github_url: githubUrl,
+      homepage_url: parsed.websiteUrl,
       npm_package: parsed.npmPackage,
       pip_package: parsed.pipPackage,
       transport: parsed.transports,
@@ -554,6 +555,7 @@ async function main() {
           tagline: parsed.description || null,
           description_source: 'bot',
           github_url: githubUrl,
+          homepage_url: parsed.websiteUrl,
         })
       }
       synced++

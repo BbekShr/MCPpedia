@@ -94,6 +94,8 @@ export type ParsedRegistryServer = {
   name: string
   description: string | null
   githubUrl: string | null
+  /** The registry's `websiteUrl`, kept only when it is an absolute http(s) URL. */
+  websiteUrl: string | null
   version: string | null
   npmPackage: string | null
   pipPackage: string | null
@@ -122,6 +124,23 @@ export type SkipReason = 'not-latest' | 'inactive-status' | 'no-name' | 'malform
 export type ParseResult =
   | { kind: 'ok'; server: ParsedRegistryServer }
   | { kind: 'skipped'; reason: SkipReason }
+
+/**
+ * `websiteUrl` ends up as an `href` on /s/[slug], so anything that is not a
+ * plain http(s) URL (a `javascript:` scheme, a bare hostname, a non-string) is
+ * dropped rather than stored.
+ */
+function httpUrlOrNull(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  if (!/^https?:\/\//i.test(trimmed)) return null
+  try {
+    new URL(trimmed)
+    return trimmed
+  } catch {
+    return null
+  }
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -330,6 +349,7 @@ export function parseRegistryEntry(entry: unknown): ParseResult {
       name,
       description: typeof server.description === 'string' ? server.description : null,
       githubUrl: normalizeGithubUrl(repoUrl),
+      websiteUrl: httpUrlOrNull(server.websiteUrl),
       version: typeof server.version === 'string' ? server.version : null,
       npmPackage,
       pipPackage,

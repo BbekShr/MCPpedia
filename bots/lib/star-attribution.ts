@@ -118,3 +118,53 @@ export async function fetchNpmRepositoryDirectory(packageName: string): Promise<
     return null
   }
 }
+
+/**
+ * Read the repository URL off the npm packument for `packageName`, preferring
+ * the latest version's `repository` over the top-level one.
+ *
+ * Returns null when the package does not exist, declares no repository, or the
+ * lookup fails. Callers that use this to corroborate a README-scraped package
+ * name must treat null as "not corroborated", never as a match.
+ */
+export async function fetchNpmRepositoryUrl(packageName: string): Promise<string | null> {
+  try {
+    // Full packument for the same reason as fetchNpmRepositoryDirectory: the
+    // abbreviated document has no `repository` field at all.
+    const res = await fetch(`https://registry.npmjs.org/${encodeURIComponent(packageName)}`, {
+      headers: { Accept: 'application/json' },
+    })
+    if (!res.ok) return null
+    const body = await res.json() as {
+      'dist-tags'?: Record<string, string>
+      versions?: Record<string, { repository?: unknown }>
+      repository?: unknown
+    }
+    const latest = body['dist-tags']?.latest
+    const repo = (latest && body.versions?.[latest]?.repository) || body.repository
+    if (typeof repo === 'string') return repo || null
+    if (repo && typeof repo === 'object' && 'url' in repo) {
+      const url = (repo as { url?: unknown }).url
+      return typeof url === 'string' && url.trim() ? url : null
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Does an npm package's declared repository point at the server's own repo?
+ *
+ * npm also accepts the `owner/repo` and `github:owner/repo` shorthands for
+ * `repository`, so both are expanded to a github.com URL before comparing.
+ */
+export function npmRepoMatchesGithub(npmRepoUrl: string | null, githubUrl: string | null): boolean {
+  if (!npmRepoUrl || !githubUrl) return false
+  const expanded = npmRepoUrl.trim()
+    .replace(/^github:/i, 'https://github.com/')
+    .replace(/^([\w.-]+\/[\w.-]+)$/, 'https://github.com/$1')
+  const a = normalizeRepoUrl(expanded)
+  const b = normalizeRepoUrl(githubUrl)
+  return a !== null && a === b
+}

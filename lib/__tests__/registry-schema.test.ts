@@ -254,6 +254,27 @@ describe('isIngestable', () => {
   })
 })
 
+describe('parseRegistryEntry — websiteUrl', () => {
+  function websiteOf(websiteUrl: unknown) {
+    const result = parseRegistryEntry(entry({ name: 'a/b', websiteUrl }))
+    return result.kind === 'ok' ? result.server.websiteUrl : 'skipped'
+  }
+
+  it('keeps an absolute http(s) websiteUrl', () => {
+    expect(websiteOf('https://www.markstudios.com/tools/caption-checker'))
+      .toBe('https://www.markstudios.com/tools/caption-checker')
+    expect(websiteOf('  http://example.com  ')).toBe('http://example.com')
+  })
+
+  it('drops anything that is not a plain http(s) URL, since it becomes an href', () => {
+    expect(websiteOf('javascript:alert(1)')).toBeNull()
+    expect(websiteOf('example.com')).toBeNull()
+    expect(websiteOf('https://')).toBeNull()
+    expect(websiteOf(42)).toBeNull()
+    expect(websiteOf(undefined)).toBeNull()
+  })
+})
+
 describe('unwrapRegistryEntry', () => {
   it('accepts a bare server object as well as the wrapped form', () => {
     const bare = { name: 'a/b', version: '1.2.3' }
