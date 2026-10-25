@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-10-25-security-alert-1-high-severity-advisory-affecting-opencti-mc",
+    "title": "Security Alert: 1 high-severity advisory affecting Opencti_mcp_server",
+    "description": "1 new security advisory across 1 MCP server, with severity and remediation for each.",
+    "hook": "1 high-severity advisory just landed against 1 MCP server in the catalog. If one of them is in your client config, this is an action item.",
+    "date": "2026-10-25",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 1
+  },
+  {
     "slug": "2026-10-24-nine-pillow-cves-hit-one-mcp-server-in-a-single-week",
     "title": "Nine Pillow CVEs Hit One MCP Server in a Single Week",
     "description": "A cluster of Pillow security advisories, two critical, converges on one MCP server's image pipeline, plus a separate Black CI vulnerability affecting another.",
