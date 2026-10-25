@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   buildLinkedRowRefresh,
+  ownsRowLinkedByOtherEntry,
   type LinkedRowCurrent,
   type LinkedRowParsed,
 } from '../lib/sync-registry-refresh'
@@ -278,5 +279,24 @@ describe('buildLinkedRowRefresh — combined', () => {
     expect(changedFields.sort()).toEqual(
       ['description', 'github_url', 'npm_package', 'pip_package', 'tagline', 'transport'].sort()
     )
+  })
+})
+
+describe('ownsRowLinkedByOtherEntry', () => {
+  const live = new Set(['store.scvd/general-store', 'store.scvd/tab'])
+
+  // #172: both entries point at one repo. Each night the unlinked one took the
+  // row through the github_url fallback and rewrote its description.
+  it('refuses to move a row between two live entries that share a repo', () => {
+    expect(ownsRowLinkedByOtherEntry('store.scvd/general-store', 'store.scvd/tab', live)).toBe(true)
+  })
+
+  it('allows linking an unlinked row or one already linked to this entry', () => {
+    expect(ownsRowLinkedByOtherEntry(null, 'store.scvd/tab', live)).toBe(false)
+    expect(ownsRowLinkedByOtherEntry('store.scvd/tab', 'store.scvd/tab', live)).toBe(false)
+  })
+
+  it('allows taking over a row whose entry is no longer in the registry', () => {
+    expect(ownsRowLinkedByOtherEntry('store.scvd/old-name', 'store.scvd/tab', live)).toBe(false)
   })
 })

@@ -17,7 +17,7 @@ import {
   type ParsedRegistryServer,
   type SkipReason,
 } from '../lib/registry-schema'
-import { buildLinkedRowRefresh, type LinkedRowCurrent } from '../lib/sync-registry-refresh'
+import { buildLinkedRowRefresh, ownsRowLinkedByOtherEntry, type LinkedRowCurrent } from '../lib/sync-registry-refresh'
 
 /** Mirrors the per-page retry in bots/lib/supabase.ts `fetchAllRows`. */
 const PAGE_FETCH_ATTEMPTS = 3
@@ -182,7 +182,7 @@ async function fetchRegistryServers(): Promise<FetchResult> {
 }
 
 /** A `servers` row's id plus every field the linked-row refresh can gap-fill. */
-type LinkedRow = LinkedRowCurrent & { id: string }
+type LinkedRow = LinkedRowCurrent & { id: string; registry_id?: string | null }
 
 /** Columns `getExistingRegistryRows`/`findRowByGithubUrl` load beyond `id`, for `buildLinkedRowRefresh`. */
 const LINKED_ROW_REFRESH_COLUMNS = 'transport, npm_package, pip_package, description, tagline, description_source, github_url, homepage_url'
@@ -275,7 +275,7 @@ async function getExistingGithubUrls(): Promise<Set<string>> {
 async function findRowByGithubUrl(githubUrl: string): Promise<LinkedRow | null> {
   const { data: matches } = await supabase
     .from('servers')
-    .select(`id, ${LINKED_ROW_REFRESH_COLUMNS}`)
+    .select(`id, registry_id, ${LINKED_ROW_REFRESH_COLUMNS}`)
     .ilike('github_url', `%${escapeLikeValue(githubUrl.replace(/^https:\/\//, ''))}%`)
 
   return ((matches as LinkedRow[]) || []).find(m => normalizeGithubUrl(m.github_url) === githubUrl) ?? null
@@ -372,6 +372,8 @@ async function main() {
   let synced = 0
   let updated = 0
   let linkMisses = 0
+  let sharedRepoSkipped = 0
+  const liveRegistryIds = new Set(registryServers.map(s => s.registryId))
   let duplicates = 0
   let insertFailures = 0
   let writeFailures = 0
@@ -428,6 +430,17 @@ async function main() {
       const target = await findRowByGithubUrl(githubUrl)
       if (!target) {
         linkMisses++
+        continue
+      }
+      // Two live registry entries can share one repo (store.scvd/general-store
+      // and store.scvd/tab, #172). Re-linking here moved the row to whichever
+      // entry came second and overwrote its description, so the listing
+      // flipped identity every night. The row stays with the entry it already
+      // has; no second row is inserted, since detect-duplicates keeps one row
+      // per repo and would only archive it.
+      if (ownsRowLinkedByOtherEntry(target.registry_id ?? null, parsed.registryId, liveRegistryIds)) {
+        sharedRepoSkipped++
+        console.log(`  Skipped linking ${parsed.registryId}: ${githubUrl} is already listed as ${target.registry_id}`)
         continue
       }
       // `checkGithubTransfer: false` — this row was matched BY its github_url,
@@ -576,12 +589,13 @@ async function main() {
     fieldRefreshes,
     transferSkipped,
     linkMisses,
+    sharedRepoSkipped,
     duplicates,
     insertFailures,
     writeFailures,
   })
   run.addUpdated(synced + updated)
-  console.log(`\nDone. New: ${synced}, Updated: ${updated} (${fieldRefreshes} with a field refresh, ${transferSkipped} repo-transfer collisions skipped), Link misses: ${linkMisses}, Duplicates: ${duplicates}, Insert failures: ${insertFailures}, Write failures: ${writeFailures}`)
+  console.log(`\nDone. New: ${synced}, Updated: ${updated} (${fieldRefreshes} with a field refresh, ${transferSkipped} repo-transfer collisions skipped), Link misses: ${linkMisses}, Shared-repo skips: ${sharedRepoSkipped}, Duplicates: ${duplicates}, Insert failures: ${insertFailures}, Write failures: ${writeFailures}`)
 
   // A partial fetch still alarms — but only now that the pages that did arrive
   // have been written.
