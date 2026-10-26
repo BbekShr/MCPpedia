@@ -147,6 +147,13 @@ async function main() {
   console.log(`Last day (${lastDay}) R2 Class A by bucket: ${JSON.stringify(Object.fromEntries(r2ByBucket))}`)
   console.log(`Last day (${lastDay}) Worker requests by script: ${JSON.stringify(Object.fromEntries(reqByScript))}`)
 
+  try {
+    await logHourlyBreakdown(accountId, since, until)
+  } catch (err) {
+    // Diagnostic only — never let it mask or replace the verdict below.
+    console.warn(`Hourly breakdown unavailable: ${String(err)}`)
+  }
+
   const problems = [
     ...(Object.keys(series) as (keyof typeof series)[]).flatMap(k => evaluateMetric(series[k], RULES[k])),
     // The only DO namespace is OpenNext's revalidation queue, so DO requests ≈ ISR regenerations.
@@ -159,6 +166,52 @@ async function main() {
     process.exit(1)
   }
   console.log('cost-anomaly-probe: OK — no usage spikes, all metrics within their free-allowance pace.')
+}
+
+/**
+ * Per-hour R2 writes, DO regenerations and Worker requests for the ISR bucket,
+ * so a red run says whether the writes cluster after deploys (every deploy
+ * starts an empty, build-ID-namespaced cache) or follow traffic (crawlers).
+ */
+async function logHourlyBreakdown(accountId: string, since: string, until: string) {
+  type Row<D, S> = { dimensions: D; sum: S }
+  const data = await gql<{
+    viewer: { accounts: {
+      r2: Row<{ datetimeHour: string; actionType: string }, { requests: number }>[]
+      doReq: Row<{ datetimeHour: string }, { requests: number }>[]
+      w: Row<{ datetimeHour: string }, { requests: number }>[]
+    }[] }
+  }>(`{
+    viewer { accounts(filter: { accountTag: "${accountId}" }) {
+      r2: r2OperationsAdaptiveGroups(limit: 10000, filter: { date_geq: "${since}", date_lt: "${until}", bucketName: "mcppedia-inc-cache" }) {
+        dimensions { datetimeHour actionType } sum { requests }
+      }
+      doReq: durableObjectsInvocationsAdaptiveGroups(limit: 1000, filter: { date_geq: "${since}", date_lt: "${until}" }) {
+        dimensions { datetimeHour } sum { requests }
+      }
+      w: workersInvocationsAdaptive(limit: 1000, filter: { date_geq: "${since}", date_lt: "${until}", scriptName: "mcppedia" }) {
+        dimensions { datetimeHour } sum { requests }
+      }
+    } }
+  }`)
+  const acct = data.viewer.accounts[0]
+  if (!acct) return
+  const classA = new Map<string, number>()
+  const byAction = new Map<string, number>()
+  for (const r of acct.r2) {
+    addTo(byAction, r.dimensions.actionType, r.sum.requests)
+    if (R2_CLASS_A.has(r.dimensions.actionType)) addTo(classA, r.dimensions.datetimeHour, r.sum.requests)
+  }
+  const doReq = new Map<string, number>()
+  for (const r of acct.doReq) addTo(doReq, r.dimensions.datetimeHour, r.sum.requests)
+  const req = new Map<string, number>()
+  for (const r of acct.w) addTo(req, r.dimensions.datetimeHour, r.sum.requests)
+
+  console.log(`mcppedia-inc-cache ops by action (${since}..${until}): ${JSON.stringify(Object.fromEntries(byAction))}`)
+  console.log('Hourly (UTC) — classA / doRequests / mcppediaRequests:')
+  for (const hour of [...new Set([...classA.keys(), ...doReq.keys(), ...req.keys()])].sort()) {
+    console.log(`  ${hour.slice(0, 13)} ${classA.get(hour) ?? 0} / ${doReq.get(hour) ?? 0} / ${req.get(hour) ?? 0}`)
+  }
 }
 
 main().catch(err => {
