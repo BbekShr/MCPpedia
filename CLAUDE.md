@@ -116,3 +116,9 @@ the PR body WHICH protected path was touched and why, so the label is never sile
   a PR proposing a rules change but never merges it), and **outward-facing acts** —
   posting or replying on a GitHub issue, closing an issue, labeling someone else's PR, or
   anything that speaks to a third party in the maintainer's name.
+
+## 7. Agent org
+
+This repo has an agent org: CEO skill `/mcppedia-ceo` (replaces `/improve-cycle`), agents in
+`.claude/agents/`, org rules in `.claude/ceo/RULES.md`, state in `.claude/ceo/`. Kill switch:
+`touch .claude/ceo/PAUSE`.
