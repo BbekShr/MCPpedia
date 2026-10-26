@@ -1,0 +1,74 @@
+---
+title: "Security Alert: 3 high-severity advisories affecting…"
+description: "3 new security advisories across 1 MCP server, with severity and remediation for each."
+hook: "3 high-severity advisories just landed against 1 MCP server in the catalog. If one of them is in your client config, this is an action item."
+date: "2026-10-26"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+MCPpedia picked up 3 high-severity advisories affecting 1 catalogued MCP server in the last seven days. Details, and what to do about each, below.
+
+<StatGrid>
+  <Stat value="3" label="New Advisories" detail="Last 7 days" />
+  <Stat value="0" label="Critical" detail="Highest severity" />
+  <Stat value="1" label="Servers Affected" detail="In the catalog" />
+</StatGrid>
+
+<Callout type="warning">If you run any server listed here, treat this as an action item rather than a newsletter. Check the version you have deployed against the advisory before your next agent run.</Callout>
+
+<SectionLabel>The Advisories</SectionLabel>
+
+## CVE-2026-115572 — HIGH
+
+**pypdf: Possible long runtimes for repeated references to the same missing object**
+
+Affects [io.github.pipeworx-io/asrs-reports](/s/io-github-pipeworx-io-asrs-reports).
+
+<ServerCardMini slug="io-github-pipeworx-io-asrs-reports" name="io.github.pipeworx-io/asrs-reports" />
+
+An attacker who uses this vulnerability can craft a PDF which leads to long runtimes. This requires loading relevant parts of a file (like their pages) where the same, but non-existent indirect object is referenced multiple times. Patches This has been fixed in [pypdf==6.21.2](https://github.com/py-pdf/pypdf/releases/tag/6.21.2). Workarounds If you cannot upgrade yet, consider applying the changes from PR [#4240](https://github.com/py-pdf/pypdf/pull/4240).
+
+*Published 2026-10-23.*
+
+---
+
+## CVE-2026-115585 — HIGH
+
+**pypdf: Possible long runtimes for repeated malformed cross-reference entries (Follow-up)**
+
+Affects [io.github.pipeworx-io/asrs-reports](/s/io-github-pipeworx-io-asrs-reports).
+
+<ServerCardMini slug="io-github-pipeworx-io-asrs-reports" name="io.github.pipeworx-io/asrs-reports" />
+
+An attacker who uses this vulnerability can craft a PDF which leads to long runtimes. This requires cross-reference streams with repeated malformed cross-reference streams. Patches This has been fixed in [pypdf==6.21.2](https://github.com/py-pdf/pypdf/releases/tag/6.21.2). Workarounds If you cannot upgrade yet, consider applying the changes from PR [#4240](https://github.com/py-pdf/pypdf/pull/4240). Notes This is a follow-up to https://github.com/py-pdf/pypdf/securi
+
+*Published 2026-10-23.*
+
+---
+
+## CVE-2026-115580 — HIGH
+
+**pypdf: Possible long runtimes for large xref table header limits**
+
+Affects [io.github.pipeworx-io/asrs-reports](/s/io-github-pipeworx-io-asrs-reports).
+
+<ServerCardMini slug="io-github-pipeworx-io-asrs-reports" name="io.github.pipeworx-io/asrs-reports" />
+
+An attacker who uses this vulnerability can craft a PDF which leads to long runtimes. This requires opening a file with large/wrong upper limits in the xref table. Patches This has been fixed in [pypdf==6.21.2](https://github.com/py-pdf/pypdf/releases/tag/6.21.2). Workarounds If you cannot upgrade yet, consider applying the changes from PR [#4239](https://github.com/py-pdf/pypdf/pull/4239).
+
+*Published 2026-10-23.*
+
+---
+
+## What to do
+
+1. Check which of these servers your client config actually loads — an MCP server you installed once and forgot still runs with the permissions you gave it.
+2. Upgrade to a patched version where the advisory names one.
+3. Where no patch exists, remove the server from your config until one does.
+
+Each affected server's page on MCPpedia carries its full advisory list and current security score.
+
+---
+
+*Compiled automatically from the MCPpedia catalog on 2026-10-26. Scores are the MCPpedia 0–100 rating — security, maintenance, efficiency, documentation and compatibility, weighted as described in the [scoring methodology](/methodology). Browse the full catalog at [mcppedia.org/servers](/servers), or compare any two servers side by side with the [comparison tool](/compare).*
