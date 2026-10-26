@@ -1641,3 +1641,23 @@ because the billing dashboard cannot answer them.
   new truncation notice — a CEO design decision; list error rendered as an empty queue) + 1 PLAUSIBLE
   race accepted; round 2 found 1 CONFIRMED (badge-fails-alone silent); round 3 found 1 in-diff
   residual (approve/reject count refresh did not set the flag). Four fix commits, four QA runs.
+
+## 2026-10-26 — Workers `fetch()` sends no User-Agent; GitHub's API 403s without one
+
+- **Every runtime `fetch` to `api.github.com` from the Worker was rejected** with 403 "Request
+  forbidden by administrative rules. Please make sure your request has a User-Agent header". Node's
+  fetch sends `User-Agent: node`, so builds, tests and bots never saw it. Proven in local workerd
+  (wrangler 4.126, compat 2026-08-25): a header echo showed no UA, and the same readme call returned
+  403 without a UA and 200 with one.
+- **Symptom**: `/s/[slug]` README missing on every runtime-rendered slug, present only on the ~50
+  build-time prerenders (`x-nextjs-prerender: 1`). The cached flight payload had the README
+  boundary resolved as `NN:null`, so the component ran and returned null. It was not a truncated ISR
+  snapshot and not a timeout. `lib/github.ts` (`/api/github-metadata`, `/api/submit`,
+  `refresh-score`) had the same bug.
+- **Rule**: any server-side fetch to a third-party API that can run on the Worker must set
+  `User-Agent` explicitly. The Worker has no `GITHUB_TOKEN` secret (`wrangler secret list`: only
+  MCP_INTERNAL_KEY, REVALIDATE_SECRET, SUPABASE_SERVICE_ROLE_KEY), so API calls stay unauthenticated
+  (60/hr per shared egress IP). The page README therefore reads `raw.githubusercontent.com/…/HEAD/README.md`
+  first and falls back to the API (`fetchPageReadme`).
+- Next 16.3 caches a fetch only when `res.status === 200` (`patch-fetch.js:696`), so failed attempts cost no
+  R2 write. An AbortSignal opts out of memoization only, not the data cache (`fetch.md`).

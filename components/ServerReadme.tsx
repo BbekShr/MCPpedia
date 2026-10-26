@@ -1,5 +1,6 @@
 import Markdown from 'react-markdown'
 import { readmeRemarkPlugins, readmeRehypePlugins } from '@/lib/readme-pipeline'
+import { fetchPageReadme } from '@/lib/github'
 
 export default async function ServerReadme({ githubUrl }: { githubUrl: string | null }) {
   if (!githubUrl) return null
@@ -13,14 +14,9 @@ export default async function ServerReadme({ githubUrl }: { githubUrl: string | 
   try {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 3000)
-    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
-      headers: { 'Accept': 'application/vnd.github.v3.raw' },
-      signal: controller.signal,
-      next: { revalidate: 2592000 }, // 30d; must not be shorter than /s/[slug]'s revalidate, or Next caps the page to it
-    })
+    readme = await fetchPageReadme(owner, repo, controller.signal)
     clearTimeout(timeout)
-    if (res.ok) {
-      readme = await res.text()
+    if (readme) {
       // Truncate to first 4000 chars to keep pages fast
       if (readme.length > 4000) readme = readme.slice(0, 4000) + `\n\n... [View full README on GitHub](${githubUrl}#readme)`
     }
