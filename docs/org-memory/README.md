@@ -10,10 +10,12 @@ The org persists knowledge in three stores with different owners and change rule
 
 ## Conventions
 
-- **Read before work:** every agent's boot sequence reads `CLAUDE.md` then
-  `docs/org-memory/codebase.md` before touching anything.
-- **Write at Records time:** the CEO folds agents' "Memory-worthy" hand-backs into
-  `codebase.md` in phase 6, on the cycle's branch — not ad hoc mid-cycle.
+- **Read before work:** every agent's boot sequence reads `CLAUDE.md`, `.claude/ceo/RULES.md`,
+  then `docs/org-memory/codebase.md` before touching anything.
+- **Write at Records time:** the CEO (`/mcppedia-ceo`) folds agents' `FACT:` lines into
+  `codebase.md` at the Records step, on the run's branch — not ad hoc mid-run. `LESSON:` lines
+  go to `.claude/ceo/learnings/` instead; every org PR's fate goes to
+  `.claude/ceo/memory/scorecard.md`.
 - **One dated bullet per fact**, with `file:line` evidence and the originating cycle/PR:
   `- YYYY-MM-DD (S1/PR#25): claim — file.ts:42`.
 - **Delete when falsified.** A stale "fact" is worse than no fact.

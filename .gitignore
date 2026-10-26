@@ -41,6 +41,7 @@ yarn-error.log*
 !.claude/commands/
 !.claude/skills/
 !.claude/hooks/
+!.claude/ceo/
 !.claude/settings.json
 
 # bulk dumps and curated classifications (Stage 2 outputs)
