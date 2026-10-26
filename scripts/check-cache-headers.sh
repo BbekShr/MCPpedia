@@ -82,9 +82,19 @@ check() {
     sleep 10
   done
 
-  # s-maxage is the TTL minus the entry's age.
-  if [ -z "$maxage" ] || [ "$maxage" -lt $((min - SLACK)) ]; then
-    echo "::error::${path} s-maxage=${maxage:-none}, expected about ${min}. Something in the render caps its revalidate (check fetch/unstable_cache TTLs)."
+  # s-maxage is the TTL minus the entry's age, so one header cannot tell an old
+  # entry from a capped TTL. Report the age it implies and let the reader
+  # compare it with the last deploy: pages the deploy wrote all share that age,
+  # while a cap is specific to one page.
+  if [ -z "$maxage" ]; then
+    echo "::error::${path} HIT has no s-maxage, expected about ${min}."
+    echo "--- response headers ---"; echo "$headers"; echo "---"
+    fail=1
+    return
+  fi
+  if [ "$maxage" -lt $((min - SLACK)) ]; then
+    local age=$((min - maxage))
+    echo "::error::${path} s-maxage=${maxage}, expected within ${SLACK}s of ${min}. Either the entry is $((age / 3600))h$(((age % 3600) / 60))m old (fine if the last deploy or regeneration was that long ago: rerun with ISR_MAX_AGE_SLACK=$((age + 600))), or something in the render caps its revalidate (check fetch/unstable_cache TTLs)."
     echo "--- response headers ---"; echo "$headers"; echo "---"
     fail=1
     return
