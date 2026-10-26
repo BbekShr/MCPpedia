@@ -1,7 +1,14 @@
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN
 
+// GitHub's API answers 403 "Request forbidden by administrative rules" to any
+// request without a User-Agent. Node's fetch sends one ("node"), so builds and
+// bots work, but Cloudflare Workers' fetch sends none — every runtime call from
+// the Worker was rejected, which is why README sections only appeared on the
+// build-time prerendered slugs.
+export const GITHUB_USER_AGENT = 'mcppedia.org'
+
 function headers() {
-  const h: Record<string, string> = { Accept: 'application/vnd.github.v3+json' }
+  const h: Record<string, string> = { Accept: 'application/vnd.github.v3+json', 'User-Agent': GITHUB_USER_AGENT }
   if (GITHUB_TOKEN) h.Authorization = `Bearer ${GITHUB_TOKEN}`
   return h
 }
@@ -101,4 +108,30 @@ export async function fetchReadme(githubUrl: string): Promise<string | null> {
 
   if (!res.ok) return null
   return res.text()
+}
+
+// 30d. Must not be shorter than /s/[slug]'s revalidate, or Next caps the page to it.
+const PAGE_README_REVALIDATE = 2592000
+
+/**
+ * README for the /s/[slug] page. Tries raw.githubusercontent.com first: it is not
+ * subject to the API's 60/hr unauthenticated limit, which Cloudflare's shared
+ * egress IPs exhaust. Only a repo without a root README.md (readme.md,
+ * README.rst, …) falls through to the API, which resolves any README name.
+ * Only 200s enter Next's fetch cache, so a failed attempt costs no R2 write.
+ */
+export async function fetchPageReadme(owner: string, repo: string, signal?: AbortSignal): Promise<string | null> {
+  const attempts: [string, Record<string, string>][] = [
+    [`https://raw.githubusercontent.com/${owner}/${repo}/HEAD/README.md`, {}],
+    [`https://api.github.com/repos/${owner}/${repo}/readme`, { Accept: 'application/vnd.github.v3.raw' }],
+  ]
+  for (const [url, extra] of attempts) {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': GITHUB_USER_AGENT, ...extra },
+      signal,
+      next: { revalidate: PAGE_README_REVALIDATE },
+    })
+    if (res.ok) return res.text()
+  }
+  return null
 }
