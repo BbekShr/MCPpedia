@@ -7,7 +7,7 @@ import { liveDataOrNull } from '@/lib/degrade'
 import LiveDataUnavailable from '@/components/LiveDataUnavailable'
 import { SITE_NAME, SITE_URL } from '@/lib/constants'
 import { getCatalogCounts, buildSiteDescription } from '@/lib/live-counts'
-import { buildUseCaseTiles, buildCategoryTiles } from '@/lib/home-tiles'
+import { buildUseCaseTiles, buildCategoryTiles, pickTopFeatured } from '@/lib/home-tiles'
 import {
   JsonLdScript,
   generateOrganizationJsonLd,
@@ -120,7 +120,9 @@ const getHomeData = unstable_cache(
   // ten pnpm rows and would keep serving them for 24h after this deploys.
   // v5: and again for the download ceiling, which replaced the pnpm rows with
   // vite/vitest rows rather than with real ones.
-  ['home-page-data-v5'],
+  // v6: and again for the featured-pick dedupe - a v5 entry still holds the
+  // same project twice.
+  ['home-page-data-v6'],
   { revalidate: 86400, tags: ['home-page'] },
 )
 
@@ -141,14 +143,15 @@ async function fetchHomeData() {
     // `score_total IS NOT NULL` lets Postgres use servers_score_active_idx
     // for an Index Scan + LIMIT (~0.1ms) instead of a 2.5s seq scan + sort.
     // Unscored servers wouldn't be in the top-2 anyway. We over-fetch to 3
-    // and drop MCPpedia in JS so the index condition stays clean.
+    // and drop MCPpedia in JS so the index condition stays clean. The same
+    // goes for duplicates of one project (see pickTopFeatured), so over-fetch.
     supabase
       .from('servers')
       .select(CARD_FIELDS)
       .eq('is_archived', false)
       .not('score_total', 'is', null)
       .order('score_total', { ascending: false })
-      .limit(3),
+      .limit(6),
     // Trending. The denylist exclusion is load-bearing, not belt-and-braces:
     // servers whose npm_package was mis-scraped as toolchain carry that
     // package's download count, and pnpm's ~177M/wk beats every real MCP
@@ -238,13 +241,16 @@ async function fetchHomeData() {
     servers_with_open_advisories: statsData.servers_with_open_cves ?? 0,
   }
 
-  const topScored = (((topScoredResult.data ?? []) as unknown) as FeaturedServer[])
-    .filter(s => s.slug !== MCPPEDIA_SLUG)
-    .slice(0, 2)
-  const featured: FeaturedServer[] = [
-    mcppediaResult.data as unknown as FeaturedServer | null,
-    ...topScored,
-  ].filter((s): s is FeaturedServer => !!s)
+  const mcppedia = mcppediaResult.data as unknown as FeaturedServer | null
+  const topScored = pickTopFeatured(
+    ((topScoredResult.data ?? []) as unknown) as FeaturedServer[],
+    mcppedia,
+    MCPPEDIA_SLUG,
+    2,
+  )
+  const featured: FeaturedServer[] = [mcppedia, ...topScored].filter(
+    (s): s is FeaturedServer => !!s,
+  )
 
   const trending: TrendingRow[] = ((trendingResult.data ?? []) as unknown) as TrendingRow[]
 
