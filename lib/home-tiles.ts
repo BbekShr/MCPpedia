@@ -81,3 +81,31 @@ export function buildCategoryTiles(result: RpcResult): HomeCategory[] | null {
 
   return categoryCounts.map(c => ({ ...c, hot: hotSet.has(c.slug) }))
 }
+
+type FeaturedCandidate = { slug: string; name: string; tagline: string | null }
+
+// Same name AND tagline is the same project listed twice (a repo that moved
+// orgs is registered under both URLs, so the repo URL cannot be the key).
+// Name alone would merge unrelated servers called "mcp-server".
+const featuredKey = (s: FeaturedCandidate) => `${s.name}|${s.tagline ?? ''}`.toLowerCase()
+
+/**
+ * Editor's Picks: the top `count` candidates after dropping `excludeSlug` and
+ * any project already shown. `candidates` must already be in score order.
+ */
+export function pickTopFeatured<T extends FeaturedCandidate>(
+  candidates: T[],
+  pinned: T | null,
+  excludeSlug: string,
+  count: number,
+): T[] {
+  const seen = new Set(pinned ? [featuredKey(pinned)] : [])
+  const picks: T[] = []
+  for (const c of candidates) {
+    if (c.slug === excludeSlug || seen.has(featuredKey(c))) continue
+    seen.add(featuredKey(c))
+    picks.push(c)
+    if (picks.length === count) break
+  }
+  return picks
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildUseCaseTiles, buildCategoryTiles } from '../home-tiles'
+import { buildUseCaseTiles, buildCategoryTiles, pickTopFeatured } from '../home-tiles'
 import { CATEGORIES } from '../constants'
 import { HOMEPAGE_USECASES } from '@/components/home/UseCases'
 
@@ -91,5 +91,40 @@ describe('buildCategoryTiles', () => {
   it('marks nothing hot when every category is empty', () => {
     const tiles = buildCategoryTiles(ok({ [CATEGORIES[0]]: 0 }))
     expect(tiles?.some(t => t.hot)).toBe(false)
+  })
+})
+
+describe('pickTopFeatured', () => {
+  const row = (slug: string, name: string, tagline: string | null = 'tag') => ({ slug, name, tagline })
+
+  // The Editor's Picks bug: a repo that moved orgs is listed under both URLs,
+  // both score 97, and the top-2 query showed the same project twice.
+  it('drops a second row for a project already picked', () => {
+    const picks = pickTopFeatured(
+      [row('xcode', 'XcodeBuildMCP'), row('io-github-xcode', 'XcodeBuildMCP'), row('dbhub', 'DBHub')],
+      null, 'mcppedia', 2,
+    )
+    expect(picks.map(p => p.slug)).toEqual(['xcode', 'dbhub'])
+  })
+
+  it('drops a candidate that duplicates the pinned server', () => {
+    const picks = pickTopFeatured(
+      [row('copy', 'MCPpedia'), row('dbhub', 'DBHub')],
+      row('mcppedia', 'MCPpedia'), 'mcppedia', 2,
+    )
+    expect(picks.map(p => p.slug)).toEqual(['dbhub'])
+  })
+
+  it('drops the excluded slug and respects the count', () => {
+    const picks = pickTopFeatured(
+      [row('mcppedia', 'A'), row('b', 'B'), row('c', 'C'), row('d', 'D')],
+      null, 'mcppedia', 2,
+    )
+    expect(picks.map(p => p.slug)).toEqual(['b', 'c'])
+  })
+
+  it('keeps different projects that share a name but not a tagline', () => {
+    const picks = pickTopFeatured([row('a', 'mcp-server', 'one'), row('b', 'mcp-server', 'two')], null, 'x', 2)
+    expect(picks).toHaveLength(2)
   })
 })
