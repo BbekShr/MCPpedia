@@ -156,6 +156,20 @@ export function generateConfig(
   }
 }
 
+/**
+ * Claude Desktop reads `claude_desktop_config.json` for LOCAL servers only. A
+ * hosted remote server is added in the app (Customize > Connectors > Add custom
+ * connector) and authorised there, so a `{ url }` entry in that file does not
+ * work. Cursor/Windsurf do take `url` entries and keep the JSON.
+ */
+export function claudeDesktopUsesConnector(
+  server: Pick<Server, 'npm_package' | 'pip_package' | 'remote_url' | 'transport' | 'install_configs'>,
+): boolean {
+  const stored = server.install_configs?.['claude-desktop']
+  const hasStored = !!stored && Object.keys(stored).length > 0
+  return !hasStored && isRemoteOnly(server) && !!server.remote_url
+}
+
 export default function InstallMatrix({ server }: { server: Server }) {
   // Build the ordered client list: compatible_clients first, then any client
   // with a stored install_config that isn't already in the list.
@@ -176,8 +190,10 @@ export default function InstallMatrix({ server }: { server: Server }) {
   const { config, isCli } = useMemo(() => generateConfig(active, server), [active, server])
   const configStr = isCli ? (config as string) : JSON.stringify(config, null, 2)
 
+  const useConnector = active === 'claude-desktop' && claudeDesktopUsesConnector(server)
+
   function copy() {
-    navigator.clipboard?.writeText(configStr).catch(() => {})
+    navigator.clipboard?.writeText(useConnector ? (server.remote_url ?? '') : configStr).catch(() => {})
     setCopied(true)
     setTimeout(() => setCopied(false), 1400)
   }
@@ -186,7 +202,7 @@ export default function InstallMatrix({ server }: { server: Server }) {
   const isSupported = (server.compatible_clients ?? []).includes(active)
   const transportLine =
     (server.transport?.join(', ') || 'stdio') +
-    (active === 'claude-desktop' ? ' · Node 18+' : '') +
+    (active === 'claude-desktop' && !claudeDesktopUsesConnector(server) ? ' · Node 18+' : '') +
     (server.requires_api_key ? ' · API key required' : '')
 
   return (
@@ -255,40 +271,78 @@ export default function InstallMatrix({ server }: { server: Server }) {
           </div>
         </div>
 
-        {/* Path + copy */}
-        <div className="flex items-center justify-between gap-3 mb-1.5 flex-wrap">
-          <div className="font-mono text-[11px] uppercase tracking-wider text-text-muted min-w-0 flex-1">
-            Paste into{' '}
-            <span className="text-text-primary break-all normal-case tracking-normal">
-              {activeMeta.path}
-            </span>
+        {useConnector ? (
+          <div className="text-[13px] text-text-primary">
+            <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
+              <div className="font-mono text-[11px] uppercase tracking-wider text-text-muted min-w-0 flex-1">
+                Add as a custom connector
+              </div>
+              <button
+                onClick={copy}
+                className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md shrink-0"
+                style={{
+                  background: copied ? 'var(--green)' : 'var(--bg-tertiary)',
+                  color: copied ? '#fff' : 'var(--text)',
+                  border: `1px solid ${copied ? 'var(--green)' : 'var(--border)'}`,
+                  cursor: 'pointer',
+                }}
+              >
+                <Icon name={copied ? 'check' : 'copy'} size={12} />
+                {copied ? 'Copied' : 'Copy URL'}
+              </button>
+            </div>
+            <ol className="m-0 pl-5 space-y-1 list-decimal">
+              <li>In Claude Desktop, open <strong>Customize → Connectors</strong>.</li>
+              <li>Click <strong>+ Add</strong>, then <strong>Add custom connector</strong>.</li>
+              <li>
+                Enter a name and this server URL:{' '}
+                <code className="font-mono break-all">{server.remote_url}</code>
+              </li>
+              <li>Connect and sign in when prompted.</li>
+            </ol>
+            <p className="mt-2 mb-0 text-xs text-text-muted">
+              Remote servers are added as connectors, not in{' '}
+              <code className="font-mono">claude_desktop_config.json</code>, which is for local servers.
+            </p>
           </div>
-          <button
-            onClick={copy}
-            className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md shrink-0"
-            style={{
-              background: copied ? 'var(--green)' : 'var(--bg-tertiary)',
-              color: copied ? '#fff' : 'var(--text)',
-              border: `1px solid ${copied ? 'var(--green)' : 'var(--border)'}`,
-              cursor: 'pointer',
-            }}
-          >
-            <Icon name={copied ? 'check' : 'copy'} size={12} />
-            {copied ? 'Copied' : isCli ? 'Copy command' : 'Copy JSON'}
-          </button>
-        </div>
+        ) : (
+          <>
+            {/* Path + copy */}
+            <div className="flex items-center justify-between gap-3 mb-1.5 flex-wrap">
+              <div className="font-mono text-[11px] uppercase tracking-wider text-text-muted min-w-0 flex-1">
+                Paste into{' '}
+                <span className="text-text-primary break-all normal-case tracking-normal">
+                  {activeMeta.path}
+                </span>
+              </div>
+              <button
+                onClick={copy}
+                className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-md shrink-0"
+                style={{
+                  background: copied ? 'var(--green)' : 'var(--bg-tertiary)',
+                  color: copied ? '#fff' : 'var(--text)',
+                  border: `1px solid ${copied ? 'var(--green)' : 'var(--border)'}`,
+                  cursor: 'pointer',
+                }}
+              >
+                <Icon name={copied ? 'check' : 'copy'} size={12} />
+                {copied ? 'Copied' : isCli ? 'Copy command' : 'Copy JSON'}
+              </button>
+            </div>
 
-        <pre
-          className="m-0 font-mono text-[12.5px] leading-[1.55] rounded-md p-3 overflow-auto"
-          style={{
-            background: 'var(--code-bg)',
-            border: '1px solid var(--border)',
-          }}
-        >
-          <code>{configStr}</code>
-        </pre>
+            <pre
+              className="m-0 font-mono text-[12.5px] leading-[1.55] rounded-md p-3 overflow-auto"
+              style={{
+                background: 'var(--code-bg)',
+                border: '1px solid var(--border)',
+              }}
+            >
+              <code>{configStr}</code>
+            </pre>
+          </>
+        )}
 
-        {server.requires_api_key && (
+        {server.requires_api_key && !useConnector && (
           <div
             className="mt-3 px-2.5 py-2 rounded-md text-xs text-text-primary flex gap-2 items-start"
             style={{
