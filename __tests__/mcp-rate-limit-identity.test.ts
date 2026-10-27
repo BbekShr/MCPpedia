@@ -18,8 +18,9 @@ vi.mock('@/lib/rate-limit', () => ({
   getClientIp: vi.fn().mockReturnValue('9.9.9.9'),
 }))
 
-import { checkRateLimit } from '@/lib/rate-limit'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { POST as mcpPOST } from '@/app/api/mcp/route'
+import { POST as hostedPOST } from '@/app/mcp/route'
 import { mcpApiCall, runWithCallerIp } from '@/lib/mcp/api'
 
 const EGRESS_IP = '9.9.9.9'
@@ -104,6 +105,16 @@ describe('POST /api/mcp rate-limit identity', () => {
   })
 })
 
+describe('POST /api/mcp forwarded IP normalisation', () => {
+  it('trims whitespace and caps the forwarded IP at 64 chars', async () => {
+    vi.stubEnv('MCP_INTERNAL_KEY', KEY)
+    await post({ 'x-mcppedia-internal-key': KEY, 'x-mcppedia-client-ip': '  1.1.1.1  ' })
+    await post({ 'x-mcppedia-internal-key': KEY, 'x-mcppedia-client-ip': 'a'.repeat(100) })
+
+    expect(limiterKeys()).toEqual(['mcp:1.1.1.1', `mcp:${'a'.repeat(64)}`])
+  })
+})
+
 describe('mcpApiCall caller identity propagation', () => {
   function stubFetch() {
     const sent: Headers[] = []
@@ -149,5 +160,69 @@ describe('mcpApiCall caller identity propagation', () => {
       expect(h.get('x-mcppedia-client-ip')).toBeNull()
       expect(h.get('x-mcppedia-internal-key')).toBeNull()
     }
+  })
+})
+
+describe('end to end: caller identity survives the hop into /api/mcp', () => {
+  it('a header renamed on only one side breaks the limiter key', async () => {
+    vi.stubEnv('MCP_INTERNAL_KEY', KEY)
+    // Pipe mcpApiCall's outbound request straight into the real route handler.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init: RequestInit) =>
+        mcpPOST(
+          new Request(`https://x${new URL(url).pathname}`, {
+            method: 'POST',
+            headers: init.headers,
+            body: init.body as string,
+          })
+        )
+      )
+    )
+
+    await runWithCallerIp('1.1.1.1', () => mcpApiCall('nope-e2e-a', {}))
+    await runWithCallerIp('2.2.2.2', () => mcpApiCall('nope-e2e-b', {}))
+
+    expect(limiterKeys()).toEqual(['mcp:1.1.1.1', 'mcp:2.2.2.2'])
+  })
+})
+
+describe('hosted /mcp route wiring', () => {
+  it('forwards each request\'s own client IP on the tool call it triggers', async () => {
+    vi.stubEnv('MCP_INTERNAL_KEY', KEY)
+    const sent: Headers[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init: RequestInit) => {
+        sent.push(new Headers(init.headers))
+        return new Response(JSON.stringify({ data: [] }), { status: 200 })
+      })
+    )
+
+    const rpc = (ip: string, query: string) => {
+      vi.mocked(getClientIp).mockReturnValueOnce(ip)
+      return hostedPOST(
+        new Request('https://x/mcp', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json, text/event-stream',
+          },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'tools/call',
+            params: { name: 'search_servers', arguments: { query } },
+          }),
+        })
+      )
+    }
+
+    const a = await rpc('1.1.1.1', 'hosted-a')
+    const b = await rpc('2.2.2.2', 'hosted-b')
+    await a.text()
+    await b.text()
+
+    expect(sent.map(h => h.get('x-mcppedia-client-ip'))).toEqual(['1.1.1.1', '2.2.2.2'])
   })
 })
