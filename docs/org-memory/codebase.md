@@ -6,8 +6,12 @@ falsified; promote hardened facts to CLAUDE.md via human-approved PR. Keep ~120 
 
 ## Gates & environment
 
-- **CURRENT GATE BASELINE — 2026-10-02 (S73), measured on branch `improve/S73-admin-edits-status-filter`
-  @ `db0567c` = `origin/main` @ `fa40b4c` + the S73 diff.**
+- **CURRENT GATE BASELINE — 2026-10-26 (S36), measured on branch `improve/S36-mcp-identity-tests`
+  @ `58fbc81` = `origin/main` @ `f05ecde` + the S36 test-only diff: `tsc` 0 errors · lint 0 errors /
+  6 warnings (same 6) · `npm test` **642 tests / 51 files** · env-less build 461 static pages, zero
+  warn/error lines.** The S73 block below is superseded for those figures (EDITED IN PLACE per M20).
+- (superseded S73 measurement) 2026-10-02 (S73), measured on branch `improve/S73-admin-edits-status-filter`
+  @ `db0567c` = `origin/main` @ `fa40b4c` + the S73 diff.
   `npx tsc --noEmit` 0 errors · `npm run lint` **0 errors / 6 warnings** · `npm test`
   **575 tests / 47 files** (main alone is 558 / 46; S73 adds `lib/__tests__/admin-edits.test.ts`,
   17 tests). Env-less `npm run build`: 413 static pages, zero warn/error lines. (EDITED IN PLACE per
@@ -1661,3 +1665,5 @@ because the billing dashboard cannot answer them.
   first and falls back to the API (`fetchPageReadme`).
 - Next 16.3 caches a fetch only when `res.status === 200` (`patch-fetch.js:696`), so failed attempts cost no
   R2 write. An AbortSignal opts out of memoization only, not the data cache (`fetch.md`).
+- 2026-10-26 (S36): the S36 code fix shipped in PR #81 (`0e00e63`) — `app/mcp/route.ts:50-58` wraps the call in `runWithCallerIp`, `lib/mcp/api.ts:91-96` forwards `x-mcppedia-client-ip` + `x-mcppedia-internal-key`, `app/api/mcp/route.ts:127-151` trusts them only on a constant-time `MCP_INTERNAL_KEY` match (required Worker secret, `.github/workflows/deploy-cloudflare.yml:81`); with the key unset it silently regresses to one shared bucket (no log). Pinned by `__tests__/mcp-rate-limit-identity.test.ts` (9 tests). Residual, unfiled: `/mcp` has no outer limiter of its own (cache hits in `lib/mcp/api.ts` and non-tool methods are unlimited) and a missing `MCP_INTERNAL_KEY` raises no alarm.
+- 2026-10-26 (S36): test recipes — `app/api/mcp/route.ts` rejects unknown actions with 400 right after the limiter, so a key-assertion test needs no Supabase data; `mcpApiCall` caches by `action:JSON(params)` (`lib/mcp/api.ts:45`) so repeated calls need distinct params; the hosted `/mcp` handler runs under vitest with the real SDK transport given `Accept: application/json, text/event-stream` (stateless, no initialize). macOS `sed -i` needs a suffix — use `perl -pi -e` for mutation checks.
