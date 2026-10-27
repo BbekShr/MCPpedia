@@ -101,29 +101,21 @@ function buildFactors(id: CategoryId, server: Server): Factor[] {
     ]
   }
   if (id === 'efficiency') {
+    // lib/scoring.ts measureTokenEfficiency awards the WHOLE 20 points from total
+    // tool-definition tokens (<=500: 20, <=1500: 16, <=4000: 12, <=8000: 6, else
+    // 2). Show that stored score, not a re-derived split, so the evidence always
+    // adds up to the heading.
     const tokens = server.total_tool_tokens || 0
-    const tokenPts = tokens === 0 ? 0 : tokens < 1500 ? 10 : tokens < 2500 ? 7 : tokens < 4000 ? 4 : 2
     const toolCount = server.tools?.length || 0
-    const countPts = toolCount === 0 ? 0 : toolCount <= 12 ? 5 : toolCount <= 20 ? 3 : 1
     const grade = server.token_efficiency_grade
     return [
       {
-        label: 'Total tool-definition tokens',
-        max: 10,
-        delta: tokenPts,
-        note: tokens ? `~${formatNumber(tokens)} tokens across ${toolCount} tool${toolCount !== 1 ? 's' : ''}` : 'Token cost not measured',
-      },
-      {
-        label: 'Tool count discipline',
-        max: 5,
-        delta: countPts,
-        note: `${toolCount} tool${toolCount !== 1 ? 's' : ''} exposed · ideal ≤ 12`,
-      },
-      {
-        label: 'Schema conciseness',
-        max: 5,
-        delta: grade === 'A' ? 5 : grade === 'B' ? 4 : grade === 'C' ? 2 : grade === 'unknown' ? 0 : 1,
-        note: grade && grade !== 'unknown' ? `Grade ${grade}` : 'Not graded',
+        label: 'Tool-definition token cost',
+        max: SCORE_WEIGHTS.efficiency,
+        delta: Math.min(server.score_efficiency || 0, SCORE_WEIGHTS.efficiency),
+        note: tokens
+          ? `~${formatNumber(tokens)} tokens across ${toolCount} tool${toolCount !== 1 ? 's' : ''}${grade && grade !== 'unknown' ? ` · Grade ${grade}` : ''}`
+          : 'Token cost not measured',
       },
     ]
   }
