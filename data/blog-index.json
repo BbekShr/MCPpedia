@@ -1,5 +1,31 @@
 [
   {
+    "slug": "2026-10-27-mcp-weekly-3-985-new-servers-rea-leads-on-stars",
+    "title": "MCP Weekly: 3,985 New Servers, Rea Leads on Stars",
+    "description": "3,985 new MCP servers this week across a catalog of 56,363, with 15 servers gaining stars.",
+    "hook": "3,985 new MCP servers shipped this week. Rea took the star lead. The full ranked breakdown, straight from the catalog.",
+    "date": "2026-10-27",
+    "tags": [
+      "weekly",
+      "ecosystem",
+      "new-servers"
+    ],
+    "category": "weekly-roundup",
+    "featuredServers": [
+      "idx",
+      "search2ai",
+      "org-agenthaven-agent-haven",
+      "io-github-nakagawa-master-nakagawa-original-router",
+      "io-github-reignventures-apiwatch",
+      "io-diagrid-catalyst",
+      "io-github-yomariano-reeling",
+      "sh-perq-perq",
+      "postgresai",
+      "io-github-jialaoliu-dsh-baton"
+    ],
+    "readingTime": 2
+  },
+  {
     "slug": "2026-10-26-security-alert-3-high-severity-advisories-affecting",
     "title": "Security Alert: 3 high-severity advisories affecting…",
     "description": "3 new security advisories across 1 MCP server, with severity and remediation for each.",
