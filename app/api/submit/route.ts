@@ -36,7 +36,12 @@ export async function POST(request: Request) {
   try { body = await request.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
   const parsed = submitServerSchema.safeParse(body)
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
+    // `error` keeps its object shape for API callers; the submit form only renders a
+    // string `message`, so surface the first field error there.
+    const flat = parsed.error.flatten()
+    const [field, msgs] = Object.entries(flat.fieldErrors)[0] ?? []
+    const message = field && msgs?.[0] ? `${field}: ${msgs[0]}` : flat.formErrors[0] ?? 'Invalid submission'
+    return NextResponse.json({ error: flat, message }, { status: 400 })
   }
 
   const data = parsed.data
@@ -96,7 +101,8 @@ export async function POST(request: Request) {
   // rows this check exists to find). Because the window is therefore arbitrary,
   // a failed or saturated read fails CLOSED instead of inserting.
   // Sanitize values going into the .or() string to prevent PostgREST filter
-  // injection and caller-supplied `*`/`%` wildcards.
+  // injection and caller-supplied `*`/`%` wildcards. The result is a WIDER LIKE
+  // pattern (disallowed chars become `_`), so the JS filter below stays the judge.
   const orFilters: string[] = []
   if (normalizedGithubUrl) {
     const rawFragment = normalizedGithubUrl.replace(/^https:\/\//, '')

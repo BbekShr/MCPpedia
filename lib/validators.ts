@@ -7,11 +7,14 @@ export function sanitizeSearchQuery(input: string): string {
   return input.replace(/[^a-zA-Z0-9 \-_.]/g, '').slice(0, 200)
 }
 
-// Sibling for identifier-shaped values (URL path fragments, package names) going
-// into `.ilike`/`.or` filters, where `/` and `@` must survive. Removes `* % , ( ) :`
-// and whitespace, i.e. both filter-syntax delimiters and the `*`/`%` wildcards.
+// Sibling for identifier-shaped values (URL path fragments, package names) in the
+// VALUE position of `.ilike`/`.or` filters only — never a column/operator position,
+// since it keeps `.`. Every other char (`* % , ( ) :`, whitespace, ...) becomes `_`,
+// so the output is a LIKE pattern where `_` matches any single character: it can
+// only WIDEN the match (a stored `a%20b` still matches), so exact matching must
+// happen after the read.
 export function sanitizeFilterValue(input: string): string {
-  return input.replace(/[^a-zA-Z0-9\-_.@/~]/g, '').slice(0, 200)
+  return input.replace(/[^a-zA-Z0-9\-_.@/~]/g, '_').slice(0, 200)
 }
 
 // Blank package fields stay legal (treated as absent downstream by normalizePackageName).
@@ -21,9 +24,14 @@ const PIP_NAME = /^(?:[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?)?$/
 export const submitServerSchema = z.object({
   github_url: z.string().url().refine(
     (url) => {
+      // The route stores the RAW string, but WHATWG parsing drops tabs/newlines and
+      // turns `\` into `/`, so the parsed pathname alone would vouch for a raw value
+      // that differs from it. Owner allows `_` for GitHub EMU accounts.
+      if (/[\s\\]/.test(url)) return false
       try {
-        const { hostname, pathname } = new URL(url)
-        return hostname === 'github.com' && /^\/[A-Za-z0-9-]+\/[A-Za-z0-9._-]+(\/.*)?$/.test(pathname)
+        const { hostname, pathname, username, password } = new URL(url)
+        return hostname === 'github.com' && !username && !password &&
+          /^\/[A-Za-z0-9_-]+\/[A-Za-z0-9._-]+(\/.*)?$/.test(pathname)
       }
       catch { return false }
     },

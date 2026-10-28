@@ -65,6 +65,9 @@ describe('submitServerSchema — filter-bound field shapes (S112)', () => {
     ['https://github.com/owner'],
     ['https://github.com/owner/'],
     ['https://github.com/%25/repo'],
+    ['https://github.com/acme/thin\tg'],
+    ['https://github.com/acme\\thing'],
+    ['https://u:p@github.com/acme/thing'],
   ])('rejects github_url %s', (github_url) => {
     expect(parse({ github_url }).success).toBe(false)
   })
@@ -74,6 +77,7 @@ describe('submitServerSchema — filter-bound field shapes (S112)', () => {
     ['https://github.com/owner/repo/'],
     ['https://github.com/owner/repo.git'],
     ['https://github.com/o/r/tree/main/pkg'],
+    ['https://github.com/acme_corp/repo'],
   ])('accepts github_url %s', (github_url) => {
     expect(parse({ github_url }).success).toBe(true)
   })
@@ -102,8 +106,12 @@ describe('submitServerSchema — filter-bound field shapes (S112)', () => {
 })
 
 describe('sanitizeFilterValue', () => {
-  it('strips filter delimiters, wildcards and whitespace', () => {
-    expect(sanitizeFilterValue('a*b%c,d(e)f:g h\tI')).toBe('abcdefghI')
+  // Replaced with LIKE's `_`, not deleted, so the pattern still matches the
+  // stored original — deleting would make `a%20b` unmatchable.
+  it('replaces filter delimiters, wildcards and whitespace with _', () => {
+    const out = sanitizeFilterValue('a*b%c,d(e)f:g h\tI')
+    expect(out).toBe('a_b_c_d_e_f_g_h_I')
+    expect(out).not.toMatch(/[*%,():\s]/)
   })
 
   it('preserves scoped npm names and URL fragments', () => {
