@@ -16,3 +16,4 @@ the `/servers` edge-runtime rollback) predates the org. Per-PR rows start with t
 ## Per PR
 | date | run | PR | outcome | human edits? | board CONFIRMED | escaped? | cost |
 |---|---|---|---|---|---|---|---|
+| 2026-10-27 | S112 | #195 | open | — | 1 (CEO design: delete-not-replace in LIKE value; fixed pre-PR) | — | 4 lenses-equivalent + 2 QA runs |

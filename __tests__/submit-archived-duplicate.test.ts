@@ -291,3 +291,91 @@ describe('POST /api/submit — archived duplicates', () => {
     expect(inserts()).toHaveLength(1)
   })
 })
+
+// S112: user input becomes `.ilike` filters inside one `.or()` string, so a
+// malformed URL or wildcard-bearing package must be refused at the schema —
+// before ANY servers query runs — and what does reach the filter is sanitized.
+describe('POST /api/submit — filter input (S112)', () => {
+  beforeEach(() => {
+    harness.reset()
+    authUser.current = { id: 'user-1' }
+    harness.queued = {
+      'servers:insert': { id: 'srv-1', slug: 'my-server', tools: [], transport: ['stdio'] },
+      'servers:update': [],
+      'servers:await': [],
+      'profiles:single': { username: 'alice' },
+    }
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it.each([
+    [{ github_url: 'https://github.com/' }],
+    [{ npm_package: 'foo*' }],
+    [{ pip_package: 'a%b' }],
+  ])('rejects %o with 400 before querying servers', async (overrides) => {
+    const res = await postSubmit(overrides)
+    expect(res.status).toBe(400)
+    expect(calls.filter(c => c.table === 'servers')).toHaveLength(0)
+  })
+
+  // The form renders only a string `message`; `error` keeps its object shape.
+  it('names the failing field in a string message on 400', async () => {
+    const res = await postSubmit({ github_url: 'https://github.com/' })
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.message).toBe('github_url: Must be a github.com/owner/repo URL')
+    expect(body.error.fieldErrors.github_url).toEqual(['Must be a github.com/owner/repo URL'])
+  })
+
+  it('builds an .or() filter whose only % are the URL clause wrapping', async () => {
+    const res = await postSubmit({
+      github_url: 'https://github.com/Acme/Thing.git?x=*%25#(a,b)',
+      npm_package: '@scope/thing',
+      pip_package: 'thing_mcp',
+    })
+    expect(res.status).toBe(201)
+
+    const orCall = calls.find(c => c.table === 'servers' && c.op === 'or')
+    expect(orCall).toBeDefined()
+    const filter = orCall!.args[0] as string
+    // Each of `? = * % # ( , )` becomes `_`; only the wrapping `%`s remain.
+    expect(filter).toBe(
+      'github_url.ilike.%github.com/acme/thing.git_x___25__a_b_%,npm_package.ilike.@scope/thing,pip_package.ilike.thing_mcp',
+    )
+    expect(filter.match(/%/g)).toHaveLength(2)
+    expect(filter).not.toMatch(/[*():]/)
+    expect(filter.split(',')).toHaveLength(3)
+  })
+
+  // Replacing (not deleting) disallowed chars is what keeps a stored URL that
+  // contains them matchable by its own resubmission.
+  const likeMatches = (pattern: string, value: string) =>
+    new RegExp('^' + pattern.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&').replace(/%/g, '.*').replace(/_/g, '.') + '$', 'i').test(value)
+
+  it.each([
+    ['https://github.com/acme/thing/tree/main/a%20b'],
+    ['https://github.com/acme/thing#readme'],
+    ['https://github.com/acme/thing/tree/main/c++'],
+  ])('flags a resubmission of stored %s as a duplicate', async (url) => {
+    harness.queued['servers:await'] = [{
+      slug: 'thing',
+      name: 'Thing',
+      github_url: url,
+      npm_package: null,
+      pip_package: null,
+      is_archived: false,
+    }]
+
+    const res = await postSubmit({ github_url: url })
+    expect(res.status).toBe(409)
+    expect((await res.json()).error).toBe('duplicate')
+    expect(inserts()).toHaveLength(0)
+
+    const orCall = calls.find(c => c.table === 'servers' && c.op === 'or')
+    const pattern = (orCall!.args[0] as string).replace(/^github_url\.ilike\./, '')
+    expect(likeMatches(pattern, url)).toBe(true)
+  })
+})

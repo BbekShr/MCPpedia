@@ -6,10 +6,12 @@ falsified; promote hardened facts to CLAUDE.md via human-approved PR. Keep ~120 
 
 ## Gates & environment
 
-- **CURRENT GATE BASELINE — 2026-10-26 (S36), measured on branch `improve/S36-mcp-identity-tests`
-  @ `58fbc81` = `origin/main` @ `f05ecde` + the S36 test-only diff: `tsc` 0 errors · lint 0 errors /
-  6 warnings (same 6) · `npm test` **642 tests / 51 files** · env-less build 461 static pages, zero
-  warn/error lines.** The S73 block below is superseded for those figures (EDITED IN PLACE per M20).
+- **CURRENT GATE BASELINE — 2026-10-27 (S112), measured on branch `improve/S112-submit-filter-sanitize`
+  @ `e7465ab` = `main` @ `62fc501` + the S112 diff: `tsc` 0 errors · lint 0 errors / 6 warnings (same 6)
+  · `npm test` **688 tests / 52 files** · env-less build green (463 static pages at `1018629`), zero
+  warn/error lines.** The S36 figure (642 / 51 @ `58fbc81`) and the S73 block below are superseded
+  (EDITED IN PLACE per M20). CI's build gate is `npm run cf:build` (next build + OpenNext adapter,
+  `.github/workflows/ci.yml:50-65`); the local `npm run build` gate never exercises the adapter step.
 - (superseded S73 measurement) 2026-10-02 (S73), measured on branch `improve/S73-admin-edits-status-filter`
   @ `db0567c` = `origin/main` @ `fa40b4c` + the S73 diff.
   `npx tsc --noEmit` 0 errors · `npm run lint` **0 errors / 6 warnings** · `npm test`
@@ -1667,3 +1669,27 @@ because the billing dashboard cannot answer them.
   R2 write. An AbortSignal opts out of memoization only, not the data cache (`fetch.md`).
 - 2026-10-26 (S36): the S36 code fix shipped in PR #81 (`0e00e63`) — `app/mcp/route.ts:50-58` wraps the call in `runWithCallerIp`, `lib/mcp/api.ts:91-96` forwards `x-mcppedia-client-ip` + `x-mcppedia-internal-key`, `app/api/mcp/route.ts:127-151` trusts them only on a constant-time `MCP_INTERNAL_KEY` match (required Worker secret, `.github/workflows/deploy-cloudflare.yml:81`); with the key unset it silently regresses to one shared bucket (no log). Pinned by `__tests__/mcp-rate-limit-identity.test.ts` (9 tests). Residual, unfiled: `/mcp` has no outer limiter of its own (cache hits in `lib/mcp/api.ts` and non-tool methods are unlimited) and a missing `MCP_INTERNAL_KEY` raises no alarm.
 - 2026-10-26 (S36): test recipes — `app/api/mcp/route.ts` rejects unknown actions with 400 right after the limiter, so a key-assertion test needs no Supabase data; `mcpApiCall` caches by `action:JSON(params)` (`lib/mcp/api.ts:45`) so repeated calls need distinct params; the hosted `/mcp` handler runs under vitest with the real SDK transport given `Accept: application/json, text/event-stream` (stateless, no initialize). macOS `sed -i` needs a suffix — use `perl -pi -e` for mutation checks.
+
+## 2026-10-27 — `/api/submit` filter sanitization (cycle 2026-10-27-S112)
+
+- `sanitizeFilterValue` (`lib/validators.ts`, beside `sanitizeSearchQuery`) is the shared helper for
+  identifier-shaped values (`/`, `@`, `~` must survive) in the VALUE position of `.ilike`/`.or`. It
+  REPLACES every other char with `_`, so its output is a LIKE pattern that can only widen a match;
+  exact matching must happen after the read. Never use it in a column/operator position (it keeps `.`).
+- In a LIKE-pattern value, sanitize by REPLACING with `_`, never by deleting: deletion breaks matching
+  against stored values that contain the deleted chars. `normalizeGithubUrl` (`lib/normalize.ts`) keeps
+  `%`, `#`, `?`, `+`, and `/api/submit` stores that raw normalized string, so the first S112 cut (delete)
+  let a resubmitted `…/tree/main/a%20b` or `…#readme` URL miss its own row and insert a duplicate. A stub
+  that does no filtering cannot catch this; only asserting the recorded pattern matches the stored value can.
+- `submitServerSchema.github_url` now checks the RAW string too (no whitespace, no `\`, no userinfo):
+  WHATWG `URL` parsing drops tabs/newlines and turns `\` into `/`, so a pathname-only check vouched for a
+  raw value the route then stored. Query/fragment are still kept (S114's job).
+- `/api/submit`'s 400 now carries a string `message` (`"<field>: <msg>"`) beside the `flatten()` object;
+  `app/submit/page.tsx:114` renders only `data.message` / string `data.error`, so every schema message
+  was previously invisible ("Submission failed"). `app/submit/page.tsx:95-96` omits blank package fields.
+- Skill library survey (2026-10-27): `/org-eval` is required by `.claude/ceo/AUTONOMY.md:45,56` and the
+  CEO skill's Org-maintenance section but `.claude/ceo/evals/` has no results — it has never run. The
+  installed cloudflare plugin has 13 skills; upstream github.com/cloudflare/skills lists 19 (adds
+  `workers-profiling`, `cf-cli`, `nextjs-on-cloudflare`, …). Vercel's `next-best-practices` is now bundled
+  docs for Next 16.3+ (AGENTS.md already points there), not a skill. Proposals filed as M23.
+

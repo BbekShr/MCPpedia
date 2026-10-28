@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { submitServerSchema } from '@/lib/validators'
+import { submitServerSchema, sanitizeFilterValue } from '@/lib/validators'
 import { fetchRepoMetadata, fetchReadme } from '@/lib/github'
 import { rateLimitUser } from '@/lib/rate-limit'
 import {
@@ -36,7 +36,12 @@ export async function POST(request: Request) {
   try { body = await request.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
   const parsed = submitServerSchema.safeParse(body)
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
+    // `error` keeps its object shape for API callers; the submit form only renders a
+    // string `message`, so surface the first field error there.
+    const flat = parsed.error.flatten()
+    const [field, msgs] = Object.entries(flat.fieldErrors)[0] ?? []
+    const message = field && msgs?.[0] ? `${field}: ${msgs[0]}` : flat.formErrors[0] ?? 'Invalid submission'
+    return NextResponse.json({ error: flat, message }, { status: 400 })
   }
 
   const data = parsed.data
@@ -95,19 +100,21 @@ export async function POST(request: Request) {
   // partition of the window (ordering live-first evicts exactly the archived
   // rows this check exists to find). Because the window is therefore arbitrary,
   // a failed or saturated read fails CLOSED instead of inserting.
-  // Sanitize values going into the .or() string to prevent PostgREST filter injection.
+  // Sanitize values going into the .or() string to prevent PostgREST filter
+  // injection and caller-supplied `*`/`%` wildcards. The result is a WIDER LIKE
+  // pattern (disallowed chars become `_`), so the JS filter below stays the judge.
   const orFilters: string[] = []
   if (normalizedGithubUrl) {
     const rawFragment = normalizedGithubUrl.replace(/^https:\/\//, '')
-    const safeFragment = rawFragment.replace(/[,()]/g, '')
+    const safeFragment = sanitizeFilterValue(rawFragment)
     orFilters.push(`github_url.ilike.%${safeFragment}%`)
   }
   if (normalizedNpm) {
-    const safeNpm = normalizedNpm.replace(/[,()]/g, '')
+    const safeNpm = sanitizeFilterValue(normalizedNpm)
     orFilters.push(`npm_package.ilike.${safeNpm}`)
   }
   if (normalizedPip) {
-    const safePip = normalizedPip.replace(/[,()]/g, '')
+    const safePip = sanitizeFilterValue(normalizedPip)
     orFilters.push(`pip_package.ilike.${safePip}`)
   }
 

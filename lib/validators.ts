@@ -7,21 +7,43 @@ export function sanitizeSearchQuery(input: string): string {
   return input.replace(/[^a-zA-Z0-9 \-_.]/g, '').slice(0, 200)
 }
 
+// Sibling for identifier-shaped values (URL path fragments, package names) in the
+// VALUE position of `.ilike`/`.or` filters only — never a column/operator position,
+// since it keeps `.`. Every other char (`* % , ( ) :`, whitespace, ...) becomes `_`,
+// so the output is a LIKE pattern where `_` matches any single character: it can
+// only WIDEN the match (a stored `a%20b` still matches), so exact matching must
+// happen after the read.
+export function sanitizeFilterValue(input: string): string {
+  return input.replace(/[^a-zA-Z0-9\-_.@/~]/g, '_').slice(0, 200)
+}
+
+// Blank package fields stay legal (treated as absent downstream by normalizePackageName).
+const NPM_NAME = /^(?:(?:@[a-z0-9\-._~]+\/)?[a-z0-9\-._~]+)?$/i
+const PIP_NAME = /^(?:[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?)?$/
+
 export const submitServerSchema = z.object({
   github_url: z.string().url().refine(
     (url) => {
-      try { return new URL(url).hostname === 'github.com' }
+      // The route stores the RAW string, but WHATWG parsing drops tabs/newlines and
+      // turns `\` into `/`, so the parsed pathname alone would vouch for a raw value
+      // that differs from it. Owner allows `_` for GitHub EMU accounts.
+      if (/[\s\\]/.test(url)) return false
+      try {
+        const { hostname, pathname, username, password } = new URL(url)
+        return hostname === 'github.com' && !username && !password &&
+          /^\/[A-Za-z0-9_-]+\/[A-Za-z0-9._-]+(\/.*)?$/.test(pathname)
+      }
       catch { return false }
     },
-    'Must be a github.com URL'
+    'Must be a github.com/owner/repo URL'
   ),
   name: z.string().min(1).max(200),
   tagline: z.string().max(500).optional(),
   license: z.string().max(100).optional(),
   author_name: z.string().max(200).optional(),
   author_github: z.string().max(100).optional(),
-  npm_package: z.string().max(200).optional(),
-  pip_package: z.string().max(200).optional(),
+  npm_package: z.string().trim().max(200).regex(NPM_NAME, 'Not a valid npm package name').optional(),
+  pip_package: z.string().trim().max(200).regex(PIP_NAME, 'Not a valid pip package name').optional(),
   transport: z.array(z.enum(TRANSPORTS)).default(['stdio']),
   categories: z.array(z.enum(CATEGORIES)).default([]),
   api_pricing: z.enum(API_PRICING_OPTIONS).default('unknown'),
