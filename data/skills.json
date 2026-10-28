@@ -3146,5 +3146,161 @@
     "install": {
       "manual": "Clone kaankiziltug/logo-design-skill and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
     }
+  },
+  {
+    "slug": "huashu-design",
+    "name": "Huashu Design",
+    "tagline": "Huashu Design 3.0 · 在 agent 里打一句话，拿回能交付的设计：网页 / App 原型 / 可编辑 PPTX / 动画 / 信息图 · 六个候选挑三个方向 · 84 种带样张的风格库 · 越用越懂你的外观账本与设计体检 · HTML-native design skill for Claude Code, Codex, Cursor & any agent",
+    "repo": "alchaincyf/huashu-design",
+    "github_url": "https://github.com/alchaincyf/huashu-design",
+    "author": "alchaincyf",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 27948,
+    "last_updated": "2026-10-23",
+    "category": "design",
+    "tags": ["agent-skills", "ai-design", "claude-code", "claude-skills", "codex", "cursor"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone alchaincyf/huashu-design and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "awesome-gamedev-agent-skills",
+    "name": "Awesome Gamedev Agent Skills",
+    "tagline": "77 game-dev skills for AI coding agents — Godot, Unity, Unreal, Phaser, PixiJS, three.js, Bevy, pygame, LÖVE, Roblox. Portable SKILL.md Agent Skills (the format Anthropic launched as Claude Skills), w",
+    "repo": "gamedev-skills/awesome-gamedev-agent-skills",
+    "github_url": "https://github.com/gamedev-skills/awesome-gamedev-agent-skills",
+    "author": "gamedev-skills",
+    "author_type": "community",
+    "license": "Apache-2.0",
+    "stars": 5355,
+    "last_updated": "2026-10-28",
+    "category": "meta",
+    "tags": ["agent-skills", "ai-agents", "antigravity", "awesome-list", "claude-code", "cline"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone gamedev-skills/awesome-gamedev-agent-skills and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "anti-defensive-writing-skill",
+    "name": "Anti Defensive Writing Skill",
+    "tagline": "极致轻量｜阻止论文的防御性写作 | Anti-defensive writing for academic papers — 学术写作原则 Skill + prompt pack (CN/EN)",
+    "repo": "Adkid-Zephyr/anti-defensive-writing-Skill",
+    "github_url": "https://github.com/Adkid-Zephyr/anti-defensive-writing-Skill",
+    "author": "Adkid-Zephyr",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 4328,
+    "last_updated": "2026-10-27",
+    "category": "writing",
+    "tags": ["academic-writing", "ai-writing", "claude-skill", "paper-writing", "prompt"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone Adkid-Zephyr/anti-defensive-writing-Skill and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "elephant-goldfish-model",
+    "name": "Elephant Goldfish Model",
+    "tagline": "Open-source skills for designing and reviewing software with AI agents",
+    "repo": "google/elephant-goldfish-model",
+    "github_url": "https://github.com/google/elephant-goldfish-model",
+    "homepage_url": "https://egm.dev",
+    "author": "google",
+    "author_type": "community",
+    "license": "Apache-2.0",
+    "stars": 4283,
+    "last_updated": "2026-10-28",
+    "category": "design",
+    "tags": ["agent-skills", "ai-agents", "antigravity", "claude-code", "claude-code-plugin", "claude-skills"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone google/elephant-goldfish-model and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "nihaixia",
+    "name": "Nihaixia",
+    "tagline": "倪海厦视角的中医Agent Skill，基于倪海厦教学资料开发，蒸馏倪师伤寒论、金匮要略、黄帝内经、神农本草经、针灸篇等，人纪/医案/经方思维，六经辨证，八纲辨证，天机道，天纪，紫微斗数，易经，阴阳，八卦，五行，风水，地纪等，总结8个诊断公式+快速诊断流程图+脉舌速查+七步走思维模式，蒸馏129条伤寒论 · 23篇金匮 · 72篇黄帝内经 · 神农本草经374种本草（上137/中110/下127）",
+    "repo": "jangviktor-web/nihaixia",
+    "github_url": "https://github.com/jangviktor-web/nihaixia",
+    "homepage_url": "https://jangviktor-web.github.io/nihaixia/",
+    "author": "jangviktor-web",
+    "author_type": "community",
+    "license": null,
+    "stars": 3871,
+    "last_updated": "2026-10-28",
+    "category": "other",
+    "tags": ["acupuncture", "agent-skill", "agent-skills", "chinese-medicine", "claude-code-skills", "codex-skill"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone jangviktor-web/nihaixia and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "pinme",
+    "name": "Pinme",
+    "tagline": "Deploy Your Frontend in a Single Command. Claude Code Skills supported.",
+    "repo": "glitternetwork/pinme",
+    "github_url": "https://github.com/glitternetwork/pinme",
+    "homepage_url": "https://pinme.eth.limo",
+    "author": "glitternetwork",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 3757,
+    "last_updated": "2026-09-12",
+    "category": "design",
+    "tags": ["ai-tools", "claude-code-skill", "claude-skills", "deployment", "deployment-tools", "frontend"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone glitternetwork/pinme and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "one-skill-to-rule-them-all",
+    "name": "One Skill To Rule Them All",
+    "tagline": "The meta-skill that builds and improves all your skills, including itself. Watches your work sessions (autonomous or human-led), captures patterns, corrections and judgement calls, and turns them into",
+    "repo": "rebelytics/one-skill-to-rule-them-all",
+    "github_url": "https://github.com/rebelytics/one-skill-to-rule-them-all",
+    "homepage_url": "https://www.rebelytics.com/task-observer/",
+    "author": "rebelytics",
+    "author_type": "community",
+    "license": "CC-BY-4.0",
+    "stars": 3607,
+    "last_updated": "2026-10-28",
+    "category": "meta",
+    "tags": ["agent-skills", "ai-skills", "augmented-expertise", "awesome-skills", "claude", "claude-code"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone rebelytics/one-skill-to-rule-them-all and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "pstack-claude",
+    "name": "Pstack Claude",
+    "tagline": "Claude Code, Codex, Copilot, Pi, OpenCode, Muse, Gemini, and Prime Agent versions of Poteto's pstack. Rigorous agent workflows with Cursor primitives translated for other harnesses.",
+    "repo": "michael-denyer/pstack-claude",
+    "github_url": "https://github.com/michael-denyer/pstack-claude",
+    "author": "michael-denyer",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 3563,
+    "last_updated": "2026-10-28",
+    "category": "development-workflow",
+    "tags": ["agent-plugin", "agent-skills", "agentic-ai", "anthropic", "chatgpt", "claude"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone michael-denyer/pstack-claude and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
   }
 ]
