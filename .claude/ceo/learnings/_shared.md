@@ -9,5 +9,6 @@
 - PostgREST silently truncates an unpaginated read at 1000 rows; a truncated read is not "no rows" (S9).
 - A Supabase write that matched zero rows is a failure, not a success: check `error` AND the row count (`174c47c`).
 - Migrations don't auto-apply on deploy: a merged migration is not a live one until a human runs it (S21, S98).
+- In a LIKE/`.ilike` value, sanitize by replacing disallowed chars with `_`, never deleting them; a test must assert the built pattern matches the stored value, since stubs don't filter (S112).
 
 ## Archive
