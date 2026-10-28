@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-10-28-security-alert-2-high-severity-advisories-affecting-2-mcp-se",
+    "title": "Security Alert: 2 high-severity advisories affecting 2 MCP servers",
+    "description": "2 new security advisories across 2 MCP servers, with severity and remediation for each.",
+    "hook": "2 high-severity advisories just landed against 2 MCP servers in the catalog. If one of them is in your client config, this is an action item.",
+    "date": "2026-10-28",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 2
+  },
+  {
     "slug": "2026-10-27-mcp-weekly-3-985-new-servers-rea-leads-on-stars",
     "title": "MCP Weekly: 3,985 New Servers, Rea Leads on Stars",
     "description": "3,985 new MCP servers this week across a catalog of 56,363, with 15 servers gaining stars.",

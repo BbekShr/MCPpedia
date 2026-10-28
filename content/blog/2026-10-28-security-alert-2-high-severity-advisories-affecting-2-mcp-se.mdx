@@ -1,0 +1,60 @@
+---
+title: "Security Alert: 2 high-severity advisories affecting 2 MCP servers"
+description: "2 new security advisories across 2 MCP servers, with severity and remediation for each."
+hook: "2 high-severity advisories just landed against 2 MCP servers in the catalog. If one of them is in your client config, this is an action item."
+date: "2026-10-28"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+MCPpedia picked up 2 high-severity advisories affecting 2 catalogued MCP servers in the last seven days. Details, and what to do about each, below.
+
+<StatGrid>
+  <Stat value="2" label="New Advisories" detail="Last 7 days" />
+  <Stat value="0" label="Critical" detail="Highest severity" />
+  <Stat value="2" label="Servers Affected" detail="In the catalog" />
+</StatGrid>
+
+<Callout type="warning">If you run any server listed here, treat this as an action item rather than a newsletter. Check the version you have deployed against the advisory before your next agent run.</Callout>
+
+<SectionLabel>The Advisories</SectionLabel>
+
+## GHSA-f897-62hf-6gxq — HIGH
+
+**MCP TypeScript SDK: HTTP server transports and handlers did not limit request body size or JSON-RPC batch length**
+
+Affects [Mcp Sdk Client Ssejs](/s/mcp-sdk-client-ssejs).
+
+<ServerCardMini slug="mcp-sdk-client-ssejs" name="Mcp Sdk Client Ssejs" />
+
+In affected versions, MCP servers reachable over HTTP put no limit on the size of a POST body or on the number of messages in a JSON-RPC batch. Large requests could exhaust the server's memory, and one long batch could block it from serving anyone else. No credentials were needed, unless your application authenticates requests before they reach the SDK. Am I affected? Yes, if clients you do not fully trust can reach your server over Streamable HTTP. A body parser such as `expres
+
+*Published 2026-10-27.*
+
+---
+
+## CVE-2026-109956 — HIGH
+
+**NLTK: WekaClassifier passes an unvalidated caller-controlled model path to the weka JVM, bypassing nltk.pathsec containment**
+
+Affects [Digital Marketing Pro](/s/digital-marketing-pro).
+
+<ServerCardMini slug="digital-marketing-pro" name="Digital Marketing Pro" />
+
+`WekaClassifier` in NLTK passes a caller-controlled model file path to the weka Java VM without any `nltk.pathsec` validation. `WekaClassifier.train` puts the caller's `model_filename` verbatim into the weka argv `["-d", model_filename, ...]` (weka *writes* the trained model there), and `WekaClassifier._classify_many` puts `self._model` into `["-l", self._model, ...]` (weka *reads* it). Under `nltk.pathsec.ENFORCE=True` (the default on current HEAD), NLTK's stated invariant — establis
+
+*Published 2026-10-27.*
+
+---
+
+## What to do
+
+1. Check which of these servers your client config actually loads — an MCP server you installed once and forgot still runs with the permissions you gave it.
+2. Upgrade to a patched version where the advisory names one.
+3. Where no patch exists, remove the server from your config until one does.
+
+Each affected server's page on MCPpedia carries its full advisory list and current security score.
+
+---
+
+*Compiled automatically from the MCPpedia catalog on 2026-10-28. Scores are the MCPpedia 0–100 rating — security, maintenance, efficiency, documentation and compatibility, weighted as described in the [scoring methodology](/methodology). Browse the full catalog at [mcppedia.org/servers](/servers), or compare any two servers side by side with the [comparison tool](/compare).*
