@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { submitServerSchema, editProposalSchema, discussionSchema } from '@/lib/validators'
+import { submitServerSchema, editProposalSchema, discussionSchema, sanitizeFilterValue } from '@/lib/validators'
 
 describe('submitServerSchema', () => {
   it('accepts valid server submission', () => {
@@ -50,6 +50,69 @@ describe('submitServerSchema', () => {
     if (result.success) {
       expect(result.data.categories).toEqual([])
     }
+  })
+})
+
+// S112: these fields become `.ilike` filters in POST /api/submit, so a bare
+// `github.com/` or a wildcard-bearing package name must never parse.
+describe('submitServerSchema — filter-bound field shapes (S112)', () => {
+  const parse = (overrides: Record<string, unknown>) =>
+    submitServerSchema.safeParse({ name: 'Test', github_url: 'https://github.com/owner/repo', ...overrides })
+
+  it.each([
+    ['https://github.com/'],
+    ['https://github.com'],
+    ['https://github.com/owner'],
+    ['https://github.com/owner/'],
+    ['https://github.com/%25/repo'],
+  ])('rejects github_url %s', (github_url) => {
+    expect(parse({ github_url }).success).toBe(false)
+  })
+
+  it.each([
+    ['https://github.com/owner/repo'],
+    ['https://github.com/owner/repo/'],
+    ['https://github.com/owner/repo.git'],
+    ['https://github.com/o/r/tree/main/pkg'],
+  ])('accepts github_url %s', (github_url) => {
+    expect(parse({ github_url }).success).toBe(true)
+  })
+
+  it.each([['foo*'], ['%'], ['a,b'], ['foo bar'], ['@scope/'], ['a(b)']])('rejects npm_package %s', (npm_package) => {
+    expect(parse({ npm_package }).success).toBe(false)
+  })
+
+  it.each([['a,b'], ['foo*'], ['%'], ['-lead'], ['trail.']])('rejects pip_package %s', (pip_package) => {
+    expect(parse({ pip_package }).success).toBe(false)
+  })
+
+  it('accepts real package names', () => {
+    expect(parse({ npm_package: '@scope/name' }).success).toBe(true)
+    expect(parse({ npm_package: 'my-server.js' }).success).toBe(true)
+    expect(parse({ pip_package: 'my_pkg.x' }).success).toBe(true)
+  })
+
+  // The submit form omits blank fields, but a direct API caller may send ''.
+  // Both were accepted before S112 and must stay accepted.
+  it('accepts omitted, empty and whitespace-only package fields', () => {
+    expect(parse({}).success).toBe(true)
+    expect(parse({ npm_package: '', pip_package: '' }).success).toBe(true)
+    expect(parse({ npm_package: '  ', pip_package: ' ' }).success).toBe(true)
+  })
+})
+
+describe('sanitizeFilterValue', () => {
+  it('strips filter delimiters, wildcards and whitespace', () => {
+    expect(sanitizeFilterValue('a*b%c,d(e)f:g h\tI')).toBe('abcdefghI')
+  })
+
+  it('preserves scoped npm names and URL fragments', () => {
+    expect(sanitizeFilterValue('@scope/name')).toBe('@scope/name')
+    expect(sanitizeFilterValue('github.com/o/r')).toBe('github.com/o/r')
+  })
+
+  it('caps length at 200', () => {
+    expect(sanitizeFilterValue('a'.repeat(300))).toHaveLength(200)
   })
 })
 

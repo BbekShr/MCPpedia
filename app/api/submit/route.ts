@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { submitServerSchema } from '@/lib/validators'
+import { submitServerSchema, sanitizeFilterValue } from '@/lib/validators'
 import { fetchRepoMetadata, fetchReadme } from '@/lib/github'
 import { rateLimitUser } from '@/lib/rate-limit'
 import {
@@ -95,19 +95,20 @@ export async function POST(request: Request) {
   // partition of the window (ordering live-first evicts exactly the archived
   // rows this check exists to find). Because the window is therefore arbitrary,
   // a failed or saturated read fails CLOSED instead of inserting.
-  // Sanitize values going into the .or() string to prevent PostgREST filter injection.
+  // Sanitize values going into the .or() string to prevent PostgREST filter
+  // injection and caller-supplied `*`/`%` wildcards.
   const orFilters: string[] = []
   if (normalizedGithubUrl) {
     const rawFragment = normalizedGithubUrl.replace(/^https:\/\//, '')
-    const safeFragment = rawFragment.replace(/[,()]/g, '')
+    const safeFragment = sanitizeFilterValue(rawFragment)
     orFilters.push(`github_url.ilike.%${safeFragment}%`)
   }
   if (normalizedNpm) {
-    const safeNpm = normalizedNpm.replace(/[,()]/g, '')
+    const safeNpm = sanitizeFilterValue(normalizedNpm)
     orFilters.push(`npm_package.ilike.${safeNpm}`)
   }
   if (normalizedPip) {
-    const safePip = normalizedPip.replace(/[,()]/g, '')
+    const safePip = sanitizeFilterValue(normalizedPip)
     orFilters.push(`pip_package.ilike.${safePip}`)
   }
 

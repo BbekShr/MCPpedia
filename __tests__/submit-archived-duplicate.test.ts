@@ -291,3 +291,53 @@ describe('POST /api/submit — archived duplicates', () => {
     expect(inserts()).toHaveLength(1)
   })
 })
+
+// S112: user input becomes `.ilike` filters inside one `.or()` string, so a
+// malformed URL or wildcard-bearing package must be refused at the schema —
+// before ANY servers query runs — and what does reach the filter is sanitized.
+describe('POST /api/submit — filter input (S112)', () => {
+  beforeEach(() => {
+    harness.reset()
+    authUser.current = { id: 'user-1' }
+    harness.queued = {
+      'servers:insert': { id: 'srv-1', slug: 'my-server', tools: [], transport: ['stdio'] },
+      'servers:update': [],
+      'servers:await': [],
+      'profiles:single': { username: 'alice' },
+    }
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it.each([
+    [{ github_url: 'https://github.com/' }],
+    [{ npm_package: 'foo*' }],
+    [{ pip_package: 'a%b' }],
+  ])('rejects %o with 400 before querying servers', async (overrides) => {
+    const res = await postSubmit(overrides)
+    expect(res.status).toBe(400)
+    expect(calls.filter(c => c.table === 'servers')).toHaveLength(0)
+  })
+
+  it('builds an .or() filter whose only % are the URL clause wrapping', async () => {
+    const res = await postSubmit({
+      github_url: 'https://github.com/Acme/Thing.git?x=*%25#(a,b)',
+      npm_package: '@scope/thing',
+      pip_package: 'thing_mcp',
+    })
+    expect(res.status).toBe(201)
+
+    const orCall = calls.find(c => c.table === 'servers' && c.op === 'or')
+    expect(orCall).toBeDefined()
+    const filter = orCall!.args[0] as string
+    // The caller-supplied `%` in `%25` is stripped, leaving `25`.
+    expect(filter).toBe(
+      'github_url.ilike.%github.com/acme/thing.gitx25ab%,npm_package.ilike.@scope/thing,pip_package.ilike.thing_mcp',
+    )
+    expect(filter.match(/%/g)).toHaveLength(2)
+    expect(filter).not.toMatch(/[*():]/)
+    expect(filter.split(',')).toHaveLength(3)
+  })
+})
