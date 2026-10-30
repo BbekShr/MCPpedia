@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-10-30-security-alert-1-high-severity-advisory-affecting",
+    "title": "Security Alert: 1 high-severity advisory affecting…",
+    "description": "1 new security advisory across 1 MCP server, with severity and remediation for each.",
+    "hook": "1 high-severity advisory just landed against 1 MCP server in the catalog. If one of them is in your client config, this is an action item.",
+    "date": "2026-10-30",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 1
+  },
+  {
     "slug": "2026-10-28-security-alert-2-high-severity-advisories-affecting-2-mcp-se",
     "title": "Security Alert: 2 high-severity advisories affecting 2 MCP servers",
     "description": "2 new security advisories across 2 MCP servers, with severity and remediation for each.",

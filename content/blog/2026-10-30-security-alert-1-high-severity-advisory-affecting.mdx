@@ -1,0 +1,46 @@
+---
+title: "Security Alert: 1 high-severity advisory affecting…"
+description: "1 new security advisory across 1 MCP server, with severity and remediation for each."
+hook: "1 high-severity advisory just landed against 1 MCP server in the catalog. If one of them is in your client config, this is an action item."
+date: "2026-10-30"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+MCPpedia picked up 1 high-severity advisory affecting 1 catalogued MCP server in the last seven days. Details, and what to do about each, below.
+
+<StatGrid>
+  <Stat value="1" label="New Advisories" detail="Last 7 days" />
+  <Stat value="0" label="Critical" detail="Highest severity" />
+  <Stat value="1" label="Servers Affected" detail="In the catalog" />
+</StatGrid>
+
+<Callout type="warning">If you run any server listed here, treat this as an action item rather than a newsletter. Check the version you have deployed against the advisory before your next agent run.</Callout>
+
+<SectionLabel>The Advisories</SectionLabel>
+
+## CVE-2026-61438 — HIGH
+
+**PraisonAI vulnerable to Remote Code Execution via Broken AST Sandbox**
+
+Affects [io.github.MervinPraison/praisonai](/s/io-github-mervinpraison-praisonai-mervinpraison).
+
+<ServerCardMini slug="io-github-mervinpraison-praisonai-mervinpraison" name="io.github.MervinPraison/praisonai" />
+
+JobWorkflowExecutor._exec_inline_python() is designed to safely execute inline Python expressions from YAML workflow script: steps using AST validation. The function claims to block dangerous operations by (a) checking all AST nodes against an allowlist, and (b) providing a __builtins__ whitelist that omits __import__, exec, eval, and open. The sandbox is broken. The module import allowlist (allowed_modules) explicitly includes 'os', and the AST allowlist permits ast.Import, ast.Imp
+
+*Published 2026-10-29.*
+
+---
+
+## What to do
+
+1. Check which of these servers your client config actually loads — an MCP server you installed once and forgot still runs with the permissions you gave it.
+2. Upgrade to a patched version where the advisory names one.
+3. Where no patch exists, remove the server from your config until one does.
+
+Each affected server's page on MCPpedia carries its full advisory list and current security score.
+
+---
+
+*Compiled automatically from the MCPpedia catalog on 2026-10-30. Scores are the MCPpedia 0–100 rating — security, maintenance, efficiency, documentation and compatibility, weighted as described in the [scoring methodology](/methodology). Browse the full catalog at [mcppedia.org/servers](/servers), or compare any two servers side by side with the [comparison tool](/compare).*
