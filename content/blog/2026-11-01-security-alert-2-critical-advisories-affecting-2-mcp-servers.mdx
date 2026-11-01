@@ -1,0 +1,116 @@
+---
+title: "Security Alert: 2 critical advisories affecting 2 MCP servers"
+description: "6 new security advisories across 2 MCP servers, with severity and remediation for each."
+hook: "2 critical advisories just landed against 2 MCP servers in the catalog. If one of them is in your client config, this is an action item."
+date: "2026-11-01"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+MCPpedia picked up 2 critical advisories affecting 2 catalogued MCP servers in the last seven days. Details, and what to do about each, below.
+
+<StatGrid>
+  <Stat value="6" label="New Advisories" detail="Last 7 days" />
+  <Stat value="2" label="Critical" detail="Highest severity" />
+  <Stat value="2" label="Servers Affected" detail="In the catalog" />
+</StatGrid>
+
+<Callout type="warning">If you run any server listed here, treat this as an action item rather than a newsletter. Check the version you have deployed against the advisory before your next agent run.</Callout>
+
+<SectionLabel>The Advisories</SectionLabel>
+
+## CVE-2026-114053 — HIGH
+
+**vLLM: Request-controlled mm_processor_kwargs.code_revision allows remote code execution**
+
+Affects [Llm Server Docs](/s/llm-server-docs).
+
+<ServerCardMini slug="llm-server-docs" name="Llm Server Docs" />
+
+An untrusted multimodal request can set `mm_processor_kwargs.code_revision`. When vLLM serves a model whose Hugging Face processor uses dynamic `auto_map` code and the operator enabled `--trust-remote-code`, this request value reaches `AutoProcessor.from_pretrained` and selects the Python revision imported by Transformers. This lets a client replace the operator-reviewed processor module with code from another revision of the same model repository. The operator-selected model/data `
+
+*Published 2026-10-27.*
+
+---
+
+## GHSA-g5ff-637f-6q2m — HIGH
+
+**LiteLLM: internal_user_viewer arbitrary local file read via `vertex_ai_credentials`**
+
+Affects [Ogham Mcp](/s/ogham-mcp).
+
+<ServerCardMini slug="ogham-mcp" name="Ogham Mcp" />
+
+An authenticated LiteLLM proxy user could read arbitrary local files from the proxy runtime by sending a crafted `vertex_ai_credentials` value to `/utils/transform_request`. The request-body safety blocklist rejected `vertex_credentials` but missed its alias `vertex_ai_credentials`, which let the value reach the Vertex AI credential loader and trigger a file read that is sent to an attacker-controlled URL. A low-privilege authenticated user (only `internal_user_viewer`, o
+
+*Published 2026-10-27.*
+
+---
+
+## CVE-2026-114612 — CRITICAL
+
+**LiteLLM: Privilege Escalation to Proxy Admin via Cross-Domain Reuse of the Salt Key**
+
+Affects [Ogham Mcp](/s/ogham-mcp).
+
+<ServerCardMini slug="ogham-mcp" name="Ogham Mcp" />
+
+An authenticated user with `internal_user` privileges can escalate to `proxy_admin` and achieve remote code execution. The proxy uses one encryption key for two purposes: sealing secrets at rest and minting session tokens. An attacker exploits this by requesting a new API key with a crafted metadata field containing a forged admin credential as the "secret" value. The proxy encrypts and returns this payload. When this value is then presented as a bearer token, the proxy decrypts it,
+
+*Published 2026-10-27.*
+
+---
+
+## CVE-2026-115915 — CRITICAL
+
+**PYSEC-2026-4346**
+
+Affects [Llm Server Docs](/s/llm-server-docs).
+
+<ServerCardMini slug="llm-server-docs" name="Llm Server Docs" />
+
+vLLM is an inference and serving engine for large language models. Prior to 0.32.0, ImageMediaIO passes attacker-controlled image bytes to Pillow through Image.open(BytesIO(data)) without restricting decoder selection, and the MIME label does not constrain the selected format. Image-capable request paths through parse_image() and fetch_image() can therefore dispatch an EPS payload to host components. A host with Ghostscript affected by CVE-2024-29510 can execute commands with the vLLM process's
+
+*Published 2026-10-26.*
+
+---
+
+## CVE-2026-115912 — HIGH
+
+**PYSEC-2026-4345**
+
+Affects [Llm Server Docs](/s/llm-server-docs).
+
+<ServerCardMini slug="llm-server-docs" name="Llm Server Docs" />
+
+vLLM is an inference and serving engine for large language models. Prior to 0.32.0, an authenticated caller can place forged shared-memory address and monotonic_id values in public multimodal features.kwargs_data. In scale-out deployments with shared-memory multimodal caching enabled, workers trust those values and pass attacker-selected bytes to pickle.loads(), allowing arbitrary Python execution even when insecure serialization is disabled. This issue is fixed in version 0.32.0.
+
+*Published 2026-10-26.*
+
+---
+
+## CVE-2026-116178 — HIGH
+
+**PYSEC-2026-4353**
+
+Affects [Llm Server Docs](/s/llm-server-docs).
+
+<ServerCardMini slug="llm-server-docs" name="Llm Server Docs" />
+
+vLLM from 0.20.0 before 0.30.0 contains a denial of service vulnerability that allows remote attackers to crash the engine by sending inconsistent multimodal metadata to the disaggregated /inference/v1/generate endpoint. Attackers can replay a valid multimodal item with repeated or overlapping mm_placeholders ranges or mismatched kwargs_data and mm_hashes lists, producing a negative text span in Qwen2.5-VL position construction that terminates the engine.
+
+*Published 2026-10-25.*
+
+---
+
+## What to do
+
+1. Check which of these servers your client config actually loads — an MCP server you installed once and forgot still runs with the permissions you gave it.
+2. Upgrade to a patched version where the advisory names one.
+3. Where no patch exists, remove the server from your config until one does.
+
+Each affected server's page on MCPpedia carries its full advisory list and current security score.
+
+---
+
+*Compiled automatically from the MCPpedia catalog on 2026-11-01. Scores are the MCPpedia 0–100 rating — security, maintenance, efficiency, documentation and compatibility, weighted as described in the [scoring methodology](/methodology). Browse the full catalog at [mcppedia.org/servers](/servers), or compare any two servers side by side with the [comparison tool](/compare).*

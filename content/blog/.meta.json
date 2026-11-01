@@ -18,6 +18,12 @@
     "is MCP server safe security risks"
   ],
   "publishedCveIds": [
+    "CVE-2026-114053",
+    "GHSA-g5ff-637f-6q2m",
+    "CVE-2026-114612",
+    "CVE-2026-115915",
+    "CVE-2026-115912",
+    "CVE-2026-116178",
     "CVE-2026-61438",
     "GHSA-f897-62hf-6gxq",
     "CVE-2026-109956",
