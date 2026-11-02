@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-11-02-security-alert-7-high-severity-advisories-affecting",
+    "title": "Security Alert: 7 high-severity advisories affecting…",
+    "description": "7 new security advisories across 1 MCP server, with severity and remediation for each.",
+    "hook": "7 high-severity advisories just landed against 1 MCP server in the catalog. If one of them is in your client config, this is an action item.",
+    "date": "2026-11-02",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 3
+  },
+  {
     "slug": "2026-11-01-security-alert-2-critical-advisories-affecting-2-mcp-servers",
     "title": "Security Alert: 2 critical advisories affecting 2 MCP servers",
     "description": "6 new security advisories across 2 MCP servers, with severity and remediation for each.",

@@ -1,0 +1,130 @@
+---
+title: "Security Alert: 7 high-severity advisories affecting…"
+description: "7 new security advisories across 1 MCP server, with severity and remediation for each."
+hook: "7 high-severity advisories just landed against 1 MCP server in the catalog. If one of them is in your client config, this is an action item."
+date: "2026-11-02"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+MCPpedia picked up 7 high-severity advisories affecting 1 catalogued MCP server in the last seven days. Details, and what to do about each, below.
+
+<StatGrid>
+  <Stat value="7" label="New Advisories" detail="Last 7 days" />
+  <Stat value="0" label="Critical" detail="Highest severity" />
+  <Stat value="1" label="Servers Affected" detail="In the catalog" />
+</StatGrid>
+
+<Callout type="warning">If you run any server listed here, treat this as an action item rather than a newsletter. Check the version you have deployed against the advisory before your next agent run.</Callout>
+
+<SectionLabel>The Advisories</SectionLabel>
+
+## CVE-2026-119203 — HIGH
+
+**pypdf has possible infinite loop when hitting EOF in standard xref table during trailer search**
+
+Affects [io.github.pipeworx-io/asrs-reports](/s/io-github-pipeworx-io-asrs-reports).
+
+<ServerCardMini slug="io-github-pipeworx-io-asrs-reports" name="io.github.pipeworx-io/asrs-reports" />
+
+An attacker who uses this vulnerability can craft a PDF which leads to an infinite loop. This requires opening an incomplete file without a `trailer`. Patches This has been fixed in [pypdf==6.21.4](https://github.com/py-pdf/pypdf/releases/tag/6.21.4). Workarounds If you cannot upgrade yet, consider applying the changes from PR [#4289](https://github.com/py-pdf/pypdf/pull/4289).
+
+*Published 2026-10-30.*
+
+---
+
+## CVE-2026-119204 — HIGH
+
+**pypdf has possible large memory usage when parsing page tree**
+
+Affects [io.github.pipeworx-io/asrs-reports](/s/io-github-pipeworx-io-asrs-reports).
+
+<ServerCardMini slug="io-github-pipeworx-io-asrs-reports" name="io.github.pipeworx-io/asrs-reports" />
+
+An attacker who uses this vulnerability can craft a PDF which leads to large memory usage. This requires parsing the page tree with many shared resources. Patches This has been fixed in [pypdf==6.21.4](https://github.com/py-pdf/pypdf/releases/tag/6.21.4). Workarounds If you cannot upgrade yet, consider applying the changes from PR [#4290](https://github.com/py-pdf/pypdf/pull/4290).
+
+*Published 2026-10-30.*
+
+---
+
+## CVE-2026-119205 — HIGH
+
+**pypdf has possible infinite loop when cloning dictionaries**
+
+Affects [io.github.pipeworx-io/asrs-reports](/s/io-github-pipeworx-io-asrs-reports).
+
+<ServerCardMini slug="io-github-pipeworx-io-asrs-reports" name="io.github.pipeworx-io/asrs-reports" />
+
+An attacker who uses this vulnerability can craft a PDF which leads to an infinite loop. This requires cloning/duplicating a `DictionaryObject`. Patches This has been fixed in [pypdf==6.21.4](https://github.com/py-pdf/pypdf/releases/tag/6.21.4). Workarounds If you cannot upgrade yet, consider applying the changes from PR [#4288](https://github.com/py-pdf/pypdf/pull/4288).
+
+*Published 2026-10-30.*
+
+---
+
+## CVE-2026-119206 — HIGH
+
+**pypdf has possible long runtimes when retrieving page labels**
+
+Affects [io.github.pipeworx-io/asrs-reports](/s/io-github-pipeworx-io-asrs-reports).
+
+<ServerCardMini slug="io-github-pipeworx-io-asrs-reports" name="io.github.pipeworx-io/asrs-reports" />
+
+An attacker who uses this vulnerability can craft a PDF which leads to large runtimes. This requires retrieving the page labels of a file. Patches This has been fixed in [pypdf==6.21.3](https://github.com/py-pdf/pypdf/releases/tag/6.21.3). Workarounds If you cannot upgrade yet, consider applying the changes from PR [#4251](https://github.com/py-pdf/pypdf/pull/4251).
+
+*Published 2026-10-30.*
+
+---
+
+## CVE-2026-119207 — HIGH
+
+**pypdf has possible large memory usage for exceptions in strict mode**
+
+Affects [io.github.pipeworx-io/asrs-reports](/s/io-github-pipeworx-io-asrs-reports).
+
+<ServerCardMini slug="io-github-pipeworx-io-asrs-reports" name="io.github.pipeworx-io/asrs-reports" />
+
+An attacker who uses this vulnerability can craft a PDF which leads to large memory usage. This requires loading an invalid dictionary. Patches This has been fixed in [pypdf==6.21.3](https://github.com/py-pdf/pypdf/releases/tag/6.21.3). Workarounds If you cannot upgrade yet, consider applying the changes from PR [#4265](https://github.com/py-pdf/pypdf/pull/4265).
+
+*Published 2026-10-30.*
+
+---
+
+## CVE-2026-119208 — HIGH
+
+**pypdf has possible long runtimes/large memory usage for encrypted PDF files**
+
+Affects [io.github.pipeworx-io/asrs-reports](/s/io-github-pipeworx-io-asrs-reports).
+
+<ServerCardMini slug="io-github-pipeworx-io-asrs-reports" name="io.github.pipeworx-io/asrs-reports" />
+
+An attacker who uses this vulnerability can craft a PDF which leads to large runtimes/memory usage. This requires accessing the page count of an encrypted PDF file, which itself declares a wrong `/Count` value. Patches This has been fixed in [pypdf==6.21.3](https://github.com/py-pdf/pypdf/releases/tag/6.21.3). Workarounds If you cannot upgrade yet, consider applying the changes from PR [#4270](https://github.com/py-pdf/pypdf/pull/4270).
+
+*Published 2026-10-30.*
+
+---
+
+## CVE-2026-119209 — HIGH
+
+**pypdf has possible large memory usage when parsing cross-reference streams**
+
+Affects [io.github.pipeworx-io/asrs-reports](/s/io-github-pipeworx-io-asrs-reports).
+
+<ServerCardMini slug="io-github-pipeworx-io-asrs-reports" name="io.github.pipeworx-io/asrs-reports" />
+
+An attacker who uses this vulnerability can craft a PDF which leads to large memory usage. This requires opening a file with cross-reference streams. Patches This has been fixed in [pypdf==6.21.3](https://github.com/py-pdf/pypdf/releases/tag/6.21.3). Workarounds If you cannot upgrade yet, consider applying the changes from PR [#4269](https://github.com/py-pdf/pypdf/pull/4269).
+
+*Published 2026-10-30.*
+
+---
+
+## What to do
+
+1. Check which of these servers your client config actually loads — an MCP server you installed once and forgot still runs with the permissions you gave it.
+2. Upgrade to a patched version where the advisory names one.
+3. Where no patch exists, remove the server from your config until one does.
+
+Each affected server's page on MCPpedia carries its full advisory list and current security score.
+
+---
+
+*Compiled automatically from the MCPpedia catalog on 2026-11-02. Scores are the MCPpedia 0–100 rating — security, maintenance, efficiency, documentation and compatibility, weighted as described in the [scoring methodology](/methodology). Browse the full catalog at [mcppedia.org/servers](/servers), or compare any two servers side by side with the [comparison tool](/compare).*
