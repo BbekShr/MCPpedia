@@ -500,6 +500,7 @@ function clampToSentence(text: string, max: number): string {
 export function buildServerSummary(server: {
   name: string
   tagline?: string | null
+  tools?: readonly unknown[] | null
   tool_count?: number | null
   transport?: string | (string | null)[] | null
   requires_api_key?: boolean | null
@@ -523,7 +524,7 @@ export function buildServerSummary(server: {
   const isProperNoun = /[A-Z]/.test(firstWord.slice(1))
   const lead = isProperNoun ? does : does.charAt(0).toLowerCase() + does.slice(1)
 
-  const toolCount = server.tool_count ?? 0
+  const toolCount = server.tool_count ?? server.tools?.length ?? 0
   const exposes = toolCount > 0
     ? `It exposes ${toolCount} tool${toolCount === 1 ? '' : 's'}`
     : 'Its tool list has not been published yet'
