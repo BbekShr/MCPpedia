@@ -80,6 +80,11 @@ describe('buildServerSummary', () => {
     expect(summary).not.toContain('0/100')
   })
 
+  it('reports the published tools when the detail query omits the stored count', () => {
+    const tools = ['search', 'lookup', 'list', 'describe'].map(name => ({ name }))
+    expect(buildServerSummary({ name: 'Example', tools })).toContain('It exposes 4 tools')
+  })
+
   it('singularizes one tool', () => {
     expect(buildServerSummary({ ...full, tool_count: 1 })).toContain('exposes 1 tool ')
   })
