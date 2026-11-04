@@ -3302,5 +3302,161 @@
     "install": {
       "manual": "Clone michael-denyer/pstack-claude and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
     }
+  },
+  {
+    "slug": "jobs-applier-ai-agent-aihawk",
+    "name": "Jobs Applier AI Agent AIHawk",
+    "tagline": "Open-source, self-hosted alternative to OpenAI Dots, Grok Bot. Built to be undetectable by anti-bot systems.",
+    "repo": "feder-cr/Jobs_Applier_AI_Agent_AIHawk",
+    "github_url": "https://github.com/feder-cr/Jobs_Applier_AI_Agent_AIHawk",
+    "homepage_url": "https://github.com/feder-cr/invisible_dots/blob/main/docs/guide.md",
+    "author": "feder-cr",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 32384,
+    "last_updated": "2026-11-04",
+    "category": "testing",
+    "tags": ["agent-skills", "agentic-ai", "ai-agent", "ai-agents", "ai-assistant", "antidetect-browser"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone feder-cr/Jobs_Applier_AI_Agent_AIHawk and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "nocobase",
+    "name": "Nocobase",
+    "tagline": "NocoBase is the open-source platform for building, running, and evolving business systems with AI. Agents write the code and do the work, NocoBase provides the foundation and governance, and people ma",
+    "repo": "nocobase/nocobase",
+    "github_url": "https://github.com/nocobase/nocobase",
+    "homepage_url": "https://www.nocobase.com",
+    "author": "nocobase",
+    "author_type": "community",
+    "license": null,
+    "stars": 24837,
+    "last_updated": "2026-11-04",
+    "category": "development-workflow",
+    "tags": ["admin-dashboard", "agent-skills", "agentic-ai", "ai-agent", "ai-agents", "ai-governance"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone nocobase/nocobase and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "unslop",
+    "name": "Unslop",
+    "tagline": "A Claude skill that turns vibecoded, AI-looking UI into a designed interface",
+    "repo": "heydamir/unslop",
+    "github_url": "https://github.com/heydamir/unslop",
+    "author": "heydamir",
+    "author_type": "community",
+    "license": "CC-BY-4.0",
+    "stars": 8376,
+    "last_updated": "2026-11-01",
+    "category": "design",
+    "tags": [],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone heydamir/unslop and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "day-trader-skill",
+    "name": "Day Trader Skill",
+    "tagline": "11 Claude skills for day trading: scan thousands of charts, track breaking news, time every entry and exit, and replay every outcome before you risk a dollar.",
+    "repo": "Jakeschincariol/day-trader-skill",
+    "github_url": "https://github.com/Jakeschincariol/day-trader-skill",
+    "author": "Jakeschincariol",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 5183,
+    "last_updated": "2026-10-20",
+    "category": "testing",
+    "tags": ["backtesting", "claude", "claude-skills", "day-trading", "stock-market"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone Jakeschincariol/day-trader-skill and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "instagram-agent-skill",
+    "name": "Instagram Agent Skill",
+    "tagline": "Thirteen Claude skills that run an Instagram account: Reels off 26 scored hook formulas, a viral research skill, a caption linter, and a humanizer. Free, MIT.",
+    "repo": "Jakeschincariol/instagram-agent-skill",
+    "github_url": "https://github.com/Jakeschincariol/instagram-agent-skill",
+    "author": "Jakeschincariol",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 4810,
+    "last_updated": "2026-09-13",
+    "category": "research",
+    "tags": [],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone Jakeschincariol/instagram-agent-skill and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "appllama-skills",
+    "name": "Appllama Skills",
+    "tagline": "A builder, not just a researcher. Agent skills that turn top-grossing app patterns into native-quality mobile screens.",
+    "repo": "Appllama/appllama-skills",
+    "github_url": "https://github.com/Appllama/appllama-skills",
+    "homepage_url": "https://appllama.io/mcp",
+    "author": "Appllama",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 4791,
+    "last_updated": "2026-09-06",
+    "category": "design",
+    "tags": ["agent-skills", "ai-agents", "claude", "claude-code", "claude-code-skill", "claude-skills"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone Appllama/appllama-skills and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "pixelfx",
+    "name": "Pixelfx",
+    "tagline": "244 pixel art effects, every one a small piece of code. Plus a Claude Code skill to make your own.",
+    "repo": "patch-gg/pixelfx",
+    "github_url": "https://github.com/patch-gg/pixelfx",
+    "homepage_url": "https://patch-gg.github.io/pixelfx/",
+    "author": "patch-gg",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 4614,
+    "last_updated": "2026-10-31",
+    "category": "other",
+    "tags": ["agent-skills", "animation", "canvas", "claude-code-plugin", "gamedev", "pixel-art"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone patch-gg/pixelfx and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "youtube-agent-skill",
+    "name": "Youtube Agent Skill",
+    "tagline": "Eleven Claude skills that run a YouTube channel: scripts off 21 hook formulas with a scored hook, title and thumbnail linted as one pairing, an edit decision list from your transcript, a retention rea",
+    "repo": "Jakeschincariol/youtube-agent-skill",
+    "github_url": "https://github.com/Jakeschincariol/youtube-agent-skill",
+    "author": "Jakeschincariol",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 4536,
+    "last_updated": "2026-09-16",
+    "category": "other",
+    "tags": [],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone Jakeschincariol/youtube-agent-skill and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
   }
 ]
