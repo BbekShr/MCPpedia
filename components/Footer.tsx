@@ -111,6 +111,16 @@ export default function Footer() {
       <div style={{ borderTop: '1px solid var(--border-muted)' }}>
         <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-3 flex flex-wrap justify-between gap-2 text-[11.5px] text-text-muted">
           <span>Content licensed CC BY-SA 4.0. Code MIT.</span>
+          <span>
+            Built by{' '}
+            <a
+              href="https://bibek-shrestha.com"
+              rel="me"
+              className="text-text-primary hover:text-accent"
+            >
+              Bibek Shrestha
+            </a>
+          </span>
           <span>Not affiliated with Anthropic or the MCP spec authors.</span>
         </div>
       </div>
