@@ -12,8 +12,8 @@ The org persists knowledge in three stores with different owners and change rule
 
 - **Read before work:** every agent's boot sequence reads `CLAUDE.md`, `.claude/ceo/RULES.md`,
   then `docs/org-memory/codebase.md` before touching anything.
-- **Write at Records time:** the CEO (`/mcppedia-ceo`) folds agents' `FACT:` lines into
-  `codebase.md` at the Records step, on the run's branch — not ad hoc mid-run. `LESSON:` lines
+- **Write at Records time:** the cycle workflow writes agents' facts into `codebase.md`
+  through `.claude/ceo/bin/records.py`, on the run's branch — not ad hoc mid-run. `LESSON:` lines
   go to `.claude/ceo/learnings/` instead; every org PR's fate goes to
   `.claude/ceo/memory/scorecard.md`.
 - **One dated bullet per fact**, with `file:line` evidence and the originating cycle/PR:
@@ -21,7 +21,10 @@ The org persists knowledge in three stores with different owners and change rule
 - **Delete when falsified.** A stale "fact" is worse than no fact.
 - **Promote hardened facts:** when a fact has held across several cycles and agents keep
   needing it, promote it into `CLAUDE.md` via a human-approved PR and remove it here.
-- **Keep it pruned:** `codebase.md` stays around ~120 lines. When it grows past that, merge
-  duplicates and drop the least-load-bearing bullets.
+- **Keep it pruned:** `codebase.md` stays around ~120 lines, because every agent reads it at
+  boot. The cycle appends new facts under `## Recent facts`; when the file passes ~140 lines,
+  fold them into their sections, merge duplicates, and move the least-load-bearing bullets to
+  `codebase-archive.md` (history, grepped by path, never read whole). Add a line to the
+  archive index for any new archived heading.
 - `retros.md` gets exactly one line per cycle:
   `- YYYY-MM-DD <ID>: <friction observed> → <action or M-row filed>`.

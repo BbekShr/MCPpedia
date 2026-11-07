@@ -74,7 +74,7 @@ class Doctor:
         agents = self.check_agents(org)
         self.check_ceo(org, agents)
         self.check_placeholders()
-        self.check_memory()
+        self.check_memory(org)
         self.check_guard(org)
         self.check_evals(org)
         self.check_skills(org)
@@ -244,7 +244,7 @@ class Doctor:
         m = re.search(r"^## Active\s*\n(.*?)(?=^## |\Z)", text, re.S | re.M)
         return 0 if not m else len([l for l in m.group(1).splitlines() if l.strip()])
 
-    def check_memory(self):
+    def check_memory(self, org):
         ceo = self.p(".claude", "ceo")
         for f in ("RULES.md", "backlog.md", "memory/codebase.md", "memory/retros.md", "memory/scorecard.md",
                   "AUTONOMY.md", "PRINCIPLES.md"):
@@ -259,11 +259,15 @@ class Doctor:
                         self.err(f"learnings/{f}: ## Active has {n} lines (>60); demote to ## Archive")
                     elif n > 40:
                         self.warn(f"learnings/{f}: ## Active has {n} lines (>40); it enters every brief")
-        cb = os.path.join(ceo, "memory", "codebase.md")
+        # The facts every agent reads at boot. memory/codebase.md is only a pointer to it, so
+        # measure the real store (org.json memory_stores.facts) or the budget is never enforced.
+        facts = org.get("memory_stores", {}).get("facts") or ".claude/ceo/memory/codebase.md"
+        cb = self.p(facts)
         if os.path.exists(cb):
             n = open(cb, encoding="utf-8").read().count("\n")
             if n > 160:
-                self.warn(f"memory/codebase.md is {n} lines (~120 target); prune duplicates and stale facts")
+                self.warn(f"{facts} is {n} lines (~120 target): every agent reads it at boot. Fold "
+                          "`## Recent facts` in and move history to codebase-archive.md")
 
     def check_guard(self, org):
         if not os.path.exists(self.p(".claude", "hooks", "org_guard.py")):

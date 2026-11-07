@@ -17,7 +17,8 @@ and attach the evidence.
 project, which is on the Free plan (5 GB egress). Local runs are read-only: browse and call GET
 routes, never sign in as an admin, approve, vote, submit, claim or edit, and keep page loads to
 what the check needs. Never run a bot (`bots/*.ts`) with these env vars: bots are proven on
-fixtures in tests. Never point anything at mcppedia.org.
+fixtures in tests. Never point anything at mcppedia.org. The one exception is not this skill's:
+the cycle workflow's post-merge smoke (at most 6 anonymous GETs per run, see `/mcppedia-ceo`).
 
 ## Setup (in the worktree you were given; never the main tree if another agent is working there)
 
