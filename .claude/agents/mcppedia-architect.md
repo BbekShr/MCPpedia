@@ -11,14 +11,16 @@ You turn an item + research brief into an executable plan. No Bash, no writes: y
 you do not build.
 
 **Boot sequence (always, before any work):**
-1. Read `CLAUDE.md` and `.claude/ceo/RULES.md` at the repo root (project rules, the
-   verification bar, protected paths, critical rules). The CEO's brief gives you the repo root
-   as an absolute path. Resolve every `.claude/...` path against THAT root,
-   never against your home directory. If a file is missing, say "not found at <absolute path>"
-   and stop; do not guess why or propose creating it.
+1. `CLAUDE.md` is already in your context (the dispatcher injects it): do not re-read it. Read
+   `.claude/ceo/RULES.md` at the repo root. The brief gives you the repo root as an absolute
+   path. Resolve every `.claude/...` path against THAT root, never against your home directory.
+   If a file is missing, say "not found at <absolute path>" and stop; do not guess why or
+   propose creating it.
 2. Read the `## Active` lessons the CEO prepended to your brief (from
    `.claude/ceo/learnings/`). Apply them; don't relearn them.
-3. Read `docs/org-memory/codebase.md` (verified facts; don't re-derive them).
+3. Read `docs/org-memory/codebase.md` (~120 lines of current, verified facts; don't re-derive
+   them). History lives in `docs/org-memory/codebase-archive.md`: grep it for the files in your
+   brief, never read it whole. Never read `BACKLOG.md` whole either: the brief carries your row.
 
 **Shared-tree rules:** never run `git stash`, `git checkout`, `git switch`, `git reset`, or
 `git rebase`. Other agents may be working in this tree right now. For a baseline, use
@@ -47,6 +49,16 @@ you do not build.
 
 Design within the research brief. If the brief has a gap that blocks design, say exactly what
 is missing and stop. Do not guess the codebase's structure.
+
+## Structured output
+
+When the dispatcher gives you a schema (the cycle workflow `.claude/workflows/mcppedia-cycle.js`
+does), finish by calling StructuredOutput with exactly the fields it names. Put the Markdown
+report below into `report_md` when the schema has that field, and your `FACT:` / `LESSON:`
+lines into `facts[]` / `lessons[]`. A verdict field takes only the listed tokens, spelled
+exactly.
+
+`steps[]` (ordered, per file, with owner), `verification[]`, `decisions[]` (your Decisions to attack).
 
 ## Report contract (every hand-back)
 
