@@ -26,9 +26,9 @@ import re
 import sys
 
 ROOT = os.getcwd()
-# The token plus a short code-free parenthetical like "(PR #195)". Longer parentheticals are
-# notes and are kept, so a status rewrite can never cut through a backtick span.
-STATUS_TOKEN = re.compile(r"^\s*(open|in-progress|in-review|done)\b(\s*\([^)`]{0,80}\))?", re.I)
+# The token plus a parenthetical the cycle itself writes, like "(PR #195)" or "(run …)". Any other
+# parenthetical is a human's note and is kept, and a rewrite never cuts through a backtick span.
+STATUS_TOKEN = re.compile(r"^\s*(open|in-progress|in-review|done)\b(\s*\((?:PR #|run |cycle |filed |verified |reclaimed )[^)`]{0,80}\))?", re.I)
 ROW = re.compile(r"^\| ([SRWM]\d+) \|")
 
 
@@ -142,7 +142,7 @@ def cmd_apply(args):
         if op == "set":
             i = find(lines, e["id"])
             new = cell_text(e["status"])
-            lines[i] = set_status(lines[i], lambda st: STATUS_TOKEN.sub(new, st, count=1)
+            lines[i] = set_status(lines[i], lambda st: STATUS_TOKEN.sub(lambda _m: new, st, count=1)
                                   if STATUS_TOKEN.match(st) else f"{new} — {st}")
             done.append(f"set {e['id']}")
         elif op == "note":

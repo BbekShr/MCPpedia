@@ -27,8 +27,9 @@ const R = `python3 ${ROOT}/.claude/ceo/bin/records.py --root ${ROOT}`
 // Mirror of the ci.yml `guard` job regex: these need the human-approved label (CLAUDE.md §5).
 const PROTECTED_RE = /^(CLAUDE\.md|AGENTS\.md|\.github\/workflows\/|\.env|proxy\.ts|lib\/supabase\/|lib\/validators\.ts|lib\/rate-limit\.ts|supabase\/migrations\/|__tests__\/|lib\/__tests__\/)/
 // Never self-merged: the rules files (CLAUDE.md §6), a migration (merging applies it to prod and a
-// revert can't undo it: never-list), and the org's control files (the guard's domain).
-const HOLD_RE = /^(CLAUDE\.md|AGENTS\.md|supabase\/migrations\/|\.claude\/settings\.json|\.claude\/hooks\/|\.claude\/ceo\/(org\.json|AUTONOMY\.md|DEMOTED))/
+// revert can't undo it: never-list), the org's control files (the guard's domain), and the cycle's
+// own machinery (a self-merged edit there would rewrite the next run's rules).
+const HOLD_RE = /^(CLAUDE\.md|AGENTS\.md|supabase\/migrations\/|\.claude\/(settings\.json|hooks\/|workflows\/|skills\/|agents\/)|\.claude\/ceo\/(org\.json|AUTONOMY\.md|DEMOTED|RULES\.md|bin\/))/
 const SECURITY_RE = /^(app\/api\/|lib\/(validators|rate-limit)\.ts|lib\/supabase\/|lib\/mcp\/|proxy\.ts|supabase\/migrations\/|app\/admin\/|\.github\/workflows\/)/
 const BUILD_RE = /^(app\/|components\/|proxy\.ts|next\.config\.ts|open-next\.config\.ts|lib\/)/
 const TEST_RE = /(^|\/)__tests__\//
@@ -68,6 +69,11 @@ const heredoc = (cmd, obj, then = '') => `${cmd} <<'MCPPEDIA_JSON'${then ? ` ${t
 const bodyHeredoc = (cmd, text) => `${cmd} <<'MCPPEDIA_BODY'\n${text}\nMCPPEDIA_BODY`
 
 const notes = []
+// One line, so the 40-line output tail can never drop a file (a dropped CLAUDE.md would skip the hold).
+async function diffFiles(phase) {
+  const d = await ops('diff', ['git diff --name-only origin/main...HEAD | paste -sd , -'], phase)
+  return d.ok ? d.text.trim().split(',').map((s) => s.trim()).filter(Boolean) : null
+}
 
 // M24: a session whose agent registry comes from a stale checkout doesn't know the mcppedia-*
 // agents. If a named agent can't be spawned (or returns nothing), run it once more as a generic
@@ -103,11 +109,9 @@ const PICK = { type: 'object', required: ['id', 'status_seen', 'title', 'slug', 
 const blocked = new Set(A.blockedIds || [])
 
 async function pick(exclude) {
-  if (A.id && !exclude.length) {
-    return { id: A.id, title: A.id, slug: 'item', kind: 'bug-fix', reason: 'named by the caller', files_guess: [], runner_up: '' }
-  }
-  const p = await agent(
-    `Pick ONE MCPpedia backlog row for an autonomous one-item cycle that must finish, merge and deploy without a human.
+  const p = await agent(A.id && !exclude.length
+    ? `Read backlog row ${A.id} with \`${R} get ${A.id}\` (do not read BACKLOG.md). Return its ID, its Status cell exactly as written (status_seen), a PR title ≤60 chars, a kebab slug ≤5 words, the playbook kind, the files you expect to change, reason "named by the caller", and runner_up "".`
+    : `Pick ONE MCPpedia backlog row for an autonomous one-item cycle that must finish, merge and deploy without a human.
 
 Rank strictly by this objective (top wins): 1 red gates or broken deploy · 2 security/privacy · 3 crashes and data loss · 4 correctness in core journeys (search → server page → install config; score → methodology → advisories; submit/claim/edit → admin approval; registry sync → scores → homepage stats) · 5 missing tests on critical untested paths · 6 org drift · 7 cost/performance · 8 polish. Within a rank prefer P1 over P4, then the smallest change (one perimeter, ≤3 files).
 
@@ -203,6 +207,8 @@ function groupByOwner(files) {
 let changed = []
 let gate = null
 let reviews = []
+let reviewIncomplete = false
+let lensesWanted = []
 const fixLog = []
 const shipFix = premise && premise.verdict === 'STILL_TRUE' && !chosen.recordsOnly
 
@@ -212,12 +218,16 @@ if (shipFix) {
     records.backlog.push({ op: 'note', id: ID, text: `cycle-failed ${DATE} (${RUN}): build: ${b.failed.slice(0, 250)}` })
     notes.push(`build failed: ${b.failed}`)
   } else {
-    const d = await ops('diff', [`git diff --name-only origin/main...HEAD`], 'Build')
-    changed = d.text.split('\n').map((s) => s.trim()).filter((s) => /^[\w.@\[\]()/-]+$/.test(s) && s.includes('.'))
+    changed = (await diffFiles('Build')) || []
+    if (!changed.length) {
+      // An unreadable or empty diff means nothing verifiable was built: never ship it as a fix.
+      notes.push('diff against origin/main is empty or unreadable after build')
+      records.backlog.push({ op: 'note', id: ID, text: `cycle-failed ${DATE} (${RUN}): editor reported done but the diff is empty or unreadable` })
+    } else {
 
     // ───────────────────────── Check: gate ∥ review, then up to 2 fix rounds ─────────────────────────
     phase('Check')
-    const lenses = ['correctness', 'regression', ...(changed.some((f) => !TEST_RE.test(f) && SECURITY_RE.test(f)) ? ['security'] : []), ...(A.extraLenses || [])]
+    const lenses = lensesWanted = ['correctness', 'regression', ...(changed.some((f) => !TEST_RE.test(f) && SECURITY_RE.test(f)) ? ['security'] : []), ...(A.extraLenses || [])]
     const GATE = { type: 'object', required: ['verdict', 'gates', 'branch_seen'], properties: {
       verdict: { enum: ['GO', 'GO-WITH-GAP', 'NO-GO'] }, failed_gate: { type: 'integer' }, branch_seen: str, tree_hash_stable: { type: 'boolean' },
       gates: { type: 'array', items: { type: 'object', properties: { name: str, result: { enum: ['green', 'red', 'skipped'] }, tail: str } } }, gap: str } }
@@ -244,7 +254,12 @@ if (shipFix) {
       let confirmed = []
       if (gate.verdict !== 'NO-GO') {
         const fresh = (await parallel(active.map((l) => () => runLens(l, head, round)))).filter(Boolean)
-        if (fresh.length < active.length) notes.push(`round ${round}: ${active.length - fresh.length} lens(es) returned nothing`)
+        if (fresh.length < active.length) {
+          // A lens that returned nothing is a missing review, never a clean one.
+          reviewIncomplete = true
+          notes.push(`round ${round}: ${active.length - fresh.length} lens(es) returned nothing: not shipping`)
+          break
+        }
         reviews = [...reviews.filter((r) => !active.includes(r.lens)), ...fresh]
         fresh.forEach((r) => { records.facts.push(...(r.facts || []).slice(0, 1)); records.lessons.push(...(r.lessons || []).slice(0, 1)) })
         confirmed = reviews.flatMap((r) => r.findings.filter((f) => f.grade === 'CONFIRMED').map((f) => ({ ...f, lens: r.lens })))
@@ -260,19 +275,27 @@ if (shipFix) {
       head = fx.out[fx.out.length - 1].commit_sha
       if (confirmed.length) active = [...new Set(confirmed.map((f) => f.lens))] // a red gate keeps the pending lenses
     }
+    // Fix rounds add commits: re-read the diff so the label and hold decisions see every file.
+    const finalFiles = await diffFiles('Check')
+    if (finalFiles && finalFiles.length) changed = finalFiles
+    else { reviewIncomplete = true; notes.push('final diff unreadable: not shipping') }
+    }
   }
 }
 
 const confirmedLeft = reviews.flatMap((r) => r.findings.filter((f) => f.grade === 'CONFIRMED').map((f) => ({ ...f, lens: r.lens })))
 const plausible = reviews.flatMap((r) => r.findings.filter((f) => f.grade === 'PLAUSIBLE').map((f) => ({ ...f, lens: r.lens })))
-const fixGreen = shipFix && gate && gate.verdict !== 'NO-GO' && !confirmedLeft.length
+const fixGreen = shipFix && changed.length > 0 && gate && gate.verdict !== 'NO-GO' && !confirmedLeft.length &&
+  !reviewIncomplete && lensesWanted.every((l) => reviews.some((r) => r.lens === l))
 const fixFailed = shipFix && !fixGreen
 
 // ───────────────────────── Ship ─────────────────────────
 phase('Ship')
 const protectedTouched = changed.filter((f) => PROTECTED_RE.test(f))
 const held = changed.filter((f) => HOLD_RE.test(f))
-const resolved = premise && premise.verdict === 'RESOLVED'
+// A RESOLVED verdict closes a row only with file:line evidence; otherwise it is just a note.
+const resolved = premise && premise.verdict === 'RESOLVED' && /[\w/.\[\]-]+\.[a-z]{1,5}:\d+/.test(premise.evidence || '')
+if (premise && premise.verdict === 'RESOLVED' && !resolved) records.backlog.push({ op: 'note', id: ID, text: `cycle ${RUN}: researcher says RESOLVED without file:line evidence: ${premise.evidence.slice(0, 250)}` })
 
 if (fixFailed) {
   records.backlog.push({ op: 'note', id: ID, text: `cycle-failed ${DATE} (${RUN}): ${gate ? `gate ${gate.verdict}` : 'build failed'}; ${confirmedLeft.length} CONFIRMED left. Draft PR holds the work` })
@@ -327,7 +350,8 @@ if (shipFix) closeCmds.push(`${onBranch(BRANCH)} && ` + heredoc(`${R} apply --da
 closeCmds.push('sleep 30', ...poll(checksDone(prNum), 2), checksList(prNum))
 const ci = await ops('ci', closeCmds, 'Ship')
 const ciLines = ci.outs.length ? ci.outs[ci.outs.length - 1].tail.split('\n').filter((l) => /^(pass|fail|pending|skipping|cancel)\b/.test(l)) : []
-const ciGreen = ci.outs.slice(0, -1).every((o) => o.exit === 0) && ciLines.length > 0 && ciLines.every((l) => /^(pass|skipping)\b/.test(l))
+// The quick guard job can finish before the main CI job is even registered: require the main job by name.
+const ciGreen = ci.outs.slice(0, -1).every((o) => o.exit === 0) && ciLines.some((l) => /^pass .*Type-check/.test(l)) && ciLines.every((l) => /^(pass|skipping)\b/.test(l))
 if (!ciGreen) return result('ci-red', { id: ID, pr: prNum, ci: ciLines, detail: ci.text.slice(-400) })
 if (held.length) return result('needs-human', { id: ID, pr: prNum, held })
 if (A.noMerge) return result('pr-open (noMerge)', { id: ID, pr: prNum })
@@ -335,7 +359,7 @@ if (A.noMerge) return result('pr-open (noMerge)', { id: ID, pr: prNum })
 // Baseline smoke BEFORE merging, so a prod that is already broken is never blamed on this PR.
 phase('Smoke')
 const S = A.smoke || {}
-const smokeCmd = (u, m) => `curl -sS --max-time 20 -D "$TMPDIR/mcp-h" -o "$TMPDIR/mcp-b" -w 'status=%{http_code}\\n' '${u}'; echo "challenged=$(grep -ci '^cf-mitigated: *challenge' "$TMPDIR/mcp-h")"; echo "marker=$(grep -cF '${m}' "$TMPDIR/mcp-b")"`
+const smokeCmd = (u, m) => `curl -sS --max-time 20 -D "\${TMPDIR:-/tmp}/mcp-h" -o "\${TMPDIR:-/tmp}/mcp-b" -w 'status=%{http_code}\\n' '${u}'; echo "challenged=$(grep -ci '^cf-mitigated: *challenge' "\${TMPDIR:-/tmp}/mcp-h")"; echo "marker=$(grep -cF '${m}' "\${TMPDIR:-/tmp}/mcp-b")"`
 const parseSmoke = (t) => ({ status: Number((t.match(/status=(\d+)/) || [])[1] || 0), challenged: /challenged=[1-9]/.test(t), marker: /marker=[1-9]/.test(t) })
 async function smoke(label) {
   const r = await ops(label, [smokeCmd(S.home, S.homeMarker), smokeCmd(S.api, S.apiMarker)], 'Smoke')
@@ -348,7 +372,8 @@ const base = shipFix && S.home ? await smoke('smoke-baseline') : { green: true, 
 
 phase('Ship')
 const mg = await ops('merge', [
-  `gh pr merge ${prNum} --squash`,
+  // Last line of defence: re-check the PR's real file list for held paths in the same shell as the merge.
+  `git fetch -q origin && ! git diff --name-only origin/main...origin/${BRANCH} | grep -qE ${shq(HOLD_RE.source.replace(/\\\//g, '/'))} && gh pr merge ${prNum} --squash`,
   `gh pr view ${prNum} --json state,mergeCommit --jq '"\\(.state) \\(.mergeCommit.oid)"'`,
   `git push -q origin --delete ${BRANCH}`,
 ], 'Ship')
@@ -368,7 +393,8 @@ const watchDeploy = (sha) => ops('deploy', [
 ], 'Smoke')
 const dep = await watchDeploy(mergeSha)
 const deploy = (dep.text.match(/deploy=(\w+)/) || [])[1] || 'unknown'
-if (deploy === 'notfound' || deploy === 'unknown' || deploy === 'timeout') return result('deploy-unobserved', { id: ID, pr: prNum, mergeSha, detail: dep.text.slice(-300) })
+// A cancelled or superseded deploy (bots push to main all day) is not evidence of a bad change.
+if (deploy !== 'success' && deploy !== 'failure') return result('deploy-unobserved', { id: ID, pr: prNum, mergeSha, detail: dep.text.slice(-300) })
 
 let post = deploy === 'success' ? await smoke('smoke-1') : null
 if (post && !post.green && !post.challenged) post = await smoke('smoke-2')
@@ -383,7 +409,7 @@ if (!base.green && !base.challenged) {
 // ───────────────────────── Rollback: a revert PR through the same gates ─────────────────────────
 const why = deploy !== 'success' ? `deploy ${deploy}` : `smoke home ${post.home && post.home.status}/${post.home && post.home.marker} api ${post.api && post.api.status}/${post.api && post.api.marker}`
 const RB = `revert/${ID}-pr${prNum}`
-const scratch = `"$TMPDIR/mcppedia-${RB.replace(/\//g, '-')}"`
+const scratch = `"\${TMPDIR:-/tmp}/mcppedia-${RB.replace(/\//g, '-')}"`
 const rb = await ops('revert', [
   `git fetch origin -q && git worktree add -q -b ${RB} ${scratch} origin/main && git -C ${scratch} revert --no-edit ${mergeSha}`,
   heredoc(`python3 ${ROOT}/.claude/ceo/bin/records.py --root ${scratch} apply --date ${DATE}`, { backlog: [{ op: 'note', id: ID, text: `cycle-failed ${DATE}: PR #${prNum} reverted automatically: ${why}` }],

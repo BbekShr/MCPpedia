@@ -39,13 +39,16 @@ def main():
     if rid and rid not in rows:
         raise SystemExit(f"cycle_args.py: no backlog row {rid}")
 
+    sh("git", "fetch", "-q", "origin")  # mainSha and the premise check must see the real main
     merged = json.loads(sh("gh", "pr", "list", "--state", "merged", "--limit", "200", "--json", "number,headRefName,title"))
+    # A revert PR's title cites the row ID too: it never proves the row shipped.
+    merged = [p for p in merged if not p["headRefName"].startswith("revert/") and not p["title"].lower().startswith("revert")]
     opened = json.loads(sh("gh", "pr", "list", "--state", "open", "--limit", "100", "--json", "number,headRefName,title,isDraft"))
 
     reconcile = []
     for i, line in rows.items():
         st = records.status_of(line)
-        if not st.lower().startswith("in-review"):
+        if not st.lower().startswith("in-review") or "reverted automatically" in st:
             continue
         cited = {int(n) for n in re.findall(r"PR #(\d+)", st)}
         for p in merged:
