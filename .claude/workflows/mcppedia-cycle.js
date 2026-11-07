@@ -68,6 +68,24 @@ const heredoc = (cmd, obj, then = '') => `${cmd} <<'MCPPEDIA_JSON'${then ? ` ${t
 const bodyHeredoc = (cmd, text) => `${cmd} <<'MCPPEDIA_BODY'\n${text}\nMCPPEDIA_BODY`
 
 const notes = []
+
+// M24: a session whose agent registry comes from a stale checkout doesn't know the mcppedia-*
+// agents. If a named agent can't be spawned (or returns nothing), run it once more as a generic
+// agent that adopts the role file. After the first miss, skip straight to the fallback.
+let registryMissing = false
+async function role(prompt, opts) {
+  if (!registryMissing) {
+    let r = null
+    try { r = await agent(prompt, opts) } catch (e) {
+      if (!/agent type|not found|unknown agent/i.test(String((e && e.message) || e))) throw e
+      registryMissing = true
+      notes.push(`agent registry lacks ${opts.agentType} (M24): roles ran from their definition files`)
+    }
+    if (r) return r
+  }
+  const { agentType, ...rest } = opts
+  return agent(`Your role is defined in ${ROOT}/.claude/agents/${agentType}.md. Read it first (skip its frontmatter) and follow it exactly.\n\n${prompt}`, { ...rest, label: `${rest.label}~` })
+}
 const records = { backlog: [], facts: [], lessons: [] }
 const result = (outcome, extra) => ({ outcome, run: RUN, notes, records, ...extra })
 
@@ -109,7 +127,7 @@ phase('Verify')
 const PREMISE = { type: 'object', required: ['verdict', 'evidence', 'files', 'plan_steps', 'hard', 'feature_check'], properties: {
   verdict: { enum: ['STILL_TRUE', 'RESOLVED', 'WRONG_PREMISE', 'CANT_TELL'] }, evidence: str, files: strs, reuse: strs,
   plan_steps: strs, hard: { type: 'boolean' }, feature_check: str, facts: strs, report_md: str } }
-const verify = (p) => agent(
+const verify = (p) => role(
   `${BOOT}\n\nBacklog row ${p.id} (read it: \`${R} get ${p.id}\`). Picked because: ${p.reason}\nCode is at origin/main ${A.mainSha} (you are on it). Re-verify the row's claims at file:line before anything else: STILL_TRUE / RESOLVED / WRONG_PREMISE / CANT_TELL. If STILL_TRUE, map the touched surface and reuse inventory briefly, write a mechanical plan (one step per file change, plus the proving test), and give one feature check that proves the acceptance criteria. Keep report_md under 40 lines.`,
   { label: `verify:${p.id}`, agentType: 'mcppedia-researcher', model: 'sonnet', effort: 'medium', schema: PREMISE })
 
@@ -137,7 +155,7 @@ if (!sw.ok || !sw.text.includes(BRANCH)) return result('branch-failed', { id: ID
 
 let plan = premise && premise.plan_steps
 if (premise && premise.verdict === 'STILL_TRUE' && premise.hard && plan.length > 3) {
-  const arch = await agent(
+  const arch = await role(
     `${BOOT}\n\nItem ${ID} (\`${R} get ${ID}\`). Research brief:\n${premise.report_md || premise.evidence}\nWrite the build plan. Ordered per-file steps with owner, a verification step per acceptance criterion, and the decisions a reviewer should attack.`,
     { label: `architect:${ID}`, phase: 'Verify', agentType: 'mcppedia-architect', model: 'opus', effort: 'high',
       schema: { type: 'object', required: ['steps', 'verification', 'decisions'], properties: { steps: strs, verification: strs, decisions: strs, report_md: str } } })
@@ -162,9 +180,9 @@ Rules: a proving test that fails without the fix is required (state it in provin
 async function build(groups, extra) {
   const out = []
   for (const [owner, files] of groups) {
-    let r = await agent(editorBrief(owner, files, extra), { label: `build:${owner.replace('mcppedia-', '')}`, phase: 'Build', agentType: owner, model: 'sonnet', effort: 'medium', schema: BUILD })
+    let r = await role(editorBrief(owner, files, extra), { label: `build:${owner.replace('mcppedia-', '')}`, phase: 'Build', agentType: owner, model: 'sonnet', effort: 'medium', schema: BUILD })
     if (!r || r.status !== 'done' || !r.commit_sha) {
-      r = await agent(editorBrief(owner, files, `${extra || ''}\nYour previous attempt returned: ${r ? `${r.status}: ${r.deviations}` : 'nothing'}. Fix that and finish.`),
+      r = await role(editorBrief(owner, files, `${extra || ''}\nYour previous attempt returned: ${r ? `${r.status}: ${r.deviations}` : 'nothing'}. Fix that and finish.`),
         { label: `build-retry:${owner.replace('mcppedia-', '')}`, phase: 'Build', agentType: owner, model: 'sonnet', effort: 'medium', schema: BUILD })
     }
     if (!r || r.status !== 'done' || !r.commit_sha) return { failed: r ? `${r.status}: ${r.deviations}` : 'editor returned nothing' }
@@ -207,10 +225,10 @@ if (shipFix) {
       lens: str, verdict: { enum: ['CLEAN', 'FINDINGS'] }, rejected: strs, facts: strs, lessons: strs,
       findings: { type: 'array', items: { type: 'object', required: ['grade', 'file', 'line', 'scenario', 'fix'], properties: {
         grade: { enum: ['CONFIRMED', 'PLAUSIBLE'] }, file: str, line: { type: 'integer' }, scenario: str, fix: str, owner: str } } } } }
-    const runGate = (round) => agent(
+    const runGate = (round) => role(
       `${BOOT}\n\nGate branch ${BRANCH} for ${ID}. Run the bar in order and stop at the first red: tsc, lint (0 errors; warnings vs the baseline in docs/org-memory/codebase.md), test, ${changed.some((f) => BUILD_RE.test(f)) ? 'build (required: the diff touches the build surface)' : 'build (skip: no build-surface file changed; say so)'}, then the feature check: ${premise.feature_check}. Run \`npm ci\` first only if node_modules is missing.`,
       { label: `gate:r${round}`, phase: 'Check', agentType: 'mcppedia-release-manager', model: 'haiku', effort: 'low', schema: GATE })
-    const runLens = (lens, sha, round) => agent(
+    const runLens = (lens, sha, round) => role(
       `${BOOT}\n\nLens: ${lens}. Item ${ID} (\`${R} get ${ID}\`). Review \`git diff origin/main...${sha}\` and every caller of every function it modifies. The plan the cycle chose (attack it, not just the code):\n${(plan || []).join('\n')}\nYou may be in an isolated worktree; read files at ${sha} with \`git show ${sha}:<path>\` if your checkout differs.`,
       { label: `review:${lens}:r${round}`, phase: 'Check', agentType: 'mcppedia-reviewer', model: 'sonnet', effort: 'medium', isolation: 'worktree', schema: REVIEW })
 

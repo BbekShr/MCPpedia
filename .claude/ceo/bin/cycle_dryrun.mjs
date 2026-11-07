@@ -11,12 +11,13 @@ const SHA="a".repeat(40), SHA2="b".repeat(40);
 const EXPECT={happy:"merged-smoke-green",audit:"audit","fix-round":"merged-smoke-green","gate-red-then-green":"merged-smoke-green",
   "never-fixed":"review-failed","ci-red":"ci-red",tripwire:"tree-corrupted","smoke-fail-revert":"reverted",
   "prod-already-red":"merged (prod was already red before merge; no revert)","pick-blocked":"records-only merged",
-  resolved:"records-only merged","wrong-premise-twice":"records-only merged"};
+  resolved:"records-only merged","registry-missing":"merged-smoke-green","wrong-premise-twice":"records-only merged"};
 let failures=0;
 async function run(name, tweak={}) {
   const calls=[]; const cmdsSeen={};
   const agent=async(prompt,o)=>{
-    const L=o.label; calls.push(L+(o.model?`[${o.model}]`:"")+(o.isolation?"{wt}":""));
+    if(tweak.noRegistry && o.agentType) throw new Error(`Agent type '${o.agentType}' not found`);
+    const L=o.label.replace(/~$/,""); calls.push(L+(o.model?`[${o.model}]`:"")+(o.isolation?"{wt}":""));
     const n=(prompt.match(/^### \d+/mg)||[]).length;
     const ok=(tails)=>({outputs:Array.from({length:n},(_,i)=>({exit:0,tail:(tails&&tails[i])||""}))});
     if(L.startsWith("ops:")) cmdsSeen[L]=prompt.split("\n\n").slice(1).join("\n\n");
@@ -57,6 +58,7 @@ async function run(name, tweak={}) {
   await run("smoke-fail-revert",{"ops:smoke-1":(p,n,ok)=>ok(["status=500\nchallenged=0\nmarker=0","status=200\nchallenged=0\nmarker=1"]),"ops:smoke-2":(p,n,ok)=>ok(["status=500\nchallenged=0\nmarker=0","status=200\nchallenged=0\nmarker=1"])});
   await run("prod-already-red",{"ops:smoke-baseline":(p,n,ok)=>ok(["status=500\nchallenged=0\nmarker=0","x"]),"ops:smoke-1":(p,n,ok)=>ok(["status=500\nchallenged=0\nmarker=0","status=200\nmarker=1"]),"ops:smoke-2":(p,n,ok)=>ok(["status=500\nchallenged=0\nmarker=0","status=200\nmarker=1"])});
   await run("pick-blocked",{"pick":()=>({id:"S9",status_seen:"open",title:"t",slug:"s",kind:"bug-fix",reason:"r",files_guess:[],runner_up:""})});
+  await run("registry-missing",{noRegistry:true});
   await run("resolved",{"verify:S44":()=>({verdict:"RESOLVED",evidence:"already pinned by x.test.ts",files:[],plan_steps:[],hard:false,feature_check:""})});
   await run("wrong-premise-twice",{"verify:S44":()=>({verdict:"WRONG_PREMISE",evidence:"nope",files:[],plan_steps:[],hard:false,feature_check:""}),"pick":(p)=>p.includes("S44,")||p.match(/in: .*S44/)?{id:"S2",status_seen:"open — note",title:"t",slug:"s",kind:"bug-fix",reason:"r",files_guess:[],runner_up:""}:{id:"S44",status_seen:"open",title:"t",slug:"s",kind:"test-gap",reason:"r",files_guess:[],runner_up:""},"verify:S2":()=>({verdict:"CANT_TELL",evidence:"needs prod",files:[],plan_steps:[],hard:false,feature_check:""})});
   console.log(failures?`\n${failures} scenario(s) FAILED`:"\nall scenarios passed"); process.exit(failures?1:0);
