@@ -373,9 +373,10 @@ const base = shipFix && S.home ? await smoke('smoke-baseline') : { green: true, 
 phase('Ship')
 const mg = await ops('merge', [
   // Last line of defence: re-check the PR's real file list for held paths in the same shell as the merge.
-  `git fetch -q origin && ! git diff --name-only origin/main...origin/${BRANCH} | grep -qE ${shq(HOLD_RE.source.replace(/\\\//g, '/'))} && gh pr merge ${prNum} --squash`,
+  // The diff is captured first so a failing `git diff` stops the chain instead of feeding grep
+  // nothing; the branch is deleted only after a merge actually happened (deleting it closes the PR).
+  `git fetch -q origin && files=$(git diff --name-only origin/main...origin/${BRANCH}) && ! printf '%s\\n' "$files" | grep -qE ${shq(HOLD_RE.source.replace(/\\\//g, '/'))} && gh pr merge ${prNum} --squash && git push -q origin --delete ${BRANCH}`,
   `gh pr view ${prNum} --json state,mergeCommit --jq '"\\(.state) \\(.mergeCommit.oid)"'`,
-  `git push -q origin --delete ${BRANCH}`,
 ], 'Ship')
 const mergeLine = (mg.outs[1] && mg.outs[1].tail) || ''
 const mergeSha = (mergeLine.match(/MERGED ([0-9a-f]{40})/) || [])[1]
@@ -425,8 +426,8 @@ const rbm = await ops('revert-merge', [
   'sleep 30', ...poll(checksDone(rbNum), 2), checksList(rbNum),
   // A revert restores the last known-good code, so it merges even if a check is red: the
   // alternative is leaving a broken prod deployed while waiting for a human.
-  `gh pr merge ${rbNum} --squash && gh pr view ${rbNum} --json mergeCommit --jq .mergeCommit.oid`,
-  `git push -q origin --delete ${RB}; git worktree remove --force ${scratch}`,
+  `gh pr merge ${rbNum} --squash && gh pr view ${rbNum} --json mergeCommit --jq .mergeCommit.oid && git push -q origin --delete ${RB}`,
+  `git worktree remove --force ${scratch}`,
 ], 'Smoke')
 const rbSha = (rbm.text.match(/\b([0-9a-f]{40})\b/) || [])[1]
 if (!rbSha) return result('revert-not-merged: NEEDS A HUMAN NOW', { id: ID, pr: prNum, revertPr: rbNum, why })
