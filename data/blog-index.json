@@ -1,5 +1,31 @@
 [
   {
+    "slug": "2026-11-10-mcp-weekly-4-452-new-servers-rea-leads-on-stars",
+    "title": "MCP Weekly: 4,452 New Servers, Rea Leads on Stars",
+    "description": "4,452 new MCP servers this week across a catalog of 64,756, with 15 servers gaining stars.",
+    "hook": "4,452 new MCP servers shipped this week. Rea took the star lead. The full ranked breakdown, straight from the catalog.",
+    "date": "2026-11-10",
+    "tags": [
+      "weekly",
+      "ecosystem",
+      "new-servers"
+    ],
+    "category": "weekly-roundup",
+    "featuredServers": [
+      "workit-codex",
+      "deepseek-agent-acp",
+      "io-github-akfamily-akquant",
+      "io-github-xmtlzzz-dsh-any-agent",
+      "fun-highwire-highwire",
+      "io-github-avgvstvs96-enclave",
+      "io-github-niksa90-toolmenu",
+      "io-github-devilsdev-rag-mcp-server",
+      "io-github-puglieseweb-systemdox-puglieseweb",
+      "io-github-calasdan-sketch-monomem"
+    ],
+    "readingTime": 2
+  },
+  {
     "slug": "2026-11-03-mcp-weekly-4-379-new-servers-rea-leads-on-stars",
     "title": "MCP Weekly: 4,379 New Servers, Rea Leads on Stars",
     "description": "4,379 new MCP servers this week across a catalog of 60,527, with 15 servers gaining stars.",
