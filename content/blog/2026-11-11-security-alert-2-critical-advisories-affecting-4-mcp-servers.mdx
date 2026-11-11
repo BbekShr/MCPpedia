@@ -1,0 +1,116 @@
+---
+title: "Security Alert: 2 critical advisories affecting 4 MCP servers"
+description: "6 new security advisories across 4 MCP servers, with severity and remediation for each."
+hook: "2 critical advisories just landed against 4 MCP servers in the catalog. If one of them is in your client config, this is an action item."
+date: "2026-11-11"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+MCPpedia picked up 2 critical advisories affecting 4 catalogued MCP servers in the last seven days. Details, and what to do about each, below.
+
+<StatGrid>
+  <Stat value="6" label="New Advisories" detail="Last 7 days" />
+  <Stat value="2" label="Critical" detail="Highest severity" />
+  <Stat value="4" label="Servers Affected" detail="In the catalog" />
+</StatGrid>
+
+<Callout type="warning">If you run any server listed here, treat this as an action item rather than a newsletter. Check the version you have deployed against the advisory before your next agent run.</Callout>
+
+<SectionLabel>The Advisories</SectionLabel>
+
+## CVE-2026-88968 — HIGH
+
+**Claude Code: TOCTOU Race in Edit Tool Allows File Writes Outside the Workspace**
+
+Affects [Cti Expert](/s/cti-expert).
+
+<ServerCardMini slug="cti-expert" name="Cti Expert" />
+
+Claude Code validated Edit tool targets using point-in-time pathname and symlink resolution that was not bound to the underlying directory inodes or file descriptors. On macOS, a process running inside Claude Code's Bash sandbox could exploit the resulting time-of-check to time-of-use window by atomically swapping an in-workspace parent directory with a symlink after validation completed, causing the unsandboxed Edit implementation to overwrite an attacker-selected user-writable file outside the
+
+*Published 2026-11-09.*
+
+---
+
+## CVE-2026-87008 — HIGH
+
+**Code Graph RAG structural tools follow out-of-root symlinks**
+
+Affects [Code Graph Rag](/s/code-graph-rag).
+
+<ServerCardMini slug="code-graph-rag" name="Code Graph Rag" />
+
+A remote/local attacker who can get a symbolic link included in a source-code repository that code-graph-rag analyzes can cause the `structural_search` and `structural_replace` tools (backed by `AstGrepService`, exposed both as MCP tools and as agentic AI tools) to read and -- via `structural_replace` with `dry_run=False` -- overwrite arbitrary files outside the configured project root, because the tool's path-containment check (`should_skip_path`/`_classify_file`) is performed lexically on the
+
+*Published 2026-11-09.*
+
+---
+
+## CVE-2026-77604 — HIGH
+
+**Code Graph RAG: MCP paginated read_file path traversal / arbitrary file read**
+
+Affects [Code Graph Rag](/s/code-graph-rag).
+
+<ServerCardMini slug="code-graph-rag" name="Code Graph Rag" />
+
+The `read_file` MCP tool in `codebase_rag/mcp/tools.py` contains a path traversal vulnerability in its paginated branch (when `offset` or `limit` is supplied). The handler constructs a file path using `Path(self.project_root) / file_path` without subsequently validating that the resolved path remains within the configured project root. Python's `pathlib` silently discards the left-hand component when the right-hand argument is an absolute path, allowing an attacker to read any UTF-8
+
+*Published 2026-11-09.*
+
+---
+
+## CVE-2026-50027 — CRITICAL
+
+**mcp-memory-service: Missing Authentication on Document API Endpoints Allows Unauthenticated Memory Read/Write/Delete**
+
+Affects [Best Agent Memory MCP](/s/best-agent-memory-mcp).
+
+<ServerCardMini slug="best-agent-memory-mcp" name="Best Agent Memory MCP" />
+
+Missing Authentication on Document API Endpoints Allows Unauthenticated Memory Read/Write/Delete All HTTP routes under `/api/documents/*` in `mcp-memory-service` are served without any authentication dependency, even when the server is configured with an API key (`MCP_API_KEY`) or OAuth. An unauthenticated remote attacker can upload arbitrary content into the memory store (write), retrieve stored document content (read), and permanently delete memories belonging to authenticated
+
+*Published 2026-07-13.*
+
+---
+
+## CVE-2026-49291 — HIGH
+
+**mcp-memory-service: OAuth read-only clients can write and delete memories through MCP tools/call**
+
+Affects [Best Agent Memory MCP](/s/best-agent-memory-mcp).
+
+<ServerCardMini slug="best-agent-memory-mcp" name="Best Agent Memory MCP" />
+
+The HTTP MCP JSON-RPC endpoint at `/mcp` requires only OAuth `read` scope for all requests, then dispatches `tools/call` directly to handlers that include mutating tools. A read-only OAuth client can call `store_memory` and `delete_memory` through MCP even though the corresponding REST endpoints require `write` scope. Technical Details `src/mcp_memory_service/web/api/mcp.py` declares `mcp_endpoint` with `user: AuthenticationResult = Depends(require_read_access)`. For `tools/call
+
+*Published 2026-07-13.*
+
+---
+
+## CVE-2026-48989 — CRITICAL
+
+**Windows-MCP: HTTP transports expose unauthenticated PowerShell control with wildcard CORS**
+
+Affects [Dsh Windows MCP](/s/dsh-windows-mcp).
+
+<ServerCardMini slug="dsh-windows-mcp" name="Dsh Windows MCP" />
+
+HTTP transports expose unauthenticated PowerShell control with wildcard CORS There is an issue in the SSE and Streamable HTTP transport modes. The default stdio mode is not affected, but the documented HTTP modes expose the MCP control plane without authentication and add wildcard CORS handling around it. The same server exposes the `PowerShell` tool, which executes caller-controlled commands as the Windows user running Windows-MCP. Relevant source: `src/windows_mcp/__main__.py:37-42`: `_ht
+
+*Published 2026-07-13.*
+
+---
+
+## What to do
+
+1. Check which of these servers your client config actually loads — an MCP server you installed once and forgot still runs with the permissions you gave it.
+2. Upgrade to a patched version where the advisory names one.
+3. Where no patch exists, remove the server from your config until one does.
+
+Each affected server's page on MCPpedia carries its full advisory list and current security score.
+
+---
+
+*Compiled automatically from the MCPpedia catalog on 2026-11-11. Scores are the MCPpedia 0–100 rating — security, maintenance, efficiency, documentation and compatibility, weighted as described in the [scoring methodology](/methodology). Browse the full catalog at [mcppedia.org/servers](/servers), or compare any two servers side by side with the [comparison tool](/compare).*

@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-11-11-security-alert-2-critical-advisories-affecting-4-mcp-servers",
+    "title": "Security Alert: 2 critical advisories affecting 4 MCP servers",
+    "description": "6 new security advisories across 4 MCP servers, with severity and remediation for each.",
+    "hook": "2 critical advisories just landed against 4 MCP servers in the catalog. If one of them is in your client config, this is an action item.",
+    "date": "2026-11-11",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 3
+  },
+  {
     "slug": "2026-11-10-mcp-weekly-4-452-new-servers-rea-leads-on-stars",
     "title": "MCP Weekly: 4,452 New Servers, Rea Leads on Stars",
     "description": "4,452 new MCP servers this week across a catalog of 64,756, with 15 servers gaining stars.",
