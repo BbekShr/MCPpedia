@@ -3458,5 +3458,160 @@
     "install": {
       "manual": "Clone Jakeschincariol/youtube-agent-skill and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
     }
+  },
+  {
+    "slug": "obsidian-skills-2",
+    "name": "Obsidian Skills",
+    "tagline": "Agent skills for Obsidian. Teach your agent to use Obsidian CLI and open formats including Markdown, Bases, JSON Canvas.",
+    "repo": "obsidianmd/obsidian-skills",
+    "github_url": "https://github.com/obsidianmd/obsidian-skills",
+    "author": "obsidianmd",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 51667,
+    "last_updated": "2026-11-11",
+    "category": "other",
+    "tags": ["agents", "agentskills", "bases", "claude", "clawdbot", "cli"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone obsidianmd/obsidian-skills and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "nuwa-skill",
+    "name": "Nuwa Skill",
+    "tagline": "你想蒸馏的下一个员工，何必是同事。蒸馏任何人的思维方式——心智模型、决策启发式、表达DNA。Distill how anyone thinks.",
+    "repo": "alchaincyf/nuwa-skill",
+    "github_url": "https://github.com/alchaincyf/nuwa-skill",
+    "author": "alchaincyf",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 38055,
+    "last_updated": "2026-11-10",
+    "category": "other",
+    "tags": ["agent-skills", "ai-agents", "claude-code", "claude-code-skills", "claude-skills", "codex"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone alchaincyf/nuwa-skill and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "claude-code-templates",
+    "name": "Claude Code Templates",
+    "tagline": "Open-source registry and CLI for Claude Code components: agents, commands, skills, hooks, MCPs, settings and mods",
+    "repo": "davila7/claude-code-templates",
+    "github_url": "https://github.com/davila7/claude-code-templates",
+    "homepage_url": "https://aitmpl.com",
+    "author": "davila7",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 33325,
+    "last_updated": "2026-11-11",
+    "category": "other",
+    "tags": ["agent-skills", "ai-agents", "anthropic", "anthropic-claude", "claude", "claude-code"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone davila7/claude-code-templates and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "zhangxuefeng-skill",
+    "name": "Zhangxuefeng Skill",
+    "tagline": "张雪峰.skill — 张雪峰的认知操作系统。高考志愿/考研/职业规划的实战思维框架。由女娲.skill生成。",
+    "repo": "alchaincyf/zhangxuefeng-skill",
+    "github_url": "https://github.com/alchaincyf/zhangxuefeng-skill",
+    "author": "alchaincyf",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 10746,
+    "last_updated": "2026-10-13",
+    "category": "other",
+    "tags": ["agent-skills", "career-planning", "claude-code", "claude-code-skills", "claude-skills", "codex"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone alchaincyf/zhangxuefeng-skill and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "darwin-skill",
+    "name": "Darwin Skill",
+    "tagline": "达尔文.skill —— 一个让你的Skill无限进化的系统：评估→改进→测试→保留或回滚 | Autoresearch-inspired autonomous skill optimization for Claude Code. Evaluate, improve, test, keep or revert.",
+    "repo": "alchaincyf/darwin-skill",
+    "github_url": "https://github.com/alchaincyf/darwin-skill",
+    "author": "alchaincyf",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 6888,
+    "last_updated": "2026-09-18",
+    "category": "testing",
+    "tags": ["agent-skills", "ai-agents", "autoresearch", "claude-code", "claude-code-skills", "claude-skills"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone alchaincyf/darwin-skill and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "huashu-art-motion",
+    "name": "Huashu Art Motion",
+    "tagline": "艺术动画skill：35种艺术风格、9种解说语法，用代码让画动起来。",
+    "repo": "alchaincyf/huashu-art-motion",
+    "github_url": "https://github.com/alchaincyf/huashu-art-motion",
+    "author": "alchaincyf",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 6744,
+    "last_updated": "2026-11-10",
+    "category": "other",
+    "tags": ["agent-skills", "animation", "claude-code", "claude-code-skills", "claude-skills", "codex"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone alchaincyf/huashu-art-motion and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "drama-skills",
+    "name": "Drama Skills",
+    "tagline": "AI 短剧与漫剧制作 skill 合集：小说改剧本、角色设定三视图、分镜脚本、生图/生视频提示词与成片审片，适配 Claude Code / Codex 等 ｜ Open-source agent skills for AI short dramas & motion comics",
+    "repo": "zenstory-ai/drama-skills",
+    "github_url": "https://github.com/zenstory-ai/drama-skills",
+    "homepage_url": "https://zenstory.ai/zh/drama-skills",
+    "author": "zenstory-ai",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 4109,
+    "last_updated": "2026-11-10",
+    "category": "writing",
+    "tags": ["agent-skills", "ai-short-drama", "ai-video", "aigc", "claude-code", "claude-code-skills"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone zenstory-ai/drama-skills and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "onetake",
+    "name": "Onetake",
+    "tagline": "Motion films that never cut to the next slide: every beat grows out of the one before, one continuous camera, continuity measured by an oracle. Product launch films and feature demos, made with a codi",
+    "repo": "feitangyuan/onetake",
+    "github_url": "https://github.com/feitangyuan/onetake",
+    "homepage_url": "https://onetakemotion.com",
+    "author": "feitangyuan",
+    "author_type": "community",
+    "license": "NOASSERTION",
+    "stars": 4033,
+    "last_updated": "2026-11-05",
+    "category": "development-workflow",
+    "tags": ["agent-skill", "animation", "canvas", "claude-skill", "launch-video", "motion-graphics"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone feitangyuan/onetake and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
   }
 ]
