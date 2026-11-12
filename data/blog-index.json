@@ -1,5 +1,20 @@
 [
   {
+    "slug": "2026-11-12-security-alert-2-high-severity-advisories-affecting-trudi",
+    "title": "Security Alert: 2 high-severity advisories affecting Trudi",
+    "description": "2 new security advisories across 1 MCP server, with severity and remediation for each.",
+    "hook": "2 high-severity advisories just landed against 1 MCP server in the catalog. If one of them is in your client config, this is an action item.",
+    "date": "2026-11-12",
+    "tags": [
+      "security",
+      "cve",
+      "advisory"
+    ],
+    "category": "security-alert",
+    "featuredServers": [],
+    "readingTime": 1
+  },
+  {
     "slug": "2026-11-11-security-alert-2-critical-advisories-affecting-4-mcp-servers",
     "title": "Security Alert: 2 critical advisories affecting 4 MCP servers",
     "description": "6 new security advisories across 4 MCP servers, with severity and remediation for each.",

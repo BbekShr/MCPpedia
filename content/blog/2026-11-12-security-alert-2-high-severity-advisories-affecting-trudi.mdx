@@ -1,0 +1,60 @@
+---
+title: "Security Alert: 2 high-severity advisories affecting Trudi"
+description: "2 new security advisories across 1 MCP server, with severity and remediation for each."
+hook: "2 high-severity advisories just landed against 1 MCP server in the catalog. If one of them is in your client config, this is an action item."
+date: "2026-11-12"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+MCPpedia picked up 2 high-severity advisories affecting 1 catalogued MCP server in the last seven days. Details, and what to do about each, below.
+
+<StatGrid>
+  <Stat value="2" label="New Advisories" detail="Last 7 days" />
+  <Stat value="0" label="Critical" detail="Highest severity" />
+  <Stat value="1" label="Servers Affected" detail="In the catalog" />
+</StatGrid>
+
+<Callout type="warning">If you run any server listed here, treat this as an action item rather than a newsletter. Check the version you have deployed against the advisory before your next agent run.</Callout>
+
+<SectionLabel>The Advisories</SectionLabel>
+
+## CVE-2026-114054 — HIGH
+
+**PYSEC-2026-4362**
+
+Affects [Trudi](/s/trudi).
+
+<ServerCardMini slug="trudi" name="Trudi" />
+
+vLLM before 0.31.0 contains a cache aliasing vulnerability that allows authenticated attackers to collide shared cache keys by supplying caller-controlled values such as EXIF ImageID or cache_salt. Attackers can set a UUID EXIF ImageID to receive another request's cached processed media, or match cache_salt to a LoRA name to reuse first-block KV state.
+
+*Published 2026-10-21.*
+
+---
+
+## CVE-2026-114052 — HIGH
+
+**PYSEC-2026-4361**
+
+Affects [Trudi](/s/trudi).
+
+<ServerCardMini slug="trudi" name="Trudi" />
+
+vLLM after 0.24.0 and before 0.31.0 contains a memory exhaustion vulnerability in MOSS-Audio model serving that caches a processor for every distinct request-controlled mm_processor_kwargs value in an unbounded dictionary. Unauthenticated attackers can send distinct or oversized mel_config values to the /tokenize endpoint, which bypasses --api-key, to exhaust host memory and crash the API process.
+
+*Published 2026-10-21.*
+
+---
+
+## What to do
+
+1. Check which of these servers your client config actually loads — an MCP server you installed once and forgot still runs with the permissions you gave it.
+2. Upgrade to a patched version where the advisory names one.
+3. Where no patch exists, remove the server from your config until one does.
+
+Each affected server's page on MCPpedia carries its full advisory list and current security score.
+
+---
+
+*Compiled automatically from the MCPpedia catalog on 2026-11-12. Scores are the MCPpedia 0–100 rating — security, maintenance, efficiency, documentation and compatibility, weighted as described in the [scoring methodology](/methodology). Browse the full catalog at [mcppedia.org/servers](/servers), or compare any two servers side by side with the [comparison tool](/compare).*
