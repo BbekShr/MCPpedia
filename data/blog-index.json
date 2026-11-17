@@ -1,5 +1,31 @@
 [
   {
+    "slug": "2026-11-17-mcp-weekly-3-971-new-servers-rea-leads-on-stars",
+    "title": "MCP Weekly: 3,971 New Servers, Rea Leads on Stars",
+    "description": "3,971 new MCP servers this week across a catalog of 68,411, with 15 servers gaining stars.",
+    "hook": "3,971 new MCP servers shipped this week. Rea took the star lead. The full ranked breakdown, straight from the catalog.",
+    "date": "2026-11-17",
+    "tags": [
+      "weekly",
+      "ecosystem",
+      "new-servers"
+    ],
+    "category": "weekly-roundup",
+    "featuredServers": [
+      "io-github-cavdax-cavdax",
+      "io-github-spec-family-spec-harness",
+      "io-github-cloudgpu-app-cloudgpu-mcp",
+      "dev-tokensafe-tokensafe",
+      "io-github-juulieen-beeper-mcp-addon",
+      "io-github-chrischall-hellofresh-mcp",
+      "io-github-sagargupta16-itr-agent",
+      "serpmaven",
+      "com-mailpace-mailpace-mcp",
+      "io-github-firstlytics-mcp"
+    ],
+    "readingTime": 2
+  },
+  {
     "slug": "2026-11-14-security-alert-2-high-severity-advisories-affecting-2-mcp-se",
     "title": "Security Alert: 2 high-severity advisories affecting 2 MCP servers",
     "description": "2 new security advisories across 2 MCP servers, with severity and remediation for each.",
