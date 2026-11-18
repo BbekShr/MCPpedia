@@ -3613,5 +3613,161 @@
     "install": {
       "manual": "Clone feitangyuan/onetake and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
     }
+  },
+  {
+    "slug": "skills",
+    "name": "Skills",
+    "tagline": "Skills for Designers and Engineers.",
+    "repo": "emilkowalski/skills",
+    "github_url": "https://github.com/emilkowalski/skills",
+    "homepage_url": "https://aiforui.dev/skills",
+    "author": "emilkowalski",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 57963,
+    "last_updated": "2026-11-15",
+    "category": "design",
+    "tags": ["agent-skills", "animation", "claude-code", "codex", "cursor", "design-engineering"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone emilkowalski/skills and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "claude-trading-skills",
+    "name": "Claude Trading Skills",
+    "tagline": "Claude Code skills for equity investors and traders — market analysis, technical charting, economic calendars, screeners, and trading strategy development.",
+    "repo": "tradermonty/claude-trading-skills",
+    "github_url": "https://github.com/tradermonty/claude-trading-skills",
+    "homepage_url": "https://tradermonty.github.io/claude-trading-skills/",
+    "author": "tradermonty",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 7046,
+    "last_updated": "2026-11-18",
+    "category": "other",
+    "tags": [],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone tradermonty/claude-trading-skills and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "sprite-gen",
+    "name": "Sprite Gen",
+    "tagline": "Generate clean 2D game sprites & animation atlases — component-row pipeline: state rows, alpha cleanup, frame extraction, runtime atlases. Codex/Claude skill.",
+    "repo": "aldegad/sprite-gen",
+    "github_url": "https://github.com/aldegad/sprite-gen",
+    "author": "aldegad",
+    "author_type": "community",
+    "license": "Apache-2.0",
+    "stars": 4141,
+    "last_updated": "2026-11-07",
+    "category": "other",
+    "tags": ["2d-game", "ai-tools", "claude-code", "codex", "game-dev", "gamedev"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone aldegad/sprite-gen and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "founder-skill",
+    "name": "Founder Skill",
+    "tagline": "Eleven free Claude skills that test a business before you launch it: a board trained on Hormozi, Thiel and Jobs, a marketing director, a CFO, and a consumer panel of 100 buyer agents. Free, MIT.",
+    "repo": "Jakeschincariol/founder-skill",
+    "github_url": "https://github.com/Jakeschincariol/founder-skill",
+    "author": "Jakeschincariol",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 4121,
+    "last_updated": "2026-10-07",
+    "category": "testing",
+    "tags": ["business-plan", "claude-code", "claude-skills", "startup", "subagents", "unit-economics"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone Jakeschincariol/founder-skill and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "claude-animated-shorts",
+    "name": "Claude Animated Shorts",
+    "tagline": "Free Claude skill: viral animated story shorts (2D characters in a 3D world) with three.js + Remotion",
+    "repo": "mromidev/claude-animated-shorts",
+    "github_url": "https://github.com/mromidev/claude-animated-shorts",
+    "author": "mromidev",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 4094,
+    "last_updated": "2026-11-01",
+    "category": "other",
+    "tags": [],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone mromidev/claude-animated-shorts and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "teardown",
+    "name": "Teardown",
+    "tagline": "A Claude Code skill that turns any machine into a 3D simulator you can take apart",
+    "repo": "elvarofficial/teardown",
+    "github_url": "https://github.com/elvarofficial/teardown",
+    "author": "elvarofficial",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 3767,
+    "last_updated": "2026-10-31",
+    "category": "other",
+    "tags": [],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone elvarofficial/teardown and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "ctf-skills",
+    "name": "Ctf Skills",
+    "tagline": "Agent skills for solving CTF challenges - web exploitation, binary pwn, crypto, reverse engineering, forensics, OSINT, and more",
+    "repo": "ljagiello/ctf-skills",
+    "github_url": "https://github.com/ljagiello/ctf-skills",
+    "homepage_url": "https://ljagiello.github.io/ctf-skills",
+    "author": "ljagiello",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 3739,
+    "last_updated": "2026-11-15",
+    "category": "other",
+    "tags": ["agent-skills", "claude-code", "claude-code-skills", "codex", "codex-cli", "ctf"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone ljagiello/ctf-skills and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "claude-code-quest",
+    "name": "Claude Code Quest",
+    "tagline": "Claude Code guide in three levels, Beginner to Advanced: hands-on lessons with checked exercises, every volatile fact cited to its source. Independent community guide.",
+    "repo": "wesammustafa/Claude-Code-Quest",
+    "github_url": "https://github.com/wesammustafa/Claude-Code-Quest",
+    "homepage_url": "https://github.com/wesammustafa/Claude-Code-Quest/blob/main/docs/beginner/README.md",
+    "author": "wesammustafa",
+    "author_type": "community",
+    "license": "NOASSERTION",
+    "stars": 3716,
+    "last_updated": "2026-11-15",
+    "category": "development-workflow",
+    "tags": ["agent-skills", "agentic-coding", "ai-agents", "anthropic", "anthropic-claude", "best-practices"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone wesammustafa/Claude-Code-Quest and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
   }
 ]
