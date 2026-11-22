@@ -23,13 +23,22 @@ import { buildLinkedRowRefresh, ownsRowLinkedByOtherEntry, type LinkedRowCurrent
 const PAGE_FETCH_ATTEMPTS = 3
 
 /**
- * Hard ceiling on pages per run — the last stop against a looping cursor.
+ * Records requested per page. The registry's default is ~30, which at 70k+
+ * records (2026-11) meant 2,300+ sequential requests; 100 is accepted and
+ * reads the whole catalog in ~700.
+ */
+const REGISTRY_PAGE_LIMIT = 100
+
+/**
+ * Hard ceiling on pages per run — a backstop behind the seen-cursor check
+ * below, which already stops any cursor cycle. `.github/workflows/sync-registry.yml`
+ * sets no `timeout-minutes`, so GitHub's 6-hour default is otherwise the only
+ * thing that stops a runaway. At REGISTRY_PAGE_LIMIT this is 200k records.
  *
- * The no-progress check below only catches an immediate self-repeat; an
- * alternating `A→B→A→B` cursor walks past it forever with `all` growing
- * unbounded. `.github/workflows/sync-registry.yml` sets no `timeout-minutes`,
- * so GitHub's 6-hour default is otherwise the only thing that stops it. At 25-30
- * records a page this is ~50k records, well past the live catalog.
+ * The cap used to be 2000 pages at the default ~30 records/page (~60k records).
+ * The live catalog passed that in early Nov 2026 (70,184 records, measured
+ * 2026-11-22), so every nightly run hit the cap, flagged the fetch partial and
+ * went red even though nothing was wrong.
  */
 const MAX_REGISTRY_PAGES = 2000
 
@@ -100,6 +109,7 @@ async function fetchRegistryServers(): Promise<FetchResult> {
   // so a PARTIAL failure can still write the pages that did arrive.
   let fetchFailed = false
   let cursor: string | null = null
+  const seenCursors = new Set<string>()
 
   for (let page = 1; ; page++) {
     if (page > MAX_REGISTRY_PAGES) {
@@ -108,8 +118,8 @@ async function fetchRegistryServers(): Promise<FetchResult> {
       break
     }
     const fetchUrl: string = cursor
-      ? `${REGISTRY_API}/servers?version=latest&cursor=${encodeURIComponent(cursor)}`
-      : `${REGISTRY_API}/servers?version=latest`
+      ? `${REGISTRY_API}/servers?version=latest&limit=${REGISTRY_PAGE_LIMIT}&cursor=${encodeURIComponent(cursor)}`
+      : `${REGISTRY_API}/servers?version=latest&limit=${REGISTRY_PAGE_LIMIT}`
 
     const data = await fetchRegistryPage(fetchUrl)
     if (data === null) {
@@ -164,15 +174,14 @@ async function fetchRegistryServers(): Promise<FetchResult> {
 
     // Check for pagination cursor
     if (!nextCursor) break
-    // A cursor that repeats the one we just sent is an infinite loop with
-    // unbounded memory growth. This catches only the immediate self-repeat —
-    // an alternating cursor slips past it, which is what MAX_REGISTRY_PAGES
-    // above is for.
-    if (nextCursor === cursor) {
+    // Any cursor we have already sent is an infinite loop with unbounded
+    // memory growth — an immediate self-repeat or an `A→B→A` cycle alike.
+    if (nextCursor === cursor || seenCursors.has(nextCursor)) {
       console.error(`Registry repeated cursor ${nextCursor} — aborting pagination`)
       fetchFailed = true
       break
     }
+    seenCursors.add(nextCursor)
     cursor = nextCursor
 
     await new Promise(r => setTimeout(r, 200))
