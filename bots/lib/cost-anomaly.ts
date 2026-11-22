@@ -19,6 +19,13 @@ export interface MetricRule {
   floor: number
   /** Monthly free allowance. If set, alert when the recent run-rate would exceed it. */
   includedPerMonth?: number
+  /**
+   * Run-rate alert line, when it should sit above `includedPerMonth`. For a
+   * metric whose normal traffic already runs a little over its allowance, the
+   * overage is a known, priced cost rather than an anomaly; alarming on it
+   * every day just trains everyone to ignore the probe.
+   */
+  alertPerMonth?: number
 }
 
 /** Alert when the last full day exceeds this multiple of the trailing baseline. */
@@ -53,10 +60,12 @@ export function evaluateMetric(series: DailyPoint[], rule: MetricRule): string[]
   if (rule.includedPerMonth !== undefined) {
     const recent = series.slice(-PROJECTION_DAYS).map(p => p.value)
     const projected = mean(recent) * 30
-    if (projected > rule.includedPerMonth) {
-      problems.push(
-        `${rule.name}: last ${recent.length} days project to ${fmt(projected)}/month, over the ${fmt(rule.includedPerMonth)} free allowance.`,
-      )
+    const line = rule.alertPerMonth ?? rule.includedPerMonth
+    if (projected > line) {
+      const over = rule.alertPerMonth === undefined
+        ? `the ${fmt(rule.includedPerMonth)} free allowance`
+        : `the ${fmt(line)}/month alert line (${fmt(rule.includedPerMonth)} free allowance)`
+      problems.push(`${rule.name}: last ${recent.length} days project to ${fmt(projected)}/month, over ${over}.`)
     }
   }
   return problems

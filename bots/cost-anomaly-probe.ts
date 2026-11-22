@@ -34,7 +34,12 @@ const R2_CLASS_A = new Set([
 const RULES = {
   doGbSeconds: { name: 'Durable Objects duration (GB-s)', floor: 5_000, includedPerMonth: 400_000 },
   doRequests: { name: 'Durable Objects requests', floor: 20_000, includedPerMonth: 1_000_000 },
-  r2ClassA: { name: 'R2 Class A operations', floor: 20_000, includedPerMonth: 1_000_000 },
+  // Steady state since Nov 2026 is ~40k/day (~1.2M/month, ~$1/month over): each
+  // ~daily deploy starts a cold build-ID-namespaced ISR cache that crawlers refill
+  // (BACKLOG M22). That is a priced cost, not an anomaly, so the pace alarm sits at
+  // 2M/month (~$4.50 overage). The Oct 2026 loop ran ~240k/day and trips both this
+  // line and the spike check.
+  r2ClassA: { name: 'R2 Class A operations', floor: 20_000, includedPerMonth: 1_000_000, alertPerMonth: 2_000_000 },
   // CPU already runs above its 30M ms allowance at normal traffic, so only spikes alert.
   workersCpuMs: { name: 'Workers CPU (ms)', floor: 5_000_000 },
 } satisfies Record<string, MetricRule>

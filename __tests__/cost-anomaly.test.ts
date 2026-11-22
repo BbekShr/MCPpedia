@@ -41,6 +41,26 @@ describe('evaluateMetric', () => {
   })
 })
 
+describe('evaluateMetric alertPerMonth', () => {
+  const r2 = { name: 'r2', floor: 20_000, includedPerMonth: 1_000_000, alertPerMonth: 2_000_000 }
+
+  it('stays quiet on steady usage between the free allowance and the alert line', () => {
+    // Nov 2026 steady state: ~40k/day projects to ~1.2M/month.
+    expect(evaluateMetric(series([38_000, 41_000, 36_000, 40_000, 40_000, 40_000]), r2)).toEqual([])
+  })
+
+  it('flags a run-rate over the alert line and names both thresholds', () => {
+    const problems = evaluateMetric(series([70_000, 70_000, 70_000, 70_000, 70_000]), r2)
+    expect(problems).toHaveLength(1)
+    expect(problems[0]).toContain('2,000,000/month alert line')
+    expect(problems[0]).toContain('1,000,000 free allowance')
+  })
+
+  it('still catches the Oct 2026 regeneration loop', () => {
+    expect(evaluateMetric(series([40_000, 40_000, 40_000, 40_000, 240_000]), r2).length).toBeGreaterThan(0)
+  })
+})
+
 describe('evaluateRegenerationRatio', () => {
   it('flags more regenerations than requests', () => {
     expect(evaluateRegenerationRatio(306_000, 131_000, 5_000)).toHaveLength(1)
