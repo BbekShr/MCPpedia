@@ -3769,5 +3769,161 @@
     "install": {
       "manual": "Clone wesammustafa/Claude-Code-Quest and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
     }
+  },
+  {
+    "slug": "hyperframes",
+    "name": "Hyperframes",
+    "tagline": "Open-source AI video editor: edit your own footage, or create and remake any video with Claude Code, Codex or the free Studio app. Write HTML, render MP4. By HeyGen.",
+    "repo": "heygen-com/hyperframes",
+    "github_url": "https://github.com/heygen-com/hyperframes",
+    "homepage_url": "https://hyperframes.heygen.com",
+    "author": "heygen-com",
+    "author_type": "community",
+    "license": "Apache-2.0",
+    "stars": 90066,
+    "last_updated": "2026-11-25",
+    "category": "other",
+    "tags": ["agent-skills", "ai", "ai-agents", "ai-video", "ai-video-editor", "animation"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone heygen-com/hyperframes and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "stickman-video-director",
+    "name": "Stickman Video Director",
+    "tagline": "AI Agent Skill (Claude Code, Codex & more): Turn any script into animated stickman videos for faceless YouTube, Shorts & TikTok. 20+ styles with voiceover, captions & SFX. Free & open-source (MIT).",
+    "repo": "kaomei/stickman-video-director",
+    "github_url": "https://github.com/kaomei/stickman-video-director",
+    "homepage_url": "https://telegram.me/stickmanskill",
+    "author": "kaomei",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 8311,
+    "last_updated": "2026-11-24",
+    "category": "writing",
+    "tags": ["agent-skills", "ai-animation-generator", "ai-video-production", "animation", "claude-code", "claude-skills"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone kaomei/stickman-video-director and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "linkedin-agent-skill",
+    "name": "Linkedin Agent Skill",
+    "tagline": "Eleven free Claude skills that run a LinkedIn account: posts off 21 hook formulas, comments, replies, profile score, weekly plan, and a humanizer that strips the AI fingerprint and scores the draft be",
+    "repo": "Jakeschincariol/linkedin-agent-skill",
+    "github_url": "https://github.com/Jakeschincariol/linkedin-agent-skill",
+    "homepage_url": "https://opusjake.ai/r/linkedin-agent",
+    "author": "Jakeschincariol",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 3986,
+    "last_updated": "2026-09-17",
+    "category": "writing",
+    "tags": ["agent-skills", "ai-humanizer", "claude", "claude-code", "claude-skills", "content-marketing"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone Jakeschincariol/linkedin-agent-skill and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "mono-color-skill",
+    "name": "Mono Color Skill",
+    "tagline": "One-ink editorial print image skill — warm paper, halftone photography, active negative space, and restrained typography.",
+    "repo": "yanliudesign/mono-color-skill",
+    "github_url": "https://github.com/yanliudesign/mono-color-skill",
+    "author": "yanliudesign",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 3737,
+    "last_updated": "2026-09-02",
+    "category": "design",
+    "tags": ["agent-skill", "ai-agent", "claude-skill", "editorial-design", "generative-art", "halftone"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone yanliudesign/mono-color-skill and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "claudex-loop",
+    "name": "Claudex Loop",
+    "tagline": "Claude Code skill: four-phase plan hardening (recon, interrogate, Codex adversarial review, cross-model build & inspection) — two AI models harden your plan before a line of code exists, then swap job",
+    "repo": "chaseai-yt/claudex-loop",
+    "github_url": "https://github.com/chaseai-yt/claudex-loop",
+    "author": "chaseai-yt",
+    "author_type": "community",
+    "license": "NOASSERTION",
+    "stars": 3597,
+    "last_updated": "2026-10-14",
+    "category": "other",
+    "tags": [],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone chaseai-yt/claudex-loop and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "agent-rules-books",
+    "name": "Agent Rules Books",
+    "tagline": "AGENTS.md rules / skills for AI coding agents: Codex, Cursor & Claude Code. Inspired by Clean Code, Refactoring, DDD, Clean Architecture and DDIA programming books.",
+    "repo": "ciembor/agent-rules-books",
+    "github_url": "https://github.com/ciembor/agent-rules-books",
+    "homepage_url": "https://ciembor.github.io/agent-rules-books/",
+    "author": "ciembor",
+    "author_type": "community",
+    "license": "MIT",
+    "stars": 3361,
+    "last_updated": "2026-09-10",
+    "category": "development-workflow",
+    "tags": ["agent-rules", "agent-skills", "agent-skills-manager", "agents-md", "agents-rules", "agents-skills"],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone ciembor/agent-rules-books and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "claude-skills-llm-council",
+    "name": "Claude Skills LLM Council",
+    "tagline": "LLM Council — a Claude Code skill that runs your decisions through 5 AI advisors with peer review",
+    "repo": "aiwithremy/claude-skills-llm-council",
+    "github_url": "https://github.com/aiwithremy/claude-skills-llm-council",
+    "author": "aiwithremy",
+    "author_type": "community",
+    "license": null,
+    "stars": 3278,
+    "last_updated": "2026-04-26",
+    "category": "other",
+    "tags": [],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone aiwithremy/claude-skills-llm-council and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
+  },
+  {
+    "slug": "chengfeng-videocut-skills",
+    "name": "Chengfeng Videocut Skills",
+    "tagline": "用 Claude Code Skills 做的视频剪辑 Agent",
+    "repo": "Agentchengfeng/chengfeng-videocut-skills",
+    "github_url": "https://github.com/Agentchengfeng/chengfeng-videocut-skills",
+    "author": "Agentchengfeng",
+    "author_type": "community",
+    "license": "Apache-2.0",
+    "stars": 3271,
+    "last_updated": "2026-10-10",
+    "category": "other",
+    "tags": [],
+    "compatible_with": ["claude-code"],
+    "type": "skill",
+    "install": {
+      "manual": "Clone Agentchengfeng/chengfeng-videocut-skills and copy its skill folder(s) into your .claude/skills/ directory — see the repo README for details."
+    }
   }
 ]
