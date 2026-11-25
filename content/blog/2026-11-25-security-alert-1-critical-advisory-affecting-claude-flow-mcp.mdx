@@ -1,0 +1,46 @@
+---
+title: "Security Alert: 1 critical advisory affecting Claude Flow MCP Server"
+description: "1 new security advisory across 1 MCP server, with severity and remediation for each."
+hook: "1 critical advisory just landed against 1 MCP server in the catalog. If one of them is in your client config, this is an action item."
+date: "2026-11-25"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+MCPpedia picked up 1 critical advisory affecting 1 catalogued MCP server in the last seven days. Details, and what to do about each, below.
+
+<StatGrid>
+  <Stat value="1" label="New Advisories" detail="Last 7 days" />
+  <Stat value="1" label="Critical" detail="Highest severity" />
+  <Stat value="1" label="Servers Affected" detail="In the catalog" />
+</StatGrid>
+
+<Callout type="warning">If you run any server listed here, treat this as an action item rather than a newsletter. Check the version you have deployed against the advisory before your next agent run.</Callout>
+
+<SectionLabel>The Advisories</SectionLabel>
+
+## CVE-2026-59726 — CRITICAL
+
+**ruflo MCP bridge allows unauthenticated remote code execution in default Docker Compose deployments**
+
+Affects [Claude Flow MCP Server](/s/io-github-ruvnet-claude-flow).
+
+<ServerCardMini slug="io-github-ruvnet-claude-flow" name="Claude Flow MCP Server" />
+
+The MCP bridge shipping in ruflo/docker-compose.yml exposed POST /mcp with no authentication. The docker-compose defaults bound the bridge and MongoDB to all interfaces. Combined, an unauthenticated network attacker could invoke tools/call → terminal_execute inside the bridge container, obtain a shell as node (uid 1000), read every provider API key from the container env, spawn attacker-controlled swarms on the victim's keys, and persist a poisoned pattern into the AgentDB learning store that st
+
+*Published 2026-11-24.*
+
+---
+
+## What to do
+
+1. Check which of these servers your client config actually loads — an MCP server you installed once and forgot still runs with the permissions you gave it.
+2. Upgrade to a patched version where the advisory names one.
+3. Where no patch exists, remove the server from your config until one does.
+
+Each affected server's page on MCPpedia carries its full advisory list and current security score.
+
+---
+
+*Compiled automatically from the MCPpedia catalog on 2026-11-25. Scores are the MCPpedia 0–100 rating — security, maintenance, efficiency, documentation and compatibility, weighted as described in the [scoring methodology](/methodology). Browse the full catalog at [mcppedia.org/servers](/servers), or compare any two servers side by side with the [comparison tool](/compare).*
