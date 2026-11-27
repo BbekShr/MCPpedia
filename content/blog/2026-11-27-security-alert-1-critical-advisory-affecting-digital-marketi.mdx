@@ -1,0 +1,130 @@
+---
+title: "Security Alert: 1 critical advisory affecting Digital Marketing Pro"
+description: "7 new security advisories across 1 MCP server, with severity and remediation for each."
+hook: "1 critical advisory just landed against 1 MCP server in the catalog. If one of them is in your client config, this is an action item."
+date: "2026-11-27"
+tags: ["security","cve","advisory"]
+category: "security-alert"
+featuredServers: []
+---
+MCPpedia picked up 1 critical advisory affecting 1 catalogued MCP server in the last seven days. Details, and what to do about each, below.
+
+<StatGrid>
+  <Stat value="7" label="New Advisories" detail="Last 7 days" />
+  <Stat value="1" label="Critical" detail="Highest severity" />
+  <Stat value="1" label="Servers Affected" detail="In the catalog" />
+</StatGrid>
+
+<Callout type="warning">If you run any server listed here, treat this as an action item rather than a newsletter. Check the version you have deployed against the advisory before your next agent run.</Callout>
+
+<SectionLabel>The Advisories</SectionLabel>
+
+## CVE-2026-128135 — HIGH
+
+**NLTK: ZIP package extraction follows in-root hardlinks and overwrites files outside the NLTK data root**
+
+Affects [Digital Marketing Pro](/s/digital-marketing-pro).
+
+<ServerCardMini slug="digital-marketing-pro" name="Digital Marketing Pro" />
+
+NLTK ships a security wrapper, `nltk.pathsec.ZipFile`, that is meant to confine archive extraction to trusted data roots and to block link-based escapes. When `nltk.download()` installs a package, the extraction write opens each member's target path without checking whether that path is a hardlink to a file located outside the data root. A local actor who can write inside a shared or predictable NLTK data root (for example `~/nltk_data`, a group-writable `/usr/share/nltk_data`, or a
+
+*Published 2026-11-19.*
+
+---
+
+## CVE-2026-128138 — CRITICAL
+
+**NLTK incomplete fix: additional JVM/JAR sandbox bypass through unvalidated launcher tokens in java() command arguments**
+
+Affects [Digital Marketing Pro](/s/digital-marketing-pro).
+
+<ServerCardMini slug="digital-marketing-pro" name="Digital Marketing Pro" />
+
+NLTK 3.10.3 contains security hardening intended to close JVM argument-injection and untrusted JAR/classpath execution paths in `nltk.internals.java()`, including the issue published as GHSA-m4rf-3fr8-xwx3. The patched `options` channel correctly rejects Java argument-file references such as `@/path/to/args` and launcher modes such as `-jar`. However, an additional argument channel remains: the caller-provided `cmd` sequence is appended to the Java command after the validated option
+
+*Published 2026-11-19.*
+
+---
+
+## CVE-2026-128139 — HIGH
+
+**NLTK: XMLCorpusView comment and CDATA parsing permits quadratic CPU denial of service**
+
+Affects [Digital Marketing Pro](/s/digital-marketing-pro).
+
+<ServerCardMini slug="digital-marketing-pro" name="Digital Marketing Pro" />
+
+**affected**: PyPI `nltk` `&gt;= 3.6` — `nltk.corpus.reader.xmldocs.XMLCorpusView` streaming read (and the `nps_chat` / `framenet` readers built on it) **dynamically reproduced**: `3.6` (6/6 checks), `3.9.2` (6/6), `3.10.3` (6/6) and `develop` `6818767b9` (6/6) --- _Source references (`nltk/corpus/reader/xmldocs.py:NNN`) are to commit `6818767b99c24659107eb2be9bccd32a3d4bf045` (`develop`, `v3.10.3-15-g6818767b9`). The released `v3.10.3` wheel's `xmldocs.py` is byte-identical to that commit, s
+
+*Published 2026-11-19.*
+
+---
+
+## CVE-2026-129222 — HIGH
+
+**Natural Language Toolkit (NLTK): Uncontrolled recursion (crash DoS) in DependencyGraph.tree()/triples()**
+
+Affects [Digital Marketing Pro](/s/digital-marketing-pro).
+
+<ServerCardMini slug="digital-marketing-pro" name="Digital Marketing Pro" />
+
+DependencyGraph.tree()/triples() walk the parsed dependency structure using plain, unbounded Python recursion — one stack frame per edge in the graph — and never use the class's own cycle detector. A crafted dependency-parse file with a few thousand chained tokens (an entirely ordinary-looking long sentence) crashes the process with an unhandled RecursionError the moment .tree() or .triples() is called — which is NLTK's own documented usage pattern immediately after loading such a fi
+
+*Published 2026-11-19.*
+
+---
+
+## CVE-2026-129223 — HIGH
+
+**Natural Language Toolkit (NLTK): Uncontrolled recursion (crash DoS) in Synset.tree()/acyclic_tree() via WordNet relation traversal**
+
+Affects [Digital Marketing Pro](/s/digital-marketing-pro).
+
+<ServerCardMini slug="digital-marketing-pro" name="Digital Marketing Pro" />
+
+The recursive traversal engines behind WordNetCorpusReader's Synset.tree() and Synset.acyclic_tree() have no maximum call-depth safeguard and default to unlimited depth. They guard against literal cycles, but not against a long, genuinely acyclic relation chain — which exhausts the Python call stack the same way as the sibling DependencyGraph finding I reported separately. Real-world exploitability requires the host application to load a custom/foreign WordNet-format lexical resource
+
+*Published 2026-11-19.*
+
+---
+
+## CVE-2026-129229 — HIGH
+
+**NLTK: Compile-time regex DoS in NLTK search/tokenizer sinks: quadratic regex-engine compile bypasses the match-only timeout**
+
+Affects [Digital Marketing Pro](/s/digital-marketing-pro).
+
+<ServerCardMini slug="digital-marketing-pro" name="Digital Marketing Pro" />
+
+NLTK exposes a compile-time regular-expression denial of service in its regex-search helpers. When an application passes untrusted text as the search pattern to `TokenSearcher.findall()` / `Text.findall()`, or as the tokenizer pattern to `RegexpTokenizer`, the pattern is handed to the third-party `regex` engine, whose compilation cost is roughly quadratic in the number of capturing groups. A short pattern of the form `()` repeated many times (for example `"()" * 25000`, about 50 KB)
+
+*Published 2026-11-19.*
+
+---
+
+## CVE-2026-129234 — HIGH
+
+**NLTK: Untrusted search path in prover9/mace4 config allows local code execution via relative binary_location**
+
+Affects [Digital Marketing Pro](/s/digital-marketing-pro).
+
+<ServerCardMini slug="digital-marketing-pro" name="Digital Marketing Pro" />
+
+`Prover9Parent.config_prover9(binary_location=...)` (and `Mace`, which inherits it) accepts a relative `binary_location` and passes it as `path_to_bin` to `find_binary`, which disables the CWD-relative rejection guard. Unlike the boxer/senna/malt/repp siblings, prover9/mace apply no `os.path.isabs()` filter, so the resolved relative program path (e.g. `./prover9`) is executed from the current working directory via `subprocess.Popen`. A local attacker who can plant `./prover9` (or `./m
+
+*Published 2026-11-19.*
+
+---
+
+## What to do
+
+1. Check which of these servers your client config actually loads — an MCP server you installed once and forgot still runs with the permissions you gave it.
+2. Upgrade to a patched version where the advisory names one.
+3. Where no patch exists, remove the server from your config until one does.
+
+Each affected server's page on MCPpedia carries its full advisory list and current security score.
+
+---
+
+*Compiled automatically from the MCPpedia catalog on 2026-11-27. Scores are the MCPpedia 0–100 rating — security, maintenance, efficiency, documentation and compatibility, weighted as described in the [scoring methodology](/methodology). Browse the full catalog at [mcppedia.org/servers](/servers), or compare any two servers side by side with the [comparison tool](/compare).*
